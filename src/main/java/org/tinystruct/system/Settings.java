@@ -1,0 +1,118 @@
+/*******************************************************************************
+ * Copyright  (c) 2013, 2017 James Mover Zhou
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
+package org.tinystruct.system;
+
+import org.tinystruct.ApplicationRuntimeException;
+
+import java.io.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Properties;
+import java.util.Set;
+
+/**
+ * Get properties in the configuration file.
+ *
+ * @author Mover
+ */
+public class Settings implements Serializable, Configuration<String> {
+
+    private static final long serialVersionUID = 8348657988449703373L;
+    private static final Properties properties = new Properties();
+    private static String file = "/application.properties";
+    private static InputStream in;
+    private boolean overwrite = true;
+
+    public Settings() {
+        this.overwrite = false;
+    }
+
+    public Settings(String fileName) throws ApplicationRuntimeException {
+
+        if (!file.equalsIgnoreCase(fileName)) {
+            file = fileName;
+            in = null;
+        }
+
+        if (in == null) {
+            in = getClass().getResourceAsStream(file);
+
+            if (in != null)
+                try {
+                    properties.load(in);
+                } catch (IOException e) {
+
+                    throw new ApplicationRuntimeException(e.getMessage(), e);
+                }
+        }
+    }
+
+    public Properties getProperties() {
+        return properties;
+    }
+
+    public String get(String property) {
+        if (properties.containsKey(property)) {
+            String value = properties.getProperty(property).trim();
+            if (value.startsWith("$_")) {
+                return System.getenv(value.substring(2).toUpperCase());
+            }
+            try {
+                byte[] bytes = value.getBytes("ISO-8859-1");
+                return new String(bytes);
+            } catch (Exception ex) {
+                System.err.print("The config (" + file + ") may be not found!");
+            }
+        }
+
+        return "";
+    }
+
+    public void set(String key, String value) {
+        properties.put(key, value);
+    }
+
+    public void remove(String key) {
+        properties.remove(key);
+    }
+
+    public Set<String> propertyNames() {
+        HashSet<String> sets = new HashSet<String>();
+        Iterator<Object> iterator = this.getProperties().keySet().iterator();
+        while (iterator.hasNext()) {
+            sets.add(iterator.next().toString());
+        }
+        return sets;
+    }
+
+    public void update() throws IOException {
+        if (!this.overwrite) return;
+
+        String comments = "Struct Configuration";
+        OutputStream out = new FileOutputStream(System.getProperty("user.dir")
+                + File.separatorChar + file);
+        properties.store(out, comments);
+    }
+
+    public boolean isEmpty() {
+        return properties.isEmpty();
+    }
+
+    public String toString() {
+        return properties.toString();
+    }
+
+}
