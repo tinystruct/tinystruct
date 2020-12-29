@@ -26,9 +26,11 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.HttpRequestHandler;
+import org.tinystruct.handler.HttpStaticFileHandler;
 
 import java.util.logging.Logger;
 
@@ -75,7 +77,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                         public void initChannel(SocketChannel ch) {
                             ChannelPipeline p = ch.pipeline();
                             p.addLast(new LoggingHandler(LogLevel.INFO));
-                            p.addLast(new HttpServerCodec(), new HttpObjectAggregator(MAX_CONTENT_LENGTH), new HttpRequestHandler(getConfiguration(), getContext()));
+                            p.addLast(new HttpServerCodec(), new HttpObjectAggregator(MAX_CONTENT_LENGTH), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration(), getContext()));
                         }
                     }).option(ChannelOption.SO_BACKLOG, 1024)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
