@@ -145,48 +145,41 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
             }
         }
 
-        RandomAccessFile raf = null;
-        long fileLength;
-
-        try {
-            raf = new RandomAccessFile(file, "r");
-            fileLength = raf.length();
-        } catch (FileNotFoundException ignore) {
-            this.sendError(ctx, NOT_FOUND);
-            return;
-        } finally {
-            if (raf != null)
-                raf.close();
-        }
-
-        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        HttpUtil.setContentLength(response, fileLength);
-        setContentTypeHeader(response, file);
-        setDateAndCacheHeaders(response, file);
-
-        if (!keepAlive) {
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-        } else if (request.protocolVersion().equals(HTTP_1_0)) {
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-        }
-
-        // Write the initial line and the header.
-        ctx.write(response);
-
         // Write the content.
         ChannelFuture sendFileFuture;
         ChannelFuture lastContentFuture;
-        if (ctx.pipeline().get(SslHandler.class) == null) {
-            sendFileFuture =
-                    ctx.write(new DefaultFileRegion(raf.getChannel(), 0, fileLength), ctx.newProgressivePromise());
-            // Write the end marker.
-            lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-        } else {
-            sendFileFuture =
-                    ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)),
-                            ctx.newProgressivePromise());
-            // HttpChunkedInput will write the end marker (LastHttpContent) for us.
-            lastContentFuture = sendFileFuture;
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+            long fileLength = raf.length();
+
+            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+            HttpUtil.setContentLength(response, fileLength);
+            setContentTypeHeader(response, file);
+            setDateAndCacheHeaders(response, file);
+
+            if (!keepAlive) {
+                response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+            } else if (request.protocolVersion().equals(HTTP_1_0)) {
+                response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+            }
+
+            // Write the initial line and the header.
+            ctx.write(response);
+
+            if (ctx.pipeline().get(SslHandler.class) == null) {
+                sendFileFuture =
+                        ctx.write(new DefaultFileRegion(raf.getChannel(), 0, fileLength), ctx.newProgressivePromise());
+                // Write the end marker.
+                lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            } else {
+                sendFileFuture =
+                        ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)),
+                                ctx.newProgressivePromise());
+                // HttpChunkedInput will write the end marker (LastHttpContent) for us.
+                lastContentFuture = sendFileFuture;
+            }
+        } catch (FileNotFoundException ignore) {
+            this.sendError(ctx, NOT_FOUND);
+            return;
         }
 
         sendFileFuture.addListener(new ChannelProgressiveFutureListener() {
