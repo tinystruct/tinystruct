@@ -69,6 +69,11 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         if (content.capacity() > 0) {
             String requestBody = content.toString(CharsetUtil.UTF_8);
             context.setAttribute("REQUEST_BODY", requestBody);
+            String[] args = requestBody.split("&"), pair;
+            for (int i = 0; i < args.length; i++) {
+                pair = args[i].split("=");
+                context.setParameter(pair[0], Arrays.asList(pair[1]));
+            }
         }
 
  /*       switch (this.request.headers().get(HttpHeaderNames.CONTENT_TYPE)) {
@@ -131,7 +136,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         return decoder;
     }
 
-    private void service(ChannelHandlerContext ctx, HttpRequest request, Context context) {
+    private void service(final ChannelHandlerContext ctx, final HttpRequest request, final Context context) {
         String query = request.uri();
         HttpResponseStatus status = HttpResponseStatus.OK;
         Object message;
@@ -161,7 +166,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                 message = e.getCause().getStackTrace()[0] + ":" + trace[0].toString();
             }
 
-            status = HttpResponseStatus.BAD_REQUEST;
+            status = HttpResponseStatus.NOT_FOUND;
         }
 
         ByteBuf resp;
