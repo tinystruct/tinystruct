@@ -129,7 +129,7 @@ public class Action {
             throw new ApplicationException(this.getApplicationName() + "." + this.name, e.getCause());
         }
 
-        throw new ApplicationException(clazz.toString() + ":[FUNCTION]" + this.name + " Not Found.");
+        throw new ApplicationException(clazz.toString() + ":" + this.name + ":Illegal Argument.");
     }
 
     public Object execute() throws ApplicationException {
