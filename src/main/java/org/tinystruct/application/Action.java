@@ -126,7 +126,7 @@ public class Action {
         } catch (IllegalArgumentException e) {
             throw new ApplicationException("[" + this.name + "]" + method, e);
         } catch (InvocationTargetException e) {
-            throw new ApplicationException(this.getApplicationName() + "." + this.name, e);
+            throw new ApplicationException(this.getApplicationName() + "." + this.name, e.getCause());
         }
 
         throw new ApplicationException(clazz.toString() + ":[FUNCTION]" + this.name + " Not Found.");

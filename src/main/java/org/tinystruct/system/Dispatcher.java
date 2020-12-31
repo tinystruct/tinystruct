@@ -29,8 +29,11 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.logging.Logger;
 
 public class Dispatcher extends AbstractApplication {
+    private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
+
     private final String help = "Usage:\tdispatcher [--attributes] [actions[/args...]...]\n"
             + "\twhere attributes include any custom attributes you defined in context \n"
             + "\tor keypair parameters are going to be passed by context,\n " + "\tsuch as: \n"
@@ -252,6 +255,11 @@ public class Dispatcher extends AbstractApplication {
         this.setAction("--logo", "logo");
         this.setAction("--version", "logo");
         this.setAction("--help", "help");
+        this.setAction("say", "say");
+    }
+
+    public String say(String words) {
+        return words;
     }
 
     public String setProperty(String propertyName) {
@@ -267,7 +275,7 @@ public class Dispatcher extends AbstractApplication {
         String[] names = this.context.getAttributeNames();
         Arrays.sort(names);
         for (String name : names) {
-            System.out.println(name + "=" + this.context.getAttribute(name));
+            logger.info(name + "=" + this.context.getAttribute(name));
         }
     }
 
