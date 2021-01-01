@@ -30,7 +30,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.0.4</version>
+            <version>8.0.16</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/javax.mail/javax.mail-api -->
         <dependency>
