@@ -42,8 +42,8 @@ public class Example extends AbstractApplication {
     }
 
     public String say() {
-        if(null != this.context.getAttribute("words"))
-        return this.context.getAttribute("words").toString();
+        if(null != this.context.getParameter("words"))
+        return this.context.getParameter("words").toString();
 
         return "Invalid parameter(s).";
     }
