@@ -2,11 +2,11 @@
 "How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."
 Psalms 104:24
 
-tinystruct
+tinystruct framework
 ---
 A simple framework for Java development. Simple is hard, Complex is easy. Better thinking, better design.
 
-To execute it in CLI mode
+Executed in CLI mode
 ---
 ```tcsh
 $ bin/dispatcher --version
@@ -26,6 +26,59 @@ Usage:	dispatcher [--attributes] [actions[/args...]...]
 $ bin/dispatcher say/"Praise to the Lord"
 Praise to the Lord
 ```
+Installation and Getting Started
+===
+* Add the dependency into your pom.xml.
+```xml
+<dependency>
+  <groupId>org.tinystruct</groupId>
+  <artifactId>tinystruct</artifactId>
+  <version>0.1.0</version>
+</dependency>
+```
+
+* Extends the AbstractApplication in Java:
+
+```java
+import org.tinystruct.AbstractApplication;
+
+public class Example extends AbstractApplication {
+
+    @Override
+    public void init() {
+        // TODO Auto-generated method stub
+        this.setAction("praise", "praise");
+        this.setAction("say", "say");
+        this.setAction("smile", "smile");
+    }
+
+    @Override
+    public String version() {
+        return "1.0";
+    }
+    
+    public String praise() {
+        return "Praise to the Lord!";
+    }
+
+    public String say() {
+        if(null != this.context.getAttribute("words"))
+        return this.context.getAttribute("words").toString();
+
+        return "Invalid parameter(s).";
+    }
+
+    public String say(String words) {
+        return words;
+    }
+    
+    public String smile() {
+        return ":)";
+    }
+
+}
+```
+
 
 Run it in a servlet container
 ---
