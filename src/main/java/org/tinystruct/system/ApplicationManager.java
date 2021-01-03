@@ -33,10 +33,9 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.1.0";
+    public static final String VERSION = "0.1.1";
 
     private ApplicationManager() {
-
     }
 
     public static void init(final Configuration<String> config) throws ApplicationException {
@@ -65,10 +64,11 @@ public final class ApplicationManager {
 
                     String cmd = "#!/bin/sh\n" +
                             "ROOT=\"`pwd`\"\n" +
+                            "VERSION=\"" + VERSION + "\"\n" +
                             "cd \"`dirname \"$0\"`\"\n" +
                             "cd \"../\"\n" +
                             "cd \"$ROOT\"\n" +
-                            "java -cp \"$ROOT/lib/*:$ROOT/target/classes:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/" + VERSION + "/tinystruct-" + VERSION + "-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"\n";
+                            "java -cp \"$ROOT/lib/*:$ROOT/target/classes:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"\n";
 
                     Files.write(path, cmd.getBytes());
                 } catch (IOException e) {
