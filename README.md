@@ -2,32 +2,12 @@
 "How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."
 Psalms 104:24
 
-tinystruct framework
----
+The tinystruct framework
+--
 A simple framework for Java development. Simple is hard, Complex is easy. Better thinking, better design.
 
-Executed in CLI mode
----
-```tcsh
-$ bin/dispatcher --version
-
-  _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  2.0
-           /
-```
-```tcsh
-$ bin/dispatcher --help
-Usage:	dispatcher [--attributes] [actions[/args...]...]
-	where attributes include any custom attributes those defined in context 
-	or keypair parameters are going to be passed by context,
- 	such as: 
-	--http.proxyHost=127.0.0.1 or --http.proxyPort=3128 or --param=value
-	
-$ bin/dispatcher say/"Praise to the Lord"
-Praise to the Lord
-```
 Installation and Getting Started
-===
+--
 * Add the dependency into your pom.xml.
 ```xml
 <dependency>
@@ -37,7 +17,7 @@ Installation and Getting Started
 </dependency>
 ```
 
-* Extends the AbstractApplication in Java:
+* Extend the AbstractApplication in Java:
 
 ```java
 import org.tinystruct.AbstractApplication;
@@ -79,9 +59,30 @@ public class Example extends AbstractApplication {
 }
 ```
 
+Execute in CLI mode
+--
+```tcsh
+$ bin/dispatcher --version
+
+  _/  '         _ _/  _     _ _/
+  /  /  /) (/ _)  /  /  (/ (  /  2.0
+           /
+```
+```tcsh
+$ bin/dispatcher --help
+Usage:	dispatcher [--attributes] [actions[/args...]...]
+	where attributes include any custom attributes those defined in context 
+	or keypair parameters are going to be passed by context,
+ 	such as: 
+	--http.proxyHost=127.0.0.1 or --http.proxyPort=3128 or --param=value
+	
+$ bin/dispatcher say/"Praise to the Lord"
+Praise to the Lord
+```
+
 
 Run it in a servlet container
----
+--
 ```tcsh
 # bin/dispatcher --start-server --import-applications=org.tinystruct.system.TomcatServer
 ```
