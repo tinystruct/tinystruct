@@ -4,7 +4,7 @@ Psalms 104:24
 
 The tinystruct framework
 --
-A simple framework for Java development. Simple is hard, Complex is easy. Better thinking, better design.
+A simple framework for Java development. Simple thinking, Better design, Easy to be used to have better performance! 
 
 Installation and Getting Started
 --
