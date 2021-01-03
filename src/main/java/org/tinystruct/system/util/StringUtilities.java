@@ -42,9 +42,9 @@ public class StringUtilities implements java.io.Serializable {
     /**
      * Get the encoding of the string
      *
-     * @param s
-     * @return String
-     * @throws UnsupportedEncodingException
+     * @param s string
+     * @return string of the encode
+     * @throws UnsupportedEncodingException unsupported encoding exception
      */
     public static String getEncoding(String s) throws UnsupportedEncodingException {
         String[] encode = new String[]{"GB2312", "ISO-8859-1", "UTF-8", "GBK", "BIG5"};

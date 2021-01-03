@@ -35,8 +35,6 @@ final class ConnectionManager implements Runnable {
 
     private final ConcurrentLinkedQueue<Connection> connections;
     private final static Logger logger = Logger.getLogger("ConnectionManager.class");
-    ;
-
     private final String driverName;
     private final String url;
     private final String user;
@@ -52,9 +50,7 @@ final class ConnectionManager implements Runnable {
     }
 
     /**
-     * Connection Manager Constructor
-     *
-     * @throws ApplicationException
+     * Connection Manager Constructor.
      */
     private ConnectionManager() {
 
@@ -148,7 +144,7 @@ final class ConnectionManager implements Runnable {
     /**
      * When the connection is idle,then push it into connection pool.
      *
-     * @param connection
+     * @param connection a connection
      */
     public void flush(Connection connection)// 从外面获取连接并放入连接向量中
     {
@@ -168,8 +164,8 @@ final class ConnectionManager implements Runnable {
     /**
      * Get connection,then remove it from collection.
      *
-     * @return
-     * @throws ApplicationException
+     * @return a available connection
+     * @throws ApplicationException application exception
      */
     public Connection getConnection() throws ApplicationException// 从里面获取可用连接并返回到外部
     {

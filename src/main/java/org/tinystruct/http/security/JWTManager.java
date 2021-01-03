@@ -19,6 +19,10 @@ public class JWTManager {
 
     /**
      * Builds a JWT with the given subject and role and returns it as a JWS signed compact String.
+     *
+     * @param subject subject
+     * @param role role
+     * @return token
      */
     public String createToken(final String subject, final String role) {
         final Instant now = Instant.now();
@@ -35,6 +39,14 @@ public class JWTManager {
     /**
      * Parses the given JWS signed compact JWT, returning the claims.
      * If this method returns without throwing an exception, the token can be trusted.
+     *
+     * @param compactToken token
+     * @return claims
+     * @throws ExpiredJwtException expired exception
+     * @throws UnsupportedJwtException unsupported exception
+     * @throws MalformedJwtException malformed exception
+     * @throws SignatureException signature exception
+     * @throws IllegalArgumentException illegal arguments exception
      */
     public Jws<Claims> parseToken(final String compactToken)
             throws ExpiredJwtException,

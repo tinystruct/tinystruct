@@ -444,6 +444,7 @@ public class Watcher implements Runnable {
     public interface EventListener {
         /**
          * To be triggered when a lock created.
+         * @param lockId lock id
          */
         void onCreate(String lockId);
 
@@ -455,7 +456,7 @@ public class Watcher implements Runnable {
         /**
          * To be triggered when a lock deleted.
          *
-         * @param lockId
+         * @param lockId lock id
          */
         void onDelete(String lockId);
     }

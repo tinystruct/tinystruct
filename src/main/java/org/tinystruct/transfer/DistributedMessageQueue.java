@@ -54,10 +54,10 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     /**
      * To be used for testing.
      *
-     * @param groupId
-     * @param sessionId
-     * @param message
-     * @return
+     * @param groupId group id
+     * @param sessionId session id
+     * @param message message
+     * @return message
      */
     public String put(Object groupId, String sessionId, String message) {
         if (groupId != null) {
@@ -79,8 +79,8 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * Save message and create a thread for copying it to message list of each
      * session.
      *
-     * @param groupId
-     * @param builder
+     * @param groupId group id
+     * @param builder message
      * @return builder
      */
     public final String save(final Object groupId, final Builder builder) {
@@ -118,10 +118,9 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     /**
      * Poll message from the messages of the session specified sessionId.
      *
-     * @param sessionId
+     * @param sessionId session id
+     * @throws ApplicationException application exception
      * @return message
-     * @throws ApplicationException
-     * @throws IOException
      */
     public final String take(final String sessionId) throws ApplicationException {
         Builder message;
@@ -182,8 +181,8 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     /**
      * This function can be override.
      *
-     * @param text
-     * @return
+     * @param text text
+     * @return filtered text
      */
     protected String filter(String text) {
         return text;
@@ -198,9 +197,9 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * This is a testing. It can be executed with the command:
      * $ bin/dispatcher --import-applications=tinystruct.examples.custom.application.talk custom.application.talk/testing/100
      *
-     * @param n
-     * @return
-     * @throws ApplicationException
+     * @param n number of tests.
+     * @return a boolean value
+     * @throws ApplicationException application exception
      */
     public boolean testing(final int n) throws ApplicationException {
         this.groups.put("[M001]", new ArrayBlockingQueue<Builder>(DEFAULT_MESSAGE_POOL_SIZE));

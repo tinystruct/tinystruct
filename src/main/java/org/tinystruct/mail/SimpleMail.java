@@ -65,7 +65,9 @@ public class SimpleMail {
     }
 
     /**
-     * @param fileName
+     * Attach a file with the file name.
+     *
+     * @param fileName file name
      * @return true or false
      */
     public boolean attachFile(String fileName) {
@@ -88,15 +90,19 @@ public class SimpleMail {
     }
 
     /**
-     * @param fromName
+     * Set the from name.
+     *
+     * @param fromName from name
      */
     public void setFrom(String fromName) {
         this.fromName = fromName;
     }
 
     /**
-     * @param To InternetAddress
-     * @throws ApplicationException
+     * Set the address to be sent to.
+     *
+     * @param to to address
+     * @throws ApplicationException application exception
      */
     public void setTo(String to) throws ApplicationException {
         try {
@@ -143,8 +149,10 @@ public class SimpleMail {
     }
 
     /**
+     * Send mail.
+     *
      * @return true or false
-     * @throws ApplicationException
+     * @throws ApplicationException application exception
      */
     public boolean send() throws ApplicationException {
 

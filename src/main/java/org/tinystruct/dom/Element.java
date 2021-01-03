@@ -45,7 +45,7 @@ public class Element extends Observable implements Cloneable {
     /**
      * Constructor
      *
-     * @param String Name
+     * @param name name
      */
     public Element(String name) {
         this.name = name;
@@ -59,8 +59,8 @@ public class Element extends Observable implements Cloneable {
     /**
      * Constructor
      *
-     * @param String     name
-     * @param Attributes attributes
+     * @param  name name
+     * @param  attributes list of attribute
      */
     public Element(String name, List<Attribute> attributes) {
         this.name = name;
@@ -74,8 +74,8 @@ public class Element extends Observable implements Cloneable {
     /**
      * Constructor
      *
-     * @param String name
-     * @param String data
+     * @param  name name
+     * @param  data data
      */
     public Element(String name, String data) {
         this.name = name;
@@ -128,8 +128,8 @@ public class Element extends Observable implements Cloneable {
     /**
      * String getAttribute(String keyName)
      *
-     * @param String attributeName
-     * @return String
+     * @param attributeName attribute name
+     * @return attribute
      */
     public String getAttribute(String attributeName) {
         Iterator<Attribute> iterator = this.attributes.iterator();
@@ -160,17 +160,16 @@ public class Element extends Observable implements Cloneable {
     }
 
     /**
-     * List<String, String> getAttributes()
+     * Get attributes.
      *
-     * @param String Name
-     * @return String
+     * @return attributes
      */
     public List<Attribute> getAttributes() {
         return this.attributes;
     }
 
     /**
-     * @param Attrs List to use as the attributes
+     * @param attributes List to use as the attributes
      */
     public void setAttributes(List<Attribute> attributes) {
         this.attributes = attributes;
@@ -190,7 +189,7 @@ public class Element extends Observable implements Cloneable {
     }
 
     /**
-     * @param XmlElement element
+     * @param element element
      * @return boolean
      */
     public boolean addElement(Element element) {
@@ -252,10 +251,10 @@ public class Element extends Observable implements Cloneable {
     }
 
     /**
-     * convienience method for the TreeView
+     * Insert element to a specific position
      *
-     * @param e
-     * @param index
+     * @param e element
+     * @param index index
      */
     public void insertElement(Element e, int index) {
         e.removeFromParent();
@@ -264,7 +263,7 @@ public class Element extends Observable implements Cloneable {
     }
 
     /**
-     * @return Vector
+     * @return child nodes
      */
     public List<Element> getChildNodes() {
         return this.childNodes;
@@ -350,42 +349,28 @@ public class Element extends Observable implements Cloneable {
     }
 
     /**
-     * Adds a sub element to this one
+     * Set the parent element.
      *
-     * @return XmlElement
-     * @param Name
-     *            The name of the sub element to add
-     * @param Data
-     *            String Data for this element
-     */
-    /*
-     * public XmlElement addSubElement(String name, String data) { XmlElement e
-     * = new XmlElement(name); e.setData(data); e.setParent(this);
-     * childElements.add(e); return e; }
-     */
-
-    /**
-     * Sets the parent element
-     *
-     * @param Parent The XmlElement that contains this one
+     * @param parent The element that contains this one
      */
     public void setParent(Element parent) {
         this.parent = parent;
     }
 
     /**
-     * Gives the XmlElement containing the current element
+     * Gives the element containing the current element
      *
-     * @return XmlElement
+     * @return parent
      */
     public Element getParent() {
         return parent;
     }
 
     /**
-     * Sets the data for this element
+     * Set the data for this element
      *
-     * @param D The String representation of the data
+     * @param data The String representation of the data
+     * @return this
      */
     public Element setData(String data) {
         this.data = data;
@@ -394,18 +379,18 @@ public class Element extends Observable implements Cloneable {
     }
 
     /**
-     * Returns the data associated with the current Xml element
+     * Return the data associated with the current Xml element
      *
-     * @return String
+     * @return data
      */
     public String getData() {
         return this.data;
     }
 
     /**
-     * Returns the name of the current Xml element
+     * Return the name of the current element
      *
-     * @return String
+     * @return name
      */
     public String getName() {
         return this.name;
@@ -431,8 +416,7 @@ public class Element extends Observable implements Cloneable {
             return this.name;
         }
 
-        boolean valid = (this.name == null || this.name.trim().length() == 0) ? false
-                : true;
+        boolean valid = this.name != null && this.name.trim().length() != 0;
 
         if (!valid)
             return "Invalid Tag Name";

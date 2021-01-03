@@ -46,8 +46,9 @@ public class Dispatcher extends AbstractApplication {
             + "\t\t--help\t\tPrint help\n";
 
     /**
-     * @param args
-     * @throws ApplicationException
+     * Main functionality.
+     *
+     * @param args arguments
      */
     public static void main(String[] args) {
         if (args.length > 0) {

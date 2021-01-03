@@ -35,6 +35,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
+/**
+ * AbstractApplication provides some common methods for a standard {link:Application}.
+ *
+ * @author James Zhou
+ */
 public abstract class AbstractApplication implements Application {
 
     private final Actions actions = Actions.getInstance();
@@ -215,7 +220,7 @@ public abstract class AbstractApplication implements Application {
         this.setVariable(variable, forced);
     }
 
-    public Variable getVariable(String variable) {
+    public Variable<?> getVariable(String variable) {
         return this.variables.get("{%" + variable + "%}");
     }
 
@@ -283,14 +288,14 @@ public abstract class AbstractApplication implements Application {
 
     public String toString() {
         InputStream in = null;
-        String name = this.getName().substring(this.getName().lastIndexOf('.') + 1);
+        String simpleName = this.getName().substring(this.getName().lastIndexOf('.') + 1);
         if (locale != Locale.CHINA) {
-            this.template_path = "themes" + File.separatorChar + name + "_" + locale.toString() + ".view";
+            this.template_path = "themes" + File.separatorChar + simpleName + "_" + locale.toString() + ".view";
             in = AbstractApplication.class.getClassLoader().getResourceAsStream(this.template_path);
         }
 
         if (null == in) {
-            this.template_path = "themes" + File.separatorChar + name + ".view";
+            this.template_path = "themes" + File.separatorChar + simpleName + ".view";
             in = AbstractApplication.class.getClassLoader().getResourceAsStream(this.template_path);
         }
 

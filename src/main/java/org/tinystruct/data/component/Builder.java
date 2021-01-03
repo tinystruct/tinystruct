@@ -61,11 +61,12 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     /**
+     * Parse the resource.
      * Format:{"Name":"Mover","Birthday":"1982-03-20","Ability":{"Item1":"Music"
      * ,"Item2","Java"}}
      *
-     * @param resource
-     * @throws ApplicationException
+     * @param resource JSON string
+     * @throws ApplicationException application exception
      */
     public void parse(String resource) throws ApplicationException {
         // 默认相信任何一个被传入的都是合法的字符串

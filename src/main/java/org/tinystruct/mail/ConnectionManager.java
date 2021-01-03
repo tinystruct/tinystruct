@@ -69,7 +69,7 @@ public class ConnectionManager implements Runnable {
     /**
      * When connection is finished work,then put it into collection.
      *
-     * @param connection
+     * @param connection connection
      */
     public void flush(Connection connection) {
         synchronized (ConnectionManager.class) {

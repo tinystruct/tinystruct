@@ -33,7 +33,7 @@ import java.util.logging.Logger;
 /**
  * XML IO reading and writing utility.
  *
- * @author
+ * @author James Zhou
  */
 public class Document extends DefaultHandler {
     private static final Logger LOG = Logger.getLogger("Document.class");
@@ -110,6 +110,7 @@ public class Document extends DefaultHandler {
      * Loads from the InputStream into the root Xml Element.
      *
      * @param input the input stream to load from.
+     * @return boolean
      */
     public boolean load(InputStream input) {
         try {
@@ -143,6 +144,7 @@ public class Document extends DefaultHandler {
      * Load a file. This is what starts things off.
      *
      * @param inputURL the URL to load XML from.
+     * @return boolean
      */
     public boolean load(URL inputURL) {
         try {
@@ -197,8 +199,6 @@ public class Document extends DefaultHandler {
 
     }
 
-    // Implement the content hander methods that
-    // will delegate SAX events to the tag tracker network.
     @Override
     public void startElement(String namespaceURI, String localName,
                              String qName, Attributes attrs) throws SAXException {
@@ -258,10 +258,10 @@ public class Document extends DefaultHandler {
     }
 
     /**
-     * Returns the root for the Element hiearchy.
+     * Returns the root for the Element hierarchy.
      * <p>
      * Methods that want to retrieve elements from this root should use the
-     * {@link Element#getElementsByName(String)} in order to get the wanted
+     * {@link Element} in order to get the wanted
      * element.
      *
      * @return a Element if it has been loaded or initialized with it; null

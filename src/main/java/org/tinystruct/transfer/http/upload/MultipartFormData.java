@@ -80,7 +80,7 @@ public class MultipartFormData {
     /**
      * Retrieves the next element in the iterator if one exists.
      *
-     * @return a {@link org.tinystruct.transfer.http.upload.ContentDisposition.upload.ContentDisposition ContentDisposition}
+     * @return a {@link org.tinystruct.transfer.http.upload.ContentDisposition ContentDisposition}
      * representing the next element in the request data
      */
     public ContentDisposition getNextPart() {
@@ -167,6 +167,7 @@ public class MultipartFormData {
     /**
      * Set the maximum amount of bytes read from a line at one time
      *
+     * @param bufferSize buffer size
      * @see javax.servlet.ServletInputStream#readLine(byte[], int, int)
      */
     public void setBufferSize(int bufferSize) {
@@ -177,6 +178,7 @@ public class MultipartFormData {
      * Get the maximum amount of bytes read from a line at one time
      *
      * @see javax.servlet.ServletInputStream#readLine(byte[], int, int)
+     * @return buffer size
      */
     public int getBufferSize() {
         return bufferSize;
@@ -184,6 +186,8 @@ public class MultipartFormData {
 
     /**
      * Handles retrieving the boundary and setting the input stream
+     *
+     * @throws ServletException servlet exception
      */
     protected void parseRequest() throws ServletException {
 
@@ -219,6 +223,9 @@ public class MultipartFormData {
      * "--" to the beginning of the boundary, because thats the
      * real boundary as opposed to the shortened one in the
      * content type.
+     *
+     * @param contentType content type
+     * @return boundary
      */
     public static String parseBoundary(String contentType) {
         if (contentType.lastIndexOf("boundary=") != -1) {
@@ -305,6 +312,8 @@ public class MultipartFormData {
 
     /**
      * Reads the input stream until it reaches a new line
+     *
+     * @return one line
      */
     protected String readLine() {
 

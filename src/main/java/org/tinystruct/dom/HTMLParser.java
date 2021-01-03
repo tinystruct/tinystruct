@@ -51,14 +51,20 @@ public class HTMLParser {
     }
 
     /**
-     * 查找标签开始字符出现的位置
+     * Get the position for start tag.
+     *
+     * @param text text
+     * @return position
      */
     public int getPositionForStartTag(String text) {
         return this.getPositionForChar(text, '<');
     }
 
     /**
-     * 查找标签结束字符出现的位置
+     * Get the position for end tag.
+     *
+     * @param text text
+     * @return position
      */
     public int getPositionForEndTag(String text) {
         return this.getPositionForChar(text, '>');

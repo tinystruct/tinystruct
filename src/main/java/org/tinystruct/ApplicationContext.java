@@ -23,6 +23,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Implementation of {@link Context} for application.
+ *
+ * @author James Zhou
+ * @since 0.1.0
+ */
 public class ApplicationContext implements Context {
 
     Map<String, Object> attr = new HashMap<String, Object>();
