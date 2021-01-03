@@ -14,6 +14,7 @@ Installation and Getting Started
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
   <version>0.1.0</version>
+  <classifier>jar-with-dependencies</classifier>
 </dependency>
 ```
 
