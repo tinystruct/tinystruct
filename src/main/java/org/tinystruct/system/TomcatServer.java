@@ -56,8 +56,6 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
             tomcat.start();
             tomcat.getServer().await();
-        } catch (ServletException e) {
-            throw new ApplicationException(e.getMessage(), e.getCause());
         } catch (LifecycleException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
         }
