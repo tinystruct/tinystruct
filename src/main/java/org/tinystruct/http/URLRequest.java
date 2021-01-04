@@ -141,9 +141,9 @@ public class URLRequest {
     }
 
     private String buildQuery(Map<String, Object> parameters) {
-        Set<String> keyset = parameters.keySet();
-        Iterator<String> iterator = keyset.iterator();
-        StringBuffer buffer = new StringBuffer();
+        Set<String> keySet = parameters.keySet();
+        Iterator<String> iterator = keySet.iterator();
+        StringBuilder buffer = new StringBuilder();
         String key;
         boolean first = true;
         while (iterator.hasNext()) {

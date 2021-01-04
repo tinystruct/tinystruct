@@ -33,7 +33,7 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.1.1";
+    public static final String VERSION = "0.1.2";
 
     private ApplicationManager() {
     }
