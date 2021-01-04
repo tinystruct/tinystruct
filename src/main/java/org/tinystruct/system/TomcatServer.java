@@ -15,13 +15,20 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
+import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.tinystruct.AbstractApplication;
-import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.dom.Element;
+import org.tinystruct.handler.DefaultHandler;
+import org.tinystruct.handler.Reforward;
 
-import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.util.logging.Logger;
 
@@ -30,10 +37,10 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
     public void init() {
         this.setAction("--start-server", "start");
+        this.setAction("error", "exceptionCaught");
     }
 
     public void start() throws ApplicationException {
-        System.out.println("Starting...");
         String webappDirLocation = ".";
 
         Tomcat tomcat = new Tomcat();
@@ -50,9 +57,20 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
         tomcat.setPort(Integer.valueOf(webPort));
         try {
-            tomcat.addWebapp("/", new File(webappDirLocation).getAbsolutePath());
+            Context ctx = tomcat.addWebapp("/", new File(webappDirLocation).getAbsolutePath());
             logger.info("Configuring app with basedir: "
                     + new File(webappDirLocation).getAbsolutePath());
+
+            Class filterClass = DefaultHandler.class;
+            FilterDef filterDef = new FilterDef();
+            filterDef.setFilterClass(filterClass.getName());
+            filterDef.setFilterName(filterClass.getSimpleName());
+            ctx.addFilterDef(filterDef);
+
+            FilterMap filterMap = new FilterMap();
+            filterMap.setFilterName(filterClass.getSimpleName());
+            filterMap.addURLPattern("/");
+            ctx.addFilterMap(filterMap);
 
             tomcat.start();
             tomcat.getServer().await();
@@ -64,6 +82,33 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
     @Override
     public void stop() {
+    }
+
+    public Object exceptionCaught()
+            throws ApplicationException {
+        HttpServletRequest request = (HttpServletRequest) this.context.getAttribute("HTTP_REQUEST");
+        HttpServletResponse response = (HttpServletResponse) this.context.getAttribute("HTTP_RESPONSE");
+
+        Reforward reforward = new Reforward(request, response);
+        this.setVariable("from", reforward.getFromURL());
+
+        HttpSession session = request.getSession();
+        if (session.getAttribute("error") != null) {
+            ApplicationException exception = (ApplicationException) session.getAttribute("error");
+
+            String message = exception.getRootCause().getMessage();
+            if (message != null)
+                this.setVariable("exception.message", message);
+            else
+                this.setVariable("exception.message", "Unknown error");
+
+            logger.severe(exception.toString());
+            return this.getVariable("exception.message").getValue().toString();
+        } else {
+            reforward.forward();
+        }
+
+        return "This request is forbidden!";
     }
 
     public String version() {
