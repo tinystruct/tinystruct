@@ -45,6 +45,12 @@
             <version>8.5.55</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-jasper</artifactId>
+            <version>8.5.55</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
         <dependency>
             <groupId>mysql</groupId>
