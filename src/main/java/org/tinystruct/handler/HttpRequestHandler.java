@@ -53,13 +53,13 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
         this.request = msg;
 
-        try {
+/*        try {
             decoder = new HttpPostRequestDecoder(factory, this.request);
         } catch (HttpPostRequestDecoder.ErrorDataDecoderException e) {
             e.printStackTrace();
             writeResponse(ctx.channel(), e.getMessage(), true);
             return;
-        }
+        }*/
 
         ByteBuf content = msg.content();
         content.readableBytes();
@@ -123,12 +123,12 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         context.resetParameters();
     }
 
-    private QueryStringDecoder parseQuery(String uri, boolean haspath) {
-        QueryStringDecoder decoder = new QueryStringDecoder(uri, haspath);
+    private QueryStringDecoder parseQuery(String uri, boolean hasPath) {
+        QueryStringDecoder decoder = new QueryStringDecoder(uri, hasPath);
         Map<String, List<String>> parameters = decoder.parameters();
         Iterator<String> iterator = parameters.keySet().iterator();
         String key;
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             key = iterator.next();
             context.setParameter(key, parameters.get(key));
         }
@@ -144,11 +144,11 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             if (query != null && query.length() > 1) {
                 QueryStringDecoder q = parseQuery(query, true);
 
-                if(!q.path().isEmpty()) {
+                if (!q.path().isEmpty()) {
                     query = q.path().substring(1);
                 }
 
-                if( null != context.getParameterValues("q") && context.getParameterValues("q").size()>0 && context.getParameterValues("q").get(0)!=null) {
+                if (null != context.getParameterValues("q") && context.getParameterValues("q").size() > 0 && context.getParameterValues("q").get(0) != null) {
                     query = context.getParameterValues("q").get(0);
                 }
 
