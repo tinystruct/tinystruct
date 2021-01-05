@@ -96,11 +96,13 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
     public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         this.request = request;
         if (!request.decoderResult().isSuccess()) {
+            request.retain();
             ctx.fireChannelRead(request);
             return;
         }
 
         if (!GET.equals(request.method())) {
+            request.retain();
             ctx.fireChannelRead(request);
             return;
         }
@@ -109,6 +111,7 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
         final String uri = request.uri();
         final String path = sanitizeUri(uri);
         if (path == null) {
+            request.retain();
             ctx.fireChannelRead(request);
             return;
         }
@@ -120,11 +123,13 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
 
         File file = new File(filepath);
         if (file.isHidden() || !file.exists()) {
+            request.retain();
             ctx.fireChannelRead(request);
             return;
         }
 
         if (!file.isFile()) {
+            request.retain();
             ctx.fireChannelRead(request);
             return;
         }
