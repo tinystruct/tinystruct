@@ -15,6 +15,6 @@
 @rem ***************************************************************************
 @echo off
 set "ROOT=%~dp0..\"
-set "VERSION=0.1.2"
+set "VERSION=0.1.3"
 set "classpath=%ROOT%lib\*:%ROOT%WEB-INF\lib\*:%ROOT%WEB-INF\classes":%classpath%
-@java -cp "%ROOT%lib\*;%ROOT%WEB-INF\lib\*;%ROOT%WEB-INF\classes;%HOMEPATH%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher %*
+@java -cp "%ROOT%lib\*;%ROOT%WEB-INF\lib\*;%ROOT%WEB-INF\classes;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher %*
