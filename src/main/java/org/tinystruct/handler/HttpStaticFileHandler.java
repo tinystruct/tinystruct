@@ -15,6 +15,7 @@
  */
 package org.tinystruct.handler;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
@@ -22,13 +23,15 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
+import sun.misc.IOUtils;
 
 import javax.activation.MimetypesFileTypeMap;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLDecoder;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -107,6 +110,7 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
             return;
         }
 
+        // Decide whether to close the connection or not.
         final boolean keepAlive = HttpUtil.isKeepAlive(request);
         final String uri = request.uri();
         final String path = sanitizeUri(uri);
@@ -123,9 +127,38 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
 
         File file = new File(filepath);
         if (file.isHidden() || !file.exists()) {
-            request.retain();
-            ctx.fireChannelRead(request);
-            return;
+            if(filepath.endsWith("/favicon.ico")) {
+                try(InputStream stream = getClass().getResource("/favicon.ico").openStream();ReadableByteChannel channel = Channels.newChannel(stream);){
+                    ByteBuffer buffer = ByteBuffer.allocate(stream.available());
+                    channel.read(buffer);
+                    buffer.rewind();
+
+                    ByteBuf buf = Unpooled.wrappedBuffer(buffer);
+
+                    // Build the response object.
+                    FullHttpResponse response = new DefaultFullHttpResponse(
+                            HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
+                    response.headers().set(HttpHeaderNames.CONTENT_TYPE, "image/x-icon");
+                    response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, buf.readableBytes());
+
+                    if (!keepAlive) {
+                        response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+                    } else if (request.protocolVersion().equals(HttpVersion.HTTP_1_0)) {
+                        response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+                    }
+                    sendAndCleanupConnection(ctx, response);
+                    return;
+                } catch (Exception e) {
+                    sendError(ctx, INTERNAL_SERVER_ERROR);
+                    return;
+                }
+
+            }
+            else {
+                request.retain();
+                ctx.fireChannelRead(request);
+                return;
+            }
         }
 
         if (!file.isFile()) {
