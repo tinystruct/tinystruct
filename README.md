@@ -13,7 +13,7 @@ Installation and Getting Started
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>0.1.3</version>
+  <version>0.1.4</version>
   <classifier>jar-with-dependencies</classifier>
 </dependency>
 ```
@@ -66,7 +66,7 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  0.1.3
+  /  /  /) (/ _)  /  /  (/ (  /  0.1.4
            /
 ```
 ```tcsh
@@ -85,7 +85,7 @@ Praise to the Lord
 Run it in a servlet container
 --
 ```tcsh
-# bin/dispatcher --start-server --import-applications=org.tinystruct.system.TomcatServer
+# bin/dispatcher --start-server --import-applications=org.tinystruct.system.NettyHttpServer
 ```
 
 
