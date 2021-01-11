@@ -61,7 +61,7 @@ public class OAuth2Client implements Authentication {
         return status;
     }
 
-    public byte[] requestResource(URL url, Map<String, Object> parameters) {
+    public byte[] resource(URL url, Map<String, Object> parameters) {
         String bearer = "Bearer " + token;
 
         Map<String, String> headers = new HashMap<String, String>();

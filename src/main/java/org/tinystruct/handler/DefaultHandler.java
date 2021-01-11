@@ -31,6 +31,12 @@ import java.io.IOException;
 
 public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     private static final long serialVersionUID = 0;
+    public static final String HTTP_REQUEST = "HTTP_REQUEST";
+    public static final String HTTP_RESPONSE = "HTTP_RESPONSE";
+    public static final String HTTP_SCHEME = "HTTP_SCHEME";
+    public static final String HTTP_SERVER = "HTTP_SERVER";
+    public static final String HTTP_HOST = "HTTP_HOST";
+    public static final String METHOD = "METHOD";
     private String charsetName;
     private Configuration<String> settings;
     private boolean ignore;
@@ -78,10 +84,10 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         response.setDateHeader("Expires", 0);
 
         final Context context = new ApplicationContext();
-        context.setAttribute("HTTP_REQUEST", request);
-        context.setAttribute("HTTP_RESPONSE", response);
-        context.setAttribute("HTTP_SCHEME", request.getScheme());
-        context.setAttribute("HTTP_SERVER", request.getServerName());
+        context.setAttribute(HTTP_REQUEST, request);
+        context.setAttribute(HTTP_RESPONSE, response);
+        context.setAttribute(HTTP_SCHEME, request.getScheme());
+        context.setAttribute(HTTP_SERVER, request.getServerName());
 
         String lang = request.getParameter("lang"), language = "";
         if (lang != null && lang.trim().length() > 0) {
@@ -118,10 +124,10 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         }
 
         if (request.getServerPort() == 80)
-            context.setAttribute("HTTP_HOST", http_protocol + hostName + url_prefix);
+            context.setAttribute(HTTP_HOST, http_protocol + hostName + url_prefix);
         else
-            context.setAttribute("HTTP_HOST", http_protocol + hostName + ":" + request.getServerPort() + url_prefix);
-        context.setAttribute("METHOD", request.getMethod());
+            context.setAttribute(HTTP_HOST, http_protocol + hostName + ":" + request.getServerPort() + url_prefix);
+        context.setAttribute(METHOD, request.getMethod());
 
         String query = request.getParameter("q");
         try {

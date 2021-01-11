@@ -26,6 +26,9 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
@@ -35,7 +38,7 @@ import org.tinystruct.handler.HttpStaticFileHandler;
 import java.util.logging.Logger;
 
 public class NettyHttpServer extends AbstractApplication implements Bootstrap {
-
+    static final boolean SSL = System.getProperty("ssl") != null;
     private int port = 8080;
     private static final int MAX_CONTENT_LENGTH = 1024 * 100;
     private ChannelFuture future;
@@ -67,8 +70,16 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
         if (this.context != null && this.context.getAttribute("--server-port") != null) {
             this.port = Integer.parseInt(this.context.getAttribute("--server-port").toString());
         }
-
         try {
+            // Configure SSL.
+            final SslContext sslCtx;
+            if (SSL) {
+                SelfSignedCertificate ssc = new SelfSignedCertificate();
+                sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
+            } else {
+                sslCtx = null;
+            }
+
             ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup)
                     .channel(
                             NioServerSocketChannel.class)
@@ -76,6 +87,9 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                         @Override
                         public void initChannel(SocketChannel ch) {
                             ChannelPipeline p = ch.pipeline();
+                            if (sslCtx != null) {
+                                p.addLast(sslCtx.newHandler(ch.alloc()));
+                            }
                             p.addLast(new LoggingHandler(LogLevel.INFO));
                             p.addLast(new HttpServerCodec(), new HttpObjectAggregator(MAX_CONTENT_LENGTH), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration(), getContext()));
                         }

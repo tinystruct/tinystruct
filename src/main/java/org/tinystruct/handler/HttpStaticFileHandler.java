@@ -23,14 +23,12 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
-import sun.misc.IOUtils;
 
 import javax.activation.MimetypesFileTypeMap;
 import java.io.*;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -127,8 +125,8 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
 
         File file = new File(filepath);
         if (file.isHidden() || !file.exists()) {
-            if(filepath.endsWith("/favicon.ico")) {
-                try(InputStream stream = getClass().getResource("/favicon.ico").openStream();ReadableByteChannel channel = Channels.newChannel(stream);){
+            if (filepath.endsWith("/favicon.ico")) {
+                try (InputStream stream = getClass().getResource("/favicon.ico").openStream(); ReadableByteChannel channel = Channels.newChannel(stream);) {
                     ByteBuffer buffer = ByteBuffer.allocate(stream.available());
                     channel.read(buffer);
                     buffer.rewind();
@@ -153,8 +151,7 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
                     return;
                 }
 
-            }
-            else {
+            } else {
                 request.retain();
                 ctx.fireChannelRead(request);
                 return;
