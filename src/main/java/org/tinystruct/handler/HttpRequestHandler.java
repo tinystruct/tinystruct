@@ -10,6 +10,8 @@ import io.netty.handler.codec.http.multipart.*;
 import io.netty.util.CharsetUtil;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.application.Context;
+import org.tinystruct.data.FileEntity;
+import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.util.StringUtilities;
@@ -53,71 +55,60 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
         this.request = msg;
 
-/*        try {
-            decoder = new HttpPostRequestDecoder(factory, this.request);
-        } catch (HttpPostRequestDecoder.ErrorDataDecoderException e) {
-            e.printStackTrace();
-            writeResponse(ctx.channel(), e.getMessage(), true);
-            return;
-        }*/
-
         ByteBuf content = msg.content();
         content.readableBytes();
         if (this.context == null)
             this.context = new ApplicationContext();
 
         if (content.capacity() > 0) {
-            String requestBody = content.toString(CharsetUtil.UTF_8);
-            context.setAttribute("REQUEST_BODY", requestBody);
-            String[] args = requestBody.split("&"), pair;
-            for (int i = 0; i < args.length; i++) {
-                pair = args[i].split("=");
-                context.setParameter(pair[0], Arrays.asList(pair[1]));
+            switch (this.request.headers().get(HttpHeaderNames.CONTENT_TYPE)) {
+                case "application/json":
+                    Builder data = new Builder();
+                    data.parse(content.toString(CharsetUtil.UTF_8));
+                    Set<String> keys = data.keySet();
+                    Iterator<String> k = keys.iterator();
+                    String key;
+                    while (k.hasNext()) {
+                        key = k.next();
+                        List<String> values = new ArrayList<>();
+                        values.add(data.get(key).toString());
+                        context.setParameter(key, values);
+                    }
+                    break;
+                case "multipart/form-data":
+                    // TODO
+                    final HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); // Disk if size exceed
+                    List<FileEntity> list = new ArrayList<>();
+
+                    HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(factory, msg);
+                    InterfaceHttpData fileData;
+                    while (decoder.hasNext()) {
+                        fileData = decoder.next();
+                        if (fileData != null && fileData.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
+                            list.add((FileEntity) fileData);
+                        }
+                    }
+                    // TODO
+                    context.setFiles(list);
+                case "application/x-www-form-urlencoded":
+                    String requestBody = content.toString(CharsetUtil.UTF_8);
+                    context.setAttribute("REQUEST_BODY", requestBody);
+                    String[] args = requestBody.split("&"), pair;
+                    for (int i = 0; i < args.length; i++) {
+                        if (args[i].indexOf("=") != -1) {
+                            pair = args[i].split("=");
+                            context.setParameter(pair[0], Arrays.asList(pair[1]));
+                        }
+                    }
+                    break;
+                case "text/plain;charset=UTF-8":
+                default:
+                    context.setAttribute("REQUEST_BODY", content.toString(CharsetUtil.UTF_8));
+                    break;
             }
         }
 
- /*       switch (this.request.headers().get(HttpHeaderNames.CONTENT_TYPE)) {
-            case "application/json":
-                Builder data = new Builder();
-                data.parse(content.toString(CharsetUtil.UTF_8));
-                Set<String> keys = data.keySet();
-                Iterator<String> k = keys.iterator();
-                String key;
-                while (k.hasNext()) {
-                    key = k.next();
-                    context.setAttribute(key, data.get(key));
-                }
-                break;
-            case "application/x-www-form-urlencoded":
-                String[] args = content.toString(CharsetUtil.UTF_8).split("&"), pair;
-                for (int i = 0; i < args.length; i++) {
-                    pair = args[i].split("=");
-                    context.setAttribute(pair[0], pair[1]);
-                }
-                break;
-            case "multipart/form-data":
-                // TODO
-                final HttpDataFactory FACTORY = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); // Disk if size exceed
-                List<FileUpload> list = new ArrayList<>();
 
-                HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(FACTORY, msg);
-                InterfaceHttpData file_data;
-                while (decoder.hasNext()) {
-                    file_data = decoder.next();
-                    if (file_data != null && file_data.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
-                        list.add((FileUpload) file_data);
-                    }
-
-                }
-                // TODO
-                context.setAttribute("files", list);
-                break;
-            case "text/plain;charset=UTF-8":
-            default:
-                context.setAttribute("REQUEST_BODY", content.toString(CharsetUtil.UTF_8));
-                break;
-        }
-*/
         this.service(ctx, request, context);
         context.removeAttribute("REQUEST_BODY");
         context.resetParameters();

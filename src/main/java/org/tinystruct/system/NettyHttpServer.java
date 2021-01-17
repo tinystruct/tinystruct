@@ -38,7 +38,7 @@ import org.tinystruct.handler.HttpStaticFileHandler;
 import java.util.logging.Logger;
 
 public class NettyHttpServer extends AbstractApplication implements Bootstrap {
-    static final boolean SSL = System.getProperty("ssl") != null;
+    private static final boolean SSL = System.getProperty("ssl") != null;
     private int port = 8080;
     private static final int MAX_CONTENT_LENGTH = 1024 * 100;
     private ChannelFuture future;
