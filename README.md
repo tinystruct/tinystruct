@@ -82,7 +82,7 @@ Praise to the Lord
 ```
 
 
-Run it in a servlet container
+Run it in a http server based on netty
 --
 ```tcsh
 # bin/dispatcher --start-server --import-applications=org.tinystruct.system.NettyHttpServer
