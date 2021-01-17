@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.tinystruct.application;
 
+import org.tinystruct.data.FileEntity;
+
 import java.util.List;
 
 public interface Context {
@@ -33,4 +35,8 @@ public interface Context {
     String getParameter(String name);
 
     void resetParameters();
+
+    void setFiles(List<FileEntity> list);
+
+    List<FileEntity> getFiles();
 }

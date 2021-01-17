@@ -16,9 +16,11 @@
 package org.tinystruct;
 
 import org.tinystruct.application.Context;
+import org.tinystruct.data.FileEntity;
 import org.tinystruct.system.template.variable.ObjectVariable;
 import org.tinystruct.system.template.variable.Variable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,7 @@ public class ApplicationContext implements Context {
 
     Map<String, Object> attr = new HashMap<String, Object>();
     HashMap<String, List<String>> params = new HashMap<String, List<String>>();
+    List<FileEntity> list = new ArrayList<>();
 
     public void setAttribute(String name, Object value) {
         Variable<Object> variable = new ObjectVariable(name, value);
@@ -68,6 +71,16 @@ public class ApplicationContext implements Context {
     @Override
     public void resetParameters() {
         this.params = new HashMap<>();
+    }
+
+    @Override
+    public void setFiles(List<FileEntity> list) {
+        this.list = list;
+    }
+
+    @Override
+    public List<FileEntity> getFiles() {
+        return this.list;
     }
 
     public void removeAttribute(String name) {
