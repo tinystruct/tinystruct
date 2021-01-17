@@ -21,6 +21,7 @@ import org.tinystruct.application.Action;
 import org.tinystruct.application.Actions;
 import org.tinystruct.application.Context;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,7 +34,8 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.1.5";
+    public static final String VERSION = "0.1.6";
+    private static final boolean WINDOWS = System.getProperty("os.name").startsWith("WIN");
 
     private ApplicationManager() {
     }
@@ -49,27 +51,35 @@ public final class ApplicationManager {
         synchronized (ApplicationManager.class) {
             if (initialized) return;
 
-            String paths = "bin/dispatcher";
+            String paths = "bin" + File.separator + "dispatcher";
             String origin = paths;
             Path path = Paths.get(paths);
             if (!Files.exists(path)) {
                 try {
                     while (!Files.exists(path)) {
-                        paths = paths.substring(0, paths.indexOf("/"));
+                        paths = paths.substring(0, paths.indexOf(File.separator));
                         path = Paths.get(paths);
                         Files.createDirectories(path);
                     }
                     path = Paths.get(origin);
                     Files.createFile(path);
 
-                    String cmd = "#!/bin/sh\n" +
-                            "ROOT=\"`pwd`\"\n" +
-                            "VERSION=\"" + VERSION + "\"\n" +
-                            "cd \"`dirname \"$0\"`\"\n" +
-                            "cd \"../\"\n" +
-                            "cd \"$ROOT\"\n" +
-                            "java -cp \"$ROOT/lib/*:$ROOT/target/classes:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"\n";
-
+                    String cmd;
+                    if (WINDOWS) {
+                        cmd = "@echo off\n" +
+                                "set \"ROOT=%~dp0..\\\"\n" +
+                                "set \"VERSION=\"" + VERSION + "\"\n" +
+                                "set \"classpath=%ROOT%lib\\*:%ROOT%WEB-INF\\lib\\*:%ROOT%WEB-INF\\classes\":%classpath%\n" +
+                                "@java -cp \"%ROOT%lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
+                    } else {
+                        cmd = "#!/bin/sh\n" +
+                                "ROOT=\"`pwd`\"\n" +
+                                "VERSION=\"" + VERSION + "\"\n" +
+                                "cd \"`dirname \"$0\"`\"\n" +
+                                "cd \"../\"\n" +
+                                "cd \"$ROOT\"\n" +
+                                "java -cp \"$ROOT/lib/*:$ROOT/target/classes:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"\n";
+                    }
                     Files.write(path, cmd.getBytes());
                 } catch (IOException e) {
                     throw new ApplicationException(e.getMessage(), e);
@@ -101,8 +111,6 @@ public final class ApplicationManager {
 
                 initialized = true;
             }
-
-
         }
     }
 
