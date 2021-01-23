@@ -46,16 +46,14 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
         Tomcat tomcat = new Tomcat();
         // The port that we should run on can be set into an environment variable
         // Look for that variable and default to 8080 if it isn't there.
-        String webPort = null;
+        Integer webPort;
         if (this.context.getAttribute("--server-port") != null) {
-            webPort = this.context.getAttribute("--server-port")
-                    .toString();
+            webPort = Integer.parseInt(this.context.getAttribute("--server-port").toString());
         }
-        if (webPort == null || webPort.isEmpty()) {
-            webPort = "8080";
-        }
+        else
+            webPort = 8080;
 
-        tomcat.setPort(Integer.valueOf(webPort));
+        tomcat.setPort(webPort);
         try {
             Context ctx = tomcat.addWebapp("/", new File(webappDirLocation).getAbsolutePath());
             logger.info("Configuring app with basedir: "
