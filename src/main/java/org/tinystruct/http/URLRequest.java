@@ -102,13 +102,12 @@ public class URLRequest {
         connection.setRequestMethod(method);
 
         if (headers != null) {
-            Set<String> set = headers.keySet();
-            Iterator<String> i = set.iterator();
-            String key;
+            Set<Map.Entry<String, String>> set = headers.entrySet();
+            Iterator<Map.Entry<String, String>> i = set.iterator();
 
             while (i.hasNext()) {
-                key = i.next();
-                connection.setRequestProperty(key, headers.get(key));
+                Map.Entry<String, String> key = i.next();
+                connection.setRequestProperty(key.getKey(), key.getValue());
             }
         }
 
@@ -141,19 +140,19 @@ public class URLRequest {
     }
 
     private String buildQuery(Map<String, Object> parameters) {
-        Set<String> keySet = parameters.keySet();
-        Iterator<String> iterator = keySet.iterator();
+        Set<Map.Entry<String, Object>> keySet = parameters.entrySet();
+        Iterator<Map.Entry<String, Object>> iterator = keySet.iterator();
         StringBuilder buffer = new StringBuilder();
-        String key;
+        Map.Entry<String, Object> entry;
         boolean first = true;
         while (iterator.hasNext()) {
-            key = iterator.next();
+            entry = iterator.next();
             if (first) {
                 first = false;
             } else
                 buffer.append("&");
 
-            buffer.append(key).append("=").append(parameters.get(key));
+            buffer.append(entry.getKey()).append("=").append(entry.getValue());
         }
 
         return buffer.toString();
