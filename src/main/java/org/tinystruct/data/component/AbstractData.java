@@ -27,26 +27,22 @@ import org.tinystruct.system.util.ClassInfo;
 
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * @author Administrator
+ * @author James
  */
 public abstract class AbstractData implements Data {
 
     private final static Logger logger = Logger.getLogger("AbstractData.class");
     ;
-
     private String classPath;
     private String className;
-
     protected Object Id;
     private String table;
-
-    private Field ready_fields;
-
+    private Field readyFields;
     private Condition condition;
-
     private static Repository repository;
 
     static {
@@ -57,7 +53,6 @@ public abstract class AbstractData implements Data {
         }
     }
 
-
     protected AbstractData() {
         this.className = this.getClass().getSimpleName();
 
@@ -67,13 +62,11 @@ public abstract class AbstractData implements Data {
             logger.severe(e.getMessage());
         }
 
-        this.ready_fields = new Field();
+        this.readyFields = new Field();
         try {
-            this.ready_fields = new Mapping().getMappedField(this);
+            this.readyFields = new Mapping().getMappedField(this);
         } catch (ApplicationException e) {
-
-            logger.severe(e.getMessage());
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
@@ -85,7 +78,6 @@ public abstract class AbstractData implements Data {
             throw new ApplicationRuntimeException("Database Connection Driver has not been set in application.properties!");
 
         Repository repository;
-
         int index = -1, length = Type.values().length;
         for (int i = 0; i < length; i++) {
             if (driver.indexOf(Type.values()[i].name().toLowerCase()) != -1) {
@@ -116,16 +108,16 @@ public abstract class AbstractData implements Data {
     public Object setId(Object id) {
         this.Id = id;
 
-        if (this.ready_fields.containsKey("Id")) {
-            this.ready_fields.get("Id").set("value", this.Id);
+        if (this.readyFields.containsKey("Id")) {
+            this.readyFields.get("Id").set("value", this.Id);
         }
 
         return this.Id;
     }
 
     protected Object setField(String fieldName, Object fieldValue) {
-        if (this.ready_fields.containsKey(fieldName)) {
-            this.ready_fields.get(fieldName).set("value", fieldValue);
+        if (this.readyFields.containsKey(fieldName)) {
+            this.readyFields.get(fieldName).set("value", fieldValue);
 
             return fieldValue;
         }
@@ -177,11 +169,11 @@ public abstract class AbstractData implements Data {
     }
 
     public boolean append() throws ApplicationException {
-        return repository.append(this.ready_fields, this.table);
+        return repository.append(this.readyFields, this.table);
     }
 
     public boolean update() throws ApplicationException {
-        return repository.update(ready_fields, this.table);
+        return repository.update(readyFields, this.table);
     }
 
     public boolean delete() throws ApplicationException {
