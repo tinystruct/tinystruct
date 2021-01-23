@@ -17,14 +17,14 @@ package org.tinystruct;
 
 import org.tinystruct.application.*;
 import org.tinystruct.data.component.Builder;
-import org.tinystruct.system.template.variable.DataType;
-import org.tinystruct.system.template.variable.StringVariable;
-import org.tinystruct.system.template.variable.Variable;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Resource;
 import org.tinystruct.system.Settings;
 import org.tinystruct.system.template.DefaultTemplate;
 import org.tinystruct.system.template.PlainText;
+import org.tinystruct.system.template.variable.DataType;
+import org.tinystruct.system.template.variable.StringVariable;
+import org.tinystruct.system.template.variable.Variable;
 import org.w3c.dom.Document;
 
 import java.io.File;
@@ -158,8 +158,7 @@ public abstract class AbstractApplication implements Application {
                     return action.execute(args);
                 }
             }
-            throw new ApplicationException("Action " + action
-                    + " path does not registered.");
+            throw new ApplicationException("Action [" + path + "] has not been registered.");
         }
         if (context != null) {
             context.setAttribute(REQUEST_ACTION, path);
