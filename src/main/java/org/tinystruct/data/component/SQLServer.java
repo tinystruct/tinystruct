@@ -138,7 +138,13 @@ public class SQLServer implements Repository {
 
     public boolean update(Field ready_fields, String table)
             throws ApplicationException {
-        String Parameters = "", SQL = "", KEYS = "", VALUES = "", Expressions = "", dot = ",", currentProperty;
+        StringBuilder parameters = new StringBuilder();
+        StringBuilder values = new StringBuilder();
+        StringBuilder expressions = new StringBuilder();
+
+        StringBuilder sql = new StringBuilder(), keys = new StringBuilder();
+        final String dot = ",";
+        String currentProperty;
         FieldInfo currentField;
 
         boolean edited = false;
@@ -149,9 +155,9 @@ public class SQLServer implements Repository {
             currentField = ready_fields.get(currentProperty);
 
             if (currentField.autoIncrement()) {
-                Parameters += "@" + currentField.getName() + " "
-                        + currentField.get("type") + dot;
-                VALUES += currentField.value() + dot;
+                parameters.append("@").append(currentField.getName()).append(" ")
+                        .append(currentField.get("type")).append(dot);
+                values.append(currentField.value()).append(dot);
 
                 continue;
             }
@@ -161,57 +167,59 @@ public class SQLServer implements Repository {
                     || currentField.getType() == FieldType.BIT
                     || currentField.getType() == FieldType.DATE
                     || currentField.getType() == FieldType.DATETIME) {
-                Parameters += "@" + currentField.getName() + " "
-                        + currentField.get("type") + dot;
+                parameters.append("@").append(currentField.getName()).append(" ")
+                        .append(currentField.get("type")).append(dot);
                 if (currentField.getType() == FieldType.TEXT) {
-                    VALUES += "'"
-                            + currentField.stringValue().replaceAll("'", "''")
-                            + "'" + dot;
+                    values.append("'")
+                            .append(currentField.stringValue().replaceAll("'", "''"))
+                            .append("'").append(dot);
                 } else if (currentField.getType() == FieldType.DATE
                         || currentField.getType() == FieldType.DATETIME) {
                     SimpleDateFormat format = new SimpleDateFormat(
                             "yyyy-MM-dd HH:mm:ss");
-                    VALUES += "'" + format.format(currentField.value()) + "'"
-                            + dot;
+                    values.append("'").append(format.format(currentField.value())).append("'")
+                            .append(dot);
                 } else if (currentField.getType() == FieldType.BIT)
-                    VALUES += (currentField.value().toString().equals("true") ? 1
-                            : 0)
-                            + dot;
+                    values.append(currentField.value().toString().equals("true") ? 1
+                            : 0).append(dot);
+
                 else
-                    VALUES += currentField.value() + dot;
+                    values.append(currentField.value()).append(dot);
             } else {
-                Parameters += "@" + currentField.getName() + " "
-                        + currentField.get("type") + "("
-                        + currentField.getLength() + ")" + dot;
-                VALUES += "'"
-                        + currentField.stringValue().replaceAll("'", "''")
-                        + "'" + dot;
+                parameters.append("@").append(currentField.getName()).append(" ")
+                        .append(currentField.get("type")).append("(")
+                        .append(currentField.getLength())
+                        .append(")").append(dot);
+                values.append("'")
+                        .append(currentField.stringValue().replaceAll("'", "''"))
+                        .append("'").append(dot);
             }
 
-            KEYS = "@" + currentField.getName();
-            Expressions += "[" + currentField.getColumnName() + "]=" + KEYS
-                    + dot;
+            keys.append("@").append(currentField.getName());
+            expressions.append("[") .append(currentField.getColumnName()) .append("]=") .append(keys)
+                    .append(dot);
         }
 
-        VALUES = VALUES.substring(0, VALUES.length() - 1);
-        Expressions = Expressions.substring(0, Expressions.length() - 1);
-        Parameters = Parameters.substring(0, Parameters.length() - 1);
-
+        values.setLength(values.length() - 1);
+        expressions.setLength(expressions.length() - 1);
+        parameters.setLength(parameters.length() - 1);
         table = table.replaceAll("\\[", "").replaceAll("\\]", "");
-        SQL = "if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].["
-                + table
-                + "_EDIT]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)";
-        SQL += "BEGIN exec('CREATE PROCEDURE [dbo].[" + table + "_EDIT] "
-                + Parameters + " AS UPDATE [" + table + "] SET " + Expressions
-                + " WHERE id=@Id')";
-        SQL += " {call " + table + "_EDIT(" + VALUES + ")} END";
-        SQL += " else {call " + table + "_EDIT(" + VALUES + ")}";
+
+        sql.append("if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[")
+                .append(table)
+                .append("_EDIT]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)");
+        sql.append("BEGIN exec('CREATE PROCEDURE [dbo].[" + table + "_EDIT] ")
+                .append(parameters)
+                .append(" AS UPDATE [" + table + "] SET " + expressions)
+                .append(" WHERE id=@Id')");
+        sql.append(" {call " + table + "_EDIT(" + values + ")} END");
+        sql.append(" else {call " + table + "_EDIT(" + values + ")}");
 
         DatabaseOperator operator = new DatabaseOperator();
         operator.createStatement(false);
 
-        logger.log(Level.INFO, SQL);
-        if (operator.update(SQL) > 0) {
+        logger.log(Level.INFO, sql.toString());
+        if (operator.update(sql.toString()) > 0) {
             edited = true;
         }
         operator.close();
