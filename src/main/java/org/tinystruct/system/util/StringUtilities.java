@@ -378,11 +378,11 @@ public class StringUtilities implements java.io.Serializable {
     public static String implode(String separator, Iterable<String> iterator) {
 
         Iterator<String> iter = iterator.iterator();
-        String value = iter.hasNext() ? iter.next() : "";
+        StringBuilder value = new StringBuilder(iter.hasNext() ? iter.next() : "");
         while (iter.hasNext())
-            value += separator + iter.next();
+            value.append(separator).append(iter.next());
 
-        return value;
+        return value.toString();
     }
 
     public String rtrim(char c) {
