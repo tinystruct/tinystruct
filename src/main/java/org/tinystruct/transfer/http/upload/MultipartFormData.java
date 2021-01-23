@@ -123,7 +123,7 @@ public class MultipartFormData {
 
             //read data into String form, then convert to bytes
             //for both normal text and file
-            String textData = "";
+            StringBuilder textData = new StringBuilder();
             String line;
 
             //ignore next line (whitespace)
@@ -133,25 +133,27 @@ public class MultipartFormData {
             line = readLine();
 
             while ((line != null) && (!line.startsWith(boundary))) {
-                textData += line;
+                textData.append(line);
                 line = readLine();
             }
 
+            String text = textData.toString();
             //remove the "\r\n" if it's there
-            if (textData.endsWith("\r\n")) {
-                textData = textData.substring(0, textData.length() - 2);
+            if (text.endsWith("\r\n")) {
+                textData.setLength(textData.length() - 2);
             }
 
             //remove the "\n" if it's there
-            if (textData.endsWith("\n")) {
-                textData = textData.substring(0, textData.length() - 1);
+            if (text.endsWith("\n")) {
+                textData.setLength(textData.length() - 1);
             }
 
+            text = textData.toString();
             //convert data into byte form for ContentDisposition
             try {
-                data = textData.getBytes("ISO-8859-1");
+                data = text.getBytes("ISO-8859-1");
             } catch (UnsupportedEncodingException uee) {
-                data = textData.getBytes();
+                data = text.getBytes();
             }
 
             ContentDisposition element = new ContentDisposition(name,
