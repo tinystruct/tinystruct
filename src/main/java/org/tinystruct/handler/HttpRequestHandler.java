@@ -23,12 +23,7 @@ import static io.netty.buffer.Unpooled.copiedBuffer;
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private final Configuration configuration;
-    private final String charsetName;
     private Context context;
-    private HttpPostRequestDecoder decoder;
-    private static final HttpDataFactory factory =
-            new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); // Disk if size exceed
-
     private HttpRequest request;
 
     static {
@@ -43,7 +38,6 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
     public HttpRequestHandler(Configuration<String> configuration) {
         this.configuration = configuration;
-        this.charsetName = (this.configuration.get("default.file.encoding")).toString();
     }
 
     public HttpRequestHandler(Configuration<String> configuration, Context context) {
@@ -108,7 +102,6 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             }
         }
 
-
         this.service(ctx, request, context);
         context.removeAttribute("REQUEST_BODY");
         context.resetParameters();
@@ -117,11 +110,11 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     private QueryStringDecoder parseQuery(String uri, boolean hasPath) {
         QueryStringDecoder decoder = new QueryStringDecoder(uri, hasPath);
         Map<String, List<String>> parameters = decoder.parameters();
-        Iterator<String> iterator = parameters.keySet().iterator();
-        String key;
+        Iterator<Map.Entry<String, List<String>>> iterator = parameters.entrySet().iterator();
+        Map.Entry<String, List<String>> element;
         while (iterator.hasNext()) {
-            key = iterator.next();
-            context.setParameter(key, parameters.get(key));
+            element = iterator.next();
+            context.setParameter(element.getKey(), element.getValue());
         }
 
         return decoder;
