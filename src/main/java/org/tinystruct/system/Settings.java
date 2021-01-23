@@ -32,8 +32,8 @@ public class Settings implements Serializable, Configuration<String> {
 
     private static final long serialVersionUID = 8348657988449703373L;
     private static final Properties properties = new Properties();
-    private static String file = "/application.properties";
-    private static InputStream in;
+    private String fileName = "/application.properties";
+    private InputStream in;
     private boolean overwrite = true;
 
     public Settings() {
@@ -42,13 +42,13 @@ public class Settings implements Serializable, Configuration<String> {
 
     public Settings(String fileName) throws ApplicationRuntimeException {
 
-        if (!file.equalsIgnoreCase(fileName)) {
-            file = fileName;
+        if (!this.fileName.equalsIgnoreCase(fileName)) {
+            this.fileName = fileName;
             in = null;
         }
 
         if (in == null) {
-            in = getClass().getResourceAsStream(file);
+            in = getClass().getResourceAsStream(this.fileName);
 
             if (in != null)
                 try {
@@ -72,9 +72,9 @@ public class Settings implements Serializable, Configuration<String> {
             }
             try {
                 byte[] bytes = value.getBytes("ISO-8859-1");
-                return new String(bytes);
+                return new String(bytes, "utf-8");
             } catch (Exception ex) {
-                System.err.print("The config (" + file + ") may be not found!");
+                System.err.print("The config (" + fileName + ") may be not found!");
             }
         }
 
@@ -101,9 +101,9 @@ public class Settings implements Serializable, Configuration<String> {
     public void update() throws IOException {
         if (!this.overwrite) return;
 
-        String comments = "Struct Configuration";
+        String comments = "Tinystruct Configuration";
         OutputStream out = new FileOutputStream(System.getProperty("user.dir")
-                + File.separatorChar + file);
+                + File.separatorChar + fileName);
         properties.store(out, comments);
     }
 
