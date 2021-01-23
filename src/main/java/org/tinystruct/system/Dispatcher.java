@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Dispatcher extends AbstractApplication {
@@ -59,7 +60,7 @@ public class Dispatcher extends AbstractApplication {
                 config.set("system.directory", System.getProperty("user.dir"));
             }
 
-            String default_import_applications = config.get("default.import.applications");
+            StringBuilder default_import_applications = new StringBuilder(config.get("default.import.applications"));
             String[] __arg;
             for (String arg : args) {
                 if (arg.startsWith("--") && arg.indexOf('=') >= 3) {
@@ -67,21 +68,21 @@ public class Dispatcher extends AbstractApplication {
 
                     if ("--import-applications".equalsIgnoreCase(__arg[0])) {
                         if (default_import_applications.length() >= 1)
-                            default_import_applications += ";" + __arg[1];
+                            default_import_applications.append(";").append(__arg[1]);
                         else
-                            default_import_applications += __arg[1];
+                            default_import_applications.append(__arg[1]);
 
                         break;
                     }
                 }
             }
 
-            config.set("default.import.applications", default_import_applications);
+            config.set("default.import.applications", default_import_applications.toString());
 
             try {
                 ApplicationManager.init(config);
             } catch (ApplicationException e) {
-                e.printStackTrace();
+                logger.log(Level.SEVERE, e.getMessage(), e);
             }
 
             Context context = new ApplicationContext();
@@ -114,7 +115,7 @@ public class Dispatcher extends AbstractApplication {
                         }
                     }
                 } catch (ApplicationException e) {
-                    System.out.println(e.getRootCause().toString());
+                    logger.log(Level.SEVERE, e.getMessage(), e);
                 }
             }
 
@@ -127,7 +128,7 @@ public class Dispatcher extends AbstractApplication {
                         }
                     }
                 } catch (ApplicationException e) {
-                    e.printStackTrace();
+                    logger.log(Level.SEVERE, e.getMessage(), e);
                 }
             }
         } else {
@@ -144,13 +145,15 @@ public class Dispatcher extends AbstractApplication {
         try {
             app = (Application) Class.forName(appName).newInstance();
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         } catch (InstantiationException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
+        if(null != ApplicationManager.getConfiguration())
         app.setConfiguration(ApplicationManager.getConfiguration());
+
         ApplicationManager.install(app);
 
         System.out.println("Completed!");
@@ -160,8 +163,8 @@ public class Dispatcher extends AbstractApplication {
         System.out.println("Updating...");
         try {
             this.download(
-                    new URL("https://raw.githubusercontent.com/tinystruct/tinystruct2.0/master/WEB-INF/lib/struct-" + version() + ".jar"),
-                    "/WEB-INF/lib/struct-" + version() + ".jar");
+                    new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + version() + "/tinystruct-" + version() + "-jar-with-dependencies.jar"),
+                    ".");
         } catch (ApplicationException e) {
             return e.toString();
         } catch (MalformedURLException e) {
@@ -297,7 +300,7 @@ public class Dispatcher extends AbstractApplication {
         return ApplicationManager.VERSION;
     }
 
-    public class FORE_COLOR {
+    private static class FORE_COLOR {
         public static final int black = 30;
         public static final int red = 31;
         public static final int green = 32;
@@ -308,7 +311,7 @@ public class Dispatcher extends AbstractApplication {
         public static final int white = 37;
     }
 
-    public class BACKGROUND_COLOR {
+    private static class BACKGROUND_COLOR {
         public static final int black = 40;
         public static final int red = 41;
         public static final int green = 42;
