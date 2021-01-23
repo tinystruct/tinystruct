@@ -134,11 +134,11 @@ public final class ApplicationManager {
             action = (Action) list[i++];
 
             if (action.getApplicationName().equalsIgnoreCase(application.getName())) {
-                actions.remove(action.getPath());
+                return actions.remove(action.getPath());
             }
         }
 
-        return true;
+        return false;
     }
 
     ;

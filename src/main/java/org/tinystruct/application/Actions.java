@@ -110,8 +110,8 @@ public class Actions {
         return null;
     }
 
-    public void remove(final String path) {
-        map.remove(path);
+    public boolean remove(final String path) {
+        return null != map.remove(path);
     }
 
     public Collection<Action> list() {
