@@ -50,13 +50,12 @@ public class Reforward {
         }
     }
 
-    public void setDefault(String url) {
+    public void setDefault(String url) throws ApplicationException {
         if (url.indexOf("%3A") != -1)
             try {
                 this.fromURL = URLDecoder.decode(url, "utf8");
             } catch (UnsupportedEncodingException e) {
-
-                new ApplicationException(e.getMessage(), e);
+                throw new ApplicationException(e.getMessage(), e);
             }
         else this.fromURL = url;
     }
@@ -67,34 +66,28 @@ public class Reforward {
         }
     }
 
-    public void forward() {
+    public void forward() throws ApplicationException {
         try {
             response.sendRedirect(this.fromURL);
-            return;
         } catch (IOException io) {
-            new ApplicationException(io.getMessage(), io);
+            throw new ApplicationException(io.getMessage(), io);
         }
     }
 
-    public String getCurrentURL() {
+    public String getCurrentURL() throws ApplicationException {
         try {
             return URLEncoder.encode(this.currentURL, "utf8");
         } catch (UnsupportedEncodingException e) {
-
-            e.printStackTrace();
+            throw new ApplicationException(e.getMessage(), e);
         }
-        return this.currentURL;
     }
 
-    public String getFromURL() {
+    public String getFromURL() throws ApplicationException {
         try {
             return URLEncoder.encode(this.fromURL, "utf8");
         } catch (UnsupportedEncodingException e) {
-
-            new ApplicationException(e.getMessage(), e);
+            throw new ApplicationException(e.getMessage(), e);
         }
-
-        return this.fromURL;
     }
 
 }
