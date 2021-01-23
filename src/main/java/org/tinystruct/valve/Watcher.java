@@ -259,8 +259,8 @@ public class Watcher implements Runnable {
                             lockFile.writeLong(1L);
                         }
 
-                        this.locks.put(new String(id), lock);
-                        this.listener.onCreate(new String(id));
+                        this.locks.put(id, lock);
+                        this.listener.onCreate(id);
 
                         Watcher.class.notifyAll();
                     }
