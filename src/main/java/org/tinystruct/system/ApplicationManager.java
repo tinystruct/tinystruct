@@ -70,7 +70,7 @@ public final class ApplicationManager {
                                 "set \"ROOT=%~dp0..\\\"\n" +
                                 "set \"VERSION=\"" + VERSION + "\"\n" +
                                 "set \"classpath=%ROOT%lib\\*:%ROOT%WEB-INF\\lib\\*:%ROOT%WEB-INF\\classes\":%classpath%\n" +
-                                "@java -cp \"%ROOT%lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
+                                "@java -cp \"%ROOT%lib\\*;%ROOT%target\\classes:%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
                     } else {
                         cmd = "#!/bin/sh\n" +
                                 "ROOT=\"`pwd`\"\n" +
