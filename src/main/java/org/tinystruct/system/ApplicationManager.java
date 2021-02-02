@@ -69,8 +69,8 @@ public final class ApplicationManager {
                         cmd = "@echo off\n" +
                                 "set \"ROOT=%~dp0..\\\"\n" +
                                 "set \"VERSION=\"" + VERSION + "\"\n" +
-                                "set \"classpath=%ROOT%lib\\*:%ROOT%WEB-INF\\lib\\*:%ROOT%WEB-INF\\classes\":%classpath%\n" +
-                                "@java -cp \"%ROOT%lib\\*;%ROOT%target\\classes:%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
+                                "set \"classpath=%ROOT%target\\classes:%ROOT%lib\\*:%ROOT%WEB-INF\\lib\\*:%ROOT%WEB-INF\\classes\":%classpath%\n" +
+                                "@java -cp \"%ROOT%target\\classes;%ROOT%lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
                     } else {
                         cmd = "#!/bin/sh\n" +
                                 "ROOT=\"`pwd`\"\n" +
@@ -78,7 +78,7 @@ public final class ApplicationManager {
                                 "cd \"`dirname \"$0\"`\"\n" +
                                 "cd \"../\"\n" +
                                 "cd \"$ROOT\"\n" +
-                                "java -cp \"$ROOT/lib/*:$ROOT/target/classes:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"\n";
+                                "java -cp \"$ROOT/target/classes:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"\n";
                     }
                     Files.write(path, cmd.getBytes());
                 } catch (IOException e) {
