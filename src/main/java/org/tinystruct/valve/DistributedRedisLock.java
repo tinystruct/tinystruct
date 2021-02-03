@@ -5,6 +5,7 @@ import io.lettuce.core.RedisURI;
 import io.lettuce.core.ScriptOutputType;
 import io.lettuce.core.api.StatefulRedisConnection;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.system.Settings;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -20,6 +21,11 @@ import java.util.logging.Logger;
 
 import static java.nio.channels.FileChannel.open;
 
+/**
+ * Distributed lock depends on Redis.
+ *
+ * @author James Zhou
+ */
 public class DistributedRedisLock implements Lock {
     private static final Logger logger = Logger.getLogger(DistributedRedisLock.class.getName());
     private final RedisURI uri;
@@ -28,6 +34,39 @@ public class DistributedRedisLock implements Lock {
     private String value;
     private static String lockScript;
     private static String unlockScript;
+
+    public DistributedRedisLock() {
+        this(UUID.randomUUID().toString());
+    }
+
+    public DistributedRedisLock(String id) {
+        this.uri = RedisURI.Builder.redis("127.0.0.1", 6379)
+                .withDatabase(0)
+                .withTimeout(Duration.ofSeconds(60))
+                .build();
+        this.redisClient = RedisClient.create(this.uri).connect();
+        this.id = id;
+        this.value = "1";
+    }
+
+    public DistributedRedisLock(Settings settings) {
+        this.uri = RedisURI.Builder.redis(settings.get("redis.host"), Integer.parseInt(settings.get("redis.port")))
+                .withDatabase(1)
+                .withTimeout(Duration.ofSeconds(60)).build();
+
+        if (settings.get("redis.password")!=null)
+                this.uri.setPassword(settings.get("redis.password"));
+
+        this.redisClient = RedisClient.create(this.uri).connect();
+        this.id = UUID.randomUUID().toString();
+        this.value = "1";
+    }
+
+    public DistributedRedisLock(Settings settings, String id) {
+        this(settings);
+        this.id = id;
+    }
+
 
     static {
         ByteBuffer buff;
@@ -48,28 +87,6 @@ public class DistributedRedisLock implements Lock {
         } catch (IOException | URISyntaxException e) {
             logger.log(Level.SEVERE, "Load unlock.lua error.", e);
         }
-    }
-
-    public DistributedRedisLock() {
-        this.uri = RedisURI.Builder.redis("localhost", 6379)
-//                .withPassword("password")
-                .withDatabase(1)
-                .withTimeout(Duration.ofSeconds(60))
-                .build();
-        this.redisClient = RedisClient.create(this.uri).connect();
-        this.id = UUID.randomUUID().toString();
-        this.value = "1";
-    }
-
-    public DistributedRedisLock(String id) {
-        this.uri = RedisURI.Builder.redis("localhost", 6379)
-//                .withPassword("password")
-                .withDatabase(1)
-                .withTimeout(Duration.ofSeconds(60))
-                .build();
-        this.redisClient = RedisClient.create(this.uri).connect();
-        this.id = id;
-        this.value = "1";
     }
 
     @Override
@@ -103,46 +120,4 @@ public class DistributedRedisLock implements Lock {
         return this.id;
     }
 
-    private volatile static int tickets = 100;
-
-    static class ticket implements Runnable {
-        Lock lock = Watcher.getInstance().acquire(true);
-
-        //        Lock lock = new DistributedRedisLock("ticket");
-        @Override
-        public void run() {
-            while (tickets > 0) {
-                try {
-                    if (lock != null) {
-                        logger.info("Lock Id:" + lock.id());
-                        lock.lock();
-                    }
-                    if (tickets > 0) {
-                        try {
-                            Thread.sleep(1);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--));
-                    }
-                } catch (ApplicationException e) {
-                    logger.log(Level.SEVERE, "Execute error.", e);
-                } finally {
-                    try {
-                        if (lock != null) {
-                            lock.unlock();
-                        }
-                    } catch (ApplicationException e) {
-                        logger.log(Level.SEVERE, "Unlock error.", e);
-                    }
-                }
-            }
-        }
-    }
-
-    public static void main(String[] args) {
-        for (int i = 0; i < 20; i++) {
-            new Thread(new ticket(), "Window #" + i).start();
-        }
-    }
 }
