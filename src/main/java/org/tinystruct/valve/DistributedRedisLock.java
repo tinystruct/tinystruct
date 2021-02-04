@@ -5,21 +5,19 @@ import io.lettuce.core.RedisURI;
 import io.lettuce.core.ScriptOutputType;
 import io.lettuce.core.api.StatefulRedisConnection;
 import org.tinystruct.ApplicationException;
-import org.tinystruct.system.Settings;
+import org.tinystruct.system.Configuration;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static java.nio.channels.FileChannel.open;
 
 /**
  * Distributed lock depends on Redis.
@@ -49,7 +47,7 @@ public class DistributedRedisLock implements Lock {
         this.value = "1";
     }
 
-    public DistributedRedisLock(Settings settings) {
+    public DistributedRedisLock(Configuration<String> settings) {
         this.uri = RedisURI.Builder.redis(settings.get("redis.host"), Integer.parseInt(settings.get("redis.port")))
                 .withDatabase(1)
                 .withTimeout(Duration.ofSeconds(60)).build();
@@ -62,29 +60,26 @@ public class DistributedRedisLock implements Lock {
         this.value = "1";
     }
 
-    public DistributedRedisLock(Settings settings, String id) {
+    public DistributedRedisLock(Configuration<String> settings, String id) {
         this(settings);
         this.id = id;
     }
 
-
     static {
         ByteBuffer buff;
-        try (FileChannel channel = open(
-                Paths.get(DistributedRedisLock.class.getClassLoader().getResource("lock.lua").toURI()
-                ))) {
+        try (InputStream stream = DistributedRedisLock.class.getResource("/lock.lua").openStream(); ReadableByteChannel channel = Channels.newChannel(stream);){
             buff = ByteBuffer.allocate(800);
             channel.read(buff);
             lockScript = new String(buff.array(), StandardCharsets.UTF_8).trim();
-        } catch (IOException | URISyntaxException e) {
+        } catch (IOException e) {
             logger.log(Level.SEVERE, "Load lock.lua error.", e);
         }
 
-        try (FileChannel channel = open(Paths.get(DistributedRedisLock.class.getClassLoader().getResource("unlock.lua").toURI()))) {
+        try (InputStream stream = DistributedRedisLock.class.getResource("/unlock.lua").openStream(); ReadableByteChannel channel = Channels.newChannel(stream);){
             buff = ByteBuffer.allocate(1024);
             channel.read(buff);
             unlockScript = new String(buff.array(), StandardCharsets.UTF_8).trim();
-        } catch (IOException | URISyntaxException e) {
+        } catch (IOException e) {
             logger.log(Level.SEVERE, "Load unlock.lua error.", e);
         }
     }
