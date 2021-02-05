@@ -34,7 +34,7 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.1.8";
+    public static final String VERSION = "0.1.9";
     private static final boolean WINDOWS = System.getProperty("os.name").startsWith("WIN");
 
     private ApplicationManager() {
@@ -120,8 +120,6 @@ public final class ApplicationManager {
         }
     }
 
-    ;
-
     public static boolean uninstall(Application application) {
         applications.remove(application.getName());
 
@@ -140,8 +138,6 @@ public final class ApplicationManager {
 
         return false;
     }
-
-    ;
 
     public static Application get(String clsid) {
         return applications.get(clsid);
