@@ -6,18 +6,52 @@ import org.tinystruct.valve.Watcher.EventListener;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
+/**
+ * Distributed lock depends on File system.
+ * Usage:
+ * <code>
+ *     Lock lock = Watcher.getInstance().acquire();
+ *     ...
+ *     try {
+ *         if (lock != null) {
+ *             lock.lock();
+ *
+ *             // TODO
+ *             logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
+ *         }
+ *     } catch (ApplicationException e) {
+ *         e.printStackTrace();
+ *     } finally {
+ *         if (lock != null) {
+ *             try {
+ *                 lock.unlock();
+ *             } catch (ApplicationException e) {
+ *                 e.printStackTrace();
+ *             }
+ *         }
+ *     }
+ * </code>
+ *
+ * @author James Zhou
+ */
 public class DistributedLock implements Lock {
+    private static final Logger logger = Logger.getLogger(Watcher.class.getName());
 
     private String id;
-    private Watcher watcher;
+    private final Watcher watcher = Watcher.getInstance();
 
     public DistributedLock() {
         this.id = UUID.randomUUID().toString();
+        // Set event listener.
+        this.watcher.addListener(new LockEventListener(this));
     }
 
-    public DistributedLock(byte[] id) {
-        this.id = new String(id);
+    public DistributedLock(byte[] idb) {
+        this.id = new LockKey(idb).value();
+        // Set event listener.
+        this.watcher.addListener(new LockEventListener(this));
     }
 
     @Override
@@ -34,48 +68,27 @@ public class DistributedLock implements Lock {
 
     @Override
     public boolean tryLock(long timeout, TimeUnit unit) throws ApplicationException {
-        watcher = Watcher.getInstance();
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        watcher.setListener(new EventListener() {
-            @Override
-            public void onUpdate() {
-                // TODO Auto-generated method stub
-
-            }
-
-            @Override
-            public void onDelete(String lockId) {
-                // TODO Auto-generated method stub
-                latch.countDown();
-            }
-
-            @Override
-            public void onCreate(String lockId) {
-                // TODO Auto-generated method stub
-
-            }
-        });
 
         // If the lock is existing, then wait for it to be released.
         if (watcher.watch(this)) {
             try {
                 if (timeout > 0)
-                    latch.await(timeout, unit);
+                    watcher.waitFor(this.id, timeout, unit);
                 else
-                    latch.await();
+                    watcher.waitFor(this.id);
+
             } catch (InterruptedException e) {
                 throw new ApplicationException(e.getMessage(), e.getCause());
             }
         }
-
+        else
+        // If get this step, that means the lock has not been registered.
         watcher.register(this);
         return true;
     }
 
     @Override
     public void unlock() throws ApplicationException {
-        watcher = Watcher.getInstance();
         if (watcher.watch(this)) {
             watcher.unregister(this);
         }
@@ -111,4 +124,51 @@ public class DistributedLock implements Lock {
         return result;
     }
 
+}
+
+class LockEventListener implements EventListener {
+    private static final Logger logger = Logger.getLogger(Watcher.class.getName());
+    private final Lock lock;
+    private CountDownLatch latch;
+
+    public LockEventListener(Lock lock) {
+        this.lock = lock;
+    }
+
+    @Override
+    public void onCreate(String lockId) {
+        if(lockId.equalsIgnoreCase(lock.id())) {
+            this.latch = new CountDownLatch(1);
+            logger.info("Created " + lockId);
+        }
+    }
+
+    @Override
+    public void onUpdate() {
+
+    }
+
+    @Override
+    public void onDelete(String lockId) {
+        // TODO Auto-generated method stub
+        if(lockId.equalsIgnoreCase(lock.id())) {
+            logger.info("Deleted " + lockId);
+            latch.countDown();
+        }
+    }
+
+    @Override
+    public String id() {
+        return lock.id();
+    }
+
+    @Override
+    public void waitFor() throws InterruptedException {
+        latch.await();
+    }
+
+    @Override
+    public void waitFor(long timeout, TimeUnit unit) throws InterruptedException {
+        latch.await(timeout, unit);
+    }
 }
