@@ -12,26 +12,26 @@ import java.util.logging.Logger;
  * Distributed lock depends on File system.
  * Usage:
  * <code>
- *     Lock lock = Watcher.getInstance().acquire();
- *     ...
- *     try {
- *         if (lock != null) {
- *             lock.lock();
+ * Lock lock = Watcher.getInstance().acquire();
+ * ...
+ * try {
+ *  if (lock != null) {
+ *  lock.lock();
  *
- *             // TODO
- *             logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
- *         }
- *     } catch (ApplicationException e) {
- *         e.printStackTrace();
- *     } finally {
- *         if (lock != null) {
- *             try {
- *                 lock.unlock();
- *             } catch (ApplicationException e) {
- *                 e.printStackTrace();
- *             }
- *         }
- *     }
+ * // TODO
+ *  logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
+ *  }
+ * } catch (ApplicationException e) {
+ * e.printStackTrace();
+ * } finally {
+ *  if (lock != null) {
+ *      try {
+ *        lock.unlock();
+ *      } catch (ApplicationException e) {
+ *          e.printStackTrace();
+ *      }
+ *  }
+ * }
  * </code>
  *
  * @author James Zhou
@@ -56,6 +56,8 @@ public class DistributedLock implements Lock {
 
     @Override
     public void lock() throws ApplicationException {
+        // If try lock successfully, then the lock does exist, then don't need to lock.
+        // And continue to work on the next steps.
         if (!tryLock()) {
             lock();
         }
@@ -76,14 +78,15 @@ public class DistributedLock implements Lock {
                     watcher.waitFor(this.id, timeout, unit);
                 else
                     watcher.waitFor(this.id);
-
             } catch (InterruptedException e) {
                 throw new ApplicationException(e.getMessage(), e.getCause());
             }
+        } else {
+            // Register the lock.
+            this.watcher.register(this);
         }
-        else
-        // If get this step, that means the lock has not been registered.
-        watcher.register(this);
+
+        // If get this step, that means the lock has not been registered. and the thread can work on the next steps.
         return true;
     }
 
@@ -126,6 +129,11 @@ public class DistributedLock implements Lock {
 
 }
 
+/**
+ * EventLister implementation for Lock.
+ *
+ * @author James Zhou
+ */
 class LockEventListener implements EventListener {
     private static final Logger logger = Logger.getLogger(Watcher.class.getName());
     private final Lock lock;
@@ -133,12 +141,12 @@ class LockEventListener implements EventListener {
 
     public LockEventListener(Lock lock) {
         this.lock = lock;
+        this.latch = new CountDownLatch(1);
     }
 
     @Override
     public void onCreate(String lockId) {
-        if(lockId.equalsIgnoreCase(lock.id())) {
-            this.latch = new CountDownLatch(1);
+        if (lockId.equalsIgnoreCase(lock.id())) {
             logger.info("Created " + lockId);
         }
     }
@@ -150,8 +158,7 @@ class LockEventListener implements EventListener {
 
     @Override
     public void onDelete(String lockId) {
-        // TODO Auto-generated method stub
-        if(lockId.equalsIgnoreCase(lock.id())) {
+        if (lockId.equalsIgnoreCase(lock.id())) {
             logger.info("Deleted " + lockId);
             latch.countDown();
         }
@@ -168,7 +175,7 @@ class LockEventListener implements EventListener {
     }
 
     @Override
-    public void waitFor(long timeout, TimeUnit unit) throws InterruptedException {
-        latch.await(timeout, unit);
+    public boolean waitFor(long timeout, TimeUnit unit) throws InterruptedException {
+        return latch.await(timeout, unit);
     }
 }

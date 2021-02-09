@@ -69,15 +69,6 @@ public class Watcher implements Runnable {
     }
 
     /**
-     * Return locks.
-     *
-     * @return locks
-     */
-    public ConcurrentHashMap<String, Lock> getLocks() {
-        return this.locks;
-    }
-
-    /**
      * Read the .lock file and transform the information to the hash map in memory.
      */
     @Override
@@ -102,6 +93,7 @@ public class Watcher implements Runnable {
                                 lockFile.seek(0);
 
                                 String lockId;
+                                EventListener listener;
                                 // Assume all of the locks are in use.
                                 int availableLockSize = this.size;
                                 // Read all locks into the map.
@@ -110,17 +102,15 @@ public class Watcher implements Runnable {
                                     // Read lock id.
                                     lockFile.read(id);
                                     lockId = new String(id);
-
+                                    listener = this.listeners.get(lockId);
                                     // Read lock status.
                                     // If the lock is expired, then it should not be in the locks map
                                     if (lockFile.readLong() == 0L) {
                                         if (this.locks.containsKey(lockId)) {
                                             this.locks.remove(lockId);
-
-                                            if (this.listeners.get(lockId) != null)
-                                                this.listeners.get(lockId).onDelete(lockId);
+                                            if (listener != null)
+                                                listener.onDelete(lockId);
                                         }
-
                                         // If all locks are not available, then remove them all and set the lockFile to be empty.
                                         if (--availableLockSize == 0) {
                                             if (!this.locks.isEmpty())
@@ -135,12 +125,11 @@ public class Watcher implements Runnable {
                                         if (!this.locks.containsKey(lockId)) {
                                             // Add a new lock with id.
                                             this.locks.put(lockId, new DistributedLock(id));
-                                            if (this.listeners.get(lockId) != null)
-                                                this.listeners.get(lockId).onCreate(lockId);
+                                            if (listener != null)
+                                                listener.onCreate(lockId);
                                         }
                                     }
                                 }
-
                             }
 
                             fileLock.release();
@@ -152,7 +141,6 @@ public class Watcher implements Runnable {
                         lockFile.setLength(0);
                         Watcher.class.notifyAll();
                     }
-
                 } catch (IOException e) {
                     // If there is IO Exception, then the Watcher should stop to synchronize.
                     this.stop();
@@ -170,14 +158,12 @@ public class Watcher implements Runnable {
     }
 
     private Watcher() {
-        try (RandomAccessFile lockFile = new RandomAccessFile(file, "rw")) {
+        try (RandomAccessFile lockFile = new RandomAccessFile(file, "r")) {
             this.size = (int) (lockFile.length() / FIXED_LOCK_DATA_SIZE);
             this.interspace = new int[this.size + 1];
         } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -186,31 +172,26 @@ public class Watcher implements Runnable {
         this.listeners.put(listener.id(), listener);
     }
 
-    protected void start(boolean daemon) throws ApplicationException {
+    protected void start(boolean daemon) {
         Thread s = new Thread(this);
         s.setDaemon(daemon);
         s.start();
     }
 
     public boolean watch(Lock lock) throws ApplicationException {
-        // If the Watcher has not been started, then should start to synchronize the locks.
-        if (!this.started) {
-            try {
-                this.start(true);
-            } catch (ApplicationException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
 
         synchronized (Watcher.class) {
+            // If the Watcher has not been started, then should be started to synchronize the locks.
+            if (!this.started) {
+                this.start(true);
+            }
+
             try {
                 Watcher.class.wait();
                 // Check if the lock is in the container.
                 return locks.contains(lock);
             } catch (InterruptedException e) {
-                e.printStackTrace();
-                return true;
+                throw new ApplicationException(e.getMessage(), e);
             }
         }
     }
@@ -221,7 +202,6 @@ public class Watcher implements Runnable {
 
     public void register(Lock lock, long expiration, TimeUnit tu) throws ApplicationException {
         synchronized (Watcher.class) {
-            // TODO ...
             if (!locks.contains(lock)) {
                 FileLock fileLock;
                 try (RandomAccessFile lockFile = new RandomAccessFile(file, "rw")) {
@@ -294,16 +274,16 @@ public class Watcher implements Runnable {
                             this.listeners.get(id).onCreate(id);
 
                         fileLock.release();
+
                         // Notify the other thread to work on.
                         Watcher.class.notifyAll();
                     }
                 } catch (FileNotFoundException e) {
-                    // TODO Auto-generated catch block
                     throw new ApplicationException(e.getMessage(), e.getCause());
                 } catch (IOException e) {
-                    // TODO Auto-generated catch block
                     throw new ApplicationException(e.getMessage(), e.getCause());
                 }
+
             }
         }
     }
@@ -348,34 +328,15 @@ public class Watcher implements Runnable {
                     this.unregister(lock);
                 }
             } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
                 throw new ApplicationException(e.getMessage(), e.getCause());
             } catch (IOException e) {
-                // TODO Auto-generated catch block
                 throw new ApplicationException(e.getMessage(), e.getCause());
             }
         }
     }
 
     public Lock acquire() {
-        if (!this.started) {
-            try {
-                this.start(true);
-            } catch (ApplicationException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-
         synchronized (Watcher.class) {
-            try {
-                if (!this.started)
-                    Watcher.class.wait();
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-
             Lock lock;
             if (null != this.locks && this.locks.size() > 0 && null != (lock = this.locks.elements().nextElement())) {
                 return lock;
@@ -386,7 +347,6 @@ public class Watcher implements Runnable {
     }
 
     public void stop() {
-        // TODO Auto-generated method stub
         this.stopped = this.locks.size() == 0;
     }
 
@@ -419,7 +379,6 @@ public class Watcher implements Runnable {
 
         void waitFor() throws InterruptedException;
 
-        void waitFor(long timeout, TimeUnit unit) throws InterruptedException;
+        boolean waitFor(long timeout, TimeUnit unit) throws InterruptedException;
     }
 }
-
