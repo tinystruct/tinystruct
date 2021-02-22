@@ -130,7 +130,7 @@ public class DistributedLock implements Lock {
 }
 
 /**
- * EventLister implementation for Lock.
+ * EventListener implementation for Lock.
  *
  * @author James Zhou
  */
