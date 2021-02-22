@@ -4,4 +4,20 @@ VERSION="0.2.0"
 cd "`dirname "$0"`"
 cd "../"
 cd "$ROOT"
-java -cp "$ROOT/target/classes:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"
+JAVA_OPTS=""
+args=""
+for arg
+do
+ str=$(echo $arg | awk  '{ string=substr($0, 0, 2); print string; }' )
+ if [ "$str" = "-D" -o "$str" = "-X" ]
+ then
+     JAVA_OPTS=$JAVA_OPTS" "$arg
+ else
+     args=$args" "$arg
+ fi
+done
+set -- $args
+java \
+$JAVA_OPTS \
+-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \
+-cp "$ROOT/target/classes:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"

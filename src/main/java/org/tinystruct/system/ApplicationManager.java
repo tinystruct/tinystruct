@@ -78,7 +78,23 @@ public final class ApplicationManager {
                                 "cd \"`dirname \"$0\"`\"\n" +
                                 "cd \"../\"\n" +
                                 "cd \"$ROOT\"\n" +
-                                "java -cp \"$ROOT/target/classes:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"\n";
+                                "JAVA_OPTS=\"\"\n" +
+                                "args=\"\"\n" +
+                                "for arg\n" +
+                                "do\n" +
+                                " str=$(echo $arg | awk  '{ string=substr($0, 0, 2); print string; }' )\n" +
+                                " if [ \"$str\" = \"-D\" -o \"$str\" = \"-X\" ]\n" +
+                                " then\n" +
+                                "     JAVA_OPTS=$JAVA_OPTS\" \"$arg\n" +
+                                " else\n" +
+                                "     args=$args\" \"$arg\n" +
+                                " fi\n" +
+                                "done\n" +
+                                "set -- $args\n" +
+                                "java \\\n" +
+                                "$JAVA_OPTS \\\n" +
+                                "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \\" +
+                                "-cp \"$ROOT/target/classes:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"\n";
                     }
                     Files.write(path, cmd.getBytes());
                 } catch (IOException e) {
