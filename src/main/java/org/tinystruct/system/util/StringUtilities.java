@@ -49,13 +49,13 @@ public class StringUtilities implements java.io.Serializable {
     public static String getEncoding(String s) throws UnsupportedEncodingException {
         String[] encode = new String[]{"GB2312", "ISO-8859-1", "UTF-8", "GBK", "BIG5"};
 
-        for (int i = 0; i < encode.length; i++) {
+        for (String value : encode) {
             if (s.equals(new String(s.getBytes("GB2312"), "GB2312"))) {
-                return encode[i];
+                return value;
             }
         }
 
-        return "Unknow Encoding";
+        return "Unknown Encoding";
     }
 
     public static String getCHS(String s) {
@@ -63,6 +63,7 @@ public class StringUtilities implements java.io.Serializable {
             byte[] bytes = s.getBytes("GBK");
             return new StringUtilities(bytes).getString();
         } catch (Exception e) {
+
         }
         return null;
     }
@@ -103,7 +104,7 @@ public class StringUtilities implements java.io.Serializable {
             return "";
         }
         char[] temp = raw.toCharArray();
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         for (int i = 0; i < temp.length; i++) {
             if (temp[i] == res)
                 buffer.append(String.valueOf(des));
@@ -195,7 +196,7 @@ public class StringUtilities implements java.io.Serializable {
     }
 
     public static String sign(String string, String substring) {
-        StringBuffer temp = new StringBuffer();
+        StringBuilder temp = new StringBuilder();
         String color_start = "<b>", color_end = "</b>";
         int index = 0, position = 0, length = substring.length();
         StringUtilities mstring = new StringUtilities(string);
@@ -208,13 +209,13 @@ public class StringUtilities implements java.io.Serializable {
             temp.append(string.substring(index, position));
 
             index = position + length;
-            temp.append(color_start + string.substring(position, index) + color_end);
+            temp.append(color_start).append(string.substring(position, index)).append(color_end);
         }
         return temp.toString();
     }
 
     public String linefeed(String endstr) {
-        StringBuffer htmlcode = new StringBuffer();
+        StringBuilder htmlcode = new StringBuilder();
         int index = 0;
         while (true) {
             int position = raw.indexOf(0x0D, index);
@@ -230,7 +231,7 @@ public class StringUtilities implements java.io.Serializable {
     }
 
     public String linefeed(char spliter) {
-        StringBuffer htmlcode = new StringBuffer();
+        StringBuilder htmlcode = new StringBuilder();
 
         char[] ch = raw.toCharArray();
         for (int i = 0; i < ch.length; i++) {
@@ -250,54 +251,51 @@ public class StringUtilities implements java.io.Serializable {
         return new StringUtilities(string).linefeed(spliter);
     }
 
-    public final static String getRealPath(String FileName) {
+    public static String getRealPath(String FileName) {
         String path = new java.io.File(FileName).getAbsolutePath();
         int length = path.length();
 
         return path.substring(0, length - FileName.length());
     }
 
-    public final static String getWebRoot(String FileName) {
+    public static String getWebRoot(String FileName) {
         String path = new java.io.File(FileName).getAbsolutePath();
-        if (path.indexOf("WEB-INF") == -1)
+        if (!path.contains("WEB-INF"))
             return "";
         return path.substring(0, path.indexOf("WEB-INF"));
     }
 
-    public final static boolean isValid(String parameters) {
+    public static boolean isValid(String parameters) {
         boolean isValid = false;
         if (parameters != null) {
-            String s2 = "";
+            StringBuilder s2 = new StringBuilder();
             for (int i = 0; i < parameters.length(); i++) {
                 if (parameters.charAt(i) == ',' || i == parameters.length() - 1) {
                     if (i == parameters.length() - 1 && parameters.charAt(i) != ',')
-                        s2 += parameters.charAt(i);
-                    if (s2 != null && s2.trim().length() > 0)
-                        isValid = true;
-                    else
-                        isValid = false;
-                    s2 = "";
+                        s2.append(parameters.charAt(i));
+                    isValid = s2.toString().trim().length() > 0;
+                    s2 = new StringBuilder();
                 } else {
-                    s2 += parameters.charAt(i);
+                    s2.append(parameters.charAt(i));
                 }
             }
         }
         return isValid;
     }
 
-    public final static boolean isValid(javax.servlet.http.HttpServletRequest request, String parameters) {
+    public static boolean isValid(javax.servlet.http.HttpServletRequest request, String parameters) {
         if (parameters != null) {
-            String s2 = "";
+            StringBuilder s2 = new StringBuilder();
             for (int i = 0; i < parameters.length(); i++) {
                 if (parameters.charAt(i) == ',' || i == parameters.length() - 1) {
                     if (i == parameters.length() - 1 && parameters.charAt(i) != ',')
-                        s2 += parameters.charAt(i);
-                    if (request.getParameter(s2) == null || request.getParameter(s2).trim().length() <= 0)
+                        s2.append(parameters.charAt(i));
+                    if (request.getParameter(s2.toString()) == null || request.getParameter(s2.toString()).trim().length() <= 0)
                         return false;
 
-                    s2 = "";
+                    s2 = new StringBuilder();
                 } else {
-                    s2 += parameters.charAt(i);
+                    s2.append(parameters.charAt(i));
                 }
             }
         }
@@ -307,7 +305,7 @@ public class StringUtilities implements java.io.Serializable {
     public String hideHTML(int length) {
         if (isNull())
             return "";
-        StringBuffer text = new StringBuffer();
+        StringBuilder text = new StringBuilder();
 
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("<br>|<BR>|<br />|<br/><BR />|<BR/>");
         java.util.regex.Matcher matcher = pattern.matcher(raw);
@@ -320,10 +318,8 @@ public class StringUtilities implements java.io.Serializable {
             char now = raw.charAt(i);
             if (now == '<' && flag == 0) {
                 flag = 1;
-                continue;
             } else if (now == '>' && flag == 1) {
                 flag = 0;
-                continue;
             } else if (flag == 0) {
                 if (now == '\n' && raw.charAt(i + 1) != '<') {
                     text.append("<BR />");
@@ -400,7 +396,7 @@ public class StringUtilities implements java.io.Serializable {
             bufLen = Integer.MAX_VALUE;
         }
 
-        StringBuffer buffer = new StringBuffer(bufLen);
+        StringBuilder buffer = new StringBuilder(bufLen);
         char c;
         for (int x = 0; x < len; x++) {
             c = raw.charAt(x);

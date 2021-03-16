@@ -123,10 +123,9 @@ final class ConnectionManager implements Runnable {
                 return Type.SQLServer;
             case 2:
                 return Type.SQLite;
-            default:
-                return Type.SQLServer;
+            default: break;
         }
-
+        return Type.MySQL;
     }
 
     public static ConnectionManager getInstance() {

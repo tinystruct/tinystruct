@@ -64,7 +64,7 @@ public class POP3Connection implements Connection {
 
         props.setProperty("mail.store.protocol", this.config.get("mail.store.protocol"));
         if (this.isSSL) {
-            Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
+//            Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
 
             props.setProperty("mail.pop3.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             props.setProperty("mail.pop3.socketFactory.fallback", "false");

@@ -50,25 +50,21 @@ public class Transmitter implements Transmission {
 
     public void transmit(Reception reception) throws ApplicationException {
         start();
-        try {
-            byte[] p = this.get("parameters").toString().getBytes();
+        byte[] p = this.get("parameters").toString().getBytes();
 
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            connection.setRequestProperty("Content-Length", Integer.toString(p.length));
-            connection.setRequestProperty("Content-Language", "en-US");
+        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        connection.setRequestProperty("Content-Length", Integer.toString(p.length));
+        connection.setRequestProperty("Content-Language", "en-US");
 
-            connection.setUseCaches(false);
-            connection.setDoInput(true);
-            connection.setDoOutput(true);
+        connection.setUseCaches(false);
 
+        try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
             // Send request
-            DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
             wr.write(p);
             wr.flush();
             wr.close();
 
             reception.accept(this);
-
         } catch (MalformedURLException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
         } catch (IOException e) {

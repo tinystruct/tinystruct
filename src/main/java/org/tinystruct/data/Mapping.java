@@ -104,7 +104,7 @@ public class Mapping {
                         field.append(COLUMN, currentElement.getAttribute(COLUMN));
                         field.append(LENGTH, currentElement.getAttribute(LENGTH));
 
-                        if (Boolean.valueOf(currentElement.getAttribute(GENERATE))) {
+                        if (Boolean.parseBoolean(currentElement.getAttribute(GENERATE))) {
                             data.setId(java.util.UUID.randomUUID().toString());
                             field.append("value", data.getId());
                         }
@@ -116,10 +116,9 @@ public class Mapping {
                         field = new FieldInfo();
                         List<Attribute> attributes = currentElement.getAttributes();
                         Attribute currentAttribute;
-                        Iterator<Attribute> iter = attributes.iterator();
 
-                        while (iter.hasNext()) {
-                            currentAttribute = iter.next();
+                        for (Attribute attribute : attributes) {
+                            currentAttribute = attribute;
                             field.append(currentAttribute.name,
                                     currentAttribute.value);
                         }

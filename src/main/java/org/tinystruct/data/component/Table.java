@@ -42,7 +42,7 @@ public class Table extends Vector<Row> {
     }
 
     public String toString() {
-        StringBuffer to = new StringBuffer();
+        StringBuilder to = new StringBuilder();
 
         Iterator<Row> iterator = this.iterator();
         Row row;
@@ -50,9 +50,9 @@ public class Table extends Vector<Row> {
             row = iterator.next();
 
             if (to.length() == 0)
-                to.append("[" + row.toString());
+                to.append("[").append(row.toString());
             else
-                to.append("," + row.toString());
+                to.append(",").append(row.toString());
         }
 
         if (this.size() > 0)

@@ -28,6 +28,8 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
     private int length;
 
     public FieldInfo() {
+        super(8);
+        
         this.autoIncrement = false;
         this.length = 0;
     }

@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Variables {
 
     private static final class SingletonHolder {
-        static final ConcurrentHashMap<String, Variable<?>> variables = new ConcurrentHashMap<String, Variable<?>>();
+        static final ConcurrentHashMap<String, Variable<?>> variables = new ConcurrentHashMap<String, Variable<?>>(16);
     }
 
     ;

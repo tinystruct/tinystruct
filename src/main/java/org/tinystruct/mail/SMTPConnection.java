@@ -61,7 +61,7 @@ public class SMTPConnection implements Connection {
         this.password = this.config.get("smtp.auth.pwd");
 
         if (this.isSSL) {
-            Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
+//            Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
 
             props.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             props.setProperty("mail.smtp.socketFactory.fallback", "false");

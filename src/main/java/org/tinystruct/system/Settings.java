@@ -18,6 +18,7 @@ package org.tinystruct.system;
 import org.tinystruct.ApplicationRuntimeException;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Properties;
@@ -44,20 +45,16 @@ public class Settings implements Serializable, Configuration<String> {
 
         if (!this.fileName.equalsIgnoreCase(fileName)) {
             this.fileName = fileName;
-            in = null;
         }
 
-        if (in == null) {
-            in = getClass().getResourceAsStream(this.fileName);
+        in = getClass().getResourceAsStream(this.fileName);
 
-            if (in != null)
-                try {
-                    properties.load(in);
-                } catch (IOException e) {
-
-                    throw new ApplicationRuntimeException(e.getMessage(), e);
-                }
-        }
+        if (in != null)
+            try {
+                properties.load(in);
+            } catch (IOException e) {
+                throw new ApplicationRuntimeException(e.getMessage(), e);
+            }
     }
 
     public Properties getProperties() {
@@ -71,8 +68,8 @@ public class Settings implements Serializable, Configuration<String> {
                 return System.getenv(value.substring(2).toUpperCase());
             }
             try {
-                byte[] bytes = value.getBytes("ISO-8859-1");
-                return new String(bytes, "utf-8");
+                byte[] bytes = value.getBytes(StandardCharsets.ISO_8859_1);
+                return new String(bytes, StandardCharsets.UTF_8);
             } catch (Exception ex) {
                 System.err.print("The config (" + fileName + ") may be not found!");
             }
@@ -91,9 +88,8 @@ public class Settings implements Serializable, Configuration<String> {
 
     public Set<String> propertyNames() {
         HashSet<String> sets = new HashSet<String>();
-        Iterator<Object> iterator = this.getProperties().keySet().iterator();
-        while (iterator.hasNext()) {
-            sets.add(iterator.next().toString());
+        for (Object o : this.getProperties().keySet()) {
+            sets.add(o.toString());
         }
         return sets;
     }

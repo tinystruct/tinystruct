@@ -39,17 +39,15 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     public String toString() {
         StringBuilder buffer = new StringBuilder();
-        Set<String> enumeration = this.keySet();
-        Iterator<String> list = enumeration.iterator();
-        while (list.hasNext()) {
-            String key = list.next();
+        Set<String> keys = this.keySet();
+        for (String key : keys) {
             Object value = this.get(key);
 
             if (value instanceof String || value instanceof StringBuffer || value instanceof StringBuilder)
-                buffer.append(QUOTE + key + QUOTE).append(":").append(
+                buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(
                         QUOTE + StringUtilities.escape(value.toString()) + QUOTE);
             else
-                buffer.append(QUOTE + key + QUOTE).append(":").append(value);
+                buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(value);
 
             buffer.append(",");
         }
@@ -216,10 +214,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public Row toData() {
         Row row = new Row();
         Field field = new Field();
-        Set<String> enumeration = this.keySet();
-        Iterator<String> list = enumeration.iterator();
-        while (list.hasNext()) {
-            String key = list.next();
+        Set<String> keySet = this.keySet();
+        for (String key : keySet) {
             Object value = this.get(key);
             FieldInfo info = new FieldInfo();
             info.set("name", key);
@@ -232,10 +228,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     public void saveAsFile(File file) throws ApplicationException {
-        try {
-            PrintWriter writer = new PrintWriter(file);
+        try(PrintWriter writer = new PrintWriter(file)) {
             writer.write(this.toString());
-            writer.close();
         } catch (FileNotFoundException e) {
             throw new ApplicationException(e.getMessage(), e);
         }

@@ -16,7 +16,6 @@
 package org.tinystruct.data.component;
 
 public class Pager {
-    private StringBuffer pageControlBar;
     private String firstPageText, lastPageText, currentPageText, nextPageText,
             endPageText, controlBarText;
     /**
@@ -94,10 +93,9 @@ public class Pager {
     }
 
     public String getPageControlNumber(String page) {
-        pageControlBar = new StringBuffer();
+        StringBuilder pageControlBar = new StringBuilder();
         for (int i = 1; i <= pages_count; i++) {
-            pageControlBar.append(" <a href=\"" + page + "=" + i + "\">" + i
-                    + "</a> ");
+            pageControlBar.append(" <a href=\"").append(page).append("=").append(i).append("\">").append(i).append("</a> ");
         }
         return pageControlBar.toString();
     }
@@ -139,7 +137,7 @@ public class Pager {
 
                 The_current_page_text = "[<a href=\"" + The_current_page_link + "\">"
                         + currentPage + "</a>]", The_current_page = String.format(
-                this.currentPageText, new Object[]{The_current_page_text}), The_next_page = (currentPage < pages_count) ? "<a href=\""
+                this.currentPageText, The_current_page_text), The_next_page = (currentPage < pages_count) ? "<a href=\""
                 + The_next_page_link + "\">" + this.nextPageText + "</a>"
                 : this.nextPageText, The_end_page = (currentPage < pages_count) ? "<a href=\""
                 + The_end_page_link + "\">" + this.endPageText + "</a>"

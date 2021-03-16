@@ -43,7 +43,6 @@ public class Receptor implements Reception {
             }
             in.close();
             this.stop();
-            System.out.println(buffer);
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
         }

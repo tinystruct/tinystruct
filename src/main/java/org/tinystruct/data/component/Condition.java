@@ -41,7 +41,7 @@ public class Condition implements Serializable {
     public Condition and(String condition) {
         condition = condition.toLowerCase();
 
-        if (this.SQL.toUpperCase().indexOf("WHERE") != -1)
+        if (this.SQL.toUpperCase().contains("WHERE"))
             this.SQL += " AND " + condition;
         else
             this.SQL += " WHERE " + condition;
@@ -52,7 +52,7 @@ public class Condition implements Serializable {
     public Condition or(String condition) {
         condition = condition.toLowerCase();
 
-        if (this.SQL.toUpperCase().indexOf("WHERE") != -1)
+        if (this.SQL.toUpperCase().contains("WHERE"))
             this.SQL += " OR " + condition.toLowerCase();
         else
             this.SQL += " WHERE " + condition.toLowerCase();

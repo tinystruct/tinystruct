@@ -47,8 +47,8 @@ public class TextFileLoader {
         this.charsetName = charsetName;
     }
 
-    public StringBuffer getContent() throws ApplicationException {
-        StringBuffer context = new StringBuffer();
+    public StringBuilder getContent() throws ApplicationException, IOException {
+        StringBuilder content = new StringBuilder();
         try {
             if (this.file != null) {
                 this.inputStream = new FileInputStream(this.file);
@@ -63,7 +63,7 @@ public class TextFileLoader {
 
             String line = bufferedReader.readLine();
             while (line != null) {
-                context.append(line).append("\r\n");
+                content.append(line).append("\r\n");
                 line = bufferedReader.readLine();
             }
             bufferedReader.close();
@@ -74,11 +74,9 @@ public class TextFileLoader {
             throw new ApplicationException(e.getMessage(), e);
         } catch (FileNotFoundException e) {
             throw new ApplicationException(e.getMessage() + " - " + this.file.getAbsolutePath(), e);
-        } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e);
         }
 
-        return context;
+        return content;
     }
 
     public String getFilePath() {

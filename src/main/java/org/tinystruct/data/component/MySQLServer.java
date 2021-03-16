@@ -40,7 +40,7 @@ public class MySQLServer implements Repository {
     public boolean append(Field ready_fields, String table) throws ApplicationException {
         boolean inserted = false;
         String dot = ",", currentProperty;
-        StringBuffer expressions = new StringBuffer(), values = new StringBuffer();
+        StringBuilder expressions = new StringBuilder(), values = new StringBuilder();
         FieldInfo currentField;
 
         List<String> fieldNames = new ArrayList<String>();
@@ -55,14 +55,14 @@ public class MySQLServer implements Repository {
             fieldNames.add(currentProperty);
 
             if (expressions.length() == 0)
-                expressions.append("`" + currentField.getColumnName() + "`");
+                expressions.append("`").append(currentField.getColumnName()).append("`");
             else
-                expressions.append(dot + "`" + currentField.getColumnName() + "`");
+                expressions.append(dot).append("`").append(currentField.getColumnName()).append("`");
 
             if (values.length() == 0)
                 values.append('?');
             else
-                values.append(dot + '?');
+                values.append(dot).append('?');
         }
 
         String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES(" + values + ")";
@@ -108,7 +108,7 @@ public class MySQLServer implements Repository {
 
     public boolean update(Field ready_fields, String table) throws ApplicationException {
         String dot = ",", currentProperty;
-        StringBuffer expressions = new StringBuffer();
+        StringBuilder expressions = new StringBuilder();
         FieldInfo currentField;
 
         DatabaseOperator operator = new DatabaseOperator();
@@ -129,9 +129,9 @@ public class MySQLServer implements Repository {
                 fieldNames.add(currentProperty);
 
                 if (expressions.length() == 0)
-                    expressions.append("`" + currentField.getColumnName() + "`" + "=?");
+                    expressions.append("`").append(currentField.getColumnName()).append("`").append("=?");
                 else
-                    expressions.append(dot + "`" + currentField.getColumnName() + "`" + "=?");
+                    expressions.append(dot).append("`").append(currentField.getColumnName()).append("`").append("=?");
             }
         }
 

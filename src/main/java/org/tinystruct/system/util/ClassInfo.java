@@ -65,7 +65,7 @@ public class ClassInfo {
         return className;
     }
 
-    public final static String getApplicationPath(Class<?> _class) {
+    public static String getApplicationPath(Class<?> _class) {
         return _class.getProtectionDomain().getCodeSource().getLocation().getPath();
     }
 

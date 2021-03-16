@@ -87,12 +87,18 @@ public abstract class AbstractApplication implements Application {
 
     public void setAction(String action, String function) {
         this.actions.set(this, action, function);
-        this.setLink(action);
+
+        // Exclude the command start with '-'
+        if(action.indexOf("-") != 0)
+            this.setLink(action);
     }
 
     public void setAction(String action, String function, String method) {
         this.actions.set(this, action, function, method);
-        this.setLink(action);
+
+        // Exclude the command start with '-'
+        if(action.indexOf("-") != 0)
+            this.setLink(action);
     }
 
     protected Configuration<String> config;

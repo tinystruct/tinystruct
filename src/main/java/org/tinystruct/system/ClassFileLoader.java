@@ -17,10 +17,9 @@ package org.tinystruct.system;
 
 import org.tinystruct.ApplicationException;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.logging.Logger;
 
 public class ClassFileLoader extends ClassLoader {
@@ -87,13 +86,22 @@ public class ClassFileLoader extends ClassLoader {
             if (r != len) {
                 throw new ApplicationException("Cannot load the class file bytes completely, " + r + " != " + len);
             }
-        } catch (FileNotFoundException e) {
-            throw new ApplicationException(e.getMessage(), e);
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
 
         return raw;
+    }
+
+    private byte[] getBytesNio(String filename) throws ApplicationException {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try {
+            Files.copy(Paths.get(filename), os);
+
+            return os.toByteArray();
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        }
     }
 
 }

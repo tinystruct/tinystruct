@@ -151,9 +151,12 @@ public class Dispatcher extends AbstractApplication {
         } catch (ClassNotFoundException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
-        if(null != ApplicationManager.getConfiguration())
-        app.setConfiguration(ApplicationManager.getConfiguration());
+        if(null != ApplicationManager.getConfiguration()) {
+            assert app != null;
+            app.setConfiguration(ApplicationManager.getConfiguration());
+        }
 
+        assert app != null;
         ApplicationManager.install(app);
 
         System.out.println("Completed!");

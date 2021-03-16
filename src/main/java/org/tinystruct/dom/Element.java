@@ -17,10 +17,9 @@ package org.tinystruct.dom;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Observable;
 import java.util.Vector;
 
-public class Element extends Observable implements Cloneable {
+public class Element implements Cloneable {
     private String name;
     private String data;
     private ElementType elementType = ElementType.NORMAL;
@@ -543,17 +542,6 @@ public class Element extends Observable implements Cloneable {
      */
     public void setName(String name) {
         this.name = name;
-    }
-
-    /**
-     * Notify all Observers.
-     *
-     * @see java.util.Observable#notifyObservers()
-     */
-    @Override
-    public void notifyObservers() {
-        super.setChanged();
-        super.notifyObservers();
     }
 
     /**

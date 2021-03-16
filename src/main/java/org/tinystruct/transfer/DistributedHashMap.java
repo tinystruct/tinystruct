@@ -13,6 +13,11 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * DistributedHashMap implementation. NOT COMPLETE.
+ *
+ * @param <T>
+ */
 public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> {
 
     private static final long serialVersionUID = 2329878484809829362L;
@@ -24,16 +29,13 @@ public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> {
     private DistributedLock lock;
     private String hash;
 
-    public DistributedHashMap() {
+    public DistributedHashMap() throws IOException {
         try {
             this.lock = new DistributedLock();
             this.hash = "." + this.lock.id();
             this.data = new RandomAccessFile(this.hash, "rw");
             this.size = (int) (this.data.length() / FIXED_LOCK_DATA_SIZE);
         } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }

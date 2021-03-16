@@ -33,7 +33,7 @@ public class Row extends Vector<Field> {
     }
 
     public String toString() {
-        StringBuffer to = new StringBuffer();
+        StringBuilder to = new StringBuilder();
 
         Iterator<Field> iterator = this.iterator();
         Field fields;
@@ -41,9 +41,9 @@ public class Row extends Vector<Field> {
             fields = iterator.next();
 
             if (to.length() == 0) {
-                to.append("{" + fields.toString());
+                to.append("{").append(fields.toString());
             } else {
-                to.append("," + fields.toString());
+                to.append(",").append(fields.toString());
             }
         }
 

@@ -25,16 +25,14 @@ public class FileGenerator {
     private final static Logger logger = Logger.getLogger("FileGenerator.class");
     ;
     private String filename;
-    private StringBuffer content;
-    private FileOutputStream fos;
+    private StringBuilder content;
     private File file;
-    private PrintWriter printer;
 
     public FileGenerator(String filename) {
         this.filename = filename;
     }
 
-    public FileGenerator(String path, String filename, StringBuffer content) throws ApplicationException {
+    public FileGenerator(String path, String filename, StringBuilder content) throws ApplicationException {
         if (!new File(path).isDirectory()) if (!new File(path.toLowerCase()).mkdir())
             throw new ApplicationException("Make directory for preparing generate class file directory error");
         this.filename = path + File.separator + filename;
@@ -42,7 +40,7 @@ public class FileGenerator {
         this.content = content;
     }
 
-    public FileGenerator(String filename, StringBuffer content) throws ApplicationException {
+    public FileGenerator(String filename, StringBuilder content) throws ApplicationException {
         this.filename = filename;
         this.content = content;
         this.file = new File(this.filename);
@@ -51,23 +49,13 @@ public class FileGenerator {
     /**
      * Save the content into the file that its name is 'filename'.
      */
-    public void save() {
-        try {
-            fos = new FileOutputStream(file);
+    public void save() throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(file); PrintWriter printer = new PrintWriter(fos, true);) {
+            printer.write(this.content.toString());
+        } catch (IOException io) {
+            logger.severe("File cannot be created!Exception was happened:" + io.getMessage());
         } catch (NullPointerException NullPointer) {
             logger.severe("Please set the file,then use the operator!");
-        } catch (FileNotFoundException FileNotFound) {
-            logger.severe("FileOutputSteam cannot be created!Exception was happened:" + FileNotFound.getMessage());
-        }
-
-        try {
-            this.printer = new PrintWriter(fos, true);
-            this.printer.write(this.content.toString());
-            this.printer.close();
-
-            fos.close();
-        } catch (IOException IO) {
-            logger.severe("File cannot be created!Exception was happened:" + IO.getMessage());
         }
     }
 
@@ -76,18 +64,14 @@ public class FileGenerator {
      *
      * @return The content after read it.
      */
-    public StringBuffer read() {
-        this.content = new StringBuffer();
-        try {
-            FileInputStream in = new FileInputStream(new File(this.filename));
-            InputStreamReader reader = new InputStreamReader(in);
+    public StringBuilder read() {
+        this.content = new StringBuilder();
+        try (FileInputStream in = new FileInputStream(new File(this.filename)); InputStreamReader reader = new InputStreamReader(in)) {
             int i = reader.read();
             while (i != -1) {
                 this.content.append((char) i);
                 i = reader.read();
             }
-            reader.close();
-            in.close();
         } catch (IOException io) {
             logger.severe(io.getMessage());
         }

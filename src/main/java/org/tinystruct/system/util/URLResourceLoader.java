@@ -62,9 +62,16 @@ public class URLResourceLoader extends TextFileLoader {
             }
     }
 
-    public StringBuffer getContent() throws ApplicationException {
-        StringBuffer buffer = super.getContent();
-        this.disconnection();
+    public StringBuilder getContent() throws ApplicationException {
+        StringBuilder buffer;
+        try {
+            buffer = super.getContent();
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e.getCause());
+        } finally {
+            this.disconnection();
+        }
+
         return buffer;
     }
 
