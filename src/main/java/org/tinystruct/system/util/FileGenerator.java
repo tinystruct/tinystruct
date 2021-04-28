@@ -49,7 +49,7 @@ public class FileGenerator {
     /**
      * Save the content into the file that its name is 'filename'.
      */
-    public void save() throws IOException {
+    public void save() {
         try (FileOutputStream fos = new FileOutputStream(file); PrintWriter printer = new PrintWriter(fos, true);) {
             printer.write(this.content.toString());
         } catch (IOException io) {
