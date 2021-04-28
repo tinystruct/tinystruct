@@ -2,38 +2,50 @@ package org.tinystruct.http.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.impl.crypto.MacProvider;
+import org.tinystruct.data.component.Builder;
 
 import javax.crypto.SecretKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.TemporalAmount;
+import java.util.Base64;
 import java.util.Date;
 
 public class JWTManager {
 
-    private static final String CLAIM_ROLE = "role";
-
     private static final SignatureAlgorithm SIGNATURE_ALGORITHM = SignatureAlgorithm.HS256;
     private static final SecretKey SECRET_KEY = MacProvider.generateKey(SIGNATURE_ALGORITHM);
-    private static final TemporalAmount TOKEN_VALIDITY = Duration.ofHours(4L);
+    private byte[] base64Key;
+
+    public JWTManager withSecret(String secret) {
+        this.base64Key = Base64.getEncoder().encode(secret.getBytes());
+        return this;
+    }
 
     /**
-     * Builds a JWT with the given subject and role and returns it as a JWS signed compact String.
+     * Builds a JWT with the given subject and claims and returns it as a JWS signed compact String.
      *
      * @param subject subject
-     * @param role role
+     * @param builder Claims
      * @return token
      */
-    public String createToken(final String subject, final String role) {
+    public String createToken(final String subject, final Builder builder, final long validity) {
         final Instant now = Instant.now();
-        final Date expiryDate = Date.from(now.plus(TOKEN_VALIDITY));
-        return Jwts.builder()
+        final Date expiryDate = Date.from(now.plus(Duration.ofHours(validity)));
+
+        JwtBuilder jwts = Jwts.builder()
                 .setSubject(subject)
-                .claim(CLAIM_ROLE, role)
                 .setExpiration(expiryDate)
-                .setIssuedAt(Date.from(now))
-                .signWith(SIGNATURE_ALGORITHM, SECRET_KEY)
-                .compact();
+                .setIssuedAt(Date.from(now));
+
+        builder.forEach(jwts::claim);
+
+        if (this.base64Key != null)
+            jwts.signWith(SIGNATURE_ALGORITHM, this.base64Key);
+        else
+            jwts.signWith(SIGNATURE_ALGORITHM, SECRET_KEY);
+
+        return jwts.compact();
     }
 
     /**
@@ -42,10 +54,10 @@ public class JWTManager {
      *
      * @param compactToken token
      * @return claims
-     * @throws ExpiredJwtException expired exception
-     * @throws UnsupportedJwtException unsupported exception
-     * @throws MalformedJwtException malformed exception
-     * @throws SignatureException signature exception
+     * @throws ExpiredJwtException      expired exception
+     * @throws UnsupportedJwtException  unsupported exception
+     * @throws MalformedJwtException    malformed exception
+     * @throws SignatureException       signature exception
      * @throws IllegalArgumentException illegal arguments exception
      */
     public Jws<Claims> parseToken(final String compactToken)
@@ -54,8 +66,13 @@ public class JWTManager {
             MalformedJwtException,
             SignatureException,
             IllegalArgumentException {
-        return Jwts.parser()
-                .setSigningKey(SECRET_KEY)
-                .parseClaimsJws(compactToken);
+
+        JwtParser parser = Jwts.parser();
+        if (this.base64Key != null)
+            parser.setSigningKey(this.base64Key);
+        else
+            parser.setSigningKey(SECRET_KEY);
+
+        return parser.parseClaimsJws(compactToken);
     }
 }
