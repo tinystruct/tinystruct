@@ -25,7 +25,6 @@ import org.tinystruct.system.template.PlainText;
 import org.tinystruct.system.template.variable.DataType;
 import org.tinystruct.system.template.variable.StringVariable;
 import org.tinystruct.system.template.variable.Variable;
-import org.w3c.dom.Document;
 
 import java.io.File;
 import java.io.InputStream;
@@ -48,10 +47,13 @@ public abstract class AbstractApplication implements Application {
     private final Map<String, Variable<?>> variables;
     private Locale locale;
     private Resource resource;
-    private final static Logger logger = Logger
-            .getLogger("AbstractApplication.class");
+    private final static Logger logger = Logger.getLogger("AbstractApplication.class");
     private String output;
-    private Document document;
+    private boolean templateRequired = true;
+
+    public void setTemplateRequired(boolean templateRequired) {
+        this.templateRequired = templateRequired;
+    }
 
     public AbstractApplication() {
         this.name = getClass().getName();
@@ -111,10 +113,6 @@ public abstract class AbstractApplication implements Application {
 
     public void setOutputText(String buffer) {
         this.output = buffer;
-    }
-
-    public Document getDocument() {
-        return this.document;
     }
 
     public void setTemplate(Template template) throws ApplicationException {
@@ -292,6 +290,8 @@ public abstract class AbstractApplication implements Application {
     }
 
     public String toString() {
+        if( !this.templateRequired ) return null;
+
         InputStream in = null;
         String simpleName = this.getName().substring(this.getName().lastIndexOf('.') + 1);
         if (locale != Locale.CHINA) {
@@ -327,6 +327,6 @@ public abstract class AbstractApplication implements Application {
     }
 
     public void run() {
-
+        throw new ApplicationRuntimeException("The method has not been implemented yet.");
     }
 }

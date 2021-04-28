@@ -1,5 +1,6 @@
 package org.tinystruct.handler;
 
+import io.jsonwebtoken.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -9,9 +10,11 @@ import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.util.CharsetUtil;
 import org.tinystruct.ApplicationContext;
+import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
 import org.tinystruct.data.FileEntity;
 import org.tinystruct.data.component.Builder;
+import org.tinystruct.http.security.JWTManager;
 import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.util.StringUtilities;
@@ -22,6 +25,7 @@ import static io.netty.buffer.Unpooled.copiedBuffer;
 
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
+    private static final String AUTH_HEADER_NAME = "Authorization";
     private final Configuration configuration;
     private Context context;
     private HttpRequest request;
@@ -122,6 +126,21 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
     private void service(final ChannelHandlerContext ctx, final HttpRequest request, final Context context) {
         String query = request.uri();
+        HttpHeaders headers = request.headers();
+        String auth, token;
+        if ((auth = headers.get(AUTH_HEADER_NAME)) != null && auth.startsWith("Bearer ")) {
+            token = auth.substring(7);
+            JWTManager manager = new JWTManager();
+            try {
+                Jws<Claims> claims = manager.parseToken(token);
+                claims.getBody().getId();
+            }
+            catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+                e.printStackTrace();
+                return;
+            }
+        }
+
         HttpResponseStatus status = HttpResponseStatus.OK;
         Object message;
         try {

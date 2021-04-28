@@ -263,6 +263,8 @@ public class Dispatcher extends AbstractApplication {
         this.setAction("--version", "logo");
         this.setAction("--help", "help");
         this.setAction("say", "say");
+
+        this.setTemplateRequired(false);
     }
 
     public String say(String words) {
