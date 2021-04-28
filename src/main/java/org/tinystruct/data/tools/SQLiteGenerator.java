@@ -64,11 +64,11 @@ public class SQLiteGenerator implements Generator {
     }
 
     public void create(String className, String table) throws ApplicationException {
-        StringBuffer java_resource = new StringBuffer();
-        StringBuffer java_member_declaration = new StringBuffer();
-        StringBuffer java_method_declaration = new StringBuffer();
-        StringBuffer java_method_setdata = new StringBuffer();
-        StringBuffer java_method_tostring = new StringBuffer();
+        StringBuilder java_resource = new StringBuilder();
+        StringBuilder java_member_declaration = new StringBuilder();
+        StringBuilder java_method_declaration = new StringBuilder();
+        StringBuilder java_method_setdata = new StringBuilder();
+        StringBuilder java_method_tostring = new StringBuilder();
 
         String spliter = "";
 
