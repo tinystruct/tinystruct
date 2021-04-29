@@ -47,7 +47,7 @@ public class TextFileLoader {
         this.charsetName = charsetName;
     }
 
-    public StringBuilder getContent() throws ApplicationException, IOException {
+    public StringBuilder getContent() throws ApplicationException {
         StringBuilder content = new StringBuilder();
         try {
             if (this.file != null) {
@@ -70,10 +70,10 @@ public class TextFileLoader {
             reader.close();
 
             this.inputStream.close();
-        } catch (UnsupportedEncodingException e) {
-            throw new ApplicationException(e.getMessage(), e);
         } catch (FileNotFoundException e) {
             throw new ApplicationException(e.getMessage() + " - " + this.file.getAbsolutePath(), e);
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e);
         }
 
         return content;
