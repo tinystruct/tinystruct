@@ -66,8 +66,6 @@ public class URLResourceLoader extends TextFileLoader {
         StringBuilder buffer;
         try {
             buffer = super.getContent();
-        } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e.getCause());
         } finally {
             this.disconnection();
         }
