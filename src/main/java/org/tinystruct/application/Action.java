@@ -76,7 +76,6 @@ public class Action {
     }
 
     public Object execute(Object[] args) throws ApplicationException {
-
         Object attr;
         if (this.app.getContext() != null && this.method != null && (attr = this.app.getContext().getAttribute(Application.METHOD)) != null && !this.method.equalsIgnoreCase(attr.toString())) {
             throw new ApplicationException("The action doesn't allow this method.");
@@ -86,30 +85,15 @@ public class Action {
         String method = null;
         try {
             Method[] methods = clazz.getMethods();
-            for (int i = 0; i < methods.length; i++) {
+            int length = methods.length % 2 == 0 ? methods.length : methods.length + 1;
+            for (int i = 0; i < length; i++) {
                 Class<?>[] types = methods[i].getParameterTypes();
+                Class<?>[] _types = methods[i].getParameterTypes();
+
                 if (methods[i].getName().equals(this.name) && types.length == args.length) {
                     method = methods[i].toGenericString();
 
-                    Object[] arguments = new Object[types.length];
-
-                    if (types.length > 0) {
-                        for (int n = 0; n < types.length; n++) {
-                            if (types[n].isAssignableFrom(String.class)) {
-                                arguments[n] = args[n];
-                            } else if (types[n].isAssignableFrom(Integer.TYPE)) {
-                                arguments[n] = Integer.valueOf(String.valueOf(args[n]));
-                            } else if (types[n].isAssignableFrom(Long.TYPE)) {
-                                arguments[n] = Long.valueOf(String.valueOf(args[n]));
-                            } else if (types[n].isAssignableFrom(Float.TYPE)) {
-                                arguments[n] = Float.valueOf(String.valueOf(args[n]));
-                            } else if (types[n].isAssignableFrom(Double.TYPE)) {
-                                arguments[n] = Double.valueOf(String.valueOf(args[n]));
-                            } else {
-                                arguments[n] = args[n];
-                            }
-                        }
-                    }
+                    Object[] arguments = getArguments(args, types);
 
                     if (methods[i].getReturnType().getName().equalsIgnoreCase("void")) {
                         methods[i].invoke(app, arguments);
@@ -118,6 +102,20 @@ public class Action {
                     }
 
                     return methods[i].invoke(app, arguments);
+                }
+
+                if (methods[length - i - 1].getName().equals(this.name) && _types.length == args.length) {
+                    method = methods[length - i - 1].toGenericString();
+
+                    Object[] arguments = getArguments(args, _types);
+
+                    if (methods[length - i - 1].getReturnType().getName().equalsIgnoreCase("void")) {
+                        methods[length - i - 1].invoke(app, arguments);
+
+                        return app.toString();
+                    }
+
+                    return methods[length - i - 1].invoke(app, arguments);
                 }
             }
         } catch (SecurityException | IllegalAccessException e) {
@@ -132,9 +130,32 @@ public class Action {
         throw new ApplicationException(clazz.toString() + ":" + this.name + ":Illegal Argument.");
     }
 
+    private Object[] getArguments(Object[] args, Class<?>[] types) {
+        Object[] arguments = new Object[types.length];
+
+        if (types.length > 0) {
+            for (int n = 0; n < types.length; n++) {
+                if (types[n].isAssignableFrom(String.class)) {
+                    arguments[n] = args[n];
+                } else if (types[n].isAssignableFrom(Integer.TYPE)) {
+                    arguments[n] = Integer.valueOf(String.valueOf(args[n]));
+                } else if (types[n].isAssignableFrom(Long.TYPE)) {
+                    arguments[n] = Long.valueOf(String.valueOf(args[n]));
+                } else if (types[n].isAssignableFrom(Float.TYPE)) {
+                    arguments[n] = Float.valueOf(String.valueOf(args[n]));
+                } else if (types[n].isAssignableFrom(Double.TYPE)) {
+                    arguments[n] = Double.valueOf(String.valueOf(args[n]));
+                } else {
+                    arguments[n] = args[n];
+                }
+            }
+        }
+        return arguments;
+    }
+
     public Object execute() throws ApplicationException {
         if (app == null) {
-            throw new ApplicationException("Application is undefined.");
+            throw new ApplicationException("Undefined Application.");
         }
 
         return this.execute(new Object[]{});
