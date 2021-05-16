@@ -40,14 +40,14 @@ public class Watcher implements Runnable {
     /**
      * Lock collection.
      */
-    private ConcurrentHashMap<String, Lock> locks = new ConcurrentHashMap<String, Lock>();
+    private ConcurrentHashMap<String, Lock> locks = new ConcurrentHashMap<String, Lock>(8);
     private volatile boolean started = false;
     private volatile boolean stopped = false;
 
     /**
      * Lock event listeners.
      */
-    private ConcurrentHashMap<String, EventListener> listeners = new ConcurrentHashMap<String, EventListener>();
+    private ConcurrentHashMap<String, EventListener> listeners = new ConcurrentHashMap<String, EventListener>(8);
 
     public void waitFor(String lockId) throws InterruptedException {
         this.listeners.get(lockId).waitFor();
@@ -74,8 +74,8 @@ public class Watcher implements Runnable {
     @Override
     public void run() {
         this.started = true;
+        FileLock fileLock;
         while (!this.stopped) {
-            FileLock fileLock = null;
             synchronized (Watcher.class) {
                 // Synchronize the locks map with Lock file.
                 try (RandomAccessFile lockFile = new RandomAccessFile(file, "rw")) {
