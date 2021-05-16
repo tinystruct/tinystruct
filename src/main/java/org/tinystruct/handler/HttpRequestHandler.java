@@ -10,7 +10,6 @@ import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.util.CharsetUtil;
 import org.tinystruct.ApplicationContext;
-import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
 import org.tinystruct.data.FileEntity;
 import org.tinystruct.data.component.Builder;
@@ -26,7 +25,7 @@ import static io.netty.buffer.Unpooled.copiedBuffer;
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private static final String AUTH_HEADER_NAME = "Authorization";
-    private final Configuration configuration;
+    private final Configuration<String> configuration;
     private Context context;
     private HttpRequest request;
 
@@ -108,6 +107,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
         this.service(ctx, request, context);
         context.removeAttribute("REQUEST_BODY");
+        context.removeAttribute("CLAIMS");
         context.resetParameters();
     }
 
@@ -128,21 +128,30 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         String query = request.uri();
         HttpHeaders headers = request.headers();
         String auth, token;
-        if ((auth = headers.get(AUTH_HEADER_NAME)) != null && auth.startsWith("Bearer ")) {
-            token = auth.substring(7);
+        Object message;
+        if ((auth = headers.get(HttpHeaderNames.AUTHORIZATION)) != null && auth.startsWith("Bearer ")) {
             JWTManager manager = new JWTManager();
+            String secret;
+            if((secret = configuration.get("jwt.secret"))!=null) {
+                manager.withSecret(secret);
+            }
+
+            token = auth.substring(7);
             try {
                 Jws<Claims> claims = manager.parseToken(token);
-                claims.getBody().getId();
-            }
-            catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
-                e.printStackTrace();
+                context.setAttribute("CLAIMS", claims);
+            } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+                ByteBuf resp = copiedBuffer(e.getMessage(), CharsetUtil.UTF_8);
+                FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.UNAUTHORIZED, resp);
+                response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html");
+                response.headers().set(HttpHeaderNames.CONTENT_LENGTH, resp.readableBytes());
+                ctx.write(response);
+                ctx.close();
                 return;
             }
         }
 
         HttpResponseStatus status = HttpResponseStatus.OK;
-        Object message;
         try {
             if (query != null && query.length() > 1) {
                 QueryStringDecoder q = parseQuery(query, true);
@@ -174,9 +183,9 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
         ByteBuf resp;
         try {
-            resp = Unpooled.copiedBuffer(message.toString(), CharsetUtil.UTF_8);
+            resp = copiedBuffer(message.toString(), CharsetUtil.UTF_8);
         } catch (Exception e) {
-            resp = Unpooled.copiedBuffer(e.getMessage(), CharsetUtil.UTF_8);
+            resp = copiedBuffer(e.getMessage(), CharsetUtil.UTF_8);
         }
 
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, resp);
