@@ -111,21 +111,24 @@ public class Action {
         Method method = null;
         Object[] arguments = new Object[0];
         for (Method m : this.functions) {
-            try {
-                Class<?>[] types = m.getParameterTypes();
-                if (args.length == types.length) {
-                    arguments = getArguments(args, types);
-                    method = m;
+            if (null != m) {
+                try {
+                    Class<?>[] types = m.getParameterTypes();
+                    if (args.length == types.length) {
+                        arguments = getArguments(args, types);
+                        method = m;
 
-                    break;
+                        break;
+                    }
+
+                } catch (SecurityException e) {
+                    throw new ApplicationException("[" + this.name + "]"
+                            + e.getMessage(), e);
+                } catch (IllegalArgumentException e) {
+                    // try to use other method with different parameter types
                 }
-
-            } catch (SecurityException e) {
-                throw new ApplicationException("[" + this.name + "]"
-                        + e.getMessage(), e);
-            } catch (IllegalArgumentException e) {
-                // try to use other method with different parameter types
             }
+            else break;
         }
 
         if (method == null) throw new UnsupportedOperationException("[" + this.name + "]");
