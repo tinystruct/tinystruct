@@ -17,17 +17,20 @@ package org.tinystruct.application;
 
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.ApplicationRuntimeException;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.logging.Logger;
 
 public class Action {
+    public static final int MAX_ARGUMENTS = 10;
     private String path;
     private String name;
     private int id;
     private Application app;
     private String method = null;
+    private Method[] functions;
     private Logger logger = Logger.getLogger(Action.class.getName());
 
     public Action(int id, Application app, String path, String name) {
@@ -35,6 +38,7 @@ public class Action {
         this.name = name;
         this.path = path;
         this.app = app;
+        this.functions = this.getFunctions(this.name);
     }
 
     public Action(int id, Application app, String path, String name,
@@ -75,59 +79,68 @@ public class Action {
         return this.app.getName();
     }
 
+    protected Method[] getFunctions(String name) {
+        Class<?> clazz = app.getClass();
+        Method[] list = new Method[MAX_ARGUMENTS];
+        int n=0;
+        try {
+            Method[] methods = clazz.getMethods();
+            for (int i = 0; i < methods.length; i++) {
+                if (methods[i].getName().equals(name)) {
+                    list[n++] = methods[i];
+                }
+            }
+        } catch (SecurityException e) {
+            throw new ApplicationRuntimeException("[" + this.name + "]"
+                    + e.getMessage(), e);
+        }
+
+        return list;
+    }
+
     public Object execute(Object[] args) throws ApplicationException {
         Object attr;
         if (this.app.getContext() != null && this.method != null && (attr = this.app.getContext().getAttribute(Application.METHOD)) != null && !this.method.equalsIgnoreCase(attr.toString())) {
             throw new ApplicationException("The action doesn't allow this method.");
         }
 
-        Class<?> clazz = app.getClass();
-        String method = null;
-        try {
-            Method[] methods = clazz.getMethods();
-            int length = methods.length % 2 == 0 ? methods.length : methods.length + 1;
-            for (int i = 0; i < length; i++) {
-                Class<?>[] types = methods[i].getParameterTypes();
-                Class<?>[] _types = methods[i].getParameterTypes();
-
-                if (methods[i].getName().equals(this.name) && types.length == args.length) {
-                    method = methods[i].toGenericString();
-
-                    Object[] arguments = getArguments(args, types);
-
-                    if (methods[i].getReturnType().getName().equalsIgnoreCase("void")) {
-                        methods[i].invoke(app, arguments);
-
-                        return app.toString();
-                    }
-
-                    return methods[i].invoke(app, arguments);
-                }
-
-                if (methods[length - i - 1].getName().equals(this.name) && _types.length == args.length) {
-                    method = methods[length - i - 1].toGenericString();
-
-                    Object[] arguments = getArguments(args, _types);
-
-                    if (methods[length - i - 1].getReturnType().getName().equalsIgnoreCase("void")) {
-                        methods[length - i - 1].invoke(app, arguments);
-
-                        return app.toString();
-                    }
-
-                    return methods[length - i - 1].invoke(app, arguments);
-                }
-            }
-        } catch (SecurityException | IllegalAccessException e) {
-            throw new ApplicationException("[" + this.name + "]"
-                    + e.getMessage(), e);
-        } catch (IllegalArgumentException e) {
-            throw new ApplicationException("[" + this.name + "]" + method, e);
-        } catch (InvocationTargetException e) {
-            throw new ApplicationException(this.getApplicationName() + "." + this.name, e.getCause());
+        if (args.length > this.functions.length) {
+            throw new ApplicationException(this.app.getClass().toString() + ":" + this.name + ":Illegal Argument.");
         }
 
-        throw new ApplicationException(clazz.toString() + ":" + this.name + ":Illegal Argument.");
+        Method method = null;
+        Object[] arguments = new Object[0];
+        for (Method m : this.functions) {
+            try {
+                Class<?>[] types = m.getParameterTypes();
+                arguments = getArguments(args, types);
+
+                method = m;
+                break;
+            } catch (SecurityException e) {
+                throw new ApplicationException("[" + this.name + "]"
+                        + e.getMessage(), e);
+            } catch (IllegalArgumentException e) {
+                // try to use other method with different parameter types
+            }
+        }
+
+        if (method == null) throw new UnsupportedOperationException("[" + this.name + "]");
+        if (method.getReturnType().getName().equalsIgnoreCase("void")) {
+            try {
+                method.invoke(app, arguments);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new ApplicationRuntimeException("[" + this.name + "]" + method.toGenericString(), e);
+            }
+
+            return app.toString();
+        }
+
+        try {
+            return method.invoke(app, arguments);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new ApplicationRuntimeException("[" + this.name + "]" + method.toGenericString(), e);
+        }
     }
 
     private Object[] getArguments(Object[] args, Class<?>[] types) {
