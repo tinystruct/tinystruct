@@ -57,6 +57,7 @@ public class ActionTests {
         list.forEach(a -> {
             log.info(a.getName());
         });
+        assertEquals(String.valueOf(ApplicationManager.call("hi", null)), "Hi.");
         assertEquals(String.valueOf(ApplicationManager.call("hi/10", null)), "hi, 10");
         assertEquals(String.valueOf(ApplicationManager.call("hi/James", null)), "Hi, James");
     }

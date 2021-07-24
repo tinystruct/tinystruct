@@ -82,7 +82,7 @@ public class Action {
     protected Method[] getFunctions(String name) {
         Class<?> clazz = app.getClass();
         Method[] list = new Method[MAX_ARGUMENTS];
-        int n=0;
+        int n = 0;
         try {
             Method[] methods = clazz.getMethods();
             for (int i = 0; i < methods.length; i++) {
@@ -113,10 +113,13 @@ public class Action {
         for (Method m : this.functions) {
             try {
                 Class<?>[] types = m.getParameterTypes();
-                arguments = getArguments(args, types);
+                if (args.length == types.length) {
+                    arguments = getArguments(args, types);
+                    method = m;
 
-                method = m;
-                break;
+                    break;
+                }
+
             } catch (SecurityException e) {
                 throw new ApplicationException("[" + this.name + "]"
                         + e.getMessage(), e);
@@ -144,9 +147,8 @@ public class Action {
     }
 
     private Object[] getArguments(Object[] args, Class<?>[] types) {
-        Object[] arguments = new Object[types.length];
-
-        if (types.length > 0) {
+        if (args.length > 0 && types.length > 0) {
+            Object[] arguments = new Object[types.length];
             for (int n = 0; n < types.length; n++) {
                 if (types[n].isAssignableFrom(String.class)) {
                     arguments[n] = args[n];
@@ -162,8 +164,10 @@ public class Action {
                     arguments[n] = args[n];
                 }
             }
+            return arguments;
         }
-        return arguments;
+
+        return args;
     }
 
     public Object execute() throws ApplicationException {
