@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 ROOT="`pwd`"
-VERSION="0.2.3"
+VERSION="0.2.4"
 cd "`dirname "$0"`"
 cd "../"
 cd "$ROOT"
@@ -16,7 +16,6 @@ do
      args=$args" "$arg
  fi
 done
-set -- $args
 java \
 $JAVA_OPTS \
 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \

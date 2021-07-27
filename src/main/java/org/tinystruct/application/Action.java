@@ -85,9 +85,9 @@ public class Action {
         int n = 0;
         try {
             Method[] methods = clazz.getMethods();
-            for (int i = 0; i < methods.length; i++) {
-                if (methods[i].getName().equals(name)) {
-                    list[n++] = methods[i];
+            for (Method value : methods) {
+                if (value.getName().equals(name)) {
+                    list[n++] = value;
                 }
             }
         } catch (SecurityException e) {

@@ -34,7 +34,7 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.2.3";
+    public static final String VERSION = "0.2.4";
     private static final boolean WINDOWS = System.getProperty("os.name").startsWith("WIN");
 
     private ApplicationManager() {
@@ -90,7 +90,6 @@ public final class ApplicationManager {
                                 "     args=$args\" \"$arg\n" +
                                 " fi\n" +
                                 "done\n" +
-                                "set -- $args\n" +
                                 "java \\\n" +
                                 "$JAVA_OPTS \\\n" +
                                 "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \\" +
