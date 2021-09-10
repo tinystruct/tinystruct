@@ -39,6 +39,15 @@ public class Settings implements Serializable, Configuration<String> {
 
     public Settings() {
         this.overwrite = false;
+        in = getClass().getResourceAsStream(this.fileName);
+
+        if (in != null) {
+            try {
+                properties.load(in);
+            } catch (IOException e) {
+                throw new ApplicationRuntimeException(e.getMessage(), e);
+            }
+        }
     }
 
     public Settings(String fileName) throws ApplicationRuntimeException {
