@@ -18,7 +18,7 @@ package org.tinystruct.data.component;
 import org.tinystruct.ApplicationException;
 
 public interface Struct {
-    public enum TOKEN {
+    enum TOKEN {
         NONE,
         CURLY_OPEN,
         CURLY_CLOSE,
@@ -33,9 +33,9 @@ public interface Struct {
         NULL,
     }
 
-    public void parse(String JSON) throws ApplicationException;
+    void parse(String JSON) throws ApplicationException;
 
-    public Row toData();
+    Row toData();
 
-    public String toString();
+    String toString();
 }

@@ -29,8 +29,6 @@ public class Cache implements Cacheable {
         static final Cache cache = new Cache();
     }
 
-    ;
-
     private Cache() {
         this.map = new ConcurrentHashMap<String, Object>();
     }
