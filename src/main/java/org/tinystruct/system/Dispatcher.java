@@ -40,7 +40,8 @@ public class Dispatcher extends AbstractApplication {
             + "\tor keypair parameters are going to be passed by context,\n " + "\tsuch as: \n"
             + "\t--http.proxyHost=127.0.0.1 or --http.proxyPort=3128 or --param=value\n\n" + "\tSystem actions are:\n"
             + "\t\tinstall\t\tInstall specific app\n" + "\t\tupdate\t\tUpdate framework to the latest version\n"
-            + "\t\tdownload\tA download org.tinystruct.data.tools\n\t\t\t\t--url URL\n" + "\t\tset\t\tSet system property\n"
+            + "\t\tdownload\tA download org.tinystruct.data.tools\n\t\t\t\t--url URL\n"
+            + "\t\tset\t\tSet system property\n"
             + "\t\texec\t\tTo execute native command(s)\n\t\t\t\t--shell-command Commands\n\n"
             + "\tSystem attributes are:\n" + "\t\t--import-applications\tImport apps class your expected\n"
             + "\t\t--settings\t\tPrint all attributes set\n" + "\t\t--logo\t\tPrint the logo of the framework\n"
@@ -151,7 +152,7 @@ public class Dispatcher extends AbstractApplication {
         } catch (ClassNotFoundException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
-        if(null != ApplicationManager.getConfiguration()) {
+        if (null != ApplicationManager.getConfiguration()) {
             assert app != null;
             app.setConfiguration(ApplicationManager.getConfiguration());
         }
@@ -165,9 +166,8 @@ public class Dispatcher extends AbstractApplication {
     public String update() {
         System.out.println("Updating...");
         try {
-            this.download(
-                    new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + version() + "/tinystruct-" + version() + "-jar-with-dependencies.jar"),
-                    ".");
+            this.download(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + version()
+                    + "/tinystruct-" + version() + "-jar-with-dependencies.jar"), ".");
         } catch (ApplicationException e) {
             return e.toString();
         } catch (MalformedURLException e) {
@@ -195,6 +195,13 @@ public class Dispatcher extends AbstractApplication {
             if (!Files.exists(dest))
                 Files.createFile(dest);
         } catch (IOException e) {
+            if (rbc != null) {
+                try {
+                    rbc.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
             throw new ApplicationException(e.getMessage(), e.getCause());
         }
 
@@ -211,6 +218,13 @@ public class Dispatcher extends AbstractApplication {
                 } catch (IOException e) {
                     throw new ApplicationException(e.getMessage(), e.getCause());
                 }
+            if (rbc != null) {
+                try {
+                    rbc.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
