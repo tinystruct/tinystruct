@@ -119,7 +119,9 @@ public class DatabaseOperator implements Closeable {
 
     public int update() throws ApplicationException {
         try {
-            return this.preparedstatement.executeUpdate();
+            this.effect = this.preparedstatement.executeUpdate();
+            logger.log(Level.INFO, this.preparedSQL);
+            return this.effect;
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
@@ -179,6 +181,7 @@ public class DatabaseOperator implements Closeable {
     public int update(String SQL) throws ApplicationException {
         try {
             this.effect = this.statement.executeUpdate(SQL);
+            logger.log(Level.INFO, SQL);
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
@@ -191,7 +194,9 @@ public class DatabaseOperator implements Closeable {
 
     public boolean execute(String SQL) throws ApplicationException {
         try {
-            return this.statement.execute(SQL);
+            boolean succeed = this.statement.execute(SQL);
+            logger.log(Level.INFO, SQL);
+            return succeed;
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
