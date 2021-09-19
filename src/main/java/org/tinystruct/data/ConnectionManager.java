@@ -123,7 +123,8 @@ final class ConnectionManager implements Runnable {
                 return Type.SQLServer;
             case 2:
                 return Type.SQLite;
-            default: break;
+            default:
+                break;
         }
         return Type.MySQL;
     }
@@ -189,7 +190,7 @@ final class ConnectionManager implements Runnable {
                     else
                         connection = DriverManager.getConnection(this.url, this.user, this.password);
 
-                    logger.severe("system default database:" + connection.getCatalog());
+                    logger.log(Level.INFO, "System default database: " + connection.getCatalog());
 
                     if (this.database.trim().length() > 0)
                         connection.setCatalog(this.database);
