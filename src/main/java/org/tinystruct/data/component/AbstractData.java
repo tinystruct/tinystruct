@@ -93,6 +93,9 @@ public abstract class AbstractData implements Data {
             case 2:
                 repository = new SQLiteServer();
                 break;
+            case 3:
+                repository = new H2Server();
+                break;
             default:
                 repository = new MySQLServer();
                 break;

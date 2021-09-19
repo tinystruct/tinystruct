@@ -21,7 +21,7 @@ import org.tinystruct.data.component.Row;
 import org.tinystruct.data.component.Table;
 
 public interface Repository {
-    public enum Type {MySQL, SQLServer, SQLite}
+    public enum Type {MySQL, SQLServer, SQLite, H2}
 
     ;
 
