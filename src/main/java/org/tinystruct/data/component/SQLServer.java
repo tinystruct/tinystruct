@@ -28,9 +28,6 @@ import java.util.logging.Logger;
 
 public class SQLServer implements Repository {
 
-    private final static Logger logger = Logger.getLogger("SQLServer.class");
-    ;
-
     public SQLServer() {
     }
 
@@ -107,7 +104,6 @@ public class SQLServer implements Repository {
 
         DatabaseOperator operator = new DatabaseOperator();
         operator.createStatement(false);
-        logger.log(Level.INFO, SQL);
         if (operator.update(SQL) > 0) {
             inserted = true;
         }
@@ -218,7 +214,6 @@ public class SQLServer implements Repository {
         DatabaseOperator operator = new DatabaseOperator();
         operator.createStatement(false);
 
-        logger.log(Level.INFO, sql.toString());
         if (operator.update(sql.toString()) > 0) {
             edited = true;
         }

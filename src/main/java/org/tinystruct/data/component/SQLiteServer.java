@@ -31,9 +31,6 @@ import java.util.logging.Logger;
 
 public class SQLiteServer implements Repository {
 
-    private final static Logger logger = Logger.getLogger("SQLiteServer.class");
-    ;
-
     public SQLiteServer() {
     }
 
@@ -100,7 +97,6 @@ public class SQLiteServer implements Repository {
             }
 
             if (operator.update() > 0) {
-                logger.log(Level.INFO, SQL);
                 inserted = true;
             }
         } catch (SQLException e) {
@@ -175,7 +171,6 @@ public class SQLiteServer implements Repository {
             // System.out.println(i+":"+Id);
             ps.setObject(i, Id);
             if (operator.update() > 0) {
-                logger.log(Level.INFO, SQL);
                 edited = true;
             }
         } catch (SQLException e) {

@@ -31,9 +31,6 @@ import java.util.logging.Logger;
 
 public class MySQLServer implements Repository {
 
-    private final static Logger logger = Logger.getLogger("MySQLServer.class");
-    ;
-
     public MySQLServer() {
     }
 
@@ -93,7 +90,6 @@ public class MySQLServer implements Repository {
             }
 
             if (operator.update() > 0) {
-                logger.log(Level.INFO, SQL);
                 inserted = true;
             }
         } catch (SQLException e) {
@@ -161,7 +157,6 @@ public class MySQLServer implements Repository {
             // System.out.println(i+":"+Id);
             ps.setObject(i, Id);
             if (operator.update() > 0) {
-                logger.log(Level.INFO, SQL);
                 edited = true;
             }
         } catch (SQLException e) {
@@ -290,5 +285,4 @@ public class MySQLServer implements Repository {
         return row;
 
     }
-
 }
