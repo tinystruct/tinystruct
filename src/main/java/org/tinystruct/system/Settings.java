@@ -32,22 +32,14 @@ import java.util.Set;
 public class Settings implements Serializable, Configuration<String> {
 
     private static final long serialVersionUID = 8348657988449703373L;
-    private static final Properties properties = new Properties();
+    private final Properties properties = new Properties();
     private String fileName = "/application.properties";
     private InputStream in;
     private boolean overwrite = true;
 
     public Settings() {
+        this("/application.properties");
         this.overwrite = false;
-        in = getClass().getResourceAsStream(this.fileName);
-
-        if (in != null) {
-            try {
-                properties.load(in);
-            } catch (IOException e) {
-                throw new ApplicationRuntimeException(e.getMessage(), e);
-            }
-        }
     }
 
     public Settings(String fileName) throws ApplicationRuntimeException {
