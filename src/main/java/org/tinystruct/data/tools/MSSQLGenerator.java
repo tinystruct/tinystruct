@@ -35,7 +35,6 @@ public class MSSQLGenerator implements Generator {
     private String packageName;
 
     private final static Logger logger = Logger.getLogger("MSSQLGenerator.class");
-    ;
     private String[] packageList;
 
     public MSSQLGenerator() {
@@ -212,10 +211,9 @@ public class MSSQLGenerator implements Generator {
         FieldInfo field;
         Field fields;
 
-        DatabaseOperator Operator = new DatabaseOperator();
-        Operator.createStatement(false);
-        Operator.query(SQL);
-        try {
+        try (DatabaseOperator Operator = new DatabaseOperator()) {
+            Operator.createStatement(false);
+            Operator.query(SQL);
             int cols = Operator.getResultSet().getMetaData().getColumnCount();
             String[] fieldName = new String[cols], fieldValue = new String[cols];
 
@@ -243,8 +241,6 @@ public class MSSQLGenerator implements Generator {
             }
         } catch (Exception e) {
             throw new ApplicationException(e.getMessage(), e);
-        } finally {
-            Operator.close();
         }
 
         return table;

@@ -231,10 +231,9 @@ public class SQLiteGenerator implements Generator {
         FieldInfo field;
         Field fields;
 
-        DatabaseOperator Operator = new DatabaseOperator();
-        Operator.createStatement(false);
-        Operator.query(SQL);
-        try {
+        try (DatabaseOperator Operator = new DatabaseOperator()) {
+            Operator.createStatement(false);
+            Operator.query(SQL);
             int cols = Operator.getResultSet().getMetaData().getColumnCount();
             String[] fieldName = new String[cols], fieldValue = new String[cols];
 
@@ -262,8 +261,6 @@ public class SQLiteGenerator implements Generator {
             }
         } catch (Exception e) {
             throw new ApplicationException(e.getMessage(), e);
-        } finally {
-            Operator.close();
         }
 
         return table;

@@ -26,8 +26,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class SQLiteServer implements Repository {
 
@@ -68,10 +66,9 @@ public class SQLiteServer implements Repository {
         String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES("
                 + values + ")";
 
-        DatabaseOperator operator = new DatabaseOperator();
-        PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
         Iterator<String> iterator = fieldNames.iterator();
-        try {
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
             int i = 1;
             while (iterator.hasNext()) {
                 currentField = ready_fields.get(iterator.next());
@@ -102,8 +99,6 @@ public class SQLiteServer implements Repository {
         } catch (SQLException e) {
 
             throw new ApplicationException(e.getMessage(), e);
-        } finally {
-            operator.close();
         }
 
         return inserted;
@@ -115,7 +110,6 @@ public class SQLiteServer implements Repository {
         StringBuffer expressions = new StringBuffer();
         FieldInfo currentField;
 
-        DatabaseOperator operator = new DatabaseOperator();
 
         Object Id = null;
         boolean edited = false;
@@ -143,9 +137,9 @@ public class SQLiteServer implements Repository {
         }
 
         String SQL = "UPDATE " + table + " SET " + expressions + " WHERE id=?";
-        PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
         Iterator<String> iterator = fieldNames.iterator();
-        try {
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
             int i = 1;
             while (iterator.hasNext()) {
                 currentField = ready_fields.get(iterator.next());
@@ -176,8 +170,6 @@ public class SQLiteServer implements Repository {
         } catch (SQLException e) {
 
             throw new ApplicationException(e.getMessage(), e);
-        } finally {
-            operator.close();
         }
 
         return edited;
@@ -187,16 +179,13 @@ public class SQLiteServer implements Repository {
         boolean deleted = false;
         String SQL = "DELETE FROM " + table + " WHERE id=?";
 
-        DatabaseOperator operator = new DatabaseOperator();
-        PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
-        try {
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
             ps.setObject(1, Id);
             if (operator.update() > 0)
                 deleted = true;
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
-        } finally {
-            operator.close();
         }
 
         return deleted;
@@ -213,10 +202,9 @@ public class SQLiteServer implements Repository {
         FieldInfo field;
         Field fields;
 
-        DatabaseOperator operator = new DatabaseOperator();
-        operator.preparedStatement(SQL, parameters);
 
-        try {
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.preparedStatement(SQL, parameters);
             operator.query();
             int cols = operator.getResultSet().getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
@@ -247,8 +235,6 @@ public class SQLiteServer implements Repository {
             }
         } catch (Exception e) {
             throw new ApplicationException(e.getMessage(), e);
-        } finally {
-            operator.close();
         }
 
         return table;
@@ -261,10 +247,9 @@ public class SQLiteServer implements Repository {
         FieldInfo fieldInfo;
         Field field = new Field();
 
-        DatabaseOperator operator = new DatabaseOperator();
-        operator.preparedStatement(SQL, parameters);
 
-        try {
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.preparedStatement(SQL, parameters);
             operator.query();
             int cols = operator.getResultSet().getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
@@ -293,8 +278,6 @@ public class SQLiteServer implements Repository {
             }
         } catch (Exception e) {
             throw new ApplicationException(e.getMessage(), e);
-        } finally {
-            operator.close();
         }
 
         return row;

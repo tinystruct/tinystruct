@@ -23,8 +23,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Enumeration;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class SQLServer implements Repository {
 
@@ -102,13 +100,12 @@ public class SQLServer implements Repository {
         SQL += " {call " + table + "_APPEND(" + VALUES + ")} END";
         SQL += " else {call " + table + "_APPEND(" + VALUES + ")}";
 
-        DatabaseOperator operator = new DatabaseOperator();
-        operator.createStatement(false);
-        if (operator.update(SQL) > 0) {
-            inserted = true;
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.createStatement(false);
+            if (operator.update(SQL) > 0) {
+                inserted = true;
+            }
         }
-
-        operator.close();
         return inserted;
     }
 
@@ -116,17 +113,13 @@ public class SQLServer implements Repository {
         boolean deleted = false;
         String SQL = "DELETE FROM [" + table + "] WHERE id=?";
 
-        DatabaseOperator operator = new DatabaseOperator();
-        PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
-        try {
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
             ps.setObject(1, Id);
             if (operator.update() > 0)
                 deleted = true;
         } catch (SQLException e) {
-
             throw new ApplicationException(e.getMessage(), e);
-        } finally {
-            operator.close();
         }
 
         return deleted;
@@ -192,7 +185,7 @@ public class SQLServer implements Repository {
             }
 
             keys.append("@").append(currentField.getName());
-            expressions.append("[") .append(currentField.getColumnName()) .append("]=") .append(keys)
+            expressions.append("[").append(currentField.getColumnName()).append("]=").append(keys)
                     .append(dot);
         }
 
@@ -211,14 +204,13 @@ public class SQLServer implements Repository {
         sql.append(" {call " + table + "_EDIT(" + values + ")} END");
         sql.append(" else {call " + table + "_EDIT(" + values + ")}");
 
-        DatabaseOperator operator = new DatabaseOperator();
-        operator.createStatement(false);
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.createStatement(false);
 
-        if (operator.update(sql.toString()) > 0) {
-            edited = true;
+            if (operator.update(sql.toString()) > 0) {
+                edited = true;
+            }
         }
-        operator.close();
-
         return edited;
     }
 
@@ -234,10 +226,9 @@ public class SQLServer implements Repository {
         FieldInfo field;
         Field fields;
 
-        DatabaseOperator operator = new DatabaseOperator();
-        operator.preparedStatement(SQL, parameters);
 
-        try {
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.preparedStatement(SQL, parameters);
             operator.query();
             int cols = operator.getResultSet().getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
@@ -268,8 +259,6 @@ public class SQLServer implements Repository {
             }
         } catch (Exception e) {
             throw new ApplicationException(e.getMessage(), e);
-        } finally {
-            operator.close();
         }
 
         return table;
@@ -282,10 +271,9 @@ public class SQLServer implements Repository {
         FieldInfo fieldInfo;
         Field field = new Field();
 
-        DatabaseOperator operator = new DatabaseOperator();
-        operator.preparedStatement(SQL, parameters);
 
-        try {
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.preparedStatement(SQL, parameters);
             operator.query();
             int cols = operator.getResultSet().getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
@@ -314,8 +302,6 @@ public class SQLServer implements Repository {
             }
         } catch (Exception e) {
             throw new ApplicationException(e.getMessage(), e);
-        } finally {
-            operator.close();
         }
 
         return row;
