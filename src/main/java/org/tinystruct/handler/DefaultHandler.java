@@ -172,7 +172,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     }
 
     public void start() throws ApplicationException {
-        this.settings = new Settings("/application.properties");
+        this.settings = new Settings();
         if (this.settings.get("default.file.encoding") != null)
             this.charsetName = (this.settings.get("default.file.encoding"));
 
