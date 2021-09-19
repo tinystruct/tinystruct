@@ -49,7 +49,7 @@ public class SimpleMail {
 
     private MimeBodyPart mBodyPart;
 
-    private static final Configuration<String> config = new Settings("/application.properties");
+    private static final Configuration<String> config = new Settings();
     private static final ConnectionManager manager = ConnectionManager.getInstance();
 
     public SimpleMail() {

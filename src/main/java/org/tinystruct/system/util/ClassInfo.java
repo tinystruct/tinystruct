@@ -22,27 +22,25 @@ import org.tinystruct.system.Settings;
 import java.io.File;
 
 public class ClassInfo {
-    private Object object;
-    private Configuration<String> properties;
-    private String default_application_path;
+    private final Object object;
+    private final Configuration<String> properties;
+    private final String default_application_path;
 
     public ClassInfo() throws ApplicationException {
         this.object = this;
-        this.properties = new Settings("/application.properties");
+        this.properties = new Settings();
 
-        this.default_application_path = this.properties.get("system.directory");
-        this.default_application_path = this.default_application_path.trim().length() > 0
-                ? new Local(this.default_application_path).getPath()
+        this.default_application_path = this.properties.get("system.directory").trim().length() > 0
+                ? new Local(this.properties.get("system.directory")).getPath()
                 : new Local(getApplicationPath(this.getClass())).getPath();
     }
 
     public ClassInfo(Object object) throws ApplicationException {
         this.object = object;
-        this.properties = new Settings("/application.properties");
+        this.properties = new Settings();
 
-        this.default_application_path = this.properties.get("system.directory");
-        this.default_application_path = this.default_application_path.trim().length() > 0
-                ? new Local(this.default_application_path).getPath()
+        this.default_application_path = this.properties.get("system.directory").trim().length() > 0
+                ? new Local(this.properties.get("system.directory")).getPath()
                 : new Local(getApplicationPath(this.getClass())).getPath();
     }
 

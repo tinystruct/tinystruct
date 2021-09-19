@@ -57,7 +57,7 @@ final class ConnectionManager implements Runnable {
         this.connections = new ConcurrentLinkedQueue<Connection>();
 
         try {
-            this.config = new Settings("/application.properties");
+            this.config = new Settings();
             this.driverName = this.config.get("driver");
 
             if (this.driverName.trim().length() == 0)
