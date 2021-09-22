@@ -208,7 +208,7 @@ public class Dispatcher extends AbstractApplication {
         FileOutputStream fos = null;
         try {
             fos = new FileOutputStream(path);
-            fos.getChannel().transferFrom(rbc, 0, 1 << 24);
+            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
         } finally {
