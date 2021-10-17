@@ -29,17 +29,17 @@ import java.util.Set;
  *
  * @author Mover
  */
-public class Settings implements Serializable, Configuration<String> {
+public class Settings implements Configuration<String> {
 
     private static final long serialVersionUID = 8348657988449703373L;
     private final Properties properties = new Properties();
     private String fileName = "/application.properties";
     private InputStream in;
-    private boolean overwrite = true;
+    private boolean overwrite = false;
 
     public Settings() {
         this("/application.properties");
-        this.overwrite = false;
+        this.overwrite = true;
     }
 
     public Settings(String fileName) throws ApplicationRuntimeException {

@@ -146,7 +146,7 @@ public abstract class AbstractApplication implements Application {
         }
         Action action = this.actions.getAction(path, method);
         if (action == null) {
-            int pos = -1;
+            int pos;
             String tpath = path;
             while ((pos = tpath.lastIndexOf('/')) != -1) {
                 tpath = tpath.substring(0, pos);

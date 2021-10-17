@@ -56,29 +56,29 @@ public class Dispatcher extends AbstractApplication {
         if (args.length > 0) {
             ApplicationManager.install(new Dispatcher());
 
-            Settings config = new Settings("/application.properties");
+            Settings config = new Settings();
             if (config.get("system.directory") == null) {
                 config.set("system.directory", System.getProperty("user.dir"));
             }
 
-            StringBuilder default_import_applications = new StringBuilder(config.get("default.import.applications"));
+            StringBuilder defaultImportApplications = new StringBuilder(config.get("default.import.applications"));
             String[] __arg;
             for (String arg : args) {
                 if (arg.startsWith("--") && arg.indexOf('=') >= 3) {
                     __arg = arg.split("=");
 
                     if ("--import-applications".equalsIgnoreCase(__arg[0])) {
-                        if (default_import_applications.length() >= 1)
-                            default_import_applications.append(";").append(__arg[1]);
+                        if (defaultImportApplications.length() >= 1)
+                            defaultImportApplications.append(";").append(__arg[1]);
                         else
-                            default_import_applications.append(__arg[1]);
+                            defaultImportApplications.append(__arg[1]);
 
                         break;
                     }
                 }
             }
 
-            config.set("default.import.applications", default_import_applications.toString());
+            config.set("default.import.applications", defaultImportApplications.toString());
 
             try {
                 ApplicationManager.init(config);
@@ -137,6 +137,9 @@ public class Dispatcher extends AbstractApplication {
         }
     }
 
+    /**
+     * Install specific app
+     */
     public void install() {
         if (this.context.getParameterValues("app") == null)
             throw new ApplicationRuntimeException("The appName could not be found in the context.");
@@ -303,8 +306,11 @@ public class Dispatcher extends AbstractApplication {
     }
 
     public String logo() {
-        return "\n" + "  _/  '         _ _/  _     _ _/   \n" + "  /  /  /) (/ _)  /  /  (/ (  /  "
-                + this.color(this.version(), FORE_COLOR.green) + "  \n" + "           /                       \n";
+        return "\n"
+                + "  _/  '         _ _/  _     _ _/   \n"
+                + "  /  /  /) (/ _)  /  /  (/ (  /  "
+                + this.color(this.version(), FORE_COLOR.green) + "  \n"
+                + "           /                       \n";
     }
 
     public String color(Object s, int color) {

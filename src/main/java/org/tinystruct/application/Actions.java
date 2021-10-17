@@ -39,7 +39,7 @@ public class Actions {
     }
 
     public boolean containsAction(String function, List<Action> list) {
-        Action action = null;
+        Action action;
         Iterator<Action> iterator = list.iterator();
         while (iterator.hasNext()) {
             action = iterator.next();

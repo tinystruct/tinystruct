@@ -16,9 +16,10 @@
 
 package org.tinystruct.system;
 
+import java.io.Serializable;
 import java.util.Set;
 
-public interface Configuration<T> {
+public interface Configuration<T> extends Serializable {
     void set(String name, T value);
 
     T get(String name);
@@ -27,5 +28,5 @@ public interface Configuration<T> {
 
     String toString();
 
-    public Set<String> propertyNames();
+    Set<String> propertyNames();
 }

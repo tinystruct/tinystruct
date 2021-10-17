@@ -82,6 +82,14 @@ public class StringUtilities implements java.io.Serializable {
         return true;
     }
 
+    public static String leftPadding(String raw, int len, char replacement) {
+        return String.format("%"+len+"s", raw).replace(' ', replacement);
+    }
+
+    public static String rightPadding(String raw, int len, char replacement) {
+        return String.format("%-"+len+"s", raw).replace(' ', replacement);
+    }
+
     public String nospace() {
         return remove((char) 32);
     }

@@ -21,6 +21,7 @@ import org.tinystruct.ApplicationRuntimeException;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Date;
 import java.util.logging.Logger;
 
 public class Action {
@@ -132,7 +133,7 @@ public class Action {
         }
 
         if (method == null) throw new UnsupportedOperationException("[" + this.name + "]");
-        if (method.getReturnType().getName().equalsIgnoreCase("void")) {
+        if (method.getReturnType().isAssignableFrom(Void.TYPE)) {
             try {
                 method.invoke(app, arguments);
             } catch (IllegalAccessException | InvocationTargetException e) {
@@ -155,7 +156,11 @@ public class Action {
             for (int n = 0; n < types.length; n++) {
                 if (types[n].isAssignableFrom(String.class)) {
                     arguments[n] = args[n];
-                } else if (types[n].isAssignableFrom(Integer.TYPE)) {
+                }
+                if (types[n].isAssignableFrom(Date.class)) {
+                    arguments[n] = args[n];
+                }
+                else if (types[n].isAssignableFrom(Integer.TYPE)) {
                     arguments[n] = Integer.valueOf(String.valueOf(args[n]));
                 } else if (types[n].isAssignableFrom(Long.TYPE)) {
                     arguments[n] = Long.valueOf(String.valueOf(args[n]));
@@ -163,7 +168,12 @@ public class Action {
                     arguments[n] = Float.valueOf(String.valueOf(args[n]));
                 } else if (types[n].isAssignableFrom(Double.TYPE)) {
                     arguments[n] = Double.valueOf(String.valueOf(args[n]));
-                } else {
+                } else if (types[n].isAssignableFrom(Short.TYPE)) {
+                    arguments[n] = Short.valueOf(String.valueOf(args[n]));
+                } else if (types[n].isAssignableFrom(Byte.TYPE)) {
+                    arguments[n] = Byte.valueOf(String.valueOf(args[n]));
+                }
+                else {
                     arguments[n] = args[n];
                 }
             }
