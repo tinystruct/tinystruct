@@ -19,6 +19,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -81,7 +82,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
             }
 
             ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup)
-                    .channel(
+                    .channel(Epoll.isAvailable()? EpollServerSocketChannel.class:
                             NioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
