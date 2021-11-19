@@ -4,6 +4,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.logging.LogLevel;
@@ -61,7 +62,8 @@ public class ProxyServer extends AbstractApplication implements Bootstrap {
 
         try {
             ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup)
-                    .channel(AdvancedNioServerSocketChannel.class)
+                    .channel(Epoll.isAvailable()? EpollServerSocketChannel.class
+                            : AdvancedNioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) {
