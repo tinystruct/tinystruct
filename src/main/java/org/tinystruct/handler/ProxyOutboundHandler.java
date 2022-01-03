@@ -16,12 +16,15 @@
 package org.tinystruct.handler;
 
 import io.netty.channel.*;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
-public class ProxyBackendHandler extends ChannelDuplexHandler implements ProxyHandler {
+public class ProxyOutboundHandler extends ChannelInboundHandlerAdapter implements ProxyHandler {
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(ProxyOutboundHandler.class);
 
     private final Channel inboundChannel;
 
-    public ProxyBackendHandler(Channel inboundChannel) {
+    public ProxyOutboundHandler(Channel inboundChannel) {
         this.inboundChannel = inboundChannel;
     }
 
@@ -32,6 +35,8 @@ public class ProxyBackendHandler extends ChannelDuplexHandler implements ProxyHa
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) {
+        logger.info("{}", msg.getClass());
+
         inboundChannel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) {
@@ -46,13 +51,13 @@ public class ProxyBackendHandler extends ChannelDuplexHandler implements ProxyHa
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        ProxyFrontendHandler.closeOnFlush(inboundChannel);
+        ProxyInboundHandler.closeOnFlush(inboundChannel);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         cause.printStackTrace();
-        ProxyFrontendHandler.closeOnFlush(ctx.channel());
+        ProxyInboundHandler.closeOnFlush(ctx.channel());
     }
 
     @Override
