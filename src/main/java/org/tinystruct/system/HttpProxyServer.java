@@ -11,17 +11,16 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import org.tinystruct.ApplicationException;
-import org.tinystruct.handler.AdvancedNioServerSocketChannel;
 import org.tinystruct.handler.HttpProxyHandler;
-import org.tinystruct.handler.ProxyHandler;
 
 import java.util.logging.Logger;
 
 public class HttpProxyServer extends ProxyServer implements Bootstrap {
-    private int port = 80;
+    private int port = 81;
     private String remoteHost = "localhost";
     private int remotePort = 80;
     private ChannelFuture future;
@@ -70,17 +69,16 @@ public class HttpProxyServer extends ProxyServer implements Bootstrap {
             ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup)
                     .channel(Epoll.isAvailable()? EpollServerSocketChannel.class
                             : NioServerSocketChannel.class)
+                    .handler(new LoggingHandler())
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) {
-                            ProxyHandler handler = new HttpProxyHandler(remoteHost, remotePort);
-                            ch.pipeline().addLast(handler.initCodecs());
                             ch.pipeline().addLast(new LoggingHandler(LogLevel.TRACE));
+                            ch.pipeline().addLast(new HttpRequestDecoder());
+                            ch.pipeline().addLast(new HttpProxyHandler(remoteHost, remotePort));
                         }
-                    });
-//                    .childOption(ChannelOption.SO_TIMEOUT, 10000); // (5)
-//                    .option(ChannelOption.SO_KEEPALIVE, true)
-//                    .childOption(ChannelOption.SO_KEEPALIVE, true); // (6);
+                    })
+                    .childOption(ChannelOption.AUTO_READ, false);
 
             // Bind and start to accept incoming connections.
             future = bootstrap.bind(port).sync();
