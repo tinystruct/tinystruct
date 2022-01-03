@@ -63,6 +63,9 @@ public abstract class AbstractApplication implements Application {
         this.templateRequired = templateRequired;
     }
 
+    /**
+     * Abstract application constructor.
+     */
     public AbstractApplication() {
         this.name = getClass().getName();
         this.variables = Variables.getInstance();
@@ -265,6 +268,12 @@ public abstract class AbstractApplication implements Application {
         }
     }
 
+    /**
+     * Get a link.
+     *
+     * @param variable variable
+     * @return
+     */
     public String getLink(String variable) {
         String linkName = "[%LINK:" + variable + "%]";
         if (this.variables.get(linkName) != null) {
@@ -278,6 +287,12 @@ public abstract class AbstractApplication implements Application {
         return "#";
     }
 
+    /**
+     * Get the specific configuration with property name.
+     *
+     * @param propertyName property name
+     * @return
+     */
     public String getConfiguration(String propertyName) {
         return this.config.get(propertyName);
     }

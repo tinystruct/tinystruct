@@ -45,7 +45,6 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
  * take advantage of browser cache, as described in
  * <a href="https://tools.ietf.org/html/rfc2616#section-14.25">RFC 2616</a>.
  *
- * <h1>How Browser Caching Works</h1>
  * <p>
  * Web browser caching works with HTTP headers as illustrated by the following
  * sample:

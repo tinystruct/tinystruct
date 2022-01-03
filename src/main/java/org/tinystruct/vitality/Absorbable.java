@@ -17,8 +17,21 @@ package org.tinystruct.vitality;
 
 import java.util.List;
 
+/**
+ * Absorbable interface
+ * @param <T> Type
+ */
 public interface Absorbable<T> {
+
+    /**
+     * Return data list.
+     * @return
+     */
     List<T> get();
 
+    /**
+     * Set a data list.
+     * @param list
+     */
     void set(List<T> list);
 }

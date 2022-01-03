@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * DistributedHashMap implementation. NOT COMPLETE.
  *
- * @param <T>
+ * @param <T> Data type
  */
 public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> {
 
