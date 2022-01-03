@@ -42,6 +42,10 @@ import java.util.logging.Logger;
 public abstract class AbstractApplication implements Application {
 
     private final Actions actions = Actions.getInstance();
+
+    /**
+     * Context of application
+     */
     protected Context context;
     private String name;
     private final Map<String, Variable<?>> variables;
@@ -51,6 +55,10 @@ public abstract class AbstractApplication implements Application {
     private String output;
     private boolean templateRequired = true;
 
+    /**
+     * Set template to be required or not.
+     * @param templateRequired boolean
+     */
     public void setTemplateRequired(boolean templateRequired) {
         this.templateRequired = templateRequired;
     }
@@ -103,6 +111,9 @@ public abstract class AbstractApplication implements Application {
             this.setLink(action);
     }
 
+    /**
+     * Configuration
+     */
     protected Configuration<String> config;
 
     private String template_path;
