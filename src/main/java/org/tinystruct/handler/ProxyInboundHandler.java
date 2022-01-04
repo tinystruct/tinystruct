@@ -18,14 +18,12 @@ package org.tinystruct.handler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
-import io.netty.handler.codec.http.*;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 public abstract class ProxyInboundHandler extends ChannelInboundHandlerAdapter implements ProxyHandler {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ProxyInboundHandler.class);
-
     private Channel outboundChannel;
 
     String remoteHost = "localhost";
@@ -69,23 +67,13 @@ public abstract class ProxyInboundHandler extends ChannelInboundHandlerAdapter i
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) {
-        logger.info("{}", msg.getClass());
+        logger.debug("{}", msg.getClass());
 
         if (outboundChannel.isActive() && outboundChannel.isWritable()) {
-            if (msg instanceof HttpRequest) {
-                HttpRequest req = (HttpRequest) msg;
-                req.headers().set(HttpHeaderNames.HOST, this.remoteHost + ":" + this.remotePort);
-                logger.info("{}", req);
-            } else if (msg instanceof HttpContent) {
-                HttpContent req = (HttpContent) msg;
-                logger.info("{}", req);
-            }
-
             outboundChannel.writeAndFlush(msg)
                     .addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) {
-                    logger.info("{}", future.isDone());
                     if (future.isSuccess()) {
                         // was able to flush out data, start to read the next chunk
                         ctx.channel().read();

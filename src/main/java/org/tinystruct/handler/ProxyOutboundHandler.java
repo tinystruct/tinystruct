@@ -35,7 +35,7 @@ public class ProxyOutboundHandler extends ChannelInboundHandlerAdapter implement
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) {
-        logger.info("{}", msg.getClass());
+        logger.debug("{}", msg.getClass());
 
         inboundChannel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
             @Override
