@@ -20,9 +20,9 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
 import org.tinystruct.application.Template;
 import org.tinystruct.application.Variables;
+import org.tinystruct.system.Configuration;
 import org.tinystruct.system.template.variable.DataType;
 import org.tinystruct.system.template.variable.Variable;
-import org.tinystruct.system.Configuration;
 import org.tinystruct.system.util.TextFileLoader;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class DefaultTemplate implements Template {
 
-    private ConcurrentHashMap<String, Variable<?>> variables = Variables.getInstance();
+    private final ConcurrentHashMap<String, Variable<?>> variables = Variables.getInstance();
     private InputStream in;
     // create a script engine manager
     // create a JavaScript engine
@@ -56,14 +56,15 @@ public class DefaultTemplate implements Template {
     }
 
     ;
-    private Application app;
+    private final Application app;
     private String view;
-    private ScriptEngine engine;
+    private final ScriptEngine engine;
 
     public DefaultTemplate(Application app, InputStream in) {
         this.app = app;
         this.engine = SingletonHolder.manager.getEngineByName(engineName);
-        this.engine.put("self", this.app);
+        if (null != this.engine)
+            this.engine.put("self", this.app);
         this.in = in;
     }
 
@@ -71,8 +72,10 @@ public class DefaultTemplate implements Template {
         this.app = app;
         this.view = view;
         this.engine = SingletonHolder.manager.getEngineByName(engineName);
-        this.engine.put("self", this.app);
-        this.engine.put("self.toString", "Please don't execute like this.");
+        if (null != this.engine) {
+            this.engine.put("self", this.app);
+            this.engine.put("self.toString", "Please don't execute like this.");
+        }
     }
 
     public String getName() {
@@ -116,36 +119,38 @@ public class DefaultTemplate implements Template {
 
                 doc = builder.parse(in);
                 in.close();
-                NodeList js = doc.getElementsByTagName("javascript");
-                int length = js.getLength();
 
-                if (length > 0) {
-                    // evaluate JavaScript code from String
-                    String result;
-                    ScriptContext context = engine.getContext();
-                    StringWriter sw = new StringWriter();
-                    Writer writer = new PrintWriter(sw, true);
-                    context.setWriter(writer);
+                if (this.engine != null) {
+                    NodeList js = doc.getElementsByTagName("javascript");
+                    int length = js.getLength();
 
-                    for (int i = 0; i < length; i++) {
-                        Node node = js.item(i);
-                        Object r = engine.eval(node.getTextContent());
+                    if (length > 0) {
+                        // evaluate JavaScript code from String
+                        String result;
+                        ScriptContext context = engine.getContext();
+                        StringWriter sw = new StringWriter();
+                        Writer writer = new PrintWriter(sw, true);
+                        context.setWriter(writer);
 
-                        if (r != null) {
-                            result = String.valueOf(r);
-                        } else {
-                            result = sw.toString();
+                        for (int i = 0; i < length; i++) {
+                            Node node = js.item(i);
+                            Object r = engine.eval(node.getTextContent());
+
+                            if (r != null) {
+                                result = String.valueOf(r);
+                            } else {
+                                result = sw.toString();
+                            }
+
+                            Text t = doc.createTextNode(result);
+
+                            Node p = node.getParentNode();
+                            p.appendChild(t);
+                            p.replaceChild(t, node);
                         }
-
-                        Text t = doc.createTextNode(result);
-
-                        Node p = node.getParentNode();
-                        p.appendChild(t);
-                        p.replaceChild(t, node);
+                        writer.close();
                     }
-                    writer.close();
                 }
-
             } catch (ParserConfigurationException e) {
                 throw new ApplicationException(e.getMessage(), e);
             } catch (SAXException e) {
@@ -157,6 +162,7 @@ public class DefaultTemplate implements Template {
             } catch (ScriptException e) {
                 throw new ApplicationException(e.getMessage(), e);
             }
+
 
             DOMSource domSource = new DOMSource(doc);
             StringWriter writer = new StringWriter();
