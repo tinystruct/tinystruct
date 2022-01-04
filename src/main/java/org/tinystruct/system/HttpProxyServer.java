@@ -4,11 +4,8 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
-import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpRequestDecoder;
@@ -23,19 +20,9 @@ public class HttpProxyServer extends ProxyServer implements Bootstrap {
     private int port = 81;
     private String remoteHost = "localhost";
     private int remotePort = 80;
-    private ChannelFuture future;
-    private EventLoopGroup bossgroup;
-    private EventLoopGroup workgroup;
-    private Logger logger = Logger.getLogger(HttpProxyServer.class.getName());
+    private final Logger logger = Logger.getLogger(HttpProxyServer.class.getName());
 
     public HttpProxyServer() {
-        if (Epoll.isAvailable()) {
-            this.bossgroup = new EpollEventLoopGroup(1);
-            this.workgroup = new EpollEventLoopGroup();
-        } else {
-            this.bossgroup = new NioEventLoopGroup(1);
-            this.workgroup = new NioEventLoopGroup();
-        }
     }
 
     public void init() {
@@ -81,7 +68,7 @@ public class HttpProxyServer extends ProxyServer implements Bootstrap {
                     .childOption(ChannelOption.AUTO_READ, false);
 
             // Bind and start to accept incoming connections.
-            future = bootstrap.bind(port).sync();
+            ChannelFuture future = bootstrap.bind(port).sync();
             logger.info("Proxy server(" + port + ") started.");
 
             // Wait until the server socket is closed.
