@@ -40,14 +40,14 @@ public class Watcher implements Runnable {
     /**
      * Lock collection.
      */
-    private ConcurrentHashMap<String, Lock> locks = new ConcurrentHashMap<String, Lock>(8);
+    private final ConcurrentHashMap<String, Lock> locks = new ConcurrentHashMap<String, Lock>(8);
     private volatile boolean started = false;
     private volatile boolean stopped = false;
 
     /**
      * Lock event listeners.
      */
-    private ConcurrentHashMap<String, EventListener> listeners = new ConcurrentHashMap<String, EventListener>(8);
+    private final ConcurrentHashMap<String, EventListener> listeners = new ConcurrentHashMap<String, EventListener>(8);
 
     public void waitFor(String lockId) throws InterruptedException {
         this.listeners.get(lockId).waitFor();

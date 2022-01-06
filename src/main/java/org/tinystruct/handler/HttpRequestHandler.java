@@ -92,7 +92,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                     context.setAttribute("REQUEST_BODY", requestBody);
                     String[] args = requestBody.split("&"), pair;
                     for (int i = 0; i < args.length; i++) {
-                        if (args[i].indexOf("=") != -1) {
+                        if (args[i].contains("=")) {
                             pair = args[i].split("=");
                             context.setParameter(pair[0], Arrays.asList(pair[1]));
                         }

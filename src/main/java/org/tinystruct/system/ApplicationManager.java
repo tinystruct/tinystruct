@@ -34,7 +34,7 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.3.0";
+    public static final String VERSION = "0.3.1";
     private static final boolean WINDOWS = System.getProperty("os.name").startsWith("WIN");
 
     private ApplicationManager() {
@@ -175,7 +175,7 @@ public final class ApplicationManager {
 
         Action action = actions.getAction(path, method);
         if (action == null) {
-            int pos = -1;
+            int pos;
             String tpath = path;
             while ((pos = tpath.lastIndexOf('/')) != -1) {
                 tpath = tpath.substring(0, pos);

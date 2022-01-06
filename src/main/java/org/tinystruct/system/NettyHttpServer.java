@@ -42,10 +42,9 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
     private static final boolean SSL = System.getProperty("ssl") != null;
     private int port = 8080;
     private static final int MAX_CONTENT_LENGTH = 1024 * 100;
-    private ChannelFuture future;
-    private EventLoopGroup bossgroup;
-    private EventLoopGroup workgroup;
-    private Logger logger = Logger.getLogger(NettyHttpServer.class.getName());
+    private final EventLoopGroup bossgroup;
+    private final EventLoopGroup workgroup;
+    private final Logger logger = Logger.getLogger(NettyHttpServer.class.getName());
 
     public NettyHttpServer() {
         if (Epoll.isAvailable()) {
@@ -100,7 +99,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                     .childOption(ChannelOption.TCP_NODELAY, true);
 
             // Bind and start to accept incoming connections.
-            future = bootstrap.bind(port).sync();
+            ChannelFuture future = bootstrap.bind(port).sync();
             logger.info("Netty server(" + port + ") started.");
 
             // Wait until the server socket is closed.
