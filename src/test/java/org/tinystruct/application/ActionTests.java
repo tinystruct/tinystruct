@@ -11,6 +11,7 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.system.ApplicationManager;
 
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.InvocationHandler;
 import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,10 +23,10 @@ public class ActionTests {
     private ApplicationManager manager;
 
     private class testApp extends AbstractApplication {
-
         @Override
         public void init() {
             this.setAction("hi", "hi");
+            this.setTemplateRequired(false);
         }
 
         public String hi() {
@@ -57,6 +58,9 @@ public class ActionTests {
         list.forEach(a -> {
             log.info(a.getName());
         });
+
+        log.info("ApplicationManager.call(\"hi/James\", null) = {}", ApplicationManager.call("hi/James", null));
+
         assertEquals(String.valueOf(ApplicationManager.call("hi", null)), "Hi.");
         assertEquals(String.valueOf(ApplicationManager.call("hi/10", null)), "hi, 10");
         assertEquals(String.valueOf(ApplicationManager.call("hi/James", null)), "Hi, James");
