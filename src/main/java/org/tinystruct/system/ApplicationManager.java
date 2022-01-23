@@ -34,7 +34,7 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.3.1";
+    public static final String VERSION = "0.3.2";
     private static final boolean WINDOWS = System.getProperty("os.name").startsWith("WIN");
 
     private ApplicationManager() {
@@ -147,7 +147,7 @@ public final class ApplicationManager {
             action = (Action) list[i++];
 
             if (action.getApplicationName().equalsIgnoreCase(application.getName())) {
-                return actions.remove(action.getPath());
+                return actions.remove(action.getPathRule());
             }
         }
 
@@ -175,29 +175,6 @@ public final class ApplicationManager {
 
         Action action = actions.getAction(path, method);
         if (action == null) {
-            int pos;
-            String tpath = path;
-            while ((pos = tpath.lastIndexOf('/')) != -1) {
-                tpath = tpath.substring(0, pos);
-                action = actions.getAction(tpath, method);
-
-                if (action != null) {
-                    if (context != null) {
-                        context.setAttribute("REQUEST_ACTION", path);
-                        action.setContext(context);
-                    }
-
-                    String arg = path.substring(pos + 1);
-                    if (arg.length() > 0) {
-                        String[] args = arg.split("/");
-
-                        return action.execute(args);
-                    }
-
-                    return action.execute();
-                }
-            }
-
             throw new ApplicationException(
                     "Access error [" + path + "]: Application has not been installed, or it has been uninstalled already.");
         }
