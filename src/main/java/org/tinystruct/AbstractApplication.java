@@ -47,10 +47,9 @@ public abstract class AbstractApplication implements Application {
      * Context of application
      */
     protected Context context;
-    private String name;
+    private final String name;
     private final Map<String, Variable<?>> variables;
     private Locale locale;
-    private Resource resource;
     private final static Logger logger = Logger.getLogger("AbstractApplication.class");
     private String output;
     private boolean templateRequired = true;
@@ -98,20 +97,28 @@ public abstract class AbstractApplication implements Application {
         return this.actions;
     }
 
-    public void setAction(String action, String function) {
-        this.actions.set(this, action, function);
+    public void setAction(String path, Action action) {
+        this.actions.set(action);
 
         // Exclude the command start with '-'
-        if(action.indexOf("-") != 0)
-            this.setLink(action);
+        if(path.indexOf("-") != 0)
+            this.setLink(path);
     }
 
-    public void setAction(String action, String function, String method) {
-        this.actions.set(this, action, function, method);
+    public void setAction(String path, String function) {
+        this.actions.set(this, path, function);
 
         // Exclude the command start with '-'
-        if(action.indexOf("-") != 0)
-            this.setLink(action);
+        if(path.indexOf("-") != 0)
+            this.setLink(path);
+    }
+
+    public void setAction(String path, String function, String method) {
+        this.actions.set(this, path, function, method);
+
+        // Exclude the command start with '-'
+        if(path.indexOf("-") != 0)
+            this.setLink(path);
     }
 
     /**
@@ -160,22 +167,6 @@ public abstract class AbstractApplication implements Application {
         }
         Action action = this.actions.getAction(path, method);
         if (action == null) {
-            int pos;
-            String tpath = path;
-            while ((pos = tpath.lastIndexOf('/')) != -1) {
-                tpath = tpath.substring(0, pos);
-                action = this.actions.getAction(tpath, method);
-                if (action != null) {
-                    String arg = path.substring(pos + 1);
-                    String[] args = arg.split("/");
-                    if (context != null) {
-                        context.setAttribute(REQUEST_ACTION, path);
-                        action.setContext(context);
-                    }
-
-                    return action.execute(args);
-                }
-            }
             throw new ApplicationException("Action [" + path + "] has not been registered.");
         }
         if (context != null) {
@@ -299,8 +290,8 @@ public abstract class AbstractApplication implements Application {
 
     public String getProperty(String propertyName) {
         try {
-            this.resource = Resource.getInstance(this.locale);
-            return this.resource.getLocaleString(propertyName);
+            Resource resource = Resource.getInstance(this.locale);
+            return resource.getLocaleString(propertyName);
         } catch (Exception e) {
             logger.severe("Application view getProperty():" + e.getMessage());
         }
@@ -355,4 +346,5 @@ public abstract class AbstractApplication implements Application {
     public void run() {
         throw new ApplicationRuntimeException("The method has not been implemented yet.");
     }
+
 }
