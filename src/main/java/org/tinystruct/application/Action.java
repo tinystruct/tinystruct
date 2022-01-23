@@ -21,55 +21,28 @@ import org.tinystruct.ApplicationRuntimeException;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Date;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
-public class Action {
+public class Action implements org.tinystruct.application.Method<Object> {
     public static final int MAX_ARGUMENTS = 10;
-    private String path;
-    private String name;
-    private int id;
-    private Application app;
-    private String method = null;
-    private Method[] functions;
-    private Logger logger = Logger.getLogger(Action.class.getName());
+    private final Pattern pattern;
+    private String pathRule;
+    private final int id;
+    private final Application app;
+    private final Method method;
+    private final Logger logger = Logger.getLogger(Action.class.getName());
+    private Object[] args = new Object[]{};
 
-    public Action(int id, Application app, String path, String name) {
+    public Action(int id, Application app, String pathRule, Method method) {
         this.id = id;
-        this.name = name;
-        this.path = path;
         this.app = app;
-        this.functions = this.getFunctions(this.name);
-    }
-
-    public Action(int id, Application app, String path, String name,
-                  String method) {
-        this(id, app, path, name);
+        this.pathRule = pathRule;
         this.method = method;
-    }
-
-    public void setContext(Context context) {
-        this.app.init(context);
-    }
-
-    public String getMethod() {
-        return this.method;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+        this.pattern = Pattern.compile(pathRule);
     }
 
     public int getId() {
@@ -80,87 +53,68 @@ public class Action {
         return this.app.getName();
     }
 
-    protected Method[] getFunctions(String name) {
-        Class<?> clazz = app.getClass();
-        Method[] list = new Method[MAX_ARGUMENTS];
-        int n = 0;
-        try {
-            Method[] methods = clazz.getMethods();
-            for (Method value : methods) {
-                if (value.getName().equals(name)) {
-                    list[n++] = value;
-                }
-            }
-        } catch (SecurityException e) {
-            throw new ApplicationRuntimeException("[" + this.name + "]"
-                    + e.getMessage(), e);
-        }
-
-        return list;
+    public void setContext(Context context) {
+        this.app.init(context);
     }
 
+    public String getPathRule() {
+        return pathRule;
+    }
+
+    public void setPathRule(String path) {
+        this.pathRule = path;
+    }
+
+    @Override
     public Object execute(Object[] args) throws ApplicationException {
-        Object attr;
-        if (this.app.getContext() != null && this.method != null && (attr = this.app.getContext().getAttribute(Application.METHOD)) != null && !this.method.equalsIgnoreCase(attr.toString())) {
-            throw new ApplicationException("The action doesn't allow this method.");
-        }
-
-        if (args.length > this.functions.length) {
-            throw new ApplicationException(this.app.getClass().toString() + ":" + this.name + ":Illegal Argument.");
-        }
-
-        Method method = null;
         Object[] arguments = new Object[0];
-        for (Method m : this.functions) {
-            if (null != m) {
+
+        if (method != null) {
+            Class<?>[] types = method.getParameterTypes();
+            if (types.length > 0 && args.length == types.length) {
+                arguments = getArguments(args, types);
+            }
+
+            if (method.getReturnType().isAssignableFrom(Void.TYPE)) {
                 try {
-                    Class<?>[] types = m.getParameterTypes();
-                    if (args.length == types.length) {
-                        arguments = getArguments(args, types);
-                        method = m;
-
-                        break;
-                    }
-
-                } catch (SecurityException e) {
-                    throw new ApplicationException("[" + this.name + "]"
-                            + e.getMessage(), e);
-                } catch (IllegalArgumentException e) {
-                    // try to use other method with different parameter types
+                    method.invoke(app, arguments);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new ApplicationRuntimeException("[" + method.getName() + "]" + method.toGenericString(), e);
                 }
-            }
-            else break;
-        }
 
-        if (method == null) throw new UnsupportedOperationException("[" + this.name + "]");
-        if (method.getReturnType().isAssignableFrom(Void.TYPE)) {
+                return app.toString();
+            }
+
             try {
-                method.invoke(app, arguments);
+                return method.invoke(app, arguments);
             } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new ApplicationRuntimeException("[" + this.name + "]" + method.toGenericString(), e);
+                throw new ApplicationRuntimeException("[" + method.getName() + "]" + method.toGenericString(), e);
             }
-
-            return app.toString();
         }
 
-        try {
-            return method.invoke(app, arguments);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new ApplicationRuntimeException("[" + this.name + "]" + method.toGenericString(), e);
+        logger.warning("Unsupported Operation.");
+        throw new UnsupportedOperationException();
+    }
+
+    public Object execute() throws ApplicationException {
+        if (app == null) {
+            throw new ApplicationException("Undefined Application.");
         }
+
+        return this.execute(this.args);
     }
 
     private Object[] getArguments(Object[] args, Class<?>[] types) {
         if (args.length > 0 && types.length > 0) {
             Object[] arguments = new Object[types.length];
             for (int n = 0; n < types.length; n++) {
-                if (types[n].isAssignableFrom(String.class)) {
-                    arguments[n] = args[n];
-                }
                 if (types[n].isAssignableFrom(Date.class)) {
-                    arguments[n] = args[n];
-                }
-                else if (types[n].isAssignableFrom(Integer.TYPE)) {
+                    try {
+                        arguments[n] = new SimpleDateFormat("yyyy-MM-dd").parse(String.valueOf(args[n]));
+                    } catch (ParseException e) {
+                        throw new ApplicationRuntimeException(e.getMessage(), e);
+                    }
+                } else if (types[n].isAssignableFrom(Integer.TYPE)) {
                     arguments[n] = Integer.valueOf(String.valueOf(args[n]));
                 } else if (types[n].isAssignableFrom(Long.TYPE)) {
                     arguments[n] = Long.valueOf(String.valueOf(args[n]));
@@ -172,8 +126,9 @@ public class Action {
                     arguments[n] = Short.valueOf(String.valueOf(args[n]));
                 } else if (types[n].isAssignableFrom(Byte.TYPE)) {
                     arguments[n] = Byte.valueOf(String.valueOf(args[n]));
-                }
-                else {
+                } else if (types[n].isAssignableFrom(Boolean.TYPE)) {
+                    arguments[n] = Boolean.valueOf(String.valueOf(args[n]));
+                } else {
                     arguments[n] = args[n];
                 }
             }
@@ -183,17 +138,11 @@ public class Action {
         return args;
     }
 
-    public Object execute() throws ApplicationException {
-        if (app == null) {
-            throw new ApplicationException("Undefined Application.");
-        }
-
-        return this.execute(new Object[]{});
+    public void setArguments(Object[] args) {
+        this.args = args;
     }
 
-    public void println(Object[] objects) {
-        for (int i = 0; i < objects.length; i++) {
-            logger.info(objects[i].toString());
-        }
+    public Pattern getPattern() {
+        return pattern;
     }
 }
