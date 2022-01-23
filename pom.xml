@@ -125,7 +125,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <slf4j.version>1.6.1</slf4j.version>
-        <h2.version>2.0.202</h2.version>
+        <h2.version>2.0.206</h2.version>
     </properties>
     <build>
         <plugins>
