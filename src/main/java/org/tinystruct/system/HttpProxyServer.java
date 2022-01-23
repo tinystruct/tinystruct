@@ -11,6 +11,9 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.HttpProxyHandler;
 
@@ -53,14 +56,26 @@ public class HttpProxyServer extends ProxyServer implements Bootstrap {
         }
 
         try {
+            // Configure SSL.
+            final SslContext sslCtx;
+            if (this.remotePort == 443) {
+                SelfSignedCertificate ssc = new SelfSignedCertificate();
+                sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
+            } else {
+                sslCtx = null;
+            }
+
             ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup)
-                    .channel(Epoll.isAvailable()? EpollServerSocketChannel.class
+                    .channel(Epoll.isAvailable() ? EpollServerSocketChannel.class
                             : NioServerSocketChannel.class)
                     .handler(new LoggingHandler())
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) {
-                            ch.pipeline().addLast(new LoggingHandler(LogLevel.TRACE));
+                            if (sslCtx != null) {
+                                ch.pipeline().addLast(sslCtx.newHandler(ch.alloc()));
+                            }
+                            ch.pipeline().addLast(new LoggingHandler());
                             ch.pipeline().addLast(new HttpRequestDecoder());
                             ch.pipeline().addLast(new HttpProxyHandler(remoteHost, remotePort));
                         }
