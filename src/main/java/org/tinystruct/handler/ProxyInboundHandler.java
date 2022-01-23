@@ -18,8 +18,12 @@ package org.tinystruct.handler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+
+import javax.net.ssl.SSLException;
 
 public abstract class ProxyInboundHandler extends ChannelInboundHandlerAdapter implements ProxyHandler {
 
@@ -49,7 +53,20 @@ public abstract class ProxyInboundHandler extends ChannelInboundHandlerAdapter i
                 .handler(new ProxyOutboundHandler(inboundChannel))
                 .option(ChannelOption.AUTO_READ, false);
         ChannelFuture f = b.connect(remoteHost, remotePort);
+
+        // Configure SSL.
+        SslContext sslCtx = null;
+        if (this.remotePort == 443) {
+            try {
+                sslCtx = SslContextBuilder.forClient().build();
+            } catch (SSLException e) {
+                e.printStackTrace();
+            }
+        }
+
         outboundChannel = f.channel();
+        if (sslCtx != null)
+            outboundChannel.pipeline().addLast(sslCtx.newHandler(outboundChannel.alloc()));
         outboundChannel.pipeline().addLast(this.initCodecs());
         f.addListener(new ChannelFutureListener() {
             @Override
@@ -72,16 +89,16 @@ public abstract class ProxyInboundHandler extends ChannelInboundHandlerAdapter i
         if (outboundChannel.isActive() && outboundChannel.isWritable()) {
             outboundChannel.writeAndFlush(msg)
                     .addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) {
-                    if (future.isSuccess()) {
-                        // was able to flush out data, start to read the next chunk
-                        ctx.channel().read();
-                    } else {
-                        future.channel().close();
-                    }
-                }
-            });
+                        @Override
+                        public void operationComplete(ChannelFuture future) {
+                            if (future.isSuccess()) {
+                                // was able to flush out data, start to read the next chunk
+                                ctx.channel().read();
+                            } else {
+                                future.channel().close();
+                            }
+                        }
+                    });
         }
     }
 
