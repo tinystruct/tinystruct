@@ -1,9 +1,8 @@
 package org.tinystruct.system.cli;
 
-public class CommandOption {
-    private String description;
-    private CommandArgument arguments;
-
-    public CommandOption() {
+public class CommandOption extends CommandArgument {
+    public CommandOption(Object key, Object value, String description) {
+        super("--" + key, value, description);
+        this.optional = true;
     }
 }
