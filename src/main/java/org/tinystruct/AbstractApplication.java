@@ -20,18 +20,18 @@ import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Resource;
 import org.tinystruct.system.Settings;
+import org.tinystruct.system.cli.CommandLine;
+import org.tinystruct.system.cli.CommandOption;
 import org.tinystruct.system.template.DefaultTemplate;
 import org.tinystruct.system.template.PlainText;
 import org.tinystruct.system.template.variable.DataType;
 import org.tinystruct.system.template.variable.StringVariable;
 import org.tinystruct.system.template.variable.Variable;
+import org.tinystruct.system.util.StringUtilities;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -53,9 +53,11 @@ public abstract class AbstractApplication implements Application {
     private final static Logger logger = Logger.getLogger("AbstractApplication.class");
     private String output;
     private boolean templateRequired = true;
+    protected Map<String, CommandLine> commandLines;
 
     /**
      * Set template to be required or not.
+     *
      * @param templateRequired boolean
      */
     public void setTemplateRequired(boolean templateRequired) {
@@ -68,7 +70,7 @@ public abstract class AbstractApplication implements Application {
     public AbstractApplication() {
         this.name = getClass().getName();
         this.variables = Variables.getInstance();
-
+        this.commandLines = new HashMap();
         this.setConfiguration(new Settings());
     }
 
@@ -78,6 +80,9 @@ public abstract class AbstractApplication implements Application {
         this.setVariable(LANGUAGE_CODE, local[0]);
         this.setVariable(LANGUAGE, locale);
         this.init();
+
+        this.setAction("--help", "help");
+        this.commandLines.get("--help").setDescription("Help command");
     }
 
     public void init(Context context) {
@@ -101,7 +106,7 @@ public abstract class AbstractApplication implements Application {
         this.actions.set(action);
 
         // Exclude the command start with '-'
-        if(path.indexOf("-") != 0)
+        if (path.indexOf("-") != 0)
             this.setLink(path);
     }
 
@@ -109,7 +114,7 @@ public abstract class AbstractApplication implements Application {
         this.actions.set(this, path, function);
 
         // Exclude the command start with '-'
-        if(path.indexOf("-") != 0)
+        if (path.indexOf("-") != 0)
             this.setLink(path);
     }
 
@@ -117,7 +122,7 @@ public abstract class AbstractApplication implements Application {
         this.actions.set(this, path, function, method);
 
         // Exclude the command start with '-'
-        if(path.indexOf("-") != 0)
+        if (path.indexOf("-") != 0)
             this.setLink(path);
     }
 
@@ -307,7 +312,7 @@ public abstract class AbstractApplication implements Application {
     }
 
     public String toString() {
-        if( !this.templateRequired ) return null;
+        if (!this.templateRequired) return null;
 
         InputStream in = null;
         String simpleName = this.getName().substring(this.getName().lastIndexOf('.') + 1);
@@ -343,8 +348,42 @@ public abstract class AbstractApplication implements Application {
         throw new ApplicationRuntimeException("The template " + this.template_path + " could not be found and the output has not been set.");
     }
 
+    public CommandLine setCommandLine(CommandLine command) {
+        return this.commandLines.put(command.getCommand(), command);
+    }
+
     public void run() {
         throw new ApplicationRuntimeException("The method has not been implemented yet.");
     }
 
+    @Override
+    public String help() {
+        StringBuilder builder = new StringBuilder("Usage: bin/dispatcher COMMAND [OPTIONS]\n");
+
+        StringBuilder commands = new StringBuilder("Commands: \n");
+        StringBuilder options = new StringBuilder("Options: \n");
+
+        OptionalInt longSizeCommand = this.commandLines.keySet().stream().mapToInt(String::length).max();
+        int max = longSizeCommand.orElse(0);
+
+        this.commandLines.forEach((s, commandLine) -> {
+            String command = commandLine.getCommand();
+            String description = commandLine.getDescription();
+            if(command.startsWith("--")) {
+                options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+            }
+            else {
+                commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+            }
+        });
+
+        builder.append(commands).append("\n");
+        builder.append(options);
+
+        return builder.toString();
+    }
+
+    public Map<String, CommandLine> getCommandLines(){
+        return this.commandLines;
+    }
 }
