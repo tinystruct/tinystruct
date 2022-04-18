@@ -19,7 +19,7 @@ package org.tinystruct;
 public class ApplicationException extends Exception {
 
     private static final long serialVersionUID = -495731838035883308L;
-    private String status;
+    private int status;
 
     public ApplicationException() {
         super();
@@ -29,7 +29,7 @@ public class ApplicationException extends Exception {
         super(message);
     }
 
-    public ApplicationException(String message, String status) {
+    public ApplicationException(String message, int status) {
         super(message);
         this.status = status;
     }
@@ -38,8 +38,8 @@ public class ApplicationException extends Exception {
         super(message, cause);
     }
 
-    public String getStatus() {
-        if (this.status == null) return "500";
+    public int getStatus() {
+        if (this.status == 0) return 500;
         return this.status;
     }
 

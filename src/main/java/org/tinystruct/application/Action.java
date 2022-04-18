@@ -23,7 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -79,7 +79,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
                 try {
                     method.invoke(app, arguments);
                 } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new ApplicationRuntimeException("[" + method.getName() + "]" + method.toGenericString(), e);
+                    throw new ApplicationException(method.toGenericString(), e);
                 }
 
                 return app.toString();
@@ -88,7 +88,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
             try {
                 return method.invoke(app, arguments);
             } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new ApplicationRuntimeException("[" + method.getName() + "]" + method.toGenericString(), e);
+                throw new ApplicationException(method.toGenericString(), e);
             }
         }
 
