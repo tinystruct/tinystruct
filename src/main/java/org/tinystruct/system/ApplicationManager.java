@@ -20,9 +20,11 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Action;
 import org.tinystruct.application.Actions;
 import org.tinystruct.application.Context;
+import org.tinystruct.system.cli.CommandLine;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,7 +36,7 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.3.2";
+    public static final String VERSION = "0.3.3";
     private static final boolean WINDOWS = System.getProperty("os.name").startsWith("WIN");
 
     private ApplicationManager() {
@@ -109,7 +111,7 @@ public final class ApplicationManager {
                 while (i < apps.length) {
                     if (apps[i].trim().length() > 0) {
                         try {
-                            Application app = (Application) Class.forName(apps[i]).newInstance();
+                            Application app = (Application) Class.forName(apps[i]).getDeclaredConstructor().newInstance();
                             app.setConfiguration(settings);
                             ApplicationManager.install(app);
                         } catch (InstantiationException e) {
@@ -117,6 +119,10 @@ public final class ApplicationManager {
                         } catch (IllegalAccessException e) {
                             throw new ApplicationException(e.getMessage(), e);
                         } catch (ClassNotFoundException e) {
+                            throw new ApplicationException(e.getMessage(), e);
+                        } catch (InvocationTargetException e) {
+                            throw new ApplicationException(e.getMessage(), e);
+                        } catch (NoSuchMethodException e) {
                             throw new ApplicationException(e.getMessage(), e);
                         }
                     }
@@ -171,6 +177,12 @@ public final class ApplicationManager {
         String method = null;
         if (context != null && context.getAttribute("METHOD") != null) {
             method = context.getAttribute("METHOD").toString();
+        }
+
+        if (context != null && context.getAttribute("--help") != null) {
+            CommandLine command;
+            if ((command = actions.getCommand(path)) != null)
+                return command;
         }
 
         Action action = actions.getAction(path, method);
