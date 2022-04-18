@@ -17,13 +17,13 @@ package org.tinystruct.application;
 
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationRuntimeException;
+import org.tinystruct.system.cli.CommandArgument;
+import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.util.StringUtilities;
 
 import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Parameter;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
@@ -32,6 +32,7 @@ import static org.tinystruct.application.Action.MAX_ARGUMENTS;
 public class Actions {
 
     private static final Map<String, Action> map = new ConcurrentHashMap<String, Action>();
+    private static final Map<String, CommandLine> commands = new ConcurrentHashMap<String, CommandLine>();
 
     private static final class SingletonHolder {
         static final Actions actions = new Actions();
@@ -102,6 +103,10 @@ public class Actions {
         return null;
     }
 
+    public CommandLine getCommand(String path) {
+        return commands.get(path);
+    }
+
     public Action getAction(String path, String method) {
         return this.getAction(path);
     }
@@ -122,16 +127,20 @@ public class Actions {
                     + e.getMessage(), e);
         }
 
+        CommandLine cli = new CommandLine(app, path, "");
+        commands.put(path, cli);
         String patternPrefix = "/?" + path;
         for (int j = 0; j < n; j++) {
             Method m = functions[j];
             if (null != m) {
                 Class<?>[] types = m.getParameterTypes();
+                Parameter[] params = m.getParameters();
                 String expression;
                 if (types.length > 0) {
                     StringBuilder patterns = new StringBuilder();
 
                     for (int i = types.length - 1; i >= 0; i--) {
+                        cli.addArgument(new CommandArgument<>(params[i].getName(), null, ""));
                         String pattern = "(";
                         if (types[i].isAssignableFrom(Integer.TYPE)) {
                             pattern += "-?\\d+";
@@ -165,6 +174,8 @@ public class Actions {
                 map.put(expression, new Action(map.size(), app, expression, m));
             }
         }
+
+        app.setCommandLine(cli);
     }
 
 
