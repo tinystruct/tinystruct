@@ -17,6 +17,10 @@ package org.tinystruct.system;
 
 import org.tinystruct.*;
 import org.tinystruct.application.Context;
+import org.tinystruct.system.cli.CommandArgument;
+import org.tinystruct.system.cli.CommandLine;
+import org.tinystruct.system.cli.CommandOption;
+import org.tinystruct.system.util.StringUtilities;
 import org.tinystruct.transfer.http.ReadableByteChannelWrapper;
 
 import java.io.*;
@@ -26,26 +30,13 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Dispatcher extends AbstractApplication {
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
-
-    private final String help = "Usage:\tdispatcher [--attributes] [actions[/args...]...]\n"
-            + "\twhere attributes include any custom attributes you defined in context \n"
-            + "\tor keypair parameters are going to be passed by context,\n " + "\tsuch as: \n"
-            + "\t--http.proxyHost=127.0.0.1 or --http.proxyPort=3128 or --param=value\n\n" + "\tSystem actions are:\n"
-            + "\t\tinstall\t\tInstall specific app\n" + "\t\tupdate\t\tUpdate framework to the latest version\n"
-            + "\t\tdownload\tA download org.tinystruct.data.tools\n\t\t\t\t--url URL\n"
-            + "\t\tset\t\tSet system property\n"
-            + "\t\texec\t\tTo execute native command(s)\n\t\t\t\t--shell-command Commands\n\n"
-            + "\tSystem attributes are:\n" + "\t\t--import-applications\tImport apps class your expected\n"
-            + "\t\t--settings\t\tPrint all attributes set\n" + "\t\t--logo\t\tPrint the logo of the framework\n"
-            + "\t\t--help\t\tPrint help\n";
+    public static final String PROGRESS_CONTINUE = "NOT_CONTINUE";
 
     /**
      * Main functionality.
@@ -53,40 +44,83 @@ public class Dispatcher extends AbstractApplication {
      * @param args arguments
      */
     public static void main(String[] args) {
+
+        // Process the system.directory.
+        Settings config = new Settings();
+        if (config.get("system.directory") == null) {
+            config.set("system.directory", System.getProperty("user.dir"));
+        }
+
+        // Initialize the context.
+        Context context = new ApplicationContext();
+
+        // Install Dispatcher.
+        ApplicationManager.install(new Dispatcher());
+
         if (args.length > 0) {
-            ApplicationManager.install(new Dispatcher());
-
-            Settings config = new Settings();
-            if (config.get("system.directory") == null) {
-                config.set("system.directory", System.getProperty("user.dir"));
+            // Detect the command.
+            String command = null;
+            if (!args[0].startsWith("--")) {
+                command = args[0];
             }
 
-            StringBuilder defaultImportApplications = new StringBuilder(config.get("default.import.applications"));
-            String[] __arg;
-            for (String arg : args) {
-                if (arg.startsWith("--") && arg.indexOf('=') >= 3) {
-                    __arg = arg.split("=");
-
-                    if ("--import-applications".equalsIgnoreCase(__arg[0])) {
-                        if (defaultImportApplications.length() >= 1)
-                            defaultImportApplications.append(";").append(__arg[1]);
-                        else
-                            defaultImportApplications.append(__arg[1]);
-
-                        break;
+            // Process attributes / options.
+            String arg;
+            for (int i = 0; i < args.length; i++) {
+                arg = args[i];
+                if (arg.startsWith("--")) {
+                    if ((i + 1) < args.length) {
+                        String value = args[++i].trim();
+                        if (value.length() > 0 && !value.startsWith("--")) {
+                            if (context.getAttribute(arg) != null) {
+                                List<String> list;
+                                if (context.getAttribute(arg) instanceof List) {
+                                    list = (List<String>) context.getAttribute(arg);
+                                } else {
+                                    list = new ArrayList<String>();
+                                    list.add(context.getAttribute(arg).toString());
+                                }
+                                list.add(value);
+                                context.setAttribute(arg, list);
+                            } else
+                                context.setAttribute(arg, value);
+                        }
+                        else {
+                            i--;
+                            context.setAttribute(arg, true);
+                        }
+                    } else {
+                        context.setAttribute(arg, true);
                     }
-                }
+                } else
+                    command = arg;
             }
 
+            // Load the default import.
+            StringBuilder defaultImportApplications = new StringBuilder(config.get("default.import.applications"));
+
+            // Load the packages from import attribute.
+            if (context.getAttribute("--import") != null) {
+                if (context.getAttribute("--import") instanceof List) {
+                    List<String> list = (List<String>) context.getAttribute("--import");
+                    defaultImportApplications.append(StringUtilities.implode(";", list));
+                } else
+                    defaultImportApplications.append(context.getAttribute("--import"));
+            }
+
+            // Update the imports.
             config.set("default.import.applications", defaultImportApplications.toString());
 
             try {
+                // Initialize the application manager.
                 ApplicationManager.init(config);
             } catch (ApplicationException e) {
                 logger.log(Level.SEVERE, e.getMessage(), e);
             }
 
-            Context context = new ApplicationContext();
+//            System.out.println("config.get(\"default.import.applications\") = " + config.get("default.import.applications"));
+
+            // Load all the configuration to context.
             Set<String> propertyNames = config.propertyNames();
             Iterator<String> iterator = propertyNames.iterator();
             String keyName;
@@ -96,44 +130,37 @@ public class Dispatcher extends AbstractApplication {
                     context.setAttribute(keyName, config.get(keyName));
             }
 
-            String attributeName;
-            int endIndex;
-            for (String arg : args) {
-                try {
-                    if (arg.startsWith("--") && arg.indexOf('=') >= 3) {
-                        endIndex = arg.indexOf('=');
-                        if (endIndex != -1) {
-                            attributeName = arg.substring(0, endIndex);
-                            context.setAttribute(attributeName, arg.substring(endIndex + 1));
-                            if ("--shell-command".equalsIgnoreCase(attributeName)) {
-                                ApplicationManager.call("exec", context);
-                            } else {
-                                System.out.println(ApplicationManager.call("set/" + attributeName, context));
-                            }
-                        } else {
-                            System.out.println("Context attribute value should not be empty.");
-                            break;
-                        }
-                    }
-                } catch (ApplicationException e) {
-                    logger.log(Level.SEVERE, e.getMessage(), e);
-                }
+            execute(command, context);
+        } else {
+            try {
+                // Initialize the application manager.
+                ApplicationManager.init(config);
+            } catch (ApplicationException e) {
+                logger.log(Level.SEVERE, e.getMessage(), e);
             }
 
-            for (String arg : args) {
-                try {
-                    if (!arg.startsWith("--") || arg.indexOf('=') == -1) {
-                        Object o = ApplicationManager.call(arg, context);
-                        if (o != null) {
-                            System.out.println(o);
-                        }
-                    }
-                } catch (ApplicationException e) {
-                    logger.log(Level.SEVERE, e.getMessage(), e);
+            System.out.println(new Dispatcher().help());
+        }
+    }
+
+    private static void execute(String command, Context context) {
+        if (context.getAttribute(PROGRESS_CONTINUE) != null && !Boolean.parseBoolean(context.getAttribute(PROGRESS_CONTINUE).toString())) {
+            return;
+        }
+
+        try {
+            // Execute the command with the context.
+            if (command != null) {
+                Object o = ApplicationManager.call(command, context);
+                if (o != null) {
+                    System.out.println(o);
                 }
             }
-        } else {
-            System.out.println(new Dispatcher().help());
+            else
+                System.out.println(new Dispatcher().help());
+
+        } catch (ApplicationException e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
@@ -148,11 +175,7 @@ public class Dispatcher extends AbstractApplication {
         Application app = null;
         try {
             app = (Application) Class.forName(appName).newInstance();
-        } catch (IllegalAccessException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
-        } catch (InstantiationException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
-        } catch (ClassNotFoundException e) {
+        } catch (IllegalAccessException | ClassNotFoundException | InstantiationException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
         if (null != ApplicationManager.getConfiguration()) {
@@ -198,12 +221,10 @@ public class Dispatcher extends AbstractApplication {
             if (!Files.exists(dest))
                 Files.createFile(dest);
         } catch (IOException e) {
-            if (rbc != null) {
-                try {
-                    rbc.close();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
+            try {
+                rbc.close();
+            } catch (IOException e1) {
+                e1.printStackTrace();
             }
             throw new ApplicationException(e.getMessage(), e.getCause());
         }
@@ -221,12 +242,10 @@ public class Dispatcher extends AbstractApplication {
                 } catch (IOException e) {
                     throw new ApplicationException(e.getMessage(), e.getCause());
                 }
-            if (rbc != null) {
-                try {
-                    rbc.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            try {
+                rbc.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -271,15 +290,38 @@ public class Dispatcher extends AbstractApplication {
 
     public void init() {
         this.setAction("install", "install");
+        List<CommandOption> options = new ArrayList<CommandOption>();
+        options.add(new CommandOption("app", "", "Packages to be installed"));
+        this.commandLines.get("install").setOptions(options).setDescription("Install a package");
+
         this.setAction("update", "update");
         this.setAction("download", "download");
+        List<CommandOption> opts = new ArrayList<>();
+        opts.add(new CommandOption("url", "", "URL resource to be downloaded"));
+        CommandOption opt = new CommandOption("http.proxyHost", "127.0.0.1", "Proxy host");
+        opts.add(opt);
+        opt = new CommandOption("http.proxyPort", "3128", "Proxy port");
+        opts.add(opt);
+        this.commandLines.get("download").setOptions(opts).setDescription("Download a resource from other servers");
+
         this.setAction("set", "setProperty");
+        this.commandLines.get("set").setDescription("Set system property");
+
         this.setAction("exec", "exec");
+        List<CommandOption> execOpts = new ArrayList<>();
+        opt = new CommandOption("shell-commands", "", "Commands needs to be executed");
+        execOpts.add(opt);
+        this.commandLines.get("exec").setOptions(execOpts).setDescription("To execute native command(s)");
+
+        this.setAction("say", "say");
+        CommandArgument argument = new CommandArgument("words", "", "What you want to say");
+        Set<CommandArgument<String, Object>> arguments = new HashSet<>();
+        arguments.add(argument);
+        this.commandLines.get("say").setArguments(arguments).setDescription("Output words");
+
         this.setAction("--settings", "settings");
         this.setAction("--logo", "logo");
         this.setAction("--version", "logo");
-        this.setAction("--help", "help");
-        this.setAction("say", "say");
 
         this.setTemplateRequired(false);
     }
@@ -294,6 +336,7 @@ public class Dispatcher extends AbstractApplication {
         String property = this.context.getAttribute(propertyName).toString();
         propertyName = propertyName.substring(2);
         System.setProperty(propertyName, property);
+        this.context.setAttribute(PROGRESS_CONTINUE, true);
         return propertyName + "=" + System.getProperty(propertyName);
     }
 
@@ -303,9 +346,11 @@ public class Dispatcher extends AbstractApplication {
         for (String name : names) {
             logger.info(name + "=" + this.context.getAttribute(name));
         }
+        this.context.setAttribute(PROGRESS_CONTINUE, true);
     }
 
     public String logo() {
+        this.context.setAttribute(PROGRESS_CONTINUE, false);
         return "\n"
                 + "  _/  '         _ _/  _     _ _/   \n"
                 + "  /  /  /) (/ _)  /  /  (/ (  /  "
@@ -317,12 +362,41 @@ public class Dispatcher extends AbstractApplication {
         return "\u001b[" + color + "m" + s + "\u001b[0m";
     }
 
-    public String help() {
-        return help;
+    public String version() {
+        this.context.setAttribute(PROGRESS_CONTINUE, false);
+        return ApplicationManager.VERSION;
     }
 
-    public String version() {
-        return ApplicationManager.VERSION;
+    @Override
+    public String help() {
+        StringBuilder builder = new StringBuilder("Usage: bin/dispatcher COMMAND [OPTIONS]\n");
+
+        StringBuilder commands = new StringBuilder("Commands: \n");
+        StringBuilder options = new StringBuilder("Options: \n");
+
+        Map<String, CommandLine> commandLines = new HashMap<>();
+        Collection<Application> apps = ApplicationManager.list();
+        apps.forEach(app -> commandLines.putAll(app.getCommandLines()));
+
+        OptionalInt longSizeCommand = commandLines.keySet().stream().mapToInt(String::length).max();
+        int max = longSizeCommand.orElse(0);
+
+        commandLines.forEach((s, commandLine) -> {
+            String command = commandLine.getCommand();
+            String description = commandLine.getDescription();
+            if(command.startsWith("--")) {
+                options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+            }
+            else {
+                commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+            }
+        });
+
+        builder.append(commands).append("\n");
+        builder.append(options);
+
+        builder.append("\nRun 'bin/dispatcher COMMAND --help' for more information on a command.");
+        return builder.toString();
     }
 
     private static class FORE_COLOR {
