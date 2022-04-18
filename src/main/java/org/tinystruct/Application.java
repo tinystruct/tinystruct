@@ -19,6 +19,9 @@ import org.tinystruct.application.Actions;
 import org.tinystruct.application.Context;
 import org.tinystruct.application.Template;
 import org.tinystruct.system.Configuration;
+import org.tinystruct.system.cli.CommandLine;
+
+import java.util.Map;
 
 /**
  * Application interface used to indicate that an application should provide the standard methods.
@@ -162,4 +165,26 @@ public interface Application {
      * @return name
      */
     String getName();
+
+    /**
+     * Set commandline.
+     *
+     * @param command
+     * @return commandline
+     */
+    CommandLine setCommandLine(CommandLine command);
+
+    /**
+     * Return a list of CommandLine for current application.
+     *
+     * @return
+     */
+    Map<String, CommandLine> getCommandLines();
+
+    /**
+     * Help information.
+     *
+     * @return
+     */
+    String help();
 }
