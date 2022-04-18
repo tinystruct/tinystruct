@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.tinystruct.handler;
 
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
@@ -151,7 +153,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                 response.getWriter().close();
             }
         } catch (ApplicationException e) {
-            response.setHeader("Status", e.getStatus());
+            response.setStatus(e.getStatus());
             try {
                 HttpSession session = request.getSession();
                 session.setAttribute("error", e);
