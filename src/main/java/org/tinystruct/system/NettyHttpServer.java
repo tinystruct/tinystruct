@@ -35,7 +35,10 @@ import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.HttpRequestHandler;
 import org.tinystruct.handler.HttpStaticFileHandler;
+import org.tinystruct.system.cli.CommandOption;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class NettyHttpServer extends AbstractApplication implements Bootstrap {
@@ -57,7 +60,11 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
     }
 
     public void init() {
-        this.setAction("--start-server", "start");
+        this.setAction("start", "start");
+
+        List<CommandOption> options = new ArrayList<CommandOption>();
+        options.add(new CommandOption("server-port", "", "Server port"));
+        this.commandLines.get("start").setOptions(options);
     }
 
     @Override

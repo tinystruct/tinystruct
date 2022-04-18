@@ -12,7 +12,10 @@ import io.netty.handler.codec.redis.RedisDecoder;
 import io.netty.handler.logging.LoggingHandler;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.RedisProxyHandler;
+import org.tinystruct.system.cli.CommandOption;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class RedisProxyServer extends ProxyServer implements Bootstrap {
@@ -27,7 +30,13 @@ public class RedisProxyServer extends ProxyServer implements Bootstrap {
     }
 
     public void init() {
-        this.setAction("--start-redis-proxy", "start");
+        this.setAction("start", "start");
+
+        List<CommandOption> options = new ArrayList<CommandOption>();
+        options.add(new CommandOption("server-port", "", "Server port"));
+        options.add(new CommandOption("remote-server-host", "", "Remote Server host"));
+        options.add(new CommandOption("remote-server-port", "", "Remote Server port"));
+        this.commandLines.get("start").setOptions(options);
 
         this.setTemplateRequired(false);
     }

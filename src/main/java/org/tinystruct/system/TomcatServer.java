@@ -22,21 +22,31 @@ import org.apache.tomcat.util.descriptor.web.FilterDef;
 import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
-import org.tinystruct.dom.Element;
 import org.tinystruct.handler.DefaultHandler;
 import org.tinystruct.handler.Reforward;
+import org.tinystruct.system.cli.CommandOption;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class TomcatServer extends AbstractApplication implements Bootstrap {
     private Logger logger = Logger.getLogger(TomcatServer.class.getName());
 
+    public TomcatServer(){
+
+    }
+
     public void init() {
-        this.setAction("--start-server", "start");
+        this.setAction("start", "start");
+        List<CommandOption> options = new ArrayList<CommandOption>();
+        options.add(new CommandOption("server-port", "", "Server port"));
+        this.commandLines.get("start").setOptions(options).setDescription("Start a Tomcat server");
+
         this.setAction("error", "exceptionCaught");
     }
 
