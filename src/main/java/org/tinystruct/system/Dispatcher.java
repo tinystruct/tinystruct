@@ -309,7 +309,7 @@ public class Dispatcher extends AbstractApplication {
 
         this.setAction("exec", "exec");
         List<CommandOption> execOpts = new ArrayList<>();
-        opt = new CommandOption("shell-commands", "", "Commands needs to be executed");
+        opt = new CommandOption("shell-command", "", "Commands needs to be executed");
         execOpts.add(opt);
         this.commandLines.get("exec").setOptions(execOpts).setDescription("To execute native command(s)");
 
