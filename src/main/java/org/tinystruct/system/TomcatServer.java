@@ -111,6 +111,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
                 this.setVariable("exception.message", "Unknown error");
 
             logger.severe(exception.toString());
+            exception.printStackTrace();
             return this.getVariable("exception.message").getValue().toString();
         } else {
             reforward.forward();
