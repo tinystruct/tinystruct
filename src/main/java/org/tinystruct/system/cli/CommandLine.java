@@ -3,7 +3,6 @@ package org.tinystruct.system.cli;
 import org.tinystruct.Application;
 import org.tinystruct.system.util.StringUtilities;
 
-import java.io.Serializable;
 import java.util.*;
 
 public class CommandLine {
