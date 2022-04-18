@@ -101,6 +101,10 @@ public class Action implements org.tinystruct.application.Method<Object> {
             throw new ApplicationException("Undefined Application.");
         }
 
+        if (app.getContext().getAttribute("--help") != null) {
+            return app.help();
+        }
+
         return this.execute(this.args);
     }
 
