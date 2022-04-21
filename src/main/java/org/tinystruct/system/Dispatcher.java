@@ -24,19 +24,20 @@ import org.tinystruct.system.util.StringUtilities;
 import org.tinystruct.transfer.http.ReadableByteChannelWrapper;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Dispatcher extends AbstractApplication {
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
-    public static final String PROGRESS_CONTINUE = "NOT_CONTINUE";
 
     /**
      * Main functionality.
@@ -54,8 +55,11 @@ public class Dispatcher extends AbstractApplication {
         // Initialize the context.
         Context context = new ApplicationContext();
 
+        // Initialize the dispatcher.
+        Dispatcher dispatcher = new Dispatcher();
+
         // Install Dispatcher.
-        ApplicationManager.install(new Dispatcher());
+        ApplicationManager.install(dispatcher);
 
         if (args.length > 0) {
             // Detect the command.
@@ -84,8 +88,7 @@ public class Dispatcher extends AbstractApplication {
                                 context.setAttribute(arg, list);
                             } else
                                 context.setAttribute(arg, value);
-                        }
-                        else {
+                        } else {
                             i--;
                             context.setAttribute(arg, true);
                         }
@@ -100,7 +103,7 @@ public class Dispatcher extends AbstractApplication {
             StringBuilder defaultImportApplications = new StringBuilder(config.get("default.import.applications"));
 
             // Load the packages from import attribute.
-            if (context.getAttribute("--import") != null) {
+            if (context.getAttribute("--import") != null && !Boolean.parseBoolean(context.getAttribute("--import").toString())) {
                 if (context.getAttribute("--import") instanceof List) {
                     List<String> list = (List<String>) context.getAttribute("--import");
                     defaultImportApplications.append(StringUtilities.implode(";", list));
@@ -117,8 +120,6 @@ public class Dispatcher extends AbstractApplication {
             } catch (ApplicationException e) {
                 logger.log(Level.SEVERE, e.getMessage(), e);
             }
-
-//            System.out.println("config.get(\"default.import.applications\") = " + config.get("default.import.applications"));
 
             // Load all the configuration to context.
             Set<String> propertyNames = config.propertyNames();
@@ -139,15 +140,11 @@ public class Dispatcher extends AbstractApplication {
                 logger.log(Level.SEVERE, e.getMessage(), e);
             }
 
-            System.out.println(new Dispatcher().help());
+            System.out.println(dispatcher.help());
         }
     }
 
     private static void execute(String command, Context context) {
-        if (context.getAttribute(PROGRESS_CONTINUE) != null && !Boolean.parseBoolean(context.getAttribute(PROGRESS_CONTINUE).toString())) {
-            return;
-        }
-
         try {
             // Execute the command with the context.
             if (command != null) {
@@ -155,9 +152,19 @@ public class Dispatcher extends AbstractApplication {
                 if (o != null) {
                     System.out.println(o);
                 }
+            } else {
+                Dispatcher dispatcher = (Dispatcher) ApplicationManager.get(Dispatcher.class.getName());
+
+                if (context.getAttribute("--version") != null) {
+                    System.out.println(dispatcher.version());
+                } else if (context.getAttribute("--logo") != null) {
+                    System.out.println(dispatcher.logo());
+                } else if (context.getAttribute("--settings") != null) {
+                    ApplicationManager.call("--settings", context);
+                } else {
+                    System.out.println(dispatcher.help());
+                }
             }
-            else
-                System.out.println(new Dispatcher().help());
 
         } catch (ApplicationException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
@@ -174,10 +181,11 @@ public class Dispatcher extends AbstractApplication {
         String appName = this.context.getParameterValues("app").get(0);
         Application app = null;
         try {
-            app = (Application) Class.forName(appName).newInstance();
-        } catch (IllegalAccessException | ClassNotFoundException | InstantiationException e) {
+            app = (Application) Class.forName(appName).getDeclaredConstructor().newInstance();
+        } catch (IllegalAccessException | ClassNotFoundException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
+
         if (null != ApplicationManager.getConfiguration()) {
             assert app != null;
             app.setConfiguration(ApplicationManager.getConfiguration());
@@ -194,9 +202,7 @@ public class Dispatcher extends AbstractApplication {
         try {
             this.download(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + version()
                     + "/tinystruct-" + version() + "-jar-with-dependencies.jar"), ".");
-        } catch (ApplicationException e) {
-            return e.toString();
-        } catch (MalformedURLException e) {
+        } catch (ApplicationException | MalformedURLException e) {
             return e.toString();
         }
         return "\r\nCompleted!";
@@ -295,6 +301,8 @@ public class Dispatcher extends AbstractApplication {
         this.commandLines.get("install").setOptions(options).setDescription("Install a package");
 
         this.setAction("update", "update");
+        this.commandLines.get("update").setDescription("Update for latest version");
+
         this.setAction("download", "download");
         List<CommandOption> opts = new ArrayList<>();
         opts.add(new CommandOption("url", "", "URL resource to be downloaded"));
@@ -319,9 +327,17 @@ public class Dispatcher extends AbstractApplication {
         arguments.add(argument);
         this.commandLines.get("say").setArguments(arguments).setDescription("Output words");
 
+        this.setAction("--import", "");
+        this.commandLines.get("--import").setDescription("Import application");
+
         this.setAction("--settings", "settings");
+        this.commandLines.get("--settings").setDescription("Print settings");
+
         this.setAction("--logo", "logo");
-        this.setAction("--version", "logo");
+        this.commandLines.get("--logo").setDescription("Print logo");
+
+        this.setAction("--version", "version");
+        this.commandLines.get("--version").setDescription("Print version");
 
         this.setTemplateRequired(false);
     }
@@ -336,25 +352,25 @@ public class Dispatcher extends AbstractApplication {
         String property = this.context.getAttribute(propertyName).toString();
         propertyName = propertyName.substring(2);
         System.setProperty(propertyName, property);
-        this.context.setAttribute(PROGRESS_CONTINUE, true);
-        return propertyName + "=" + System.getProperty(propertyName);
+        return propertyName + ":" + System.getProperty(propertyName);
     }
 
     public void settings() {
         String[] names = this.context.getAttributeNames();
         Arrays.sort(names);
+        StringBuilder settings = new StringBuilder();
         for (String name : names) {
-            logger.info(name + "=" + this.context.getAttribute(name));
+            settings.append(name).append(":").append(this.context.getAttribute(name)).append("\n");
         }
-        this.context.setAttribute(PROGRESS_CONTINUE, true);
+        if (settings.length() > 0)
+            logger.info(settings.toString());
     }
 
     public String logo() {
-        this.context.setAttribute(PROGRESS_CONTINUE, false);
         return "\n"
                 + "  _/  '         _ _/  _     _ _/   \n"
                 + "  /  /  /) (/ _)  /  /  (/ (  /  "
-                + this.color(this.version(), FORE_COLOR.green) + "  \n"
+                + this.color(ApplicationManager.VERSION, FORE_COLOR.green) + "  \n"
                 + "           /                       \n";
     }
 
@@ -363,8 +379,7 @@ public class Dispatcher extends AbstractApplication {
     }
 
     public String version() {
-        this.context.setAttribute(PROGRESS_CONTINUE, false);
-        return ApplicationManager.VERSION;
+        return String.format("Dispatcher (cli) (built on tinystruct-%s) \nCopyright (c) 2013-%s James M. ZHOU", ApplicationManager.VERSION, LocalDate.now().getYear());
     }
 
     @Override
@@ -384,10 +399,9 @@ public class Dispatcher extends AbstractApplication {
         commandLines.forEach((s, commandLine) -> {
             String command = commandLine.getCommand();
             String description = commandLine.getDescription();
-            if(command.startsWith("--")) {
+            if (command.startsWith("--")) {
                 options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
-            }
-            else {
+            } else {
                 commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
             }
         });
