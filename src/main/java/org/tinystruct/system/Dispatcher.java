@@ -217,7 +217,7 @@ public class Dispatcher extends AbstractApplication {
         }
 
         if (destination.trim().length() <= 1) {
-            destination = uri.toString().replaceAll("[http://|https://|/]", "-");
+            destination = uri.toString().replaceAll("http://|https://|/", "+");
         }
 
         String path = new File("").getAbsolutePath() + File.separatorChar + destination;
