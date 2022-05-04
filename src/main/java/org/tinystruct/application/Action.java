@@ -30,11 +30,11 @@ import java.util.regex.Pattern;
 public class Action implements org.tinystruct.application.Method<Object> {
     public static final int MAX_ARGUMENTS = 10;
     private final Pattern pattern;
-    private String pathRule;
     private final int id;
     private final Application app;
     private final Method method;
     private final Logger logger = Logger.getLogger(Action.class.getName());
+    private String pathRule;
     private Object[] args = new Object[]{};
 
     public Action(int id, Application app, String pathRule, Method method) {
@@ -101,7 +101,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
             throw new ApplicationException("Undefined Application.");
         }
 
-        if (app.getContext().getAttribute("--help") != null) {
+        if (app.getContext() != null && app.getContext().getAttribute("--help") != null) {
             return app.help();
         }
 
