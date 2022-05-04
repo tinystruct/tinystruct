@@ -83,16 +83,36 @@ final class ConnectionManager implements Runnable {
         if (null != dbUrl) {
             try {
                 URI dbUri;
-                if (dbUrl.startsWith("jdbc:")) {
+                if (dbUrl.startsWith("jdbc:mysql://")) {
                     dbUri = new URI(dbUrl.substring("jdbc:".length()));
-                } else
-                    dbUri = new URI(dbUrl);
-
+                } else {
+                    dbUri = new URI("mysql://" + dbUrl);
+                }
                 if (dbUri.getUserInfo() != null) {
                     dbUser = dbUri.getUserInfo().split(":")[0];
                     dbPassword = dbUri.getUserInfo().split(":")[1];
-                    dbUrl = "jdbc:mysql://" + dbUri.getHost() + dbUri.getPath();
                 }
+                StringBuilder builder = new StringBuilder();
+                builder.append("jdbc:mysql://");
+                builder.append(dbUri.getHost());
+                builder.append(":");
+
+                if (dbUri.getPort() != -1) {
+                    builder.append(dbUri.getPort());
+                } else {
+                    builder.append(3306);
+                }
+
+                if (dbUri.getPath() != null) {
+                    builder.append(dbUri.getPath().replaceAll("//", "/"));
+                }
+
+                if (dbUri.getQuery() != null) {
+                    builder.append("?");
+                    builder.append(dbUri.getQuery());
+                }
+
+                dbUrl = builder.toString();
             } catch (URISyntaxException e) {
                 logger.severe(e.getMessage());
             }
