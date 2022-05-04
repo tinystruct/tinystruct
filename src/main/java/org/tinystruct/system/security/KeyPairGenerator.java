@@ -1,31 +1,15 @@
 package org.tinystruct.system.security;
 
 import org.tinystruct.AbstractApplication;
-import org.tinystruct.Application;
-import org.tinystruct.ApplicationContext;
-import org.tinystruct.ApplicationException;
-import org.tinystruct.application.Context;
-import org.tinystruct.system.ApplicationManager;
-import org.tinystruct.system.Resources;
-import org.tinystruct.transfer.http.ReadableByteChannelWrapper;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.logging.Logger;
 
-public class KeyGenerator extends AbstractApplication {
-    private final static Logger logger = Logger.getLogger(KeyGenerator.class.getName());
+public class KeyPairGenerator extends AbstractApplication {
+    private final static Logger logger = Logger.getLogger(KeyPairGenerator.class.getName());
 
     @Override
     public void init() {
@@ -53,7 +37,7 @@ public class KeyGenerator extends AbstractApplication {
         }
 
         try {
-            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            java.security.KeyPairGenerator keyPairGenerator = java.security.KeyPairGenerator.getInstance("RSA");
             SecureRandom secureRandom = new SecureRandom(password.getBytes());
 
             keyPairGenerator.initialize(1024, secureRandom);
@@ -72,12 +56,5 @@ public class KeyGenerator extends AbstractApplication {
     @Override
     public String version() {
         return null;
-    }
-
-    public static void main(String[] args) throws ApplicationException {
-        ApplicationManager.install(new KeyGenerator());
-        Context context = new ApplicationContext();
-        context.setAttribute("--password", "0123");
-        ApplicationManager.call("generateKeyPair", context);
     }
 }
