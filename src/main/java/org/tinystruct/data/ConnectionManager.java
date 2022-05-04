@@ -86,7 +86,12 @@ final class ConnectionManager implements Runnable {
                 if (dbUrl.startsWith("jdbc:mysql://")) {
                     dbUri = new URI(dbUrl.substring("jdbc:".length()));
                 } else {
-                    dbUri = new URI("mysql://" + dbUrl);
+                    if(!dbUrl.startsWith("mysql://")) {
+                        dbUri = new URI("mysql://" + dbUrl);
+                    }
+                    else {
+                        dbUri = new URI(dbUrl);
+                    }
                 }
                 if (dbUri.getUserInfo() != null) {
                     dbUser = dbUri.getUserInfo().split(":")[0];
