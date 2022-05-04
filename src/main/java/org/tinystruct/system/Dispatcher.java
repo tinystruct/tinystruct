@@ -175,10 +175,10 @@ public class Dispatcher extends AbstractApplication {
      * Install specific app
      */
     public void install() {
-        if (this.context.getParameterValues("app") == null)
-            throw new ApplicationRuntimeException("The appName could not be found in the context.");
+        if (this.context.getAttribute("--app") == null)
+            throw new ApplicationRuntimeException("The app could not be found in the context.");
         System.out.println("Installing...");
-        String appName = this.context.getParameterValues("app").get(0);
+        String appName = this.context.getAttribute("--app").toString();
         Application app = null;
         try {
             app = (Application) Class.forName(appName).getDeclaredConstructor().newInstance();
@@ -242,12 +242,14 @@ public class Dispatcher extends AbstractApplication {
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
         } finally {
-            if (fos != null)
+            if (fos != null) {
                 try {
                     fos.close();
                 } catch (IOException e) {
-                    throw new ApplicationException(e.getMessage(), e.getCause());
+                    e.printStackTrace();
                 }
+            }
+
             try {
                 rbc.close();
             } catch (IOException e) {
