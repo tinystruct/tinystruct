@@ -50,7 +50,7 @@ public abstract class AbstractApplication implements Application {
     private final String name;
     private final Map<String, Variable<?>> variables;
     private Locale locale;
-    private final static Logger logger = Logger.getLogger("AbstractApplication.class");
+    private final static Logger logger = Logger.getLogger(AbstractApplication.class.getName());
     private String output;
     private boolean templateRequired = true;
     protected Map<String, CommandLine> commandLines;

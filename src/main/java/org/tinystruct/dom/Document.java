@@ -36,7 +36,7 @@ import java.util.logging.Logger;
  * @author James Zhou
  */
 public class Document extends DefaultHandler {
-    private static final Logger LOG = Logger.getLogger("Document.class");
+    private static final Logger LOG = Logger.getLogger(Document.class.getName());
 
     private static final String DOCTYPE_CONFIGURATION = "org/tinystruct/application/application-1.0.dtd";
     private static final String XHTML_TRANSITIONAL_DOCTYPE_CONFIGURATION = "org/tinystruct/application/application-1.0.dtd";

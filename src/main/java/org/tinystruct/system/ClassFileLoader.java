@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 
 public class ClassFileLoader extends ClassLoader {
 
-    private static final Logger logger = Logger.getLogger("ClassFileLoader.class");
+    private static final Logger logger = Logger.getLogger(ClassFileLoader.class.getName());
 
     private static final class SingletonHolder {
         static final ClassFileLoader loader = new ClassFileLoader();

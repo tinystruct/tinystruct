@@ -35,7 +35,7 @@ public class MySQLGenerator implements Generator {
     private String fileName;
     private String packageName;
 
-    private final static Logger logger = Logger.getLogger("MSSQLGenerator.class");
+    private final static Logger logger = Logger.getLogger(MSSQLGenerator.class.getName());
     ;
     private String[] packageList;
 

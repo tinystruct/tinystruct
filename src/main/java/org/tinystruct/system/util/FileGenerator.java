@@ -22,7 +22,7 @@ import java.io.*;
 import java.util.logging.Logger;
 
 public class FileGenerator {
-    private final static Logger logger = Logger.getLogger("FileGenerator.class");
+    private final static Logger logger = Logger.getLogger(FileGenerator.class.getName());
     ;
     private String filename;
     private StringBuilder content;

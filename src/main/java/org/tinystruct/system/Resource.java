@@ -21,7 +21,7 @@ import java.util.ResourceBundle;
 import java.util.logging.Logger;
 
 public class Resource {
-    private final static Logger logger = Logger.getLogger("Resource.class");
+    private final static Logger logger = Logger.getLogger(Resource.class.getName());
     ;
 
     private ResourceBundle resource;
@@ -67,7 +67,7 @@ public class Resource {
         try {
             return this.resource.getString(field);
         } catch (Exception e) {
-            logger.severe(e.getMessage() + " key:" + field);
+            logger.info(e.getMessage() + " key:" + field);
         }
 
         return "";

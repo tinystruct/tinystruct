@@ -24,7 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DatabaseOperator implements Closeable {
-    private static final Logger logger = Logger.getLogger("DatabaseOperator.class");
+    private static final Logger logger = Logger.getLogger(DatabaseOperator.class.getName());
 
     private Connection connection;
     private Statement statement;

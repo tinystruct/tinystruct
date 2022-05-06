@@ -37,7 +37,7 @@ import java.util.logging.Logger;
  * @author James Zhou
  */
 public class DistributedLock implements Lock {
-    private static final Logger logger = Logger.getLogger(Watcher.class.getName());
+    private static final Logger logger = Logger.getLogger(DistributedLock.class.getName());
 
     private String id;
     private final Watcher watcher = Watcher.getInstance();
@@ -135,7 +135,7 @@ public class DistributedLock implements Lock {
  * @author James Zhou
  */
 class LockEventListener implements EventListener {
-    private static final Logger logger = Logger.getLogger(Watcher.class.getName());
+    private static final Logger logger = Logger.getLogger(LockEventListener.class.getName());
     private final Lock lock;
     private CountDownLatch latch;
 

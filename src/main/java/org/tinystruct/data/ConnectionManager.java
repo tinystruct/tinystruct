@@ -34,7 +34,7 @@ import java.util.logging.Logger;
 final class ConnectionManager implements Runnable {
 
     private final ConcurrentLinkedQueue<Connection> connections;
-    private final static Logger logger = Logger.getLogger("ConnectionManager.class");
+    private final static Logger logger = Logger.getLogger(ConnectionManager.class.getName());
     private final String driverName;
     private final String url;
     private final String user;

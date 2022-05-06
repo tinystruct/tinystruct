@@ -34,7 +34,7 @@ public class SQLiteGenerator implements Generator {
     private String fileName;
     private String packageName;
 
-    private final static Logger logger = Logger.getLogger("SQLiteGenerator.class");
+    private final static Logger logger = Logger.getLogger(SQLiteGenerator.class.getName());
     ;
     private String[] packageList;
 

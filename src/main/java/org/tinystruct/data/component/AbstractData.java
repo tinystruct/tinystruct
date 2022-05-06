@@ -35,7 +35,7 @@ import java.util.logging.Logger;
  */
 public abstract class AbstractData implements Data {
 
-    private final static Logger logger = Logger.getLogger("AbstractData.class");
+    private final static Logger logger = Logger.getLogger(AbstractData.class.getName());
     ;
     private String classPath;
     private String className;
