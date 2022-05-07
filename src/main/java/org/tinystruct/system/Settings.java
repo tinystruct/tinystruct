@@ -20,7 +20,6 @@ import org.tinystruct.ApplicationRuntimeException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
 
@@ -32,9 +31,29 @@ import java.util.Set;
 public class Settings implements Configuration<String> {
 
     private static final long serialVersionUID = 8348657988449703373L;
-    private final Properties properties = new Properties();
-    private String fileName = "/application.properties";
-    private InputStream in;
+    private static Properties properties = new Properties();
+
+    private static final class SingletonHolder {
+        private final Properties properties = new Properties();
+
+        private SingletonHolder() {
+            InputStream in = getClass().getResourceAsStream(fileName);
+            if (in != null)
+                try {
+                    properties.load(in);
+                } catch (IOException e) {
+                    throw new ApplicationRuntimeException(e.getMessage(), e);
+                }
+        }
+
+        public Properties getProperties() {
+            return properties;
+        }
+
+        public static SingletonHolder instance = new SingletonHolder();
+    }
+
+    private static String fileName = "/application.properties";
     private boolean overwrite = false;
 
     public Settings() {
@@ -42,20 +61,13 @@ public class Settings implements Configuration<String> {
         this.overwrite = true;
     }
 
-    public Settings(String fileName) throws ApplicationRuntimeException {
+    public Settings(String file) throws ApplicationRuntimeException {
 
-        if (!this.fileName.equalsIgnoreCase(fileName)) {
-            this.fileName = fileName;
+        if (!fileName.equalsIgnoreCase(file)) {
+            fileName = file;
         }
 
-        in = getClass().getResourceAsStream(this.fileName);
-
-        if (in != null)
-            try {
-                properties.load(in);
-            } catch (IOException e) {
-                throw new ApplicationRuntimeException(e.getMessage(), e);
-            }
+        properties = SingletonHolder.instance.getProperties();
     }
 
     public Properties getProperties() {
