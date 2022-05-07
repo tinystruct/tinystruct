@@ -58,6 +58,9 @@ public class Dispatcher extends AbstractApplication {
         // Initialize the dispatcher.
         Dispatcher dispatcher = new Dispatcher();
 
+        // Set configuration.
+        dispatcher.setConfiguration(config);
+
         // Install Dispatcher.
         ApplicationManager.install(dispatcher);
 
@@ -115,7 +118,7 @@ public class Dispatcher extends AbstractApplication {
             config.set("default.import.applications", defaultImportApplications.toString());
 
             try {
-                // Initialize the application manager.
+                // Initialize the application manager with the configuration.
                 ApplicationManager.init(config);
             } catch (ApplicationException e) {
                 logger.log(Level.SEVERE, e.getMessage(), e);
@@ -133,13 +136,6 @@ public class Dispatcher extends AbstractApplication {
 
             execute(command, context);
         } else {
-            try {
-                // Initialize the application manager.
-                ApplicationManager.init(config);
-            } catch (ApplicationException e) {
-                logger.log(Level.SEVERE, e.getMessage(), e);
-            }
-
             System.out.println(dispatcher.help());
         }
     }
