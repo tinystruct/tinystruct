@@ -35,6 +35,7 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 public class Dispatcher extends AbstractApplication {
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
@@ -394,7 +395,8 @@ public class Dispatcher extends AbstractApplication {
         OptionalInt longSizeCommand = commandLines.keySet().stream().mapToInt(String::length).max();
         int max = longSizeCommand.orElse(0);
 
-        commandLines.forEach((s, commandLine) -> {
+        Stream<CommandLine> sorted = commandLines.values().stream().sorted();
+        sorted.forEach(commandLine -> {
             String command = commandLine.getCommand();
             String description = commandLine.getDescription();
             if (command.startsWith("--")) {
