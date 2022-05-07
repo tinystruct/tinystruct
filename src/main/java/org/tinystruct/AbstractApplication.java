@@ -71,7 +71,6 @@ public abstract class AbstractApplication implements Application {
         this.name = getClass().getName();
         this.variables = Variables.getInstance();
         this.commandLines = new HashMap();
-        this.setConfiguration(new Settings());
     }
 
     private void setLocale(String locale) {
