@@ -5,7 +5,7 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.util.*;
 
-public class CommandLine {
+public class CommandLine implements Comparable<CommandLine>{
     private final String command;
     private String description;
     private final Application app;
@@ -117,4 +117,8 @@ public class CommandLine {
         return this.toString();
     }
 
+    @Override
+    public int compareTo(CommandLine o) {
+        return this.getCommand().compareTo(o.getCommand());
+    }
 }

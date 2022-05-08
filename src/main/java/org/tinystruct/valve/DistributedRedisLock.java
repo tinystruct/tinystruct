@@ -14,6 +14,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -53,7 +54,7 @@ public class DistributedRedisLock implements Lock {
                 .withTimeout(Duration.ofSeconds(60)).build();
 
         if (settings.get("redis.password")!=null)
-                this.uri.setPassword(settings.get("redis.password"));
+                this.uri.setPassword(settings.get("redis.password").toCharArray());
 
         this.redisClient = RedisClient.create(this.uri).connect();
         this.id = UUID.randomUUID().toString();
@@ -67,7 +68,7 @@ public class DistributedRedisLock implements Lock {
 
     static {
         ByteBuffer buff;
-        try (InputStream stream = DistributedRedisLock.class.getResource("/lock.lua").openStream(); ReadableByteChannel channel = Channels.newChannel(stream);){
+        try (InputStream stream = Objects.requireNonNull(DistributedRedisLock.class.getResource("/lock.lua")).openStream(); ReadableByteChannel channel = Channels.newChannel(stream)){
             buff = ByteBuffer.allocate(800);
             channel.read(buff);
             lockScript = new String(buff.array(), StandardCharsets.UTF_8).trim();
@@ -75,7 +76,7 @@ public class DistributedRedisLock implements Lock {
             logger.log(Level.SEVERE, "Load lock.lua error.", e);
         }
 
-        try (InputStream stream = DistributedRedisLock.class.getResource("/unlock.lua").openStream(); ReadableByteChannel channel = Channels.newChannel(stream);){
+        try (InputStream stream = Objects.requireNonNull(DistributedRedisLock.class.getResource("/unlock.lua")).openStream(); ReadableByteChannel channel = Channels.newChannel(stream);){
             buff = ByteBuffer.allocate(1024);
             channel.read(buff);
             unlockScript = new String(buff.array(), StandardCharsets.UTF_8).trim();

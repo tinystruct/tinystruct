@@ -17,6 +17,7 @@ package org.tinystruct.system;
 
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Properties;
@@ -113,9 +114,7 @@ public class Resources {
     public static Properties getResourceAsProperties(String resource)
             throws IOException {
         Properties props = new Properties();
-        InputStream in = null;
-        String propfile = resource;
-        in = getResourceAsStream(propfile);
+        InputStream in = getResourceAsStream(resource);
         props.load(in);
         in.close();
         return props;
@@ -132,9 +131,7 @@ public class Resources {
     public static Properties getResourceAsProperties(ClassLoader loader, String resource)
             throws IOException {
         Properties props = new Properties();
-        InputStream in = null;
-        String propfile = resource;
-        in = getResourceAsStream(loader, propfile);
+        InputStream in = getResourceAsStream(loader, resource);
         props.load(in);
         in.close();
         return props;
@@ -219,9 +216,7 @@ public class Resources {
      */
     public static Properties getUrlAsProperties(String urlString) throws IOException {
         Properties props = new Properties();
-        InputStream in = null;
-        String propfile = urlString;
-        in = getUrlAsStream(propfile);
+        InputStream in = getUrlAsStream(urlString);
         props.load(in);
         in.close();
         return props;
@@ -257,7 +252,7 @@ public class Resources {
      * @throws IllegalAccessException If the class is not public, or other access problems arise
      */
     public static Object instantiate(String className)
-            throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+            throws ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         return instantiate(classForName(className));
     }
 
@@ -270,8 +265,8 @@ public class Resources {
      * @throws IllegalAccessException If the class is not public, or other access problems arise
      */
     public static Object instantiate(Class<?> clazz)
-            throws InstantiationException, IllegalAccessException {
-        return clazz.newInstance();
+            throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        return clazz.getDeclaredConstructor().newInstance();
     }
 
     private static ClassLoader getClassLoader() {

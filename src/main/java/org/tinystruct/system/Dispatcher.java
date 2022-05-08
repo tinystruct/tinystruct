@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
+import org.mockito.internal.SuppressSignatureCheck;
 import org.tinystruct.*;
 import org.tinystruct.application.Context;
 import org.tinystruct.system.cli.CommandArgument;
@@ -45,6 +46,7 @@ public class Dispatcher extends AbstractApplication {
      *
      * @param args arguments
      */
+    @SuppressSignatureCheck
     public static void main(String[] args) {
 
         // Process the system.directory.
@@ -85,7 +87,7 @@ public class Dispatcher extends AbstractApplication {
                                 if (context.getAttribute(arg) instanceof List) {
                                     list = (List<String>) context.getAttribute(arg);
                                 } else {
-                                    list = new ArrayList<String>();
+                                    list = new ArrayList<>();
                                     list.add(context.getAttribute(arg).toString());
                                 }
                                 list.add(value);

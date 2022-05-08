@@ -19,9 +19,7 @@ import org.tinystruct.application.*;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Resource;
-import org.tinystruct.system.Settings;
 import org.tinystruct.system.cli.CommandLine;
-import org.tinystruct.system.cli.CommandOption;
 import org.tinystruct.system.template.DefaultTemplate;
 import org.tinystruct.system.template.PlainText;
 import org.tinystruct.system.template.variable.DataType;
@@ -41,19 +39,32 @@ import java.util.logging.Logger;
  */
 public abstract class AbstractApplication implements Application {
 
+    private final static Logger logger = Logger.getLogger(AbstractApplication.class.getName());
     private final Actions actions = Actions.getInstance();
-
+    private final String name;
+    private final Map<String, Variable<?>> variables;
     /**
      * Context of application
      */
     protected Context context;
-    private final String name;
-    private final Map<String, Variable<?>> variables;
+    protected Map<String, CommandLine> commandLines;
+    /**
+     * Configuration
+     */
+    protected Configuration<String> config;
     private Locale locale;
-    private final static Logger logger = Logger.getLogger(AbstractApplication.class.getName());
     private String output;
     private boolean templateRequired = true;
-    protected Map<String, CommandLine> commandLines;
+    private String template_path;
+
+    /**
+     * Abstract application constructor.
+     */
+    public AbstractApplication() {
+        this.name = getClass().getName();
+        this.variables = Variables.getInstance();
+        this.commandLines = new HashMap<String, CommandLine>();
+    }
 
     /**
      * Set template to be required or not.
@@ -62,26 +73,6 @@ public abstract class AbstractApplication implements Application {
      */
     public void setTemplateRequired(boolean templateRequired) {
         this.templateRequired = templateRequired;
-    }
-
-    /**
-     * Abstract application constructor.
-     */
-    public AbstractApplication() {
-        this.name = getClass().getName();
-        this.variables = Variables.getInstance();
-        this.commandLines = new HashMap();
-    }
-
-    private void setLocale(String locale) {
-        String[] local = locale.split("_");
-        this.locale = new Locale(local[0], local[1]);
-        this.setVariable(LANGUAGE_CODE, local[0]);
-        this.setVariable(LANGUAGE, locale);
-        this.init();
-
-        this.setAction("--help", "help");
-        this.commandLines.get("--help").setDescription("Help command");
     }
 
     public void init(Context context) {
@@ -125,13 +116,6 @@ public abstract class AbstractApplication implements Application {
             this.setLink(path);
     }
 
-    /**
-     * Configuration
-     */
-    protected Configuration<String> config;
-
-    private String template_path;
-
     public String getOutputText() {
         return this.output;
     }
@@ -146,6 +130,10 @@ public abstract class AbstractApplication implements Application {
         this.output = template.parse();
     }
 
+    public Configuration<String> getConfiguration() {
+        return this.config;
+    }
+
     public void setConfiguration(Configuration<String> config) {
         this.config = config;
         this.config.set(CLSID, this.name);
@@ -154,10 +142,6 @@ public abstract class AbstractApplication implements Application {
         this.config.set(CHARSET, "utf-8");
         this.config.set(DEFAULT_BASE_URL, "/?q=");
         this.setLocale(this.config.get(LANGUAGE));
-    }
-
-    public Configuration<String> getConfiguration() {
-        return this.config;
     }
 
     public String getName() {
@@ -306,6 +290,17 @@ public abstract class AbstractApplication implements Application {
         return this.locale;
     }
 
+    private void setLocale(String locale) {
+        String[] local = locale.split("_");
+        this.locale = new Locale(local[0], local[1]);
+        this.setVariable(LANGUAGE_CODE, local[0]);
+        this.setVariable(LANGUAGE, locale);
+        this.init();
+
+        this.setAction("--help", "help");
+        this.commandLines.get("--help").setDescription("Help command");
+    }
+
     public void setLocale(Locale locale) {
         this.locale = locale;
     }
@@ -368,10 +363,9 @@ public abstract class AbstractApplication implements Application {
         this.commandLines.forEach((s, commandLine) -> {
             String command = commandLine.getCommand();
             String description = commandLine.getDescription();
-            if(command.startsWith("--")) {
+            if (command.startsWith("--")) {
                 options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
-            }
-            else {
+            } else {
                 commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
             }
         });
@@ -382,7 +376,7 @@ public abstract class AbstractApplication implements Application {
         return builder.toString();
     }
 
-    public Map<String, CommandLine> getCommandLines(){
+    public Map<String, CommandLine> getCommandLines() {
         return this.commandLines;
     }
 }
