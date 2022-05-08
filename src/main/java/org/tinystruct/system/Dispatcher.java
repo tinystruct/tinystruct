@@ -22,12 +22,14 @@ import org.tinystruct.system.cli.CommandArgument;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.cli.CommandOption;
 import org.tinystruct.system.util.StringUtilities;
+import org.tinystruct.system.util.URLResourceLoader;
 import org.tinystruct.transfer.http.ReadableByteChannelWrapper;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -199,8 +201,12 @@ public class Dispatcher extends AbstractApplication {
     public String update() {
         System.out.println("Updating...");
         try {
-            this.download(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + version()
-                    + "/tinystruct-" + version() + "-jar-with-dependencies.jar"), ".");
+            URLResourceLoader loader = new URLResourceLoader(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/maven-metadata.xml"));
+            StringBuilder content = loader.getContent();
+            String latestVersion = content.substring(content.indexOf("<latest>") + 8, content.indexOf("</latest>"));
+
+            this.download(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + latestVersion
+                    + "/tinystruct-" + latestVersion + "-jar-with-dependencies.jar"), "lib/tinystruct-" + latestVersion + "-jar-with-dependencies.jar");
         } catch (ApplicationException | MalformedURLException e) {
             return e.toString();
         }
@@ -210,6 +216,7 @@ public class Dispatcher extends AbstractApplication {
     public void download(URL uri, String destination) throws ApplicationException {
         ReadableByteChannel rbc;
         try {
+            Channels.newChannel(uri.openStream());
             rbc = new ReadableByteChannelWrapper(uri);
         } catch (Exception e) {
             throw new ApplicationException("Could not be downloaded:" + e.getMessage(), e.getCause());
