@@ -37,7 +37,7 @@ public class ReadableByteChannelWrapper extends AbstractReadableByteChannelWrapp
 
     @Override
     public void progress(double progress) {
-        System.out.print("\u001b[1000D" + String.format("%d bytes received, %.02f%%", this.getReceived(), progress));
+        System.out.print("\r" + String.format("%d bytes received, %.02f%%", this.getReceived(), progress));
     }
 
 }
