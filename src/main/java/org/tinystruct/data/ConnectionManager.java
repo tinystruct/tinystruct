@@ -16,11 +16,11 @@
 package org.tinystruct.data;
 
 import org.tinystruct.ApplicationException;
-import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.Repository.Type;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
 
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
@@ -33,8 +33,8 @@ import java.util.logging.Logger;
 
 final class ConnectionManager implements Runnable {
 
-    private final ConcurrentLinkedQueue<Connection> connections;
     private final static Logger logger = Logger.getLogger(ConnectionManager.class.getName());
+    private final ConcurrentLinkedQueue<Connection> connections;
     private final String driverName;
     private final String url;
     private final String user;
@@ -45,10 +45,6 @@ final class ConnectionManager implements Runnable {
     private String database;
     private Boolean pending;
 
-    private static final class SingletonHolder {
-        static final ConnectionManager manager = new ConnectionManager();
-    }
-
     /**
      * Connection Manager Constructor.
      */
@@ -56,14 +52,11 @@ final class ConnectionManager implements Runnable {
 
         this.connections = new ConcurrentLinkedQueue<Connection>();
 
+        this.config = new Settings();
+        this.driverName = this.config.get("driver");
         try {
-            this.config = new Settings();
-            this.driverName = this.config.get("driver");
-
-            if (this.driverName.trim().length() == 0)
-                throw new ApplicationRuntimeException("Database Connection Driver has not been set in application.properties!");
-
-            Driver driver = (Driver) Class.forName(driverName).newInstance();
+            assert this.driverName != null;
+            Driver driver = (Driver) Class.forName(driverName).getDeclaredConstructor().newInstance();
             DriverManager.registerDriver(driver);
         } catch (InstantiationException e) {
             throw new RuntimeException(e.getMessage(), e);
@@ -73,6 +66,10 @@ final class ConnectionManager implements Runnable {
             throw new RuntimeException(e.getMessage(), e);
         } catch (SQLException e) {
             throw new RuntimeException(e.getMessage(), e);
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
         }
 
         this.database = this.config.get("database");
@@ -86,10 +83,9 @@ final class ConnectionManager implements Runnable {
                 if (dbUrl.startsWith("jdbc:mysql://")) {
                     dbUri = new URI(dbUrl.substring("jdbc:".length()));
                 } else {
-                    if(!dbUrl.startsWith("mysql://")) {
+                    if (!dbUrl.startsWith("mysql://")) {
                         dbUri = new URI("mysql://" + dbUrl);
-                    }
-                    else {
+                    } else {
                         dbUri = new URI(dbUrl);
                     }
                 }
@@ -131,6 +127,10 @@ final class ConnectionManager implements Runnable {
         this.pending = false;
     }
 
+    public static ConnectionManager getInstance() {
+        return SingletonHolder.manager;
+    }
+
     public Type getConfiguredType() throws ApplicationException {
 
         int index = -1, length = Type.values().length;
@@ -152,10 +152,6 @@ final class ConnectionManager implements Runnable {
                 break;
         }
         return Type.MySQL;
-    }
-
-    public static ConnectionManager getInstance() {
-        return SingletonHolder.manager;
     }
 
     public String getDatabase() {
@@ -272,5 +268,9 @@ final class ConnectionManager implements Runnable {
             }
 
         }
+    }
+
+    private static final class SingletonHolder {
+        static final ConnectionManager manager = new ConnectionManager();
     }
 }
