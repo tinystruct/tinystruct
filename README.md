@@ -13,7 +13,7 @@ Installation and Getting Started
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>0.3.7</version>
+  <version>0.3.8</version>
   <classifier>jar-with-dependencies</classifier>
 </dependency>
 ```
@@ -66,16 +66,28 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  0.3.7
+  /  /  /) (/ _)  /  /  (/ (  /  0.3.8
            /
 ```
 ```tcsh
 $ bin/dispatcher --help
-Usage:	dispatcher [--attributes] [actions[/args...]...]
-	where attributes include any custom attributes those defined in context 
-	or keypair parameters are going to be passed by context,
- 	such as: 
-	--http.proxyHost=127.0.0.1 or --http.proxyPort=3128 or --param=value
+Usage: bin/dispatcher COMMAND [OPTIONS]
+Commands: 
+        download        Download a resource from other servers
+        exec            To execute native command(s)
+        install         Install a package
+        say             Output words
+        set             Set system property
+        update          Update for latest version
+
+Options: 
+        --help          Help command
+        --import        Import application
+        --logo          Print logo
+        --settings      Print settings
+        --version       Print version
+
+Run 'bin/dispatcher COMMAND --help' for more information on a command.
 	
 $ bin/dispatcher say/"Praise to the Lord"
 Praise to the Lord
