@@ -52,56 +52,8 @@ public final class ApplicationManager {
 
         synchronized (ApplicationManager.class) {
             if (initialized) return;
-
-            String paths = "bin" + File.separator + "dispatcher";
-            String origin = paths;
-            Path path = Paths.get(paths);
-            if (!Files.exists(path)) {
-                try {
-                    while (!Files.exists(path)) {
-                        paths = paths.substring(0, paths.indexOf(File.separator));
-                        path = Paths.get(paths);
-                        Files.createDirectories(path);
-                    }
-                    path = Paths.get(origin);
-                    Files.createFile(path);
-
-                    String cmd;
-                    if (WINDOWS) {
-                        cmd = "@echo off\n" +
-                                "set \"ROOT=%~dp0..\\\"\n" +
-                                "set \"VERSION=\"" + VERSION + "\"\n" +
-                                "set \"classpath=%ROOT%target\\classes:%ROOT%lib\\*:%ROOT%WEB-INF\\lib\\*:%ROOT%WEB-INF\\classes\":%classpath%\n" +
-                                "@java -cp \"%ROOT%target\\classes;%ROOT%lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
-                    } else {
-                        cmd = "#!/bin/sh\n" +
-                                "ROOT=\"`pwd`\"\n" +
-                                "VERSION=\"" + VERSION + "\"\n" +
-                                "cd \"`dirname \"$0\"`\"\n" +
-                                "cd \"../\"\n" +
-                                "cd \"$ROOT\"\n" +
-                                "JAVA_OPTS=\"\"\n" +
-                                "args=\"\"\n" +
-                                "for arg\n" +
-                                "do\n" +
-                                " str=$(echo $arg | awk  '{ string=substr($0, 0, 2); print string; }' )\n" +
-                                " if [ \"$str\" = \"-D\" -o \"$str\" = \"-X\" ]\n" +
-                                " then\n" +
-                                "     JAVA_OPTS=$JAVA_OPTS\" \"$arg\n" +
-                                " else\n" +
-                                "     args=$args\" \"$arg\n" +
-                                " fi\n" +
-                                "done\n" +
-                                "java \\\n" +
-                                "$JAVA_OPTS \\\n" +
-                                "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \\" +
-                                "-cp \"$ROOT/target/classes:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"\n";
-                    }
-                    Files.write(path, cmd.getBytes());
-                } catch (IOException e) {
-                    throw new ApplicationException(e.getMessage(), e);
-                }
-            }
+            // Generate Command Script
+            generateDispatcherCommand(VERSION, false);
 
             settings = settings == null ? new Settings("/application.properties") : settings;
 
@@ -131,6 +83,62 @@ public final class ApplicationManager {
                 }
 
                 initialized = true;
+            }
+        }
+    }
+
+    public static void generateDispatcherCommand(String version, boolean force) throws ApplicationException {
+        String paths = "bin" + File.separator + "dispatcher";
+        String origin = paths;
+        Path path = Paths.get(paths);
+        if (force || !Files.exists(path)) {
+            try {
+                while (!Files.exists(path)) {
+                    paths = paths.substring(0, paths.indexOf(File.separator));
+                    path = Paths.get(paths);
+                    Files.createDirectories(path);
+                }
+
+                String cmd;
+                if (WINDOWS) {
+                    origin += ".cmd";
+                    cmd = "@echo off\n" +
+                            "set \"ROOT=%~dp0..\\\"\n" +
+                            "set \"VERSION=\"" + version + "\"\n" +
+                            "set \"classpath=%ROOT%target\\classes:%ROOT%lib\\*:%ROOT%WEB-INF\\lib\\*:%ROOT%WEB-INF\\classes\":%classpath%\n" +
+                            "@java -cp \"%ROOT%target\\classes;%ROOT%lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
+                } else {
+                    cmd = "#!/usr/bin/env sh\n" +
+                            "ROOT=\"`pwd`\"\n" +
+                            "VERSION=\"" + version + "\"\n" +
+                            "cd \"`dirname \"$0\"`\"\n" +
+                            "cd \"../\"\n" +
+                            "cd \"$ROOT\"\n" +
+                            "JAVA_OPTS=\"\"\n" +
+                            "args=\"\"\n" +
+                            "for arg\n" +
+                            "do\n" +
+                            " str=$(echo $arg | awk  '{ string=substr($0, 0, 2); print string; }' )\n" +
+                            " if [ \"$str\" = \"-D\" -o \"$str\" = \"-X\" ]\n" +
+                            " then\n" +
+                            "     JAVA_OPTS=$JAVA_OPTS\" \"$arg\n" +
+                            " else\n" +
+                            "     args=$args\" \"$arg\n" +
+                            " fi\n" +
+                            "done\n" +
+                            "java \\\n" +
+                            "$JAVA_OPTS \\\n" +
+                            "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \\\n" +
+                            "-cp \"$ROOT/target/classes:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"";
+                }
+
+                path = Paths.get(origin);
+                if(!Files.exists(path))
+                    Files.createFile(path);
+
+                Files.write(path, cmd.getBytes());
+            } catch (IOException e) {
+                throw new ApplicationException(e.getMessage(), e);
             }
         }
     }
