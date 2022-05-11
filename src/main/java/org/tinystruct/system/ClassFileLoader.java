@@ -30,8 +30,6 @@ public class ClassFileLoader extends ClassLoader {
         static final ClassFileLoader loader = new ClassFileLoader();
     }
 
-    ;
-
     private ClassFileLoader() {
     }
 
@@ -61,7 +59,7 @@ public class ClassFileLoader extends ClassLoader {
 
         try {
             byte[] data = getBytes(path.toString());
-            return defineClass((new StringBuilder()).append(apps_package).append(".").append(name).toString(), data, 0,
+            return defineClass(apps_package + "." + name, data, 0,
                     data.length);
         } catch (ApplicationException e) {
             logger.severe(e.getMessage());
@@ -79,7 +77,7 @@ public class ClassFileLoader extends ClassLoader {
     private byte[] getBytes(String filename) throws ApplicationException {
         File file = new File(filename);
         long len = file.length();
-        byte raw[] = new byte[(int) len];
+        byte[] raw = new byte[(int) len];
         try (FileInputStream in = new FileInputStream(file)) {
             int r = in.read(raw);
 
@@ -91,17 +89,6 @@ public class ClassFileLoader extends ClassLoader {
         }
 
         return raw;
-    }
-
-    private byte[] getBytesNio(String filename) throws ApplicationException {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        try {
-            Files.copy(Paths.get(filename), os);
-
-            return os.toByteArray();
-        } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e);
-        }
     }
 
 }
