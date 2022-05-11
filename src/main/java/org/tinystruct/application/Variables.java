@@ -16,19 +16,14 @@
 package org.tinystruct.application;
 
 import org.tinystruct.system.template.variable.Variable;
-
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Variables {
-
     private static final class SingletonHolder {
         static final ConcurrentHashMap<String, Variable<?>> variables = new ConcurrentHashMap<String, Variable<?>>(16);
     }
 
-    ;
-
     private Variables() {
-
     }
 
     public static ConcurrentHashMap<String, Variable<?>> getInstance() {

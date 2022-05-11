@@ -25,18 +25,15 @@ import java.util.logging.Logger;
 
 public class DatabaseOperator implements Closeable {
     private static final Logger logger = Logger.getLogger(DatabaseOperator.class.getName());
+    private static final String SQL_STATE_COMMUNICATION_LINK_FAILURE = "08S01";
 
     private Connection connection;
     private Statement statement;
     private PreparedStatement preparedstatement;
     private ResultSet resultSet;
     private int effect = 0;
-    private static final String SQL_STATE_COMMUNICATION_LINK_FAILURE = "08S01";
-
     private final ConnectionManager manager;
-
     private String preparedSQL;
-
     private Object[] parameters;
 
     public DatabaseOperator() throws ApplicationException {

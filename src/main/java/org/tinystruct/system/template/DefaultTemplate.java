@@ -55,7 +55,6 @@ public class DefaultTemplate implements Template {
         static final ScriptEngineManager manager = new ScriptEngineManager();
     }
 
-    ;
     private final Application app;
     private String view;
     private final ScriptEngine engine;
@@ -91,7 +90,6 @@ public class DefaultTemplate implements Template {
     }
 
     public String parse() throws ApplicationException {
-
         Configuration<String> config = app.getConfiguration();
         String value;
 
@@ -163,7 +161,6 @@ public class DefaultTemplate implements Template {
                 throw new ApplicationException(e.getMessage(), e);
             }
 
-
             DOMSource domSource = new DOMSource(doc);
             StringWriter writer = new StringWriter();
             writer.write("<!DOCTYPE html>\r\n");
@@ -175,8 +172,7 @@ public class DefaultTemplate implements Template {
             try {
                 transformer = tf.newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "no");
-                transformer.setOutputProperty(OutputKeys.MEDIA_TYPE,
-                        "xml");
+                transformer.setOutputProperty(OutputKeys.MEDIA_TYPE, "xml");
                 transformer.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "script");
                 transformer.transform(domSource, result);
             } catch (TransformerConfigurationException e) {
@@ -229,5 +225,4 @@ public class DefaultTemplate implements Template {
     public void setVariable(Variable<?> arg0) {
         this.variables.put(arg0.getName(), arg0);
     }
-
 }

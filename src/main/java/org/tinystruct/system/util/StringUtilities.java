@@ -16,7 +16,6 @@
 package org.tinystruct.system.util;
 
 import javax.servlet.http.Cookie;
-import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
 public class StringUtilities implements java.io.Serializable {
@@ -24,8 +23,8 @@ public class StringUtilities implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
     private static final char[] hexDigit = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E',
             'F'};
-    private String raw = "";
     private final char[] HTML = "<>'\"".toCharArray();
+    private String raw;
 
     public StringUtilities(String raw) {
         this.raw = raw;
@@ -33,39 +32,6 @@ public class StringUtilities implements java.io.Serializable {
 
     public StringUtilities(byte[] bytes) {
         this.raw = new String(bytes);
-    }
-
-    public String getString() {
-        return raw;
-    }
-
-    /**
-     * Get the encoding of the string
-     *
-     * @param s string
-     * @return string of the encode
-     * @throws UnsupportedEncodingException unsupported encoding exception
-     */
-    public static String getEncoding(String s) throws UnsupportedEncodingException {
-        String[] encode = new String[]{"GB2312", "ISO-8859-1", "UTF-8", "GBK", "BIG5"};
-
-        for (String value : encode) {
-            if (s.equals(new String(s.getBytes("GB2312"), "GB2312"))) {
-                return value;
-            }
-        }
-
-        return "Unknown Encoding";
-    }
-
-    public static String getCHS(String s) {
-        try {
-            byte[] bytes = s.getBytes("GBK");
-            return new StringUtilities(bytes).getString();
-        } catch (Exception e) {
-
-        }
-        return null;
     }
 
     public static String getURL(String url) {
@@ -83,43 +49,11 @@ public class StringUtilities implements java.io.Serializable {
     }
 
     public static String leftPadding(String raw, int len, char replacement) {
-        return String.format("%"+len+"s", raw).replace(' ', replacement);
+        return String.format("%" + len + "s", raw).replace(' ', replacement);
     }
 
     public static String rightPadding(String raw, int len, char replacement) {
-        return String.format("%-"+len+"s", raw).replace(' ', replacement);
-    }
-
-    public String nospace() {
-        return remove((char) 32);
-    }
-
-    public String remove(char ch) {
-        StringBuffer buffer = new StringBuffer();
-        int position = 0;
-        char currentChar;
-
-        while (position < this.raw.length()) {
-            currentChar = this.raw.charAt(position++);
-            if (currentChar != ch)
-                buffer.append(currentChar);
-        }
-        return buffer.toString();
-    }
-
-    public String replace(char res, String des) {
-        if (raw == null) {
-            return "";
-        }
-        char[] temp = raw.toCharArray();
-        StringBuilder buffer = new StringBuilder();
-        for (int i = 0; i < temp.length; i++) {
-            if (temp[i] == res)
-                buffer.append(String.valueOf(des));
-            else
-                buffer.append(String.valueOf(temp[i]));
-        }
-        return buffer.toString();
+        return String.format("%-" + len + "s", raw).replace(' ', replacement);
     }
 
     public static String htmlSpecialChars(String value) {
@@ -134,13 +68,6 @@ public class StringUtilities implements java.io.Serializable {
         return value;
     }
 
-    public boolean safe() {
-        for (int i = 0; i < HTML.length; i++)
-            if (raw.indexOf(HTML[i]) != -1)
-                return false;
-        return true;
-    }
-
     public static boolean safe(String string) {
         return new StringUtilities(string).safe();
     }
@@ -150,57 +77,13 @@ public class StringUtilities implements java.io.Serializable {
             return "";
         if (string.length() <= length)
             return string;
-        char sub = string.charAt(length - 1);
+        char sub;
 
         do {
             sub = string.charAt(length++);
         } while (string.indexOf('>') != -1 && sub != '>');
 
         return string.substring(0, length) + "...";
-    }
-
-    public String leave(int length) {
-        if (isNull())
-            return "";
-        if (raw.length() <= length)
-            return raw;
-        char sub = raw.charAt(length - 1);
-
-        do {
-            sub = raw.charAt(length++);
-        } while (raw.indexOf('>') != -1 && sub != '>');
-
-        return raw.substring(0, length) + "...";
-    }
-
-    public boolean isNull() {
-        return raw.trim().length() == 0;
-    }
-
-    public boolean isNaN() {
-        char c;
-
-        for (int i = 0; i < raw.length(); i++) {
-            c = raw.charAt(i);
-            if (c >= 48 && c <= 57)
-                return true;
-        }
-        return false;
-    }
-
-    public boolean isLetter() {
-        char c;
-
-        for (int i = 0; i < raw.length(); i++) {
-            c = raw.charAt(i);
-            if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122))
-                return true;
-        }
-        return false;
-    }
-
-    public int stringAt(String substring, int index) {
-        return raw.toLowerCase().indexOf(substring.toLowerCase(), index);
     }
 
     public static String sign(String string, String substring) {
@@ -211,52 +94,23 @@ public class StringUtilities implements java.io.Serializable {
         while (true) {
             position = mstring.stringAt(substring, index);
             if (position == -1) {
-                temp.append(string.substring(index, string.length()));
+                temp.append(string.substring(index));
                 break;
             }
-            temp.append(string.substring(index, position));
+            temp.append(string, index, position);
 
             index = position + length;
-            temp.append(color_start).append(string.substring(position, index)).append(color_end);
+            temp.append(color_start).append(string, position, index).append(color_end);
         }
         return temp.toString();
-    }
-
-    public String linefeed(String endstr) {
-        StringBuilder htmlcode = new StringBuilder();
-        int index = 0;
-        while (true) {
-            int position = raw.indexOf(0x0D, index);
-            if (position == -1) {
-                htmlcode.append(raw.substring(index, raw.length()));
-                break;
-            }
-            htmlcode.append(raw.substring(index, position));
-            index = position + 2;
-            htmlcode.append(endstr);
-        }
-        return htmlcode.toString();
-    }
-
-    public String linefeed(char spliter) {
-        StringBuilder htmlcode = new StringBuilder();
-
-        char[] ch = raw.toCharArray();
-        for (int i = 0; i < ch.length; i++) {
-            if (ch[i] == 0x0D)
-                htmlcode.append(spliter);
-            else
-                htmlcode.append(ch[i]);
-        }
-        return htmlcode.toString();
     }
 
     public static String linefeed(String string, String spliter) {
         return new StringUtilities(string).linefeed(spliter);
     }
 
-    public static String linefeed(String string, char spliter) {
-        return new StringUtilities(string).linefeed(spliter);
+    public static String linefeed(String string, char delimiter) {
+        return new StringUtilities(string).linefeed(delimiter);
     }
 
     public static String getRealPath(String FileName) {
@@ -310,37 +164,6 @@ public class StringUtilities implements java.io.Serializable {
         return true;
     }
 
-    public String hideHTML(int length) {
-        if (isNull())
-            return "";
-        StringBuilder text = new StringBuilder();
-
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("<br>|<BR>|<br />|<br/><BR />|<BR/>");
-        java.util.regex.Matcher matcher = pattern.matcher(raw);
-        raw = matcher.replaceAll(String.valueOf('\n'));
-
-        int flag = 0, k = 0;
-        for (int i = 0; i < raw.length(); i++) {
-            if (k > length - 1)
-                break;
-            char now = raw.charAt(i);
-            if (now == '<' && flag == 0) {
-                flag = 1;
-            } else if (now == '>' && flag == 1) {
-                flag = 0;
-            } else if (flag == 0) {
-                if (now == '\n' && raw.charAt(i + 1) != '<') {
-                    text.append("<BR />");
-                } else {
-                    text.append(now);
-                    k++;
-                }
-            }
-        }
-        text.append("...");
-        return text.toString();
-    }
-
     public static String setCharToUpper(String s, int index) {
         char[] charArray = s.toCharArray();
 
@@ -379,22 +202,14 @@ public class StringUtilities implements java.io.Serializable {
         return null;
     }
 
+    @Deprecated
     public static String implode(String separator, Iterable<String> iterator) {
-
         Iterator<String> iter = iterator.iterator();
         StringBuilder value = new StringBuilder(iter.hasNext() ? iter.next() : "");
         while (iter.hasNext())
             value.append(separator).append(iter.next());
 
         return value.toString();
-    }
-
-    public String rtrim(char c) {
-        int i;
-        while ((i = raw.lastIndexOf('/')) != -1 && i == (raw + "/").lastIndexOf("//")) {
-            raw = raw.substring(0, i);
-        }
-        return raw;
     }
 
     public static String escape(String raw) {
@@ -465,5 +280,160 @@ public class StringUtilities implements java.io.Serializable {
 
     private static char toHex(int nibble) {
         return hexDigit[(nibble & 0xF)];
+    }
+
+    public String getString() {
+        return raw;
+    }
+
+    public String nospace(String raw) {
+        return remove(raw, (char) 32);
+    }
+
+    public String remove(String raw, char ch) {
+        StringBuilder buffer = new StringBuilder();
+        int position = 0;
+        char currentChar;
+
+        while (position < raw.length()) {
+            currentChar = raw.charAt(position++);
+            if (currentChar != ch)
+                buffer.append(currentChar);
+        }
+        return buffer.toString();
+    }
+
+    public String replace(char res, String des) {
+        if (raw == null) {
+            return "";
+        }
+        char[] temp = raw.toCharArray();
+        StringBuilder buffer = new StringBuilder();
+        for (int i = 0; i < temp.length; i++) {
+            if (temp[i] == res)
+                buffer.append(des);
+            else
+                buffer.append(temp[i]);
+        }
+        return buffer.toString();
+    }
+
+    public boolean safe() {
+        for (char c : HTML)
+            if (raw.indexOf(c) != -1)
+                return false;
+        return true;
+    }
+
+    public String leave(int length) {
+        if (isNull())
+            return "";
+        if (raw.length() <= length)
+            return raw;
+        char sub;
+
+        do {
+            sub = raw.charAt(length++);
+        } while (raw.indexOf('>') != -1 && sub != '>');
+
+        return raw.substring(0, length) + "...";
+    }
+
+    public boolean isNull() {
+        return raw.trim().length() == 0;
+    }
+
+    public boolean isNaN() {
+        char c;
+
+        for (int i = 0; i < raw.length(); i++) {
+            c = raw.charAt(i);
+            if (c >= 48 && c <= 57)
+                return true;
+        }
+        return false;
+    }
+
+    public boolean isLetter() {
+        char c;
+
+        for (int i = 0; i < raw.length(); i++) {
+            c = raw.charAt(i);
+            if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122))
+                return true;
+        }
+        return false;
+    }
+
+    public int stringAt(String substring, int index) {
+        return raw.toLowerCase().indexOf(substring.toLowerCase(), index);
+    }
+
+    public String linefeed(String endstr) {
+        StringBuilder htmlcode = new StringBuilder();
+        int index = 0;
+        while (true) {
+            int position = raw.indexOf(0x0D, index);
+            if (position == -1) {
+                htmlcode.append(raw.substring(index, raw.length()));
+                break;
+            }
+            htmlcode.append(raw.substring(index, position));
+            index = position + 2;
+            htmlcode.append(endstr);
+        }
+        return htmlcode.toString();
+    }
+
+    public String linefeed(char spliter) {
+        StringBuilder htmlCode = new StringBuilder();
+
+        char[] ch = raw.toCharArray();
+        for (char c : ch) {
+            if (c == 0x0D)
+                htmlCode.append(spliter);
+            else
+                htmlCode.append(c);
+        }
+        return htmlCode.toString();
+    }
+
+    public String hideHTML(int length) {
+        if (isNull())
+            return "";
+        StringBuilder text = new StringBuilder();
+
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("<br>|<BR>|<br />|<br/><BR />|<BR/>");
+        java.util.regex.Matcher matcher = pattern.matcher(raw);
+        raw = matcher.replaceAll(String.valueOf('\n'));
+
+        int flag = 0, k = 0;
+        for (int i = 0; i < raw.length(); i++) {
+            if (k > length - 1)
+                break;
+            char now = raw.charAt(i);
+            if (now == '<' && flag == 0) {
+                flag = 1;
+            } else if (now == '>' && flag == 1) {
+                flag = 0;
+            } else if (flag == 0) {
+                if (now == '\n' && raw.charAt(i + 1) != '<') {
+                    text.append("<BR />");
+                } else {
+                    text.append(now);
+                    k++;
+                }
+            }
+        }
+        text.append("...");
+        return text.toString();
+    }
+
+    public String rtrim(char c) {
+        int i;
+        while ((i = raw.lastIndexOf('/')) != -1 && i == (raw + "/").lastIndexOf("//")) {
+            raw = raw.substring(0, i);
+        }
+        return raw;
     }
 }
