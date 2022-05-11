@@ -19,7 +19,6 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.system.Configuration;
 
 import javax.mail.*;
-import java.security.Security;
 import java.util.Properties;
 
 
@@ -31,13 +30,9 @@ public class SMTPConnection implements Connection {
 
     private Session session;
     private Transport transport;
-
-    private String SMTP_SOCKETFACTORY_PORT;
-
     private String username;
     private String password;
 
-    private boolean isSSL = false;
     private String id;
 
     public SMTPConnection(Configuration<String> properties) throws ApplicationException {
@@ -54,38 +49,37 @@ public class SMTPConnection implements Connection {
          */
         Properties props = System.getProperties();
 
-        this.isSSL = Boolean.valueOf(this.config.get("mail.ssl.on"));
-        this.SMTP_SOCKETFACTORY_PORT = this.config.get("mail.smtp.socketFactory.port");
+        boolean isSSL = Boolean.parseBoolean(this.config.get("mail.ssl.on"));
+        String socketFactoryPort = this.config.get("mail.smtp.socketFactory.port");
 
         this.username = this.config.get("smtp.auth.user");
         this.password = this.config.get("smtp.auth.pwd");
 
-        if (this.isSSL) {
+        if (isSSL) {
 //            Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
-
             props.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             props.setProperty("mail.smtp.socketFactory.fallback", "false");
-            props.setProperty("mail.smtp.socketFactory.port", this.SMTP_SOCKETFACTORY_PORT);
+            props.setProperty("mail.smtp.socketFactory.port",  socketFactoryPort);
         }
 
-        String host = this.config.get("mail.smtp.host").trim(),
-                port = this.config.get("mail.smtp.port").trim(),
-                autho = this.config.get("mail.smtp.auth").trim(),
-                from = this.config.get("mail.smtp.from").trim();
+        String host = this.config.get("mail.smtp.host"),
+                port = this.config.get("mail.smtp.port"),
+                auth = this.config.get("mail.smtp.auth"),
+                from = this.config.get("mail.smtp.from");
         props.setProperty("mail.smtp.from", from.length() == 0 ? this.username : from);
         props.setProperty("mail.smtp.host", host.length() == 0 ? "localhost" : host); // eg. smtp.gmail.com
         props.setProperty("mail.smtp.port", port.length() == 0 ? "25" : port); // eg. // 443
-        props.setProperty("mail.smtp.auth", autho.length() == 0 ? "false" : autho); // "true" or "false"
+        props.setProperty("mail.smtp.auth", auth.length() == 0 ? "false" : auth); // "true" or "false"
 
-        if (autho.equalsIgnoreCase("true")) {
-            javax.mail.Authenticator auth = new javax.mail.Authenticator() {
+        if (auth.equalsIgnoreCase("true")) {
+            javax.mail.Authenticator authenticator = new javax.mail.Authenticator() {
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {
                     return new PasswordAuthentication(username, password);
                 }
             };
 
-            this.session = Session.getInstance(props, auth);
+            this.session = Session.getInstance(props, authenticator);
         } else {
             this.session = Session.getInstance(props);
         }
