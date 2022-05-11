@@ -82,7 +82,7 @@ public class Settings implements Configuration<String> {
             }
             try {
                 byte[] bytes = value.getBytes(StandardCharsets.ISO_8859_1);
-                return new String(bytes, StandardCharsets.UTF_8);
+                return new String(bytes, StandardCharsets.UTF_8).trim();
             } catch (Exception ex) {
                 System.err.print("The config (" + fileName + ") may be not found!");
             }
