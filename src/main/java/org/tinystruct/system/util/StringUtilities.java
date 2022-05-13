@@ -35,17 +35,15 @@ public class StringUtilities implements java.io.Serializable {
     }
 
     public static String getURL(String url) {
-        if (url.toLowerCase().indexOf("http://", 0) == -1 && url.toLowerCase().indexOf("mms://", 0) == -1
-                && url.toLowerCase().indexOf("rtsp://", 0) == -1 && url.toLowerCase().indexOf("https://", 0) == -1)
+        if (url.toLowerCase().indexOf("http://") == 0 && url.toLowerCase().indexOf("mms://") == 0
+                && url.toLowerCase().indexOf("rtsp://") == 0 && url.toLowerCase().indexOf("https://") == 0)
             url = "http://" + url;
         return url;
     }
 
     public static boolean isAbsoluteURL(String url) {
-        if (url.toLowerCase().indexOf("http://", 0) == -1 && url.toLowerCase().indexOf("mms://", 0) == -1
-                && url.toLowerCase().indexOf("rtsp://", 0) == -1 && url.toLowerCase().indexOf("https://", 0) == -1)
-            return false;
-        return true;
+        return url.toLowerCase().indexOf("http://") != 0 || url.toLowerCase().indexOf("mms://") != 0
+                || url.toLowerCase().indexOf("rtsp://") != 0 || url.toLowerCase().indexOf("https://") != 0;
     }
 
     public static String leftPadding(String raw, int len, char replacement) {
@@ -89,10 +87,10 @@ public class StringUtilities implements java.io.Serializable {
     public static String sign(String string, String substring) {
         StringBuilder temp = new StringBuilder();
         String color_start = "<b>", color_end = "</b>";
-        int index = 0, position = 0, length = substring.length();
-        StringUtilities mstring = new StringUtilities(string);
+        int index = 0, position, length = substring.length();
+        StringUtilities s = new StringUtilities(string);
         while (true) {
-            position = mstring.stringAt(substring, index);
+            position = s.stringAt(substring, index);
             if (position == -1) {
                 temp.append(string.substring(index));
                 break;
@@ -105,8 +103,8 @@ public class StringUtilities implements java.io.Serializable {
         return temp.toString();
     }
 
-    public static String linefeed(String string, String spliter) {
-        return new StringUtilities(string).linefeed(spliter);
+    public static String linefeed(String string, String delimiter) {
+        return new StringUtilities(string).linefeed(delimiter);
     }
 
     public static String linefeed(String string, char delimiter) {
@@ -252,7 +250,7 @@ public class StringUtilities implements java.io.Serializable {
                 case '\f':
                     buffer.append('\\').append('f');
                     break;
-                case '=': // Fall through
+                // Fall through
                 case ':': // Fall through
                 case '#': // Fall through
                 case '!':
@@ -286,11 +284,11 @@ public class StringUtilities implements java.io.Serializable {
         return raw;
     }
 
-    public String nospace(String raw) {
+    public static String nospace(String raw) {
         return remove(raw, (char) 32);
     }
 
-    public String remove(String raw, char ch) {
+    public static String remove(String raw, char ch) {
         StringBuilder buffer = new StringBuilder();
         int position = 0;
         char currentChar;
@@ -309,11 +307,11 @@ public class StringUtilities implements java.io.Serializable {
         }
         char[] temp = raw.toCharArray();
         StringBuilder buffer = new StringBuilder();
-        for (int i = 0; i < temp.length; i++) {
-            if (temp[i] == res)
+        for (char c : temp) {
+            if (c == res)
                 buffer.append(des);
             else
-                buffer.append(temp[i]);
+                buffer.append(c);
         }
         return buffer.toString();
     }
@@ -369,29 +367,29 @@ public class StringUtilities implements java.io.Serializable {
         return raw.toLowerCase().indexOf(substring.toLowerCase(), index);
     }
 
-    public String linefeed(String endstr) {
+    public String linefeed(String end) {
         StringBuilder htmlcode = new StringBuilder();
         int index = 0;
         while (true) {
             int position = raw.indexOf(0x0D, index);
             if (position == -1) {
-                htmlcode.append(raw.substring(index, raw.length()));
+                htmlcode.append(raw.substring(index));
                 break;
             }
-            htmlcode.append(raw.substring(index, position));
+            htmlcode.append(raw, index, position);
             index = position + 2;
-            htmlcode.append(endstr);
+            htmlcode.append(end);
         }
         return htmlcode.toString();
     }
 
-    public String linefeed(char spliter) {
+    public String linefeed(char delimiter) {
         StringBuilder htmlCode = new StringBuilder();
 
         char[] ch = raw.toCharArray();
         for (char c : ch) {
             if (c == 0x0D)
-                htmlCode.append(spliter);
+                htmlCode.append(delimiter);
             else
                 htmlCode.append(c);
         }
@@ -429,7 +427,7 @@ public class StringUtilities implements java.io.Serializable {
         return text.toString();
     }
 
-    public String rtrim(char c) {
+    public String removeTrailingSlash() {
         int i;
         while ((i = raw.lastIndexOf('/')) != -1 && i == (raw + "/").lastIndexOf("//")) {
             raw = raw.substring(0, i);
