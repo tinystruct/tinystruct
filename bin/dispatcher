@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 ROOT="`pwd`"
-VERSION="0.4.0"
+VERSION="0.4.1"
 cd "`dirname "$0"`"
 cd "../"
 cd "$ROOT"
@@ -19,4 +19,4 @@ done
 java \
 $JAVA_OPTS \
 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \
--cp "$ROOT/target/classes:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"
+-cp "$ROOT/target/classes:$ROOT/lib/tinystruct-$VERSION-jar-with-dependencies.jar:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"

@@ -104,7 +104,5 @@ public class Array<T> implements ElementExpression<Variable<T[]>> {
         }
 
         return list;
-
     }
-
 }
