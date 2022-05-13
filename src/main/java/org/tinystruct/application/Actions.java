@@ -96,7 +96,7 @@ public class Actions {
 
     public Action getAction(String path) {
         Action action;
-        if (((action = this.get(path)) != null || (action = this.get(new StringUtilities(path).rtrim('/'))) != null)) {
+        if (((action = this.get(path)) != null || (action = this.get(new StringUtilities(path).removeTrailingSlash())) != null)) {
             return action;
         }
 
