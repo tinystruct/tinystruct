@@ -123,7 +123,7 @@ public class SQLiteGenerator implements Generator {
 
                 System.out.println(currentFields);
                 propertyName = StringUtilities.setCharToUpper(currentFields.get("name").value().toString(), '_');
-                propertyName = new StringUtilities(propertyName).remove('_');
+                propertyName = StringUtilities.remove(propertyName,'_');
 
                 String propertyNameOfMethod = StringUtilities.setCharToUpper(propertyName, 0);
 

@@ -26,15 +26,13 @@ public class TimeIterator implements ScheduleIterator {
 
     private final Calendar calendar = Calendar.getInstance();
     private int seconds;
-    private Date date;
 
     public TimeIterator(int hour, int minute, int second) {
         this(hour, minute, second, new Date());
     }
 
     public TimeIterator(int hour, int minute, int second, Date date) {
-        this.date = date;
-        this.calendar.setTime(this.date);
+        this.calendar.setTime(date);
 
         this.calendar.set(Calendar.HOUR_OF_DAY, hour);
         this.calendar.set(Calendar.MINUTE, minute);

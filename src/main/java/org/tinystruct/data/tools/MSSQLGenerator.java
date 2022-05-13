@@ -108,7 +108,7 @@ public class MSSQLGenerator implements Generator {
                 currentFields = fields.next();
 
                 propertyName = StringUtilities.setCharToUpper(currentFields.get("name").value().toString(), '_');
-                propertyName = new StringUtilities(propertyName).remove('_');
+                propertyName = StringUtilities.remove(propertyName,'_');
                 propertyType = FieldType.valueOf(currentFields.get("type").value().toString()).getRealType();
 
                 String propertyNameOfMethod = StringUtilities.setCharToUpper(propertyName, 0);
