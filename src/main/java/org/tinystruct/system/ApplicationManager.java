@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
+import com.sun.jna.Platform;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Action;
@@ -36,8 +37,8 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.4.2";
-    private static final boolean WINDOWS = System.getProperty("os.name").startsWith("WIN");
+    public static final String VERSION = "0.4.3";
+    private static final boolean WINDOWS = Platform.isWindows();
 
     private ApplicationManager() {
     }
