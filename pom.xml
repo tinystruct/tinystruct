@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>0.4.1</version>
+    <version>0.4.2</version>
     <name>tinystruct framework</name>
     <description>A simple framework for Java development. Simple is hard, Complex is easy. Better thinking, better design.</description>
     <url>http://tinystruct.org</url>
@@ -178,7 +178,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9.1</version>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
