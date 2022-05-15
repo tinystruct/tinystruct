@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
+import com.sun.jna.Platform;
 import org.mockito.internal.SuppressSignatureCheck;
 import org.tinystruct.*;
 import org.tinystruct.application.Context;
@@ -383,6 +384,7 @@ public class Dispatcher extends AbstractApplication {
     }
 
     public String logo() {
+        if(Platform.isWindows())
         Kernel32.INSTANCE.SetConsoleMode(Kernel32.INSTANCE.GetStdHandle(-11), Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
         return "\n"
