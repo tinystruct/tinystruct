@@ -44,6 +44,7 @@ import java.util.stream.Stream;
 
 public class Dispatcher extends AbstractApplication {
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
+    private boolean virtualTerminal;
 
     /**
      * Main functionality.
@@ -384,9 +385,6 @@ public class Dispatcher extends AbstractApplication {
     }
 
     public String logo() {
-        if(Platform.isWindows())
-        Kernel32.INSTANCE.SetConsoleMode(Kernel32.INSTANCE.GetStdHandle(-11), Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-
         return "\n"
                 + "  _/  '         _ _/  _     _ _/   \n"
                 + "  /  /  /) (/ _)  /  /  (/ (  /  "
@@ -395,6 +393,11 @@ public class Dispatcher extends AbstractApplication {
     }
 
     public String color(Object s, int color) {
+        if(!virtualTerminal && Platform.isWindows()) {
+            Kernel32.INSTANCE.SetConsoleMode(Kernel32.INSTANCE.GetStdHandle(-11), Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+            virtualTerminal = true;
+        }
+
         return "\u001b[" + color + "m" + s + "\u001b[0m";
     }
 
