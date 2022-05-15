@@ -21,6 +21,7 @@ import org.tinystruct.application.Context;
 import org.tinystruct.system.cli.CommandArgument;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.cli.CommandOption;
+import org.tinystruct.system.cli.Kernel32;
 import org.tinystruct.system.util.StringUtilities;
 import org.tinystruct.system.util.URLResourceLoader;
 import org.tinystruct.transfer.http.ReadableByteChannelWrapper;
@@ -382,6 +383,8 @@ public class Dispatcher extends AbstractApplication {
     }
 
     public String logo() {
+        Kernel32.INSTANCE.SetConsoleMode(Kernel32.INSTANCE.GetStdHandle(-11), Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+
         return "\n"
                 + "  _/  '         _ _/  _     _ _/   \n"
                 + "  /  /  /) (/ _)  /  /  (/ (  /  "
