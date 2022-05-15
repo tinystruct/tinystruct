@@ -1,11 +1,11 @@
 package org.tinystruct.system.cli;
 
+import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
-import com.sun.jna.win32.StdCallLibrary;
 import com.sun.jna.win32.W32APIOptions;
 
-public interface Kernel32 extends StdCallLibrary {
+public interface Kernel32 extends Library {
     int ENABLE_VIRTUAL_TERMINAL_PROCESSING = 7;
     /**
      * The instance.
