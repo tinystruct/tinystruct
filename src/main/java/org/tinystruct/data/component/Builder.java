@@ -29,9 +29,8 @@ import java.util.logging.Logger;
 
 public class Builder extends HashMap<String, Object> implements Struct, Serializable {
 
-    private static final String QUOTE = "\"";
     private static final long serialVersionUID = 3484789992424316230L;
-    private boolean log = false;
+    private static final String QUOTE = "\"";
     private static final Logger logger = Logger.getLogger(Builder.class.getName());
 
     public Builder() {
@@ -69,18 +68,17 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public void parse(String resource) throws ApplicationException {
         // 默认相信任何一个被传入的都是合法的字符串
         resource = resource.trim();
-        if (!resource.startsWith("{") || !resource.endsWith("}")) {
+        if (!resource.startsWith("{") && !resource.endsWith("}")) {
             throw new ApplicationException("Invalid data format!");
         }
-
         if (resource.startsWith("{")) {
-            if (log) logger.info("待处理:{}" + resource);
+            logger.info("待处理:{}" + resource);
             // 查找关闭位置
             this.closedPosition = this.seekPosition(resource);
             // 获得传入的实体对象里{key:value,key:value,...key:value},{key:value,key:value,...key:value}序列
             // 脱去传入的实体对象外壳 key:value,key:value,...key:value 序列
             String values = resource.substring(1, closedPosition - 1);
-            if (log) logger.info("已脱壳:" + values);
+            logger.info("已脱壳:" + values);
 
             this.parseValue(values);
         }
@@ -97,22 +95,20 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     private void parseValue(String value) throws ApplicationException {
-        if (log) logger.info("待分析:" + value);
+        logger.info("待分析:" + value);
         value = value.trim();
         if (value.startsWith(QUOTE)) {
             // 处理传入的实体对象外壳 "key":value,"key":"value",..."key":value 序列
             int COLON_POSITION = value.indexOf(':'), start = COLON_POSITION + 1;
             String keyName = value.substring(1, COLON_POSITION - 1);
 
-            if (log) logger.info("取键值:" + keyName);
-
+            logger.info("取键值:" + keyName);
             String $value = value.substring(start).trim();
+            logger.info("分析值:" + $value);
 
-            if (log) logger.info("分析值:" + $value);
-
-            Object keyValue = null;
+            Object keyValue;
             if ($value.startsWith(QUOTE)) {
-                if (log) logger.info("提取值:" + $value);
+                logger.info("提取值:" + $value);
 
                 int $end = this.next($value, '"');
                 keyValue = $value.substring(1, $end - 1).trim();
@@ -123,7 +119,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     this.parseValue($value);
                 }
             } else if ($value.indexOf('{') == 0) {
-                if (log) logger.info("遇实体:" + $value);
+                logger.info("遇实体:" + $value);
                 int closedPosition = this.seekPosition($value);
 
                 // 获得传入的实体对象里{key:value,key:value,...key:value},{key:value,key:value,...key:value}序列
@@ -131,20 +127,19 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
                 String _$value = $value.substring(0, closedPosition);
 
-                if (log) logger.info("分实体:" + _$value);
+                logger.info("分实体:" + _$value);
                 Builder builder = new Builder();
                 builder.parse(_$value);
 
                 keyValue = builder;
-
                 if (closedPosition < $value.length()) {
                     _$value = $value.substring(closedPosition + ",".length());
-                    if (log) logger.info("分实体:" + _$value);
+                    logger.info("分实体:" + _$value);
                     this.parseValue(_$value);
                 }
             } else if ($value.indexOf('[') == 0) {
                 Builders builders = new Builders();
-                if (log) logger.info($value);
+                logger.info($value);
                 builders.parse($value);
 
                 keyValue = builders;
@@ -164,19 +159,19 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     private int seekPosition(String value) {
-        char[] charray = value.toCharArray();
+        char[] chars = value.toCharArray();
         int i = 0, n = 0;
-        int position = charray.length;
+        int position = chars.length;
 
         while (i < position) {
-            char c = charray[i];
+            char c = chars[i];
             if (c == '{') {
-                if (i - 1 >= 0 && charray[i - 1] == '\\') {
+                if (i - 1 >= 0 && chars[i - 1] == '\\') {
                     ;
                 } else
                     n++;
             } else if (c == '}') {
-                if (i - 1 >= 0 && charray[i - 1] == '\\') {
+                if (i - 1 >= 0 && chars[i - 1] == '\\') {
                     ;
                 } else
                     n--;
@@ -191,13 +186,13 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     private int next(String value, char begin) {
-        char[] charray = value.toCharArray();
-        int i = 0, n = 0, position = charray.length;
+        char[] chars = value.toCharArray();
+        int i = 0, n = 0, position = chars.length;
 
         while (i < position) {
-            char c = charray[i];
+            char c = chars[i];
             if (c == begin) {
-                if (i - 1 >= 0 && charray[i - 1] == '\\') {
+                if (i - 1 >= 0 && chars[i - 1] == '\\') {
                     ;
                 } else
                     n++;

@@ -20,68 +20,64 @@ import java.io.Serializable;
 public class Condition implements Serializable {
 
     private static final long serialVersionUID = 7375286601225137163L;
-    private String SQL;
+    private StringBuilder SQL;
     private String table;
     private String fields;
     private String orders;
 
     public Condition() {
-        this.SQL = "";
+        this.SQL = new StringBuilder();
         this.fields = "*";
         this.orders = "";
     }
 
     public Condition select(String table) {
         this.table = table;
-        this.SQL = "SELECT " + this.fields + " FROM " + this.table + " "
-                + this.orders;
+        this.SQL.append("SELECT ").append(this.fields).append(" FROM ").append(this.table).append(" ").append(this.orders);
         return this;
     }
 
     public Condition and(String condition) {
-        condition = condition.toLowerCase();
-
-        if (this.SQL.toUpperCase().contains("WHERE"))
-            this.SQL += " AND " + condition;
+        String query = this.SQL.toString();
+        if (query.toUpperCase().contains("WHERE"))
+            this.SQL.append(" AND ");
         else
-            this.SQL += " WHERE " + condition;
-
+            this.SQL.append(" WHERE ");
+        this.SQL.append(condition.toLowerCase());
         return this;
     }
 
     public Condition or(String condition) {
-        condition = condition.toLowerCase();
-
-        if (this.SQL.toUpperCase().contains("WHERE"))
-            this.SQL += " OR " + condition.toLowerCase();
+        String query = this.SQL.toString();
+        if (query.toUpperCase().contains("WHERE"))
+            this.SQL.append(" OR ");
         else
-            this.SQL += " WHERE " + condition.toLowerCase();
+            this.SQL.append(" WHERE ");
+        this.SQL.append(condition.toLowerCase());
         return this;
     }
 
     public Condition orderBy(String orders) {
-        orders = orders.toLowerCase();
-        this.orders = " order by " + orders;
-        if (this.SQL.trim().length() > 0)
-            this.SQL += this.orders;
+        this.orders = " order by " + orders.toLowerCase();
+        String query = this.SQL.toString();
+        if (query.trim().length() > 0)
+            this.SQL.append(this.orders);
+
         return this;
     }
 
     public Condition with(String sql) {
-
-        this.SQL = "SELECT " + this.fields + " FROM " + this.table + " " + sql
-                + this.orders;
+        this.SQL.append("SELECT ").append(this.fields).append(" FROM ").append(this.table).append(" ").append(sql).append(this.orders);
         return this;
     }
 
     public Condition setRequestFields(String fields) {
-
         this.fields = fields;
         return this;
     }
 
     public String toString() {
-        return this.SQL;
+        return this.SQL.toString();
     }
 
 }

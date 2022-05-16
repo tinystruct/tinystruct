@@ -29,12 +29,12 @@ public class Table extends Vector<Row> {
         this.name = name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getName() {
         return this.name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public void append(Row row) {
@@ -89,10 +89,7 @@ public class Table extends Vector<Row> {
             return false;
         Table other = (Table) obj;
         if (name == null) {
-            if (other.name != null)
-                return false;
-        } else if (!name.equals(other.name))
-            return false;
-        return true;
+            return other.name == null;
+        } else return name.equals(other.name);
     }
 }

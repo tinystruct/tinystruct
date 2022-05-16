@@ -26,7 +26,7 @@ public class Pager {
     /**
      * How many pages for the list, auto calculate
      */
-    private int pages_count;
+    private int pagesCount;
     private int pageSize;
     private int currentPage;
     private int startIndex;
@@ -67,7 +67,6 @@ public class Pager {
     }
 
     public void setCurrentPage(int page) {
-
         this.currentPage = page;
     }
 
@@ -77,10 +76,10 @@ public class Pager {
 
         int n = (this.size % this.pageSize == 0) ? 0 : 1;
         if (n == 0) {
-            this.pages_count = (this.size - (this.size % this.pageSize))
+            this.pagesCount = (this.size - (this.size % this.pageSize))
                     / this.pageSize;
         } else {
-            this.pages_count = (this.size - (this.size % this.pageSize))
+            this.pagesCount = (this.size - (this.size % this.pageSize))
                     / this.pageSize + n;
         }
     }
@@ -94,7 +93,7 @@ public class Pager {
 
     public String getPageControlNumber(String page) {
         StringBuilder pageControlBar = new StringBuilder();
-        for (int i = 1; i <= pages_count; i++) {
+        for (int i = 1; i <= pagesCount; i++) {
             pageControlBar.append(" <a href=\"").append(page).append("=").append(i).append("\">").append(i).append("</a> ");
         }
         return pageControlBar.toString();
@@ -125,27 +124,27 @@ public class Pager {
     }
 
     public String getPageControlBar(String page) {
-        String The_first_page_link = page + "=1", The_last_page_link = page
-                + "=" + (currentPage - 1), The_current_page_link = page + "="
-                + currentPage, The_next_page_link = page + "="
-                + (currentPage + 1), The_end_page_link = page + "="
-                + pages_count, The_first_page = (currentPage > 1) ? "<a href=\""
-                + The_first_page_link + "\">" + this.firstPageText + "</a>"
-                : this.firstPageText, The_last_page = (currentPage > 1) ? "<a href=\""
-                + The_last_page_link + "\">" + this.lastPageText + "</a>"
+        String theFirstPageLink = page + "=1", theLastPageLink = page
+                + "=" + (currentPage - 1), theCurrentPageLink = page + "="
+                + currentPage, theNextPageLink = page + "="
+                + (currentPage + 1), theEndPageLink = page + "="
+                + pagesCount, theFirstPage = (currentPage > 1) ? "<a href=\""
+                + theFirstPageLink + "\">" + this.firstPageText + "</a>"
+                : this.firstPageText, theLastPage = (currentPage > 1) ? "<a href=\""
+                + theLastPageLink + "\">" + this.lastPageText + "</a>"
                 : this.lastPageText,
 
-                The_current_page_text = "[<a href=\"" + The_current_page_link + "\">"
-                        + currentPage + "</a>]", The_current_page = String.format(
-                this.currentPageText, The_current_page_text), The_next_page = (currentPage < pages_count) ? "<a href=\""
-                + The_next_page_link + "\">" + this.nextPageText + "</a>"
-                : this.nextPageText, The_end_page = (currentPage < pages_count) ? "<a href=\""
-                + The_end_page_link + "\">" + this.endPageText + "</a>"
+                theCurrentPageText = "[<a href=\"" + theCurrentPageLink + "\">"
+                        + currentPage + "</a>]", theCurrentPage = String.format(
+                this.currentPageText, theCurrentPageText), theNextPage = (currentPage < pagesCount) ? "<a href=\""
+                + theNextPageLink + "\">" + this.nextPageText + "</a>"
+                : this.nextPageText, theEndPage = (currentPage < pagesCount) ? "<a href=\""
+                + theEndPageLink + "\">" + this.endPageText + "</a>"
                 : this.endPageText;
 
-        Object[] args = new Object[]{pages_count, pageSize, size,
-                The_first_page, The_last_page, The_current_page, The_next_page,
-                The_end_page};
+        Object[] args = new Object[]{pagesCount, pageSize, size,
+                theFirstPage, theLastPage, theCurrentPage, theNextPage,
+                theEndPage};
 
         return "<div class=\"pageControl\">"
                 + String.format(this.controlBarText, args) + "</div>";

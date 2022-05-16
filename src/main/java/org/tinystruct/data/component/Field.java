@@ -39,9 +39,9 @@ public class Field extends ConcurrentHashMap<String, FieldInfo> {
             fieldInfo = this.get(key);
 
             if (to.length() == 0)
-                to.append("\"" + key + "\":{" + fieldInfo.toString() + "}");
+                to.append("\"").append(key).append("\":{").append(fieldInfo.toString()).append("}");
             else
-                to.append(", \"" + key + "\":{" + fieldInfo.toString() + "}");
+                to.append(", \"").append(key).append("\":{").append(fieldInfo.toString()).append("}");
         }
         return to.toString();
     }

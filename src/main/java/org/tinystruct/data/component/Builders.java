@@ -25,7 +25,6 @@ import java.util.logging.Logger;
 public class Builders extends ArrayList<Object> implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private boolean log = false;
     private static final Logger logger = Logger.getLogger(Builders.class.getName());
 
     public Builders() {
@@ -34,21 +33,20 @@ public class Builders extends ArrayList<Object> implements Serializable {
     public String toString() {
         StringBuilder buffer = new StringBuilder();
 
-        Iterator<Object> iterator = this.iterator();
-        while (iterator.hasNext()) {
-            buffer.append(iterator.next());
+        for (Object o : this) {
+            buffer.append(o);
             buffer.append(',');
         }
 
         if (buffer.length() > 0)
             buffer.setLength(buffer.length() - 1);
 
-        return "[" + buffer.toString() + "]";
+        return "[" + buffer + "]";
     }
 
     public void parse(String value) throws ApplicationException {
         if (value.indexOf("{") == 0) {
-            if (log) logger.info("分析实体：" + value);
+            logger.info("分析实体：" + value);
             Builder builder = new Builder();
             builder.parse(value);
 
@@ -78,11 +76,11 @@ public class Builders extends ArrayList<Object> implements Serializable {
     }
 
     private int seekPosition(String value) {
-        char[] charray = value.toCharArray();
-        int i = 0, n = 0, position = charray.length;
+        char[] chars = value.toCharArray();
+        int i = 0, n = 0, position = chars.length;
 
         while (i < position) {
-            char c = charray[i++];
+            char c = chars[i++];
 
             if (c == '[') {
                 n++;

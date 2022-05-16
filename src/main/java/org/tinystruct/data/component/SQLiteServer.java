@@ -36,7 +36,7 @@ public class SQLiteServer implements Repository {
             throws ApplicationException {
         boolean inserted = false;
         String dot = ",", currentProperty;
-        StringBuffer expressions = new StringBuffer(), values = new StringBuffer();
+        StringBuilder expressions = new StringBuilder(), values = new StringBuilder();
         FieldInfo currentField;
 
         List<String> fieldNames = new ArrayList<String>();
@@ -52,15 +52,14 @@ public class SQLiteServer implements Repository {
             fieldNames.add(currentProperty);
 
             if (expressions.length() == 0)
-                expressions.append("`" + currentField.getColumnName() + "`");
+                expressions.append("`").append(currentField.getColumnName()).append("`");
             else
-                expressions.append(dot + "`" + currentField.getColumnName()
-                        + "`");
+                expressions.append(dot).append("`").append(currentField.getColumnName()).append("`");
 
             if (values.length() == 0)
                 values.append('?');
             else
-                values.append(dot + '?');
+                values.append(dot).append('?');
         }
 
         String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES("
@@ -107,7 +106,7 @@ public class SQLiteServer implements Repository {
     public boolean update(Field ready_fields, String table)
             throws ApplicationException {
         String dot = ",", currentProperty;
-        StringBuffer expressions = new StringBuffer();
+        StringBuilder expressions = new StringBuilder();
         FieldInfo currentField;
 
 
@@ -128,11 +127,9 @@ public class SQLiteServer implements Repository {
                 fieldNames.add(currentProperty);
 
                 if (expressions.length() == 0)
-                    expressions.append("`" + currentField.getColumnName() + "`"
-                            + "=?");
+                    expressions.append("`").append(currentField.getColumnName()).append("`").append("=?");
                 else
-                    expressions.append(dot + "`" + currentField.getColumnName()
-                            + "`" + "=?");
+                    expressions.append(dot).append("`").append(currentField.getColumnName()).append("`").append("=?");
             }
         }
 

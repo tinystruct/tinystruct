@@ -36,7 +36,6 @@ import java.util.logging.Logger;
 public abstract class AbstractData implements Data {
 
     private final static Logger logger = Logger.getLogger(AbstractData.class.getName());
-    ;
     private String classPath;
     private String className;
     protected Object Id;
@@ -198,7 +197,7 @@ public abstract class AbstractData implements Data {
         StringBuilder orders = new StringBuilder();
         for (String fields : fieldNames) {
             if (orders.length() > 0)
-                orders.append("," + fields);
+                orders.append(",").append(fields);
             else
                 orders.append(fields);
         }

@@ -132,7 +132,6 @@ public class MySQLServer implements Repository {
             while (iterator.hasNext()) {
                 currentField = ready_fields.get(iterator.next());
 
-                // System.out.println("["+currentField.getType()+"]"+i+":"+currentField.value());
                 if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
                     ps.setInt(i++, currentField.intValue());
                 } else if (currentField.getType() == FieldType.TEXT) {
@@ -147,7 +146,6 @@ public class MySQLServer implements Repository {
 
             }
 
-            // System.out.println(i+":"+Id);
             ps.setObject(i, Id);
             if (operator.update() > 0) {
                 edited = true;
@@ -186,7 +184,6 @@ public class MySQLServer implements Repository {
         FieldInfo field;
         Field fields;
 
-
         try (DatabaseOperator operator = new DatabaseOperator()) {
             operator.preparedStatement(SQL, parameters);
             operator.query();
@@ -221,7 +218,6 @@ public class MySQLServer implements Repository {
         }
 
         return table;
-
     }
 
     public Row findOne(String SQL, Object[] parameters) throws ApplicationException {

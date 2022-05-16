@@ -32,7 +32,13 @@ public class SQLServer implements Repository {
     public boolean append(Field ready_fields, String table)
             throws ApplicationException {
         boolean inserted = false;
-        String SQL = "", KEYS = "", DATA_KEYS = "", VALUES = "", Parameters = "", dot = ",", currentProperty;
+        String SQL = "";
+        StringBuilder keys = new StringBuilder();
+        StringBuilder dataKeys = new StringBuilder();
+        StringBuilder values = new StringBuilder();
+        StringBuilder parameters = new StringBuilder();
+        String dot = ",";
+        String currentProperty;
         FieldInfo currentField;
 
         for (Enumeration<String> _field = ready_fields.keys(); _field
@@ -49,56 +55,47 @@ public class SQLServer implements Repository {
                     || currentField.getType() == FieldType.BIT
                     || currentField.getType() == FieldType.DATE
                     || currentField.getType() == FieldType.DATETIME) {
-                Parameters += "@" + currentField.getName() + " "
-                        + currentField.get("type") + dot;
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type")).append(dot);
 
                 if (currentField.getType() == FieldType.TEXT) {
-                    VALUES += "'"
-                            + currentField.stringValue().replaceAll("'", "''")
-                            + "'" + dot;
+                    values.append("'").append(currentField.stringValue().replaceAll("'", "''")).append("'").append(dot);
                 } else if (currentField.getType() == FieldType.DATE
                         || currentField.getType() == FieldType.DATETIME) {
                     SimpleDateFormat format = new SimpleDateFormat(
                             "yyyy-MM-dd HH:mm:ss");
-                    VALUES += "'" + format.format(currentField.value()) + "'"
-                            + dot;
+                    values.append("'").append(format.format(currentField.value())).append("'").append(dot);
                 } else if (currentField.getType() == FieldType.BIT) {
                     // 对null未作处理，考虑后面要进行处理
                     if (currentField.value() != null)
-                        VALUES += (currentField.value().toString().equals(
-                                "true") ? 1 : 0)
-                                + dot;
+                        values.append(currentField.value().toString().equals(
+                                "true") ? 1 : 0).append(dot);
                     else
-                        VALUES += "0" + dot;
+                        values.append("0").append(dot);
                 } else
-                    VALUES += currentField.value() + dot;
+                    values.append(currentField.value()).append(dot);
             } else {
-                Parameters += "@" + currentField.getName() + " "
-                        + currentField.get("type") + "("
-                        + currentField.getLength() + ")" + dot;
-                VALUES += "'"
-                        + currentField.stringValue().replaceAll("'", "''")
-                        + "'" + dot;
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type")).append("(").append(currentField.getLength()).append(")").append(dot);
+                values.append("'").append(currentField.stringValue().replaceAll("'", "''")).append("'").append(dot);
             }
 
-            DATA_KEYS += currentField.getColumnName() + dot;
-            KEYS += "@" + currentField.getName() + dot;
+            dataKeys.append(currentField.getColumnName()).append(dot);
+            keys.append("@").append(currentField.getName()).append(dot);
         }
 
-        DATA_KEYS = DATA_KEYS.substring(0, DATA_KEYS.length() - 1);
-        KEYS = KEYS.substring(0, KEYS.length() - 1);
-        VALUES = VALUES.substring(0, VALUES.length() - 1);
-        Parameters = Parameters.substring(0, Parameters.length() - 1);
+        dataKeys = new StringBuilder(dataKeys.substring(0, dataKeys.length() - 1));
+        keys = new StringBuilder(keys.substring(0, keys.length() - 1));
+        values = new StringBuilder(values.substring(0, values.length() - 1));
+        parameters = new StringBuilder(parameters.substring(0, parameters.length() - 1));
 
         table = table.replaceAll("\\[", "").replaceAll("\\]", "");
         SQL = "if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].["
                 + table
                 + "_APPEND]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)";
         SQL += "BEGIN exec('CREATE PROCEDURE [dbo].[" + table + "_APPEND] "
-                + Parameters + " AS INSERT INTO [" + table + "](" + DATA_KEYS
-                + ") VALUES(" + KEYS + ")')";
-        SQL += " {call " + table + "_APPEND(" + VALUES + ")} END";
-        SQL += " else {call " + table + "_APPEND(" + VALUES + ")}";
+                + parameters + " AS INSERT INTO [" + table + "](" + dataKeys
+                + ") VALUES(" + keys + ")')";
+        SQL += " {call " + table + "_APPEND(" + values + ")} END";
+        SQL += " else {call " + table + "_APPEND(" + values + ")}";
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
             operator.createStatement(false);
@@ -197,12 +194,11 @@ public class SQLServer implements Repository {
         sql.append("if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[")
                 .append(table)
                 .append("_EDIT]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)");
-        sql.append("BEGIN exec('CREATE PROCEDURE [dbo].[" + table + "_EDIT] ")
-                .append(parameters)
-                .append(" AS UPDATE [" + table + "] SET " + expressions)
+        sql.append("BEGIN exec('CREATE PROCEDURE [dbo].[").append(table).append("_EDIT] ")
+                .append(parameters).append(" AS UPDATE [").append(table).append("] SET ").append(expressions)
                 .append(" WHERE id=@Id')");
-        sql.append(" {call " + table + "_EDIT(" + values + ")} END");
-        sql.append(" else {call " + table + "_EDIT(" + values + ")}");
+        sql.append(" {call ").append(table).append("_EDIT(").append(values).append(")} END");
+        sql.append(" else {call ").append(table).append("_EDIT(").append(values).append(")}");
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
             operator.createStatement(false);

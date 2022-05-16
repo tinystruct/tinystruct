@@ -68,7 +68,7 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
             if ("1".equals(value))
                 this.autoIncrement = true;
             else
-                this.autoIncrement = Boolean.valueOf(value);
+                this.autoIncrement = Boolean.parseBoolean(value);
         }
         return this.autoIncrement;
     }
@@ -78,9 +78,6 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
     }
 
     public void set(String property, Object value) {
-        if (this.containsKey(property))
-            this.remove(property);
-
         this.put(property, value);
     }
 
@@ -117,7 +114,7 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
         Object value = this.value();
         if (value == null)
             return false;
-        return Boolean.valueOf(value.toString());
+        return Boolean.parseBoolean(value.toString());
     }
 
     public FieldType typeOf(Object object) {
@@ -140,7 +137,7 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
     }
 
     public String toString() {
-        StringBuffer to = new StringBuffer();
+        StringBuilder to = new StringBuilder();
         String key, value;
 
         for (Enumeration<String> f = this.keys(); f.hasMoreElements(); ) {
@@ -154,9 +151,9 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
             value = value.replaceAll("\\}", "\\\\}");
 
             if (to.length() == 0) {
-                to.append(" \"" + key + "\":\"" + value + "\"");
+                to.append(" \"").append(key).append("\":\"").append(value).append("\"");
             } else {
-                to.append(", \"" + key + "\":\"" + value + "\"");
+                to.append(", \"").append(key).append("\":\"").append(value).append("\"");
             }
         }
 
@@ -178,7 +175,7 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
     public Date dateValue() {
 
         Object value = this.value();
-        if (value != null && value instanceof Date)
+        if (value instanceof Date)
             return (Date) value;
 
         return new Date();

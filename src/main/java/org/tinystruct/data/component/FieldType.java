@@ -318,9 +318,8 @@ public final class FieldType {
 
     public static FieldType valueOf(String s) {
         FieldType currentType;
-        Iterator<FieldType> list = typeList.iterator();
-        while (list.hasNext()) {
-            currentType = list.next();
+        for (FieldType fieldType : typeList) {
+            currentType = fieldType;
 
             if (currentType.typeName.equalsIgnoreCase(s)) {
                 return currentType;
