@@ -223,9 +223,6 @@ public abstract class AbstractApplication implements Application {
     public String setText(String fieldName) {
         String text = this.getProperty(fieldName);
         String key = "[%" + fieldName + "%]";
-        if (this.variables.containsKey(key)) {
-            this.variables.remove(key);
-        }
         this.variables.put(key, new StringVariable(key, text));
         return text;
     }
@@ -233,9 +230,6 @@ public abstract class AbstractApplication implements Application {
     public String setText(String fieldName, Object... args) {
         String text = String.format(this.getProperty(fieldName), args);
         String key = "[%" + fieldName + "%]";
-        if (this.variables.containsKey(key)) {
-            this.variables.remove(key);
-        }
         this.variables.put(key, new StringVariable(key, text));
         return text;
     }
