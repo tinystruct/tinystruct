@@ -55,7 +55,7 @@ public abstract class AbstractApplication implements Application {
     private Locale locale;
     private String output;
     private boolean templateRequired = true;
-    private String template_path;
+    private String templatePath;
 
     /**
      * Abstract application constructor.
@@ -79,13 +79,13 @@ public abstract class AbstractApplication implements Application {
         this.context = context;
         if (this.context.getAttribute(LANGUAGE) != null
                 && !this.context.getAttribute(LANGUAGE).toString()
-                .equalsIgnoreCase(this.config.get(DEFAULT_LANGUAGE).toString())) {
+                .equalsIgnoreCase(this.config.get(DEFAULT_LANGUAGE))) {
             this.config.set(LANGUAGE, this.context.getAttribute(LANGUAGE).toString());
         } else {
-            this.config.set(LANGUAGE, this.config.get(DEFAULT_LANGUAGE).toString());
+            this.config.set(LANGUAGE, this.config.get(DEFAULT_LANGUAGE));
         }
 
-        this.setLocale(this.config.get(LANGUAGE).toString());
+        this.setLocale(this.config.get(LANGUAGE));
     }
 
     public Actions actions() {
@@ -305,13 +305,13 @@ public abstract class AbstractApplication implements Application {
         InputStream in = null;
         String simpleName = this.getName().substring(this.getName().lastIndexOf('.') + 1);
         if (locale != Locale.CHINA) {
-            this.template_path = "themes" + File.separatorChar + simpleName + "_" + locale.toString() + ".view";
-            in = AbstractApplication.class.getClassLoader().getResourceAsStream(this.template_path);
+            this.templatePath = "themes" + File.separatorChar + simpleName + "_" + locale.toString() + ".view";
+            in = AbstractApplication.class.getClassLoader().getResourceAsStream(this.templatePath);
         }
 
         if (null == in) {
-            this.template_path = "themes" + File.separatorChar + simpleName + ".view";
-            in = AbstractApplication.class.getClassLoader().getResourceAsStream(this.template_path);
+            this.templatePath = "themes" + File.separatorChar + simpleName + ".view";
+            in = AbstractApplication.class.getClassLoader().getResourceAsStream(this.templatePath);
         }
 
         if (null != in) {
@@ -333,7 +333,7 @@ public abstract class AbstractApplication implements Application {
             }
         }
 
-        throw new ApplicationRuntimeException("The template " + this.template_path + " could not be found and the output has not been set.");
+        throw new ApplicationRuntimeException("The template " + this.templatePath + " could not be found and the output has not been set.");
     }
 
     public CommandLine setCommandLine(CommandLine command) {
