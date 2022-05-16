@@ -23,8 +23,6 @@ import org.tinystruct.data.component.Table;
 public interface Repository {
     public enum Type {MySQL, SQLServer, SQLite, H2}
 
-    ;
-
     public Type getType();
 
     public boolean append(Field ready_fields, String table) throws ApplicationException;
