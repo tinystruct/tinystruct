@@ -51,8 +51,10 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
     }
 
     public void start() throws ApplicationException {
-        String webappDirLocation = ".";
+        System.out.println(ApplicationManager.call("--logo", this.context));
 
+        long start = System.currentTimeMillis();
+        String webappDirLocation = ".";
         Tomcat tomcat = new Tomcat();
         // The port that we should run on can be set into an environment variable
         // Look for that variable and default to 8080 if it isn't there.
@@ -81,6 +83,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             ctx.addFilterMap(filterMap);
 
             tomcat.start();
+            logger.info("Server started in "+(System.currentTimeMillis() - start)/1000 + " seconds");
             tomcat.getServer().await();
         } catch (LifecycleException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
