@@ -30,8 +30,11 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
+    private static final Logger logger = Logger.getLogger(DefaultHandler.class.getName());
+
     private static final long serialVersionUID = 0;
     public static final String HTTP_REQUEST = "HTTP_REQUEST";
     public static final String HTTP_RESPONSE = "HTTP_RESPONSE";
@@ -71,7 +74,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             e.printStackTrace();
         }
 
-        System.out.println("Initialize filter config and starting...");
+        logger.info("Initialize filter config and starting...");
     }
 
     @Override
