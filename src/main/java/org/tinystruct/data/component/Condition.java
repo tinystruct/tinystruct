@@ -33,6 +33,7 @@ public class Condition implements Serializable {
 
     public Condition select(String table) {
         this.table = table;
+        this.SQL = new StringBuilder();
         this.SQL.append("SELECT ").append(this.fields).append(" FROM ").append(this.table).append(" ").append(this.orders);
         return this;
     }
@@ -67,6 +68,7 @@ public class Condition implements Serializable {
     }
 
     public Condition with(String sql) {
+        this.SQL = new StringBuilder();
         this.SQL.append("SELECT ").append(this.fields).append(" FROM ").append(this.table).append(" ").append(sql).append(this.orders);
         return this;
     }
