@@ -26,6 +26,7 @@ import org.tinystruct.system.Settings;
 import org.tinystruct.system.util.ClassInfo;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -141,6 +142,14 @@ public abstract class AbstractData implements Data {
             return fieldValue;
         }
         return new Date();
+    }
+
+    protected LocalDateTime setFieldAsLocalDateTime(String fieldName, LocalDateTime fieldValue) {
+        Object t = this.setField(fieldName, fieldValue);
+        if (t != null) {
+            return fieldValue;
+        }
+        return LocalDateTime.now();
     }
 
     protected int setFieldAsInt(String fieldName, int fieldValue) {
