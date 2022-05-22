@@ -19,7 +19,7 @@ import org.tinystruct.ApplicationException;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Builders extends ArrayList<Object> implements Serializable {
@@ -46,7 +46,7 @@ public class Builders extends ArrayList<Object> implements Serializable {
 
     public void parse(String value) throws ApplicationException {
         if (value.indexOf("{") == 0) {
-            logger.info("分析实体：" + value);
+            logger.log(Level.FINE, "分析实体：{}", value);
             Builder builder = new Builder();
             builder.parse(value);
 
@@ -62,10 +62,10 @@ public class Builders extends ArrayList<Object> implements Serializable {
         }
 
         if (value.indexOf('[') == 0) {
-            logger.info("分析体组：" + value);
+            logger.log(Level.FINE, "分析体组：{}", value);
             int end = this.seekPosition(value);
 
-            logger.info("结束位:" + end + " 长度:" + value.length());
+            logger.log(Level.FINE, "结束位: {}" + end + " 长度:{}" + value.length());
             this.parse(value.substring(1, end - 1));
 
             int len = value.length();

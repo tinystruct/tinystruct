@@ -23,8 +23,8 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Builder extends HashMap<String, Object> implements Struct, Serializable {
@@ -32,6 +32,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     private static final long serialVersionUID = 3484789992424316230L;
     private static final String QUOTE = "\"";
     private static final Logger logger = Logger.getLogger(Builder.class.getName());
+    private int closedPosition = 0;
 
     public Builder() {
     }
@@ -43,8 +44,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             Object value = this.get(key);
 
             if (value instanceof String || value instanceof StringBuffer || value instanceof StringBuilder)
-                buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(
-                        QUOTE + StringUtilities.escape(value.toString()) + QUOTE);
+                buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
             else
                 buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(value);
 
@@ -54,7 +54,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         if (buffer.length() > 0)
             buffer.setLength(buffer.length() - 1);
 
-        return "{" + buffer.toString() + "}";
+        return "{" + buffer + "}";
     }
 
     /**
@@ -72,19 +72,17 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             throw new ApplicationException("Invalid data format!");
         }
         if (resource.startsWith("{")) {
-            logger.info("待处理:{}" + resource);
+            logger.log(Level.FINE, "待处理:{}", resource);
             // 查找关闭位置
             this.closedPosition = this.seekPosition(resource);
             // 获得传入的实体对象里{key:value,key:value,...key:value},{key:value,key:value,...key:value}序列
             // 脱去传入的实体对象外壳 key:value,key:value,...key:value 序列
             String values = resource.substring(1, closedPosition - 1);
-            logger.info("已脱壳:" + values);
+            logger.log(Level.FINE, "已脱壳:{}", values);
 
             this.parseValue(values);
         }
     }
-
-    private int closedPosition = 0;
 
     public int getClosedPosition() {
         return closedPosition;
@@ -95,20 +93,20 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     private void parseValue(String value) throws ApplicationException {
-        logger.info("待分析:" + value);
+        logger.log(Level.FINE, "待分析:{}", value);
         value = value.trim();
         if (value.startsWith(QUOTE)) {
             // 处理传入的实体对象外壳 "key":value,"key":"value",..."key":value 序列
             int COLON_POSITION = value.indexOf(':'), start = COLON_POSITION + 1;
             String keyName = value.substring(1, COLON_POSITION - 1);
 
-            logger.info("取键值:" + keyName);
+            logger.log(Level.FINE, "取键值:{}", keyName);
             String $value = value.substring(start).trim();
-            logger.info("分析值:" + $value);
+            logger.log(Level.FINE, "分析值:{}", $value);
 
             Object keyValue;
             if ($value.startsWith(QUOTE)) {
-                logger.info("提取值:" + $value);
+                logger.log(Level.FINE, "提取值:{}", $value);
 
                 int $end = this.next($value, '"');
                 keyValue = $value.substring(1, $end - 1).trim();
@@ -119,7 +117,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     this.parseValue($value);
                 }
             } else if ($value.indexOf('{') == 0) {
-                logger.info("遇实体:" + $value);
+                logger.log(Level.FINE, "遇实体:{}", $value);
                 int closedPosition = this.seekPosition($value);
 
                 // 获得传入的实体对象里{key:value,key:value,...key:value},{key:value,key:value,...key:value}序列
@@ -127,19 +125,19 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
                 String _$value = $value.substring(0, closedPosition);
 
-                logger.info("分实体:" + _$value);
+                logger.log(Level.FINE, "分实体:{}", _$value);
                 Builder builder = new Builder();
                 builder.parse(_$value);
 
                 keyValue = builder;
                 if (closedPosition < $value.length()) {
                     _$value = $value.substring(closedPosition + ",".length());
-                    logger.info("分实体:" + _$value);
+                    logger.log(Level.FINE, "分实体:{}", _$value);
                     this.parseValue(_$value);
                 }
             } else if ($value.indexOf('[') == 0) {
                 Builders builders = new Builders();
-                logger.info($value);
+                logger.log(Level.FINE, $value);
                 builders.parse($value);
 
                 keyValue = builders;
@@ -223,7 +221,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     public void saveAsFile(File file) throws ApplicationException {
-        try(PrintWriter writer = new PrintWriter(file)) {
+        try (PrintWriter writer = new PrintWriter(file)) {
             writer.write(this.toString());
         } catch (FileNotFoundException e) {
             throw new ApplicationException(e.getMessage(), e);
