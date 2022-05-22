@@ -36,11 +36,11 @@ public class MySQLGenerator implements Generator {
     private String packageName;
 
     private final static Logger logger = Logger.getLogger(MSSQLGenerator.class.getName());
-    ;
+
     private String[] packageList;
 
     public MySQLGenerator() {
-        this.fileName = "resources/org/tinystruct/customer/object/";
+        this.fileName = "src/main/java/org/tinystruct/customer/object/";
         this.packageList = new String[]{};
     }
 
@@ -50,18 +50,6 @@ public class MySQLGenerator implements Generator {
 
     public void setPackageName(String packageName) {
         this.packageName = packageName;
-    }
-
-    public static void main(String[] args) {
-        System.out.println();
-		
-/*		String[] props="varchar(100)".split("\\(");
-		System.out.println(props[0]);
-		System.out.println(props[1].split("\\)")[0]);*/
-
-        String[] props = "varchar".split("\\(");
-        System.out.println(props[0]);
-        System.out.println(props[1].split("\\)")[0]);
     }
 
     public void create(String className, String table) throws ApplicationException {
@@ -79,7 +67,7 @@ public class MySQLGenerator implements Generator {
             this.fileName = this.fileName + File.separator + className;
 
         if (this.packageName != null) {
-            java_resource.append("package " + this.packageName + ";\r\n");
+            java_resource.append("package ").append(this.packageName).append(";\r\n");
         } else {
             java_resource.append("package org.tinystruct.customer.object;\r\n");
         }
@@ -89,18 +77,18 @@ public class MySQLGenerator implements Generator {
         if (this.packageList.length > 0) {
             java_resource.append("\r\n");
             for (int i = 0; i < this.packageList.length; i++) {
-                java_resource.append("import " + this.packageList[i] + ";\r\n");
+                java_resource.append("import ").append(this.packageList[i]).append(";\r\n");
             }
         }
 
         java_resource.append("\r\n");
         java_resource.append("import org.tinystruct.data.component.Row;\r\n");
         java_resource.append("import org.tinystruct.data.component.AbstractData;\r\n\r\n");
-        java_resource.append("public class " + className + " extends AbstractData implements Serializable {\r\n");
+        java_resource.append("public class ").append(className).append(" extends AbstractData implements Serializable {\r\n");
         java_resource.append("	/**\r\n");
         java_resource.append("   * Auto Generated Serial Version UID\r\n");
         java_resource.append("   */\r\n");
-        java_resource.append("  private static final long serialVersionUID = " + new SecureRandom().nextLong() + "L;\r\n");
+        java_resource.append("  private static final long serialVersionUID = ").append(new SecureRandom().nextLong()).append("L;\r\n");
 
         Element rootElement = new Element("mapping");
         Element classElement = rootElement.addElement("class");
@@ -114,7 +102,7 @@ public class MySQLGenerator implements Generator {
         Row currentRow;
 
         String propertyName, propertyType, propertyTypeValue;
-        boolean increment = false;
+        boolean increment;
         while (listRow.hasNext()) {
             currentRow = listRow.next();
 
@@ -142,9 +130,9 @@ public class MySQLGenerator implements Generator {
                     increment = currentFields.get("EXTRA").stringValue().indexOf("auto_increment") != -1;
 
                     if (propertyType.equalsIgnoreCase("String"))
-                        java_method_tostring.append("\t\tbuffer.append(\"" + spliter + "\\\"" + propertyNameOfMethod + "\\\":\\\"\"+this.get" + propertyNameOfMethod + "()+\"\\\"\");\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
                     else
-                        java_method_tostring.append("\t\tbuffer.append(\"" + spliter + "\\\"" + propertyNameOfMethod + "\\\":\"+this.get" + propertyNameOfMethod + "());\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
 
                     Element idElement = classElement.addElement("id");
 
@@ -156,28 +144,28 @@ public class MySQLGenerator implements Generator {
                     idElement.setAttribute("type", props[0]);
 
                     if (propertyType.equalsIgnoreCase("String")) {
-                        java_method_declaration.append("\tpublic " + propertyType + " get" + propertyNameOfMethod + "()\r\n");
+                        java_method_declaration.append("\tpublic ").append(propertyType).append(" get").append(propertyNameOfMethod).append("()\r\n");
                         java_method_declaration.append("\t{\r\n");
-                        java_method_declaration.append("\t\treturn String.valueOf(this." + propertyNameOfMethod + ");\r\n");
+                        java_method_declaration.append("\t\treturn String.valueOf(this.").append(propertyNameOfMethod).append(");\r\n");
                     } else if (propertyType.equalsIgnoreCase("int")) {
-                        java_method_declaration.append("\tpublic Integer get" + propertyNameOfMethod + "()\r\n");
+                        java_method_declaration.append("\tpublic Integer get").append(propertyNameOfMethod).append("()\r\n");
                         java_method_declaration.append("\t{\r\n");
-                        java_method_declaration.append("\t\treturn Integer.parseInt(this." + propertyNameOfMethod + ".toString());\r\n");
+                        java_method_declaration.append("\t\treturn Integer.parseInt(this.").append(propertyNameOfMethod).append(".toString());\r\n");
                     }
 
                     java_method_declaration.append("\t}\r\n\r\n");
                 } else {
-                    java_member_declaration.append("\tprivate " + propertyType + " " + propertyName + ";\r\n");
+                    java_member_declaration.append("\tprivate ").append(propertyType).append(" ").append(propertyName).append(";\r\n");
 
-                    java_method_declaration.append("\tpublic void set" + propertyNameOfMethod + "(" + propertyType + " " + propertyName + ")\r\n");
+                    java_method_declaration.append("\tpublic void set").append(propertyNameOfMethod).append("(").append(propertyType).append(" ").append(propertyName).append(")\r\n");
                     java_method_declaration.append("\t{\r\n");
-                    java_method_declaration.append("\t\tthis." + propertyName + "=this.setFieldAs" + StringUtilities.setCharToUpper(propertyType, 0) + "(\"" + propertyName + "\"," + propertyName + ");\r\n");
+                    java_method_declaration.append("\t\tthis.").append(propertyName).append(" = this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType, 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
                     java_method_declaration.append("\t}\r\n\r\n");
 
                     if (propertyType.equalsIgnoreCase("String") || propertyType.equalsIgnoreCase("Date"))
-                        java_method_tostring.append("\t\tbuffer.append(\"" + spliter + "\\\"" + propertyName + "\\\":\\\"\"+this.get" + propertyNameOfMethod + "()+\"\\\"\");\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
                     else
-                        java_method_tostring.append("\t\tbuffer.append(\"" + spliter + "\\\"" + propertyName + "\\\":\"+this.get" + propertyNameOfMethod + "());\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
 
                     Element propertyElement = classElement.addElement("property");
 
@@ -186,14 +174,14 @@ public class MySQLGenerator implements Generator {
                     propertyElement.setAttribute("length", props.length > 1 ? props[1].split("\\)")[0] : "0");
                     propertyElement.setAttribute("type", props[0]);
 
-                    java_method_declaration.append("\tpublic " + propertyType + " get" + propertyNameOfMethod + "()\r\n");
+                    java_method_declaration.append("\tpublic ").append(propertyType).append(" get").append(propertyNameOfMethod).append("()\r\n");
                     java_method_declaration.append("\t{\r\n");
-                    java_method_declaration.append("\t\treturn this." + propertyName + ";\r\n");
+                    java_method_declaration.append("\t\treturn this.").append(propertyName).append(";\r\n");
                     java_method_declaration.append("\t}\r\n\r\n");
                 }
 
-                java_method_setdata.append("\t\tif(row.getFieldInfo(\"" + currentFields.get("COLUMN_NAME").value().toString() + "\")!=null)");
-                java_method_setdata.append("\tthis.set" + propertyNameOfMethod + "(row.getFieldInfo(\"" + currentFields.get("COLUMN_NAME").value().toString() + "\")." + propertyType.toLowerCase() + "Value());\r\n");
+                java_method_setdata.append("\t\tif(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\")!=null)");
+                java_method_setdata.append("\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\").").append(StringUtilities.setCharToLower(propertyType, 0)).append("Value());\r\n");
             }
         }
 
@@ -215,7 +203,7 @@ public class MySQLGenerator implements Generator {
 
         java_resource.append("\t@Override\r\n");
         java_resource.append("\tpublic String toString() {\r\n");
-        java_resource.append("\t\tStringBuffer buffer=new StringBuffer();\r\n");
+        java_resource.append("\t\tStringBuilder buffer = new StringBuilder();\r\n");
         java_resource.append("\t\tbuffer.append(\"{\");\r\n");
         java_resource.append(java_method_tostring);
         java_resource.append("\t\tbuffer.append(\"}\");\r\n");
@@ -270,7 +258,6 @@ public class MySQLGenerator implements Generator {
     }
 
     public void importPackages(String packageNameList) {
-
         this.packageList = packageNameList.split(";");
     }
 }
