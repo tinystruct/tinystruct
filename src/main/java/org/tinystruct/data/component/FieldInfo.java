@@ -16,6 +16,7 @@
 package org.tinystruct.data.component;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.concurrent.ConcurrentHashMap;
@@ -132,7 +133,10 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
             return FieldType.BOOLEAN;
         } else if (object instanceof Date) {
             return FieldType.DATE;
+        } else if (object instanceof LocalDateTime) {
+            return FieldType.DATETIME;
         }
+
         return FieldType.STRING;
     }
 
@@ -173,12 +177,19 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
     }
 
     public Date dateValue() {
-
         Object value = this.value();
         if (value instanceof Date)
             return (Date) value;
 
         return new Date();
+    }
+
+    public LocalDateTime localDateTimeValue() {
+        Object value = this.value();
+        if (value instanceof LocalDateTime)
+            return (LocalDateTime) value;
+
+        return LocalDateTime.now();
     }
 
     /*

@@ -16,6 +16,7 @@
 package org.tinystruct.data.component;
 
 import java.sql.Types;
+import java.time.LocalTime;
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -132,22 +133,6 @@ public final class FieldType {
      */
     private final static int _TIME = Types.TIME;
     public final static FieldType TIME = new FieldType("TIME", _TIME, "Time");
-
-    /**
-     * <P>The constant in the Java programming language, sometimes referred
-     * to as a type code, that identifies the generic SQL type
-     * <code>DATETIME</code>.
-     */
-    private final static int _DATETIME = Types.DATE;
-    public final static FieldType DATETIME = new FieldType("DATETIME", _DATETIME, "Date");
-
-    /**
-     * <P>The constant in the Java programming language, sometimes referred
-     * to as a type code, that identifies the generic SQL type
-     * <code>TIMESTAMP</code>.
-     */
-    private final static int _TIMESTAMP = Types.TIMESTAMP;
-    public final static FieldType TIMESTAMP = new FieldType("TIMESTAMP", _TIMESTAMP, "Timestamp");
 
     /**
      * <P>The constant in the Java programming language, sometimes referred
@@ -271,6 +256,27 @@ public final class FieldType {
     public final static FieldType LONG = new FieldType("LONG", 0, "long");
     public final static FieldType TEXT = new FieldType("TEXT", 0, "String");
     public final static FieldType LONGTEXT = new FieldType("LONGTEXT", 0, "String");
+
+
+    /**
+     * The constant in the Java programming language, sometimes referred to
+     * as a type code, that identifies the generic SQL type
+     * {@code TIME WITH TIMEZONE}.
+     *
+     * @since 1.8
+     */
+    private final static int _DATETIME = Types.TIME_WITH_TIMEZONE;
+    public final static FieldType DATETIME = new FieldType("DATETIME", _DATETIME, "LocalDateTime");
+
+    /**
+     * The constant in the Java programming language, sometimes referred to
+     * as a type code, that identifies the generic SQL type
+     * {@code TIMESTAMP WITH TIMEZONE}.
+     *
+     * @since 1.8
+     */
+    private final static int _TIMESTAMP = Types.TIMESTAMP_WITH_TIMEZONE;
+    public final static FieldType TIMESTAMP = new FieldType("TIMESTAMP", _TIMESTAMP, "Timestamp");
 
     public static final long serialVersionUID = -2800196753010521325L;
     private String typeName;
