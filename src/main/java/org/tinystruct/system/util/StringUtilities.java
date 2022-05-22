@@ -162,6 +162,17 @@ public class StringUtilities implements java.io.Serializable {
         return true;
     }
 
+    public static String setCharToLower(String s, int index) {
+        char[] charArray = s.toCharArray();
+
+        for (int i = 0; i < charArray.length; i++) {
+            if (i == index)
+                charArray[i] = Character.toLowerCase(charArray[i]);
+        }
+
+        return String.valueOf(charArray);
+    }
+
     public static String setCharToUpper(String s, int index) {
         char[] charArray = s.toCharArray();
 
