@@ -107,7 +107,7 @@ public final class ApplicationManager {
                             "set \"ROOT=%~dp0..\\\"\n" +
                             "set \"VERSION=\"" + version + "\"\n" +
                             "set \"classpath=%ROOT%target\\classes:%ROOT%lib\\*:%ROOT%WEB-INF\\lib\\*:%ROOT%WEB-INF\\classes\":%classpath%\n" +
-                            "@java -cp \"%ROOT%target\\classes;%ROOT%lib\\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
+                            "@java -cp \"%ROOT%target\\classes;%ROOT%lib\\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%\\lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
                 } else {
                     cmd = "#!/usr/bin/env sh\n" +
                             "ROOT=\"`pwd`\"\n" +
@@ -130,7 +130,7 @@ public final class ApplicationManager {
                             "java \\\n" +
                             "$JAVA_OPTS \\\n" +
                             "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \\\n" +
-                            "-cp \"$ROOT/target/classes:$ROOT/lib/tinystruct-$VERSION-jar-with-dependencies.jar:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"";
+                            "-cp \"$ROOT/target/classes:$ROOT/lib/tinystruct-$VERSION-jar-with-dependencies.jar:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"";
                 }
 
                 path = Paths.get(origin);
