@@ -19,6 +19,7 @@ import com.sun.jna.Platform;
 import org.mockito.internal.SuppressSignatureCheck;
 import org.tinystruct.*;
 import org.tinystruct.application.Context;
+import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.system.cli.CommandArgument;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.cli.CommandOption;
@@ -312,6 +313,20 @@ public class Dispatcher extends AbstractApplication {
         }
     }
 
+    public void executeQuery() throws ApplicationException {
+        if (this.context.getAttribute("--query") == null) {
+            throw new ApplicationException("Invalid Query.");
+        }
+
+        String query = this.context.getAttribute("--query").toString();
+        try(DatabaseOperator operator = new DatabaseOperator()) {
+            operator.createStatement(false);
+            operator.execute(query);
+        } catch (ApplicationException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void init() {
         this.setAction("install", "install");
         List<CommandOption> options = new ArrayList<CommandOption>();
@@ -356,6 +371,9 @@ public class Dispatcher extends AbstractApplication {
 
         this.setAction("--version", "version");
         this.commandLines.get("--version").setDescription("Print version");
+
+        this.setAction("sql-query", "executeQuery");
+        this.commandLines.get("sql-query").setDescription("SQL query needs to be executed.");
 
         this.setTemplateRequired(false);
     }
