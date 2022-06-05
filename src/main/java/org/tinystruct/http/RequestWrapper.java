@@ -1,4 +1,6 @@
 package org.tinystruct.http;
 
-public class RequestWrapper {
+import org.tinystruct.ApplicationContext;
+
+public abstract class RequestWrapper extends ApplicationContext implements Request {
 }

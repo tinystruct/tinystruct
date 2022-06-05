@@ -1,6 +1,39 @@
 package org.tinystruct.http;
 
+import java.util.List;
 
-public class Request extends RequestWrapper {
+public interface Request extends Protocol {
+    /**
+     * Returns the headers of this message.
+     */
+    List<Header> headers();
 
+    /**
+     * Returns the {@link Method} of this {@link Request}.
+     *
+     * @return The {@link Method} of this {@link Request}
+     */
+    Method method();
+
+    /**
+     * Set the {@link Method} of this {@link Request}.
+     *
+     * @param method
+     * @return
+     */
+    Request setMethod(Method method);
+
+    /**
+     * Returns the requested URI (or alternatively, path)
+     *
+     * @return The URI being requested
+     */
+    String uri();
+
+    /**
+     * Set the requested URI (or alternatively, path)
+     *
+     * @return
+     */
+    Request setUri(String uri);
 }
