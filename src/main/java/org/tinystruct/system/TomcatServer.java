@@ -24,6 +24,9 @@ import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.DefaultHandler;
 import org.tinystruct.handler.Reforward;
+import org.tinystruct.http.Request;
+import org.tinystruct.http.Response;
+import org.tinystruct.http.Session;
 import org.tinystruct.system.cli.CommandOption;
 
 import javax.servlet.http.HttpServletRequest;
@@ -97,13 +100,13 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
     public Object exceptionCaught()
             throws ApplicationException {
-        HttpServletRequest request = (HttpServletRequest) this.context.getAttribute("HTTP_REQUEST");
-        HttpServletResponse response = (HttpServletResponse) this.context.getAttribute("HTTP_RESPONSE");
+        Request request = (Request) this.context.getAttribute("HTTP_REQUEST");
+        Response response = (Response) this.context.getAttribute("HTTP_RESPONSE");
 
         Reforward reforward = new Reforward(request, response);
         this.setVariable("from", reforward.getFromURL());
 
-        HttpSession session = request.getSession();
+        Session session = request.getSession();
         if (session.getAttribute("error") != null) {
             ApplicationException exception = (ApplicationException) session.getAttribute("error");
 
