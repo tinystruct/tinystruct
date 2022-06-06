@@ -15,11 +15,12 @@
  *******************************************************************************/
 package org.tinystruct.handler;
 
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
+import org.tinystruct.http.*;
+import org.tinystruct.http.servlet.RequestBuilder;
+import org.tinystruct.http.servlet.ResponseBuilder;
 import org.tinystruct.system.*;
 import org.tinystruct.system.util.StringUtilities;
 
@@ -30,6 +31,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.logging.Logger;
 
 public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
@@ -79,7 +82,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
 
     @Override
     public void service(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+            throws IOException {
         request.setCharacterEncoding(this.charsetName);
 
         response.setContentType("text/html;charset=" + this.charsetName);
@@ -89,12 +92,15 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         response.setDateHeader("Expires", 0);
 
         final Context context = new ApplicationContext();
-        context.setAttribute(HTTP_REQUEST, request);
-        context.setAttribute(HTTP_RESPONSE, response);
+        Request _request = new RequestBuilder(request);
+        Response _response = new ResponseBuilder(response);
+
+        context.setAttribute(HTTP_REQUEST, _request);
+        context.setAttribute(HTTP_RESPONSE, _response);
         context.setAttribute(HTTP_SCHEME, request.getScheme());
         context.setAttribute(HTTP_SERVER, request.getServerName());
 
-        String lang = request.getParameter("lang"), language = "";
+        String lang = _request.getParameter("lang"), language = "";
         if (lang != null && lang.trim().length() > 0) {
             String name = lang.replace('-', '_');
 
@@ -134,45 +140,42 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             context.setAttribute(HTTP_HOST, http_protocol + hostName + ":" + request.getServerPort() + url_prefix);
         context.setAttribute(METHOD, request.getMethod());
 
-        String query = request.getParameter("q");
+        String query = _request.getParameter("q");
         try {
             if (query != null) {
-//                query = new String(query.getBytes("ISO8859-1"), this.charsetName);
                 if (query.indexOf('?') != -1)
                     query = query.substring(0, query.indexOf('?'));
                 query = StringUtilities.htmlSpecialChars(query);
-                if (request.getParameter("output") != null && "function".equalsIgnoreCase(request.getParameter("output"))) {
+                if (_request.getParameter("output") != null && "function".equalsIgnoreCase(_request.getParameter("output"))) {
                     ApplicationManager.call(query, context);
                 } else {
                     Object message;
                     if ((message = ApplicationManager.call(query, context)) != null)
-                        response.getWriter().println(message);
+                        _response.getWriter().println(message);
                     else
-                        response.getWriter().println("No response retrieved!");
-                    response.getWriter().close();
+                        _response.getWriter().println("No response retrieved!");
+                    _response.getWriter().close();
                 }
             } else {
-                response.getWriter().println(ApplicationManager.call(this.settings.get("default.home.page"), context));
-                response.getWriter().close();
+                _response.getWriter().println(ApplicationManager.call(this.settings.get("default.home.page"), context));
+                _response.getWriter().close();
             }
         } catch (ApplicationException e) {
-            response.setStatus(e.getStatus());
+            _response.setStatus(ResponseStatus.valueOf(e.getStatus()));
             try {
                 HttpSession session = request.getSession();
                 session.setAttribute("error", e);
 
-                if (!Boolean.valueOf(this.settings.get("default.error.process"))) {
+                if (!Boolean.parseBoolean(this.settings.get("default.error.process"))) {
                     String defaultErrorPage = this.settings.get("default.error.page");
 
-                    Reforward forward = new Reforward(request, response);
+                    Reforward forward = new Reforward(_request, _response);
                     forward.setDefault(defaultErrorPage.trim().length() == 0 ? "/?q=error" : "/?q=" + defaultErrorPage);
                     forward.forward();
                 }
             } catch (ApplicationException e1) {
                 e1.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
