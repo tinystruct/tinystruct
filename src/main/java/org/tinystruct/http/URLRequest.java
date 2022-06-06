@@ -31,13 +31,13 @@ public class URLRequest {
     private URL url;
     private Map<String, String> headers;
 
-    private String method = "GET";
+    private Method method = Method.GET;
 
     public URLRequest(URL url) {
         this.url = url;
     }
 
-    public String getMethod() {
+    public Method getMethod() {
         return method;
     }
 
@@ -57,7 +57,7 @@ public class URLRequest {
      * @param method the HTTP method
      * @see #getMethod()
      */
-    public void setMethod(String method) {
+    public void setMethod(Method method) {
         this.method = method;
     }
 
@@ -99,7 +99,7 @@ public class URLRequest {
         connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)");
         connection.setReadTimeout(10000);
         connection.setConnectTimeout(15000);
-        connection.setRequestMethod(method);
+        connection.setRequestMethod(method.name());
 
         if (headers != null) {
             Set<Map.Entry<String, String>> set = headers.entrySet();
