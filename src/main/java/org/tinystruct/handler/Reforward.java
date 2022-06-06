@@ -17,6 +17,7 @@ package org.tinystruct.handler;
 
 
 import org.tinystruct.ApplicationException;
+import org.tinystruct.http.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -27,24 +28,25 @@ import java.net.URLEncoder;
 
 public class Reforward {
     private String action = "", fromURL = "", currentURL = "";
-    private HttpServletRequest request;
-    private HttpServletResponse response;
+    private Request request;
+    private Response response;
 
-    public Reforward(HttpServletRequest request, HttpServletResponse response) throws ApplicationException {
+    public Reforward(Request request, Response response) throws ApplicationException {
 
         this.request = request;
         this.response = response;
 
-        if (request.getQueryString() != null)
-            this.currentURL = request.getRequestURL().append('?').append(this.request.getQueryString()).toString();
+        if (request.query() != null)
+            this.currentURL = new StringBuilder(request.uri()).append('?').append(this.request.query()).toString();
         else {
-            this.currentURL = request.getRequestURL().toString();
+            this.currentURL = request.uri();
         }
 
+        Headers headers = request.headers();
         if (request.getParameter("from") != null && request.getParameter("from").trim().length() > 0) {
             this.setDefault(request.getParameter("from"));
-        } else if (request.getHeader("referer") != null && request.getHeader("referer").startsWith("http://" + request.getServerName())) {
-            this.fromURL = request.getHeader("referer");
+        } else if (headers.get(Header.REFERER) != null && headers.get(Header.REFERER).toString().startsWith("http://" + request.headers().get(Header.SERVER))) {
+            this.fromURL = headers.get(Header.REFERER).toString();
         } else {
             this.fromURL = "/";
         }
