@@ -5,10 +5,10 @@ public interface Protocol {
     /**
      * Returns the protocol version of this {@link Protocol}
      */
-    Version protocolVersion();
+    Version version();
 
     /**
      * Set the protocol version of this {@link Protocol}
      */
-    void setProtocolVersion(Version version);
+    void setVersion(Version version);
 }
