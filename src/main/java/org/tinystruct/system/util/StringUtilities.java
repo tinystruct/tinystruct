@@ -15,7 +15,8 @@
  *******************************************************************************/
 package org.tinystruct.system.util;
 
-import javax.servlet.http.Cookie;
+import org.tinystruct.http.Cookie;
+
 import java.util.Iterator;
 
 public class StringUtilities implements java.io.Serializable {
@@ -203,7 +204,7 @@ public class StringUtilities implements java.io.Serializable {
         int i = 0;
         if (cookies != null)
             while (i < cookies.length) {
-                if (cookies[i].getName().equalsIgnoreCase(name))
+                if (cookies[i].name().equalsIgnoreCase(name))
                     return cookies[i];
                 i++;
             }
