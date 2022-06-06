@@ -1,6 +1,9 @@
-package org.tinystruct.http;
+package org.tinystruct.http.servlet;
+
+import org.tinystruct.http.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 public class RequestBuilder extends RequestWrapper {
     private final SessionManager manager = SessionManager.getInstance();
@@ -27,29 +30,19 @@ public class RequestBuilder extends RequestWrapper {
 
     @Override
     public Session getSession() {
-        javax.servlet.http.Cookie[] cookies = this.request.getCookies();
-        String sessionId = null;
-        for (javax.servlet.http.Cookie cookie1 : cookies) {
-            if (cookie1.getName().equalsIgnoreCase("jsessionid")) {
-                sessionId = cookie1.getValue();
-                break;
-            }
-        }
+        HttpSession session = this.request.getSession();
+        String sessionId = session.getId();
+        Session memorySession = getSession(sessionId, true);
+        session.getAttributeNames().asIterator().forEachRemaining(s -> {
+            memorySession.setAttribute(s, session.getAttribute(s));
+        });
 
-        if (sessionId != null) {
-            return getSession(sessionId, true);
-        }
-
-        return null;
+        return memorySession;
     }
 
     @Override
     public String query() {
         return this.request.getQueryString();
-    }
-
-    private void setHeader(Header header, Object value) {
-        this.headers.add(header.set(value));
     }
 
     @Override
@@ -64,6 +57,14 @@ public class RequestBuilder extends RequestWrapper {
 
     @Override
     public Headers headers() {
+        this.request.getHeaderNames().asIterator().forEachRemaining(h -> {
+            try {
+                this.headers.add(Header.value0f(h).set(this.request.getHeader(h)));
+            } catch (IllegalArgumentException ignored) {
+                ;
+            }
+        });
+
         return this.headers;
     }
 
@@ -91,87 +92,28 @@ public class RequestBuilder extends RequestWrapper {
         this.uri = uri;
         return this;
     }
+
+    @Override
+    public String getParameter(String name) {
+        return this.request.getParameter(name);
+    }
+
+    @Override
+    public Cookie[] cookies() {
+        javax.servlet.http.Cookie[] _cookies = this.request.getCookies();
+        int i = _cookies.length;
+        Cookie[] cookies = new Cookie[i];
+        for (javax.servlet.http.Cookie _cookie : _cookies) {
+            Cookie cookie = new CookieImpl(_cookie.getName());
+            cookie.setValue(_cookie.getValue());
+            cookie.setDomain(_cookie.getDomain());
+            cookie.setHttpOnly(_cookie.isHttpOnly());
+            cookie.setMaxAge(_cookie.getMaxAge());
+            cookie.setPath(_cookie.getPath());
+            cookie.setSecure(_cookie.getSecure());
+            cookies[--i] = cookie;
+        }
+        return cookies;
+    }
 }
 
-class CookieImpl implements Cookie {
-    private final String name;
-
-    public CookieImpl(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public String name() {
-        return null;
-    }
-
-    @Override
-    public String value() {
-        return null;
-    }
-
-    @Override
-    public void setValue(String value) {
-
-    }
-
-    @Override
-    public boolean wrap() {
-        return false;
-    }
-
-    @Override
-    public void setWrap(boolean wrap) {
-
-    }
-
-    @Override
-    public String domain() {
-        return null;
-    }
-
-    @Override
-    public void setDomain(String domain) {
-
-    }
-
-    @Override
-    public String path() {
-        return null;
-    }
-
-    @Override
-    public void setPath(String path) {
-
-    }
-
-    @Override
-    public long maxAge() {
-        return 0;
-    }
-
-    @Override
-    public void setMaxAge(long maxAge) {
-
-    }
-
-    @Override
-    public boolean isSecure() {
-        return false;
-    }
-
-    @Override
-    public void setSecure(boolean secure) {
-
-    }
-
-    @Override
-    public boolean isHttpOnly() {
-        return false;
-    }
-
-    @Override
-    public void setHttpOnly(boolean httpOnly) {
-
-    }
-}

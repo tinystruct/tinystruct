@@ -1,8 +1,8 @@
-package org.tinystruct.http;
+package org.tinystruct.http.servlet;
+
+import org.tinystruct.http.Response;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.OutputStream;
 
 public abstract class ResponseWrapper implements Response {
 
@@ -12,13 +12,4 @@ public abstract class ResponseWrapper implements Response {
         this.response = response;
     }
 
-    public OutputStream getOutputStream() {
-        try {
-            return this.response.getOutputStream();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
 }

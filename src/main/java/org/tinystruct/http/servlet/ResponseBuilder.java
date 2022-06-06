@@ -1,11 +1,13 @@
-package org.tinystruct.http;
+package org.tinystruct.http.servlet;
+
+import org.tinystruct.http.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 
 public class ResponseBuilder extends ResponseWrapper {
-    private final Headers headers = new Headers();
+    private final Headers headers = new ResponseHeaders(this);
     private PrintWriter printWriter;
     private ResponseStatus status;
     private Version version;
@@ -61,8 +63,9 @@ public class ResponseBuilder extends ResponseWrapper {
     @Override
     public Headers headers() {
         for (String headerName : this.response.getHeaderNames()) {
-            this.headers.add(Header.valueOf(headerName).set(this.response.getHeader(headerName)));
+            this.headers.add(Header.value0f(headerName).set(this.response.getHeader(headerName)));
         }
+
         return this.headers;
     }
 
