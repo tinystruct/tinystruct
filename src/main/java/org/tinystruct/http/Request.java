@@ -3,10 +3,11 @@ package org.tinystruct.http;
 import java.util.List;
 
 public interface Request extends Protocol {
+
     /**
      * Returns the headers of this message.
      */
-    List<Header> headers();
+    Headers headers();
 
     /**
      * Returns the {@link Method} of this {@link Request}.
@@ -36,4 +37,13 @@ public interface Request extends Protocol {
      * @return
      */
     Request setUri(String uri);
+
+    Session getSession(String id, boolean generate);
+    Session getSession();
+
+    String getParameter(String name);
+
+    Cookie[] cookies();
+
+    String query();
 }
