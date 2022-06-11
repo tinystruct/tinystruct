@@ -1,9 +1,8 @@
 package org.tinystruct.http;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 
-public interface Response extends Protocol {
+public interface Response<T> extends Protocol {
     /**
      * Returns the status of this {@link Response}.
      *
@@ -14,16 +13,16 @@ public interface Response extends Protocol {
     /**
      * Set the status of this {@link Response}.
      */
-    Response setStatus(ResponseStatus status);
+    Response<T> setStatus(ResponseStatus status);
 
     /**
      * Returns the headers of this message.
      */
     Headers headers();
 
-    void addHeader(String header, String value);
-
-    PrintWriter getWriter();
+    void addHeader(String header, Object value);
 
     void sendRedirect(String url) throws IOException;
+
+    T get();
 }
