@@ -6,9 +6,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class MemorySession implements Session {
 
     private final Map<String, Object> storage = new ConcurrentHashMap<>();
+    private String sessionId;
 
     public MemorySession(String sessionId) {
+        this.sessionId = sessionId;
         SessionManager.getInstance().setSession(sessionId, this);
+    }
+
+    @Override
+    public String getId() {
+        return this.sessionId;
     }
 
     @Override
