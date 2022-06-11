@@ -15,6 +15,9 @@
  *******************************************************************************/
 package org.tinystruct.transfer.http.upload;
 
+import org.tinystruct.http.Header;
+import org.tinystruct.http.Request;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -47,7 +50,7 @@ public class MultipartFormData {
     /**
      * The request instance for this class
      */
-    protected HttpServletRequest request;
+    protected Request request;
 
     /**
      * The input stream instance for this class
@@ -71,7 +74,7 @@ public class MultipartFormData {
      */
     protected int bufferSize = 4 * 1024;
 
-    public MultipartFormData(HttpServletRequest request) throws ServletException {
+    public MultipartFormData(Request request) throws ServletException {
         this.request = request;
 
         parseRequest();
@@ -194,7 +197,7 @@ public class MultipartFormData {
     protected void parseRequest() throws ServletException {
 
         //set boundary
-        boundary = parseBoundary(request.getContentType());
+        boundary = parseBoundary(request.headers().get(Header.CONTENT_TYPE).toString());
 
         try {
             //set the input stream
