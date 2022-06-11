@@ -6,7 +6,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-public class ResponseBuilder extends ResponseWrapper {
+public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
     private final Headers headers = new ResponseHeaders(this);
     private PrintWriter printWriter;
     private ResponseStatus status;
@@ -26,8 +26,8 @@ public class ResponseBuilder extends ResponseWrapper {
         this.response.setContentType(contentType);
     }
 
-    public void addHeader(String header, String value) {
-        this.response.addHeader(header, value);
+    public void addHeader(String header, Object value) {
+        this.response.addHeader(header, value.toString());
     }
 
     public String getHeader(String header) {
@@ -35,7 +35,7 @@ public class ResponseBuilder extends ResponseWrapper {
     }
 
     public void addCookie(Cookie cookie) {
-        addHeader("Set-Cookie", cookie.toString());
+        addHeader(Header.SET_COOKIE.toString(), cookie.toString());
     }
 
     @Override
@@ -70,7 +70,7 @@ public class ResponseBuilder extends ResponseWrapper {
     }
 
     @Override
-    public PrintWriter getWriter() {
+    public PrintWriter get() {
         return this.printWriter;
     }
 

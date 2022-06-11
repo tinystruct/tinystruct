@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.tinystruct.transfer.http.upload;
+package org.tinystruct.http.servlet;
 
 import org.tinystruct.http.Header;
 import org.tinystruct.http.Request;
+import org.tinystruct.transfer.http.upload.ContentDisposition;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -50,7 +50,7 @@ public class MultipartFormData {
     /**
      * The request instance for this class
      */
-    protected Request request;
+    protected Request<ServletInputStream> request;
 
     /**
      * The input stream instance for this class
@@ -199,18 +199,12 @@ public class MultipartFormData {
         //set boundary
         boundary = parseBoundary(request.headers().get(Header.CONTENT_TYPE).toString());
 
-        try {
-            //set the input stream
-            inputStream = request.getInputStream();
-        } catch (IOException ioe) {
-            throw new ServletException("MultipartFormData.parseRequest(): " +
-                    "IOException while trying to obtain " +
-                    "ServletInputStream");
-        }
+        //set the input stream
+        inputStream = request.stream();
 
         if ((boundary == null) || (boundary.length() < 1)) {
             //try retrieving the header through more "normal" means
-            boundary = parseBoundary(request.getHeader("Content-type"));
+            boundary = parseBoundary(request.headers().get(Header.CONTENT_TYPE).toString());
         }
 
         if ((boundary == null) || (boundary.length() < 1)) {
