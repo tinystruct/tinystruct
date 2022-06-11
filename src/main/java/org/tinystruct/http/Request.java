@@ -1,6 +1,6 @@
 package org.tinystruct.http;
 
-public interface Request extends Protocol {
+public interface Request<T> extends Protocol {
 
     /**
      * Returns the headers of this message.
@@ -45,4 +45,6 @@ public interface Request extends Protocol {
     Cookie[] cookies();
 
     String query();
+
+    T stream();
 }
