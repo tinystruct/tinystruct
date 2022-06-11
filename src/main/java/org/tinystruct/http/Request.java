@@ -1,7 +1,5 @@
 package org.tinystruct.http;
 
-import java.util.List;
-
 public interface Request extends Protocol {
 
     /**
@@ -39,6 +37,7 @@ public interface Request extends Protocol {
     Request setUri(String uri);
 
     Session getSession(String id, boolean generate);
+
     Session getSession();
 
     String getParameter(String name);
