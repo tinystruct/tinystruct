@@ -407,6 +407,11 @@ public enum Header {
         return this;
     }
 
+    public Header setInt(int readableBytes) {
+        this.value = readableBytes;
+        return this;
+    }
+
     public Object value() {
         return this.value;
     }
