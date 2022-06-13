@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.logging.Logger;
@@ -93,7 +94,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
 
         final Context context = new ApplicationContext();
         Request _request = new RequestBuilder(request);
-        Response _response = new ResponseBuilder(response);
+        Response<PrintWriter> _response = new ResponseBuilder(response);
 
         context.setAttribute(HTTP_REQUEST, _request);
         context.setAttribute(HTTP_RESPONSE, _response);
@@ -151,14 +152,14 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                 } else {
                     Object message;
                     if ((message = ApplicationManager.call(query, context)) != null)
-                        _response.getWriter().println(message);
+                        _response.get().println(message);
                     else
-                        _response.getWriter().println("No response retrieved!");
-                    _response.getWriter().close();
+                        _response.get().println("No response retrieved!");
+                    _response.get().close();
                 }
             } else {
-                _response.getWriter().println(ApplicationManager.call(this.settings.get("default.home.page"), context));
-                _response.getWriter().close();
+                _response.get().println(ApplicationManager.call(this.settings.get("default.home.page"), context));
+                _response.get().close();
             }
         } catch (ApplicationException e) {
             _response.setStatus(ResponseStatus.valueOf(e.getStatus()));
