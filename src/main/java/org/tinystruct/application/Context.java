@@ -15,10 +15,6 @@
  *******************************************************************************/
 package org.tinystruct.application;
 
-import org.tinystruct.data.FileEntity;
-
-import java.util.List;
-
 public interface Context {
     void setAttribute(String name, Object value);
 
@@ -27,16 +23,4 @@ public interface Context {
     Object getAttribute(String name);
 
     String[] getAttributeNames();
-
-    List<String> getParameterValues(String name);
-
-    void setParameter(String name, List<String> value);
-
-    String getParameter(String name);
-
-    void resetParameters();
-
-    void setFiles(List<FileEntity> list);
-
-    List<FileEntity> getFiles();
 }

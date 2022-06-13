@@ -118,9 +118,9 @@ public class Dispatcher extends AbstractApplication {
             if (context.getAttribute("--import") != null && !Boolean.parseBoolean(context.getAttribute("--import").toString())) {
                 if (context.getAttribute("--import") instanceof List) {
                     List<String> list = (List<String>) context.getAttribute("--import");
-                    defaultImportApplications.append(StringUtilities.implode(";", list));
+                    defaultImportApplications.append(';').append(StringUtilities.implode(";", list));
                 } else
-                    defaultImportApplications.append(context.getAttribute("--import"));
+                    defaultImportApplications.append(';').append(context.getAttribute("--import"));
             }
 
             // Update the imports.
@@ -217,7 +217,6 @@ public class Dispatcher extends AbstractApplication {
             System.out.println("\nDownloaded (" + this.color(latestVersion, FORE_COLOR.green) + ").");
             System.out.print("\rUpdating..");
             ApplicationManager.generateDispatcherCommand(latestVersion, true);
-
         } catch (ApplicationException | MalformedURLException e) {
             return e.toString();
         }
