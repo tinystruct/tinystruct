@@ -298,6 +298,26 @@ public enum Header {
     SEC_WEBSOCKET_ACCEPT("Sec-WebSocket-Accept"),
 
     /**
+     * {@code "Sec-Fetch-Dest"}
+     */
+    SEC_FETCH_DEST("Sec-Fetch-Dest"),
+
+    /**
+     * {@code "Sec-Fetch-Mode"}
+     */
+    SEC_FETCH_MODE("Sec-Fetch-Mode"),
+
+    /**
+     * {@code "Sec-Fetch-Site"}
+     */
+    SEC_FETCH_SITE("Sec-Fetch-Site"),
+
+    /**
+     * {@code "Sec-Fetch-User"}
+     */
+    SEC_FETCH_USER("Sec-Fetch-User"),
+
+    /**
      * {@code "Server"}
      */
     SERVER("Server"),
@@ -331,6 +351,11 @@ public enum Header {
      * {@code "Upgrade"}
      */
     UPGRADE("Upgrade"),
+
+    /**
+     * {@code "Upgrade-Insecure-Requests"}
+     */
+    UPGRADE_INSECURE_REQUESTS("Upgrade-Insecure-Requests"),
 
     /**
      * {@code "User-Agent"}
@@ -370,7 +395,12 @@ public enum Header {
     /**
      * {@code "WWW-Authenticate"}
      */
-    WWW_AUTHENTICATE("WWW-Authenticate");
+    WWW_AUTHENTICATE("WWW-Authenticate"),
+
+    /**
+     * {@code "x-requested-with"}
+     */
+    X_REQUESTED_WITH("X-Requested-With");
 
     private final String name;
     private StandardValue[] options;
