@@ -1,26 +1,40 @@
 package org.tinystruct.http;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
+import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
+import io.netty.handler.codec.http.multipart.HttpDataFactory;
+import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
+import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.netty.util.CharsetUtil;
+import org.apache.catalina.util.StandardSessionIdGenerator;
+import org.tinystruct.data.FileEntity;
 
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
 
-public class RequestBuilder extends RequestWrapper<HttpRequest> {
+public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
     private final SessionManager manager = SessionManager.getInstance();
     private final Headers headers = new Headers();
     private final Cookie[] cookies;
+    private String query;
+    HashMap<String, List<String>> params = new HashMap<String, List<String>>();
+    List<FileEntity> list = new ArrayList<>();
     private Version version;
     private Method method;
     private String uri;
 
-    public RequestBuilder(HttpRequest request) {
+    public RequestBuilder(FullHttpRequest request) {
         super(request);
 
+        ByteBuf content = request.content();
+        content.readableBytes();
+
         HttpHeaders headers = request.headers();
-        headers.forEach(h-> this.headers.add(Header.value0f(h.getKey()).set(h.getValue())));
+        headers.forEach(h -> this.headers.add(Header.value0f(h.getKey()).set(h.getValue())));
 
         Set<io.netty.handler.codec.http.cookie.Cookie> _cookies;
         String value = request.headers().get(HttpHeaderNames.COOKIE);
@@ -42,6 +56,62 @@ public class RequestBuilder extends RequestWrapper<HttpRequest> {
             cookie.setSecure(_cookie.isSecure());
             cookies[--i] = cookie;
         }
+
+        if (content.capacity() > 0) {
+            switch (this.headers.get(Header.CONTENT_TYPE).toString()) {
+                case "multipart/form-data":
+                    // TODO
+                    final HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); // Disk if size exceed
+                    HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(factory, request);
+                    InterfaceHttpData fileData;
+                    while (decoder.hasNext()) {
+                        fileData = decoder.next();
+                        if (fileData != null && fileData.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
+                            list.add((FileEntity) fileData);
+                        }
+                    }
+                case "application/x-www-form-urlencoded":
+                case "text/plain;charset=UTF-8":
+                case "application/json":
+                default:
+                    String requestBody = content.toString(CharsetUtil.UTF_8);
+                    String[] args = requestBody.split("&"), pair;
+                    for (i = 0; i < args.length; i++) {
+                        if (args[i].contains("=")) {
+                            pair = args[i].split("=");
+                            this.setParameter(pair[0], List.of(pair[1]));
+                        }
+                    }
+                    break;
+            }
+        }
+
+        QueryStringDecoder q = parseQuery(request.uri(), true);
+        if (!q.path().isEmpty()) {
+            if (q.parameters().get("q")!=null) {
+                query = q.parameters().get("q").get(0);
+            }
+            else {
+                query = "";
+            }
+        }
+    }
+
+    private QueryStringDecoder parseQuery(String uri, boolean hasPath) {
+        QueryStringDecoder decoder = new QueryStringDecoder(uri, hasPath);
+        Map<String, List<String>> parameters = decoder.parameters();
+        Iterator<Map.Entry<String, List<String>>> iterator = parameters.entrySet().iterator();
+        Map.Entry<String, List<String>> element;
+        while (iterator.hasNext()) {
+            element = iterator.next();
+            this.setParameter(element.getKey(), element.getValue());
+        }
+
+        return decoder;
+    }
+
+    private void setParameter(String name, List<String> values) {
+        this.params.put(name, values);
     }
 
     public Session getSession(String id) {
@@ -61,8 +131,8 @@ public class RequestBuilder extends RequestWrapper<HttpRequest> {
         String[] cookies = this.request.headers().get(Header.COOKIE.name()).split(";");
         String sessionId = null;
         for (String cookie1 : cookies) {
-            String[] _cookie = cookie1.split(":");
-            if (_cookie[0].equalsIgnoreCase("jsessionid")) {
+            String[] _cookie = cookie1.split("=");
+            if (_cookie[0].trim().equalsIgnoreCase("jsessionid")) {
                 sessionId = _cookie[1];
                 break;
             }
@@ -72,12 +142,12 @@ public class RequestBuilder extends RequestWrapper<HttpRequest> {
             return getSession(sessionId, true);
         }
 
-        return null;
+        return getSession(new StandardSessionIdGenerator().generateSessionId(), true);
     }
 
     @Override
     public String query() {
-        return null;
+        return this.query;
     }
 
     @Override
@@ -127,6 +197,9 @@ public class RequestBuilder extends RequestWrapper<HttpRequest> {
 
     @Override
     public String getParameter(String name) {
+        if (null != this.params.get(name) && this.params.get(name).size() > 0) {
+            return this.params.get(name).get(0);
+        }
         return null;
     }
 
