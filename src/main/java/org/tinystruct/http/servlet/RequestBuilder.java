@@ -26,19 +26,23 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
         });
 
         javax.servlet.http.Cookie[] _cookies = this.request.getCookies();
-        int i = _cookies.length;
+        if (_cookies != null) {
+            int i = _cookies.length;
 
-        this.cookies = new Cookie[i];
-        for (javax.servlet.http.Cookie _cookie : _cookies) {
-            Cookie cookie = new CookieImpl(_cookie.getName());
-            cookie.setValue(_cookie.getValue());
-            cookie.setDomain(_cookie.getDomain());
-            cookie.setHttpOnly(_cookie.isHttpOnly());
-            cookie.setMaxAge(_cookie.getMaxAge());
-            cookie.setPath(_cookie.getPath());
-            cookie.setSecure(_cookie.getSecure());
-            cookies[--i] = cookie;
+            this.cookies = new Cookie[i];
+            for (javax.servlet.http.Cookie _cookie : _cookies) {
+                Cookie cookie = new CookieImpl(_cookie.getName());
+                cookie.setValue(_cookie.getValue());
+                cookie.setDomain(_cookie.getDomain());
+                cookie.setHttpOnly(_cookie.isHttpOnly());
+                cookie.setMaxAge(_cookie.getMaxAge());
+                cookie.setPath(_cookie.getPath());
+                cookie.setSecure(_cookie.getSecure());
+                cookies[--i] = cookie;
+            }
         }
+        else
+            this.cookies = new Cookie[]{};
     }
 
     public Session getSession(String id) {
