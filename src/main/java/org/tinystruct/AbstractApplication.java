@@ -275,13 +275,8 @@ public abstract class AbstractApplication implements Application {
     }
 
     public String getProperty(String propertyName) {
-        try {
-            Resource resource = Resource.getInstance(this.locale);
-            return resource.getLocaleString(propertyName);
-        } catch (Exception e) {
-            logger.severe("Application view getProperty():" + e.getMessage());
-        }
-        return "";
+        Resource resource = Resource.getInstance(this.locale);
+        return resource.getLocaleString(propertyName);
     }
 
     public Locale getLocale() {
