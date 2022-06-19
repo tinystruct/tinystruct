@@ -17,12 +17,15 @@ import org.tinystruct.http.*;
 import org.tinystruct.http.security.JWTManager;
 import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Configuration;
+import org.tinystruct.system.Language;
 import org.tinystruct.system.util.StringUtilities;
 
 import java.util.Collections;
 import java.util.Set;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
+import static org.tinystruct.handler.DefaultHandler.HTTP_HOST;
+import static org.tinystruct.handler.DefaultHandler.METHOD;
 
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
@@ -53,17 +56,11 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
         if (this.context == null)
             this.context = new ApplicationContext();
-
         this.request = new RequestBuilder(msg);
-
         this.service(ctx, request, context);
-        context.removeAttribute("REQUEST_BODY");
-        context.removeAttribute("CLAIMS");
     }
 
-
     private void service(final ChannelHandlerContext ctx, final Request request, final Context context) {
-
         Headers headers = request.headers();
         String auth, token;
         Object message;
@@ -92,12 +89,54 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         HttpResponseStatus status = HttpResponseStatus.OK;
         try {
             context.setAttribute("HTTP_REQUEST", request);
+            context.setAttribute("HTTP_RESPONSE", new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status)));
+            context.setAttribute("HTTP_HOST", request.headers().get(Header.HOST));
+
+            String lang = request.getParameter("lang"), language = "";
+            if (lang != null && lang.trim().length() > 0) {
+                String name = lang.replace('-', '_');
+
+                if (Language.support(name) && !lang.equalsIgnoreCase(this.configuration.get("language"))) {
+                    String[] local = name.split("_");
+                    context.setAttribute("language", name);
+                    language = "lang=" + local[0] + "-" + local[1].toUpperCase() + "&";
+                }
+            } else
+                context.removeAttribute("language");
+
+            String url_prefix = "/";
+            if (this.configuration.get("default.url_rewrite") != null && !"enabled".equalsIgnoreCase(this.configuration.get("default.url_rewrite"))) {
+                url_prefix = "/?" + language + "q=";
+            }
+
+            String hostName;
+            if ((hostName = this.configuration.get("default.hostname")) != null) {
+                if (hostName.length() <= 3) {
+                    hostName = request.headers().get(Header.HOST).toString();
+                }
+            } else {
+                hostName = request.headers().get(Header.HOST).toString();
+            }
+
+            String ssl_enabled, http_protocol = "http://";
+            boolean ssl;
+            if ((ssl_enabled = this.configuration.get("ssl.enabled")) != null) {
+                ssl = Boolean.parseBoolean(ssl_enabled);
+
+                if (ssl) http_protocol = "https://";
+            }
+
+            context.setAttribute(HTTP_HOST, http_protocol + hostName + url_prefix);
+            context.setAttribute(METHOD, request.method());
 
             String query = request.query();
             if (query != null && query.length() > 1) {
                 query = StringUtilities.htmlSpecialChars(query);
                 if (null == (message = ApplicationManager.call(query, context))) {
                     message = "No response retrieved!";
+                } else if (message instanceof Response) {
+                    ctx.write(((Response) message).get());
+                    return;
                 }
             } else {
                 message = ApplicationManager.call(this.configuration.get("default.home.page").toString(), context);
@@ -131,8 +170,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         cookie.setPath("/");
         cookie.setMaxAge(1800);
 
-        response.addHeader(Header.SET_COOKIE.toString(), cookie.toString());
-
+        responseHeaders.add(Header.SET_COOKIE.set(cookie));
         responseHeaders.add(Header.CONTENT_TYPE.set("text/html; charset=UTF-8"));
         responseHeaders.add(Header.CONTENT_LENGTH.setInt(resp.readableBytes()));
         ctx.write(response.get());
