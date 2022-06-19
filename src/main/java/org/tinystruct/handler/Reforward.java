@@ -19,8 +19,6 @@ package org.tinystruct.handler;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.http.*;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -68,12 +66,14 @@ public class Reforward {
         }
     }
 
-    public void forward() throws ApplicationException {
+    public Response forward() throws ApplicationException {
         try {
             response.sendRedirect(this.fromURL);
         } catch (IOException io) {
             throw new ApplicationException(io.getMessage(), io);
         }
+
+        return response;
     }
 
     public String getCurrentURL() throws ApplicationException {
