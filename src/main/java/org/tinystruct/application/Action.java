@@ -79,7 +79,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
                 try {
                     method.invoke(app, arguments);
                 } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new ApplicationException(method.toGenericString(), e);
+                    throw new ApplicationException(method.toGenericString() + ":" + e.getMessage(), e);
                 }
 
                 return app.toString();
@@ -88,7 +88,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
             try {
                 return method.invoke(app, arguments);
             } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new ApplicationException(method.toGenericString(), e);
+                throw new ApplicationException(method.toGenericString() + ":" + e.getMessage(), e);
             }
         }
 
