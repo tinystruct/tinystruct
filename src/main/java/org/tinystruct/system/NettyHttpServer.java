@@ -77,6 +77,9 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
         if (this.context != null && this.context.getAttribute("--server-port") != null) {
             this.port = Integer.parseInt(this.context.getAttribute("--server-port").toString());
         }
+
+        System.out.println(ApplicationManager.call("--logo", this.context));
+
         try {
             // Configure SSL.
             final SslContext sslCtx;
