@@ -20,15 +20,17 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
     private final SessionManager manager = SessionManager.getInstance();
     private final Headers headers = new Headers();
     private final Cookie[] cookies;
+    private final HashMap<String, List<String>> params = new HashMap<String, List<String>>();
+    private final List<FileEntity> list = new ArrayList<>();
     private String query;
-    HashMap<String, List<String>> params = new HashMap<String, List<String>>();
-    List<FileEntity> list = new ArrayList<>();
     private Version version;
     private Method method;
     private String uri;
 
     public RequestBuilder(FullHttpRequest request) {
         super(request);
+
+        this.uri = this.request.uri();
 
         ByteBuf content = request.content();
         content.readableBytes();
@@ -88,10 +90,9 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
 
         QueryStringDecoder q = parseQuery(request.uri(), true);
         if (!q.path().isEmpty()) {
-            if (q.parameters().get("q")!=null) {
+            if (q.parameters().get("q") != null) {
                 query = q.parameters().get("q").get(0);
-            }
-            else {
+            } else {
                 query = "";
             }
         }
@@ -128,13 +129,16 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
 
     @Override
     public Session getSession() {
-        String[] cookies = this.request.headers().get(Header.COOKIE.name()).split(";");
         String sessionId = null;
-        for (String cookie1 : cookies) {
-            String[] _cookie = cookie1.split("=");
-            if (_cookie[0].trim().equalsIgnoreCase("jsessionid")) {
-                sessionId = _cookie[1];
-                break;
+        String cookieValue = this.request.headers().get(Header.COOKIE.name());
+        if (cookieValue != null) {
+            String[] cookies = cookieValue.split(";");
+            for (String cookie1 : cookies) {
+                String[] _cookie = cookie1.split("=");
+                if (_cookie[0].trim().equalsIgnoreCase("jsessionid")) {
+                    sessionId = _cookie[1];
+                    break;
+                }
             }
         }
 
@@ -185,7 +189,6 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
 
     @Override
     public String uri() {
-        this.setUri(this.request.uri());
         return this.uri;
     }
 
@@ -208,4 +211,3 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
         return cookies;
     }
 }
-
