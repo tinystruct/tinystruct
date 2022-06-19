@@ -71,5 +71,10 @@ public class ResponseBuilder extends ResponseWrapper<HttpResponse> {
 
     @Override
     public void sendRedirect(String url) throws IOException {
+        ResponseHeaders responseHeaders = new ResponseHeaders(this);
+        responseHeaders.add(Header.CONTENT_LENGTH.setInt(0));
+        responseHeaders.add(Header.LOCATION.set(url));
+        this.response.setStatus(HttpResponseStatus.valueOf(307));
     }
+
 }
