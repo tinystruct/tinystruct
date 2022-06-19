@@ -141,6 +141,10 @@ public abstract class AbstractApplication implements Application {
         this.config.set(LANGUAGE, this.config.get(DEFAULT_LANGUAGE));
         this.config.set(CHARSET, "utf-8");
         this.config.set(DEFAULT_BASE_URL, "/?q=");
+
+        // Only to be initialized once.
+        this.init();
+
         this.setLocale(this.config.get(LANGUAGE));
     }
 
@@ -286,17 +290,18 @@ public abstract class AbstractApplication implements Application {
 
     private void setLocale(String locale) {
         String[] local = locale.split("_");
-        this.locale = new Locale(local[0], local[1]);
+        this.setLocale(new Locale(local[0], local[1]));
         this.setVariable(LANGUAGE_CODE, local[0]);
-        this.setVariable(LANGUAGE, locale);
-        this.init();
-
-        this.setAction("--help", "help");
-        this.commandLines.get("--help").setDescription("Help command");
+        this.setVariable(LANGUAGE, this.locale.toString());
     }
 
     public void setLocale(Locale locale) {
         this.locale = locale;
+
+        this.setAction("--help", "help");
+
+        if (this.commandLines.get("--help") != null)
+            this.commandLines.get("--help").setDescription("Help command");
     }
 
     public String toString() {
