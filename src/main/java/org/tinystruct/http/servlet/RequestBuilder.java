@@ -6,24 +6,32 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.Enumeration;
 
 public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
     private final SessionManager manager = SessionManager.getInstance();
     private final Headers headers = new Headers();
     private final Cookie[] cookies;
+    private final Session memorySession;
     private Version version;
     private Method method;
     private String uri;
 
     public RequestBuilder(HttpServletRequest request) {
         super(request);
-        this.request.getHeaderNames().asIterator().forEachRemaining(h -> {
+
+        Enumeration<String> headerNames = this.request.getHeaderNames();
+        while (headerNames.hasMoreElements()) {
             try {
+                String h = headerNames.nextElement();
                 this.headers.add(Header.value0f(h).set(this.request.getHeader(h)));
             } catch (IllegalArgumentException ignored) {
                 ;
             }
-        });
+        }
+
+        this.setUri(this.request.getRequestURI());
+        this.setMethod(Method.valueOf(this.request.getMethod()));
 
         javax.servlet.http.Cookie[] _cookies = this.request.getCookies();
         if (_cookies != null) {
@@ -43,6 +51,16 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
         }
         else
             this.cookies = new Cookie[]{};
+
+        HttpSession session = this.request.getSession();
+        String sessionId = session.getId();
+        memorySession = getSession(sessionId, true);
+
+        Enumeration<String> attributeNames = session.getAttributeNames();
+        while (attributeNames.hasMoreElements()) {
+            String s = attributeNames.nextElement();
+            memorySession.setAttribute(s, session.getAttribute(s));
+        }
     }
 
     public Session getSession(String id) {
@@ -59,13 +77,6 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
 
     @Override
     public Session getSession() {
-        HttpSession session = this.request.getSession();
-        String sessionId = session.getId();
-        Session memorySession = getSession(sessionId, true);
-        session.getAttributeNames().asIterator().forEachRemaining(s -> {
-            memorySession.setAttribute(s, session.getAttribute(s));
-        });
-
         return memorySession;
     }
 
@@ -102,8 +113,6 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
 
     @Override
     public Method method() {
-        this.setMethod(Method.valueOf(this.request.getMethod()));
-
         return this.method;
     }
 
@@ -115,7 +124,6 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
 
     @Override
     public String uri() {
-        this.setUri(this.request.getRequestURI());
         return this.uri;
     }
 
