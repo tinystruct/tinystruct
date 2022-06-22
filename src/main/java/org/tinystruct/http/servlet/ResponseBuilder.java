@@ -20,6 +20,10 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        for (String headerName : this.response.getHeaderNames()) {
+            this.headers.add(Header.value0f(headerName).set(this.response.getHeader(headerName)));
+        }
     }
 
     public void setContentType(String contentType) {
@@ -27,7 +31,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
     }
 
     public void addHeader(String header, Object value) {
-        this.response.addHeader(header, value.toString());
+        this.headers.add(Header.value0f(header).set(value));
     }
 
     public String getHeader(String header) {
@@ -62,10 +66,6 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
 
     @Override
     public Headers headers() {
-        for (String headerName : this.response.getHeaderNames()) {
-            this.headers.add(Header.value0f(headerName).set(this.response.getHeader(headerName)));
-        }
-
         return this.headers;
     }
 
