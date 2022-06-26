@@ -31,8 +31,8 @@ import static org.tinystruct.application.Action.MAX_ARGUMENTS;
 
 public class Actions {
 
-    private static final Map<String, Action> map = new ConcurrentHashMap<String, Action>();
-    private static final Map<String, CommandLine> commands = new ConcurrentHashMap<String, CommandLine>();
+    private static final Map<String, Action> map = new ConcurrentHashMap<String, Action>(16);
+    private static final Map<String, CommandLine> commands = new ConcurrentHashMap<String, CommandLine>(16);
 
     private static final class SingletonHolder {
         static final Actions actions = new Actions();
