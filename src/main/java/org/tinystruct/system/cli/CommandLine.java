@@ -10,7 +10,7 @@ public class CommandLine implements Comparable<CommandLine>{
     private String description;
     private final Application app;
     private List<CommandOption> options = new ArrayList<>();
-    private Set<CommandArgument<String, Object>> arguments = new HashSet<>();
+    private Set<CommandArgument<String, Object>> arguments = new HashSet<>(16);
     private String example;
 
     public static final int ARGUMENT_MAX_WIDTH = 77;

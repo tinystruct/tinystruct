@@ -37,7 +37,7 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.4.9";
+    public static final String VERSION = "0.5.0";
     private static final boolean WINDOWS = Platform.isWindows();
 
     private ApplicationManager() {
