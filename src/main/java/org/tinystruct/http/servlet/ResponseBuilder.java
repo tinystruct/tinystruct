@@ -31,7 +31,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
     }
 
     public void addHeader(String header, Object value) {
-        this.headers.add(Header.value0f(header).set(value));
+        this.response.addHeader(header, value.toString());
     }
 
     public String getHeader(String header) {
