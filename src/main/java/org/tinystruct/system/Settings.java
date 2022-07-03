@@ -31,43 +31,24 @@ import java.util.Set;
 public class Settings implements Configuration<String> {
 
     private static final long serialVersionUID = 8348657988449703373L;
-    private static Properties properties = new Properties();
-
-    private static final class SingletonHolder {
-        private final Properties properties = new Properties();
-
-        private SingletonHolder() {
-            InputStream in = getClass().getResourceAsStream(fileName);
-            if (in != null)
-                try {
-                    properties.load(in);
-                } catch (IOException e) {
-                    throw new ApplicationRuntimeException(e.getMessage(), e);
-                }
-        }
-
-        public Properties getProperties() {
-            return properties;
-        }
-
-        public static SingletonHolder instance = new SingletonHolder();
-    }
-
-    private static String fileName = "/application.properties";
+    private static final String FILE = "/application.properties";
+    private static String fileName;
+    private final Properties properties;
     private boolean overwrite = false;
 
     public Settings() {
-        this("/application.properties");
+        this(FILE);
         this.overwrite = true;
     }
 
     public Settings(String file) throws ApplicationRuntimeException {
-
-        if (!fileName.equalsIgnoreCase(file)) {
+        if (!file.equalsIgnoreCase(FILE)) {
             fileName = file;
+        } else {
+            fileName = FILE;
         }
 
-        properties = SingletonHolder.instance.getProperties();
+        properties = SingletonHolder.INSTANCE.getProperties();
     }
 
     public Properties getProperties() {
@@ -75,17 +56,15 @@ public class Settings implements Configuration<String> {
     }
 
     public String get(String property) {
-        if (properties.containsKey(property)) {
-            String value = properties.getProperty(property).trim();
-            if (value.startsWith("$_")) {
-                return System.getenv(value.substring(2).toUpperCase());
-            }
-            try {
-                byte[] bytes = value.getBytes(StandardCharsets.ISO_8859_1);
-                return new String(bytes, StandardCharsets.UTF_8).trim();
-            } catch (Exception ex) {
-                System.err.print("The config (" + fileName + ") may be not found!");
-            }
+        String value = properties.getProperty(property).trim();
+        if (value.startsWith("$_")) {
+            return System.getenv(value.substring(2).toUpperCase());
+        }
+        try {
+            byte[] bytes = value.getBytes(StandardCharsets.ISO_8859_1);
+            return new String(bytes, StandardCharsets.UTF_8).trim();
+        } catch (Exception ex) {
+            System.err.print("The config (" + fileName + ") may be not found!");
         }
 
         return "";
@@ -122,6 +101,28 @@ public class Settings implements Configuration<String> {
 
     public String toString() {
         return properties.toString();
+    }
+
+    private static final class SingletonHolder {
+        public static final SingletonHolder INSTANCE = new SingletonHolder();
+        private static final Properties properties = new Properties();
+
+        static {
+            InputStream in = SingletonHolder.class.getResourceAsStream(fileName);
+            if (in != null)
+                try {
+                    properties.load(in);
+                } catch (IOException e) {
+                    throw new ApplicationRuntimeException(e.getMessage(), e);
+                }
+        }
+
+        private SingletonHolder() {
+        }
+
+        public Properties getProperties() {
+            return properties;
+        }
     }
 
 }
