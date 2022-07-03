@@ -56,12 +56,53 @@ public class StringUtilities implements java.io.Serializable {
     }
 
     public static String htmlSpecialChars(String value) {
-        String[] unicode = new String[]{"&amp;", "&lt;", "&gt;", "&#39;", "&#34;"};
+        int len = value.length();
+        if (len > 0) {
+            StringBuilder v = new StringBuilder(value);
+            String replacement;
+            for (int i = 0; i < v.length(); i++) {
+                switch (v.charAt(i)) {
+                    case '&':
+                        replacement = "&amp;";
+                        v.deleteCharAt(i);
+                        v.insert(i, replacement);
+                        i += replacement.length() - 1;
+                        break;
 
-        char[] html_chars = "&<>'\"".toCharArray();
+                    case '<':
+                        replacement = "&lt;";
+                        v.deleteCharAt(i);
+                        v.insert(i, replacement);
+                        i += replacement.length() - 1;
+                        break;
 
-        for (int i = 0; i < html_chars.length; i++) {
-            value = value.replaceAll(String.valueOf(html_chars[i]), unicode[i]);
+                    case '>':
+                        replacement = "&gt;";
+                        v.deleteCharAt(i);
+                        v.insert(i, replacement);
+                        i += replacement.length() - 1;
+                        break;
+
+                    case '\'':
+                        replacement = "&#39;";
+                        v.deleteCharAt(i);
+                        v.insert(i, replacement);
+                        i += replacement.length() - 1;
+                        break;
+
+                    case '"':
+                        replacement = "&#34;";
+                        v.deleteCharAt(i);
+                        v.insert(i, replacement);
+                        i += replacement.length() - 1;
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+
+            return v.toString();
         }
 
         return value;
@@ -292,10 +333,6 @@ public class StringUtilities implements java.io.Serializable {
         return hexDigit[(nibble & 0xF)];
     }
 
-    public String getString() {
-        return raw;
-    }
-
     public static String nospace(String raw) {
         return remove(raw, (char) 32);
     }
@@ -311,6 +348,10 @@ public class StringUtilities implements java.io.Serializable {
                 buffer.append(currentChar);
         }
         return buffer.toString();
+    }
+
+    public String getString() {
+        return raw;
     }
 
     public String replace(char res, String des) {
