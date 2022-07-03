@@ -56,15 +56,18 @@ public class Settings implements Configuration<String> {
     }
 
     public String get(String property) {
-        String value = properties.getProperty(property).trim();
-        if (value.startsWith("$_")) {
+        String value = properties.getProperty(property);
+
+        if (value != null && value.startsWith("$_")) {
             return System.getenv(value.substring(2).toUpperCase());
         }
+
         try {
+            assert value != null;
             byte[] bytes = value.getBytes(StandardCharsets.ISO_8859_1);
             return new String(bytes, StandardCharsets.UTF_8).trim();
-        } catch (Exception ex) {
-            System.err.print("The config (" + fileName + ") may be not found!");
+        } catch (Exception ignored) {
+
         }
 
         return "";
