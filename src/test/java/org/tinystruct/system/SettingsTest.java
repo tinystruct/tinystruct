@@ -29,7 +29,7 @@ class SettingsTest {
         Settings actualSettings = new Settings("foo.properties");
         assertEquals(0, actualSettings.getProperties().size());
         assertEquals("{}", actualSettings.toString());
-        assertFalse(!actualSettings.isEmpty());
+        assertTrue(actualSettings.isEmpty());
     }
 
     @Test
