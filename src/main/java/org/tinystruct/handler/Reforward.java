@@ -25,17 +25,16 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 
 public class Reforward {
-    private String action = "", fromURL = "", currentURL = "";
-    private Request request;
-    private Response response;
+    private String fromURL = "";
+    private String currentURL = "";
+    private final Response response;
 
     public Reforward(Request request, Response response) throws ApplicationException {
 
-        this.request = request;
         this.response = response;
 
         if (request.query() != null)
-            this.currentURL = new StringBuilder(request.uri()).append('?').append(this.request.query()).toString();
+            this.currentURL = request.uri() + '?' + request.query();
         else {
             this.currentURL = request.uri();
         }
@@ -61,7 +60,8 @@ public class Reforward {
     }
 
     public void match(String action, String fromURL) {
-        if (this.action.equals(action)) {
+        String action1 = "";
+        if (action1.equals(action)) {
             this.fromURL = fromURL;
         }
     }

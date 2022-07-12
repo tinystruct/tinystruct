@@ -150,7 +150,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @param meetingCode
      * @param builder
      */
-    private final void copy(Object meetingCode, Builder builder) {
+    private void copy(Object meetingCode, Builder builder) {
 
         final Collection<Entry<String, Queue<Builder>>> set = this.list.entrySet();
         final Iterator<Entry<String, Queue<Builder>>> iterator = set.iterator();

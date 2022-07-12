@@ -118,7 +118,7 @@ public class Dispatcher extends AbstractApplication {
             if (context.getAttribute("--import") != null && !Boolean.parseBoolean(context.getAttribute("--import").toString())) {
                 if (context.getAttribute("--import") instanceof List) {
                     List<String> list = (List<String>) context.getAttribute("--import");
-                    defaultImportApplications.append(';').append(StringUtilities.implode(";", list));
+                    defaultImportApplications.append(';').append(String.join(";",list));
                 } else
                     defaultImportApplications.append(';').append(context.getAttribute("--import"));
             }

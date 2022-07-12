@@ -253,6 +253,12 @@ public class StringUtilities implements java.io.Serializable {
         return null;
     }
 
+    /**
+     * Please use String.join(delimitor, Iterator)
+     * @param separator
+     * @param iterator
+     * @return
+     */
     @Deprecated
     public static String implode(String separator, Iterable<String> iterator) {
         Iterator<String> iter = iterator.iterator();

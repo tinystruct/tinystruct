@@ -17,10 +17,10 @@ package org.tinystruct.transfer.http.upload;
 
 public class ContentDisposition {
 
-    private String name;
-    private String fileName;
-    private String contentType;
-    private byte[] data;
+    private final String name;
+    private final String fileName;
+    private final String contentType;
+    private final byte[] data;
 
     public String getName() {
         return name;

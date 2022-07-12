@@ -33,12 +33,9 @@ public class POP3Connection implements Connection {
     private Session session;
     private Store store;
 
-    private String POP3_SOCKETFACTORY_PORT;
-
     private String username;
     private String password;
 
-    private boolean isSSL = false;
     private String id;
 
     public POP3Connection(Configuration<String> properties) throws ApplicationException {
@@ -55,20 +52,20 @@ public class POP3Connection implements Connection {
          */
         Properties props = System.getProperties();
 
-        this.isSSL = Boolean.valueOf(this.config.get("mail.ssl.on"));
+        boolean isSSL = Boolean.valueOf(this.config.get("mail.ssl.on"));
 
-        this.POP3_SOCKETFACTORY_PORT = this.config.get("mail.pop3.socketFactory.port");
+        String POP3_SOCKETFACTORY_PORT = this.config.get("mail.pop3.socketFactory.port");
 
         this.username = this.config.get("smtp.auth.user");
         this.password = this.config.get("smtp.auth.pwd");
 
         props.setProperty("mail.store.protocol", this.config.get("mail.store.protocol"));
-        if (this.isSSL) {
+        if (isSSL) {
 //            Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
 
             props.setProperty("mail.pop3.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             props.setProperty("mail.pop3.socketFactory.fallback", "false");
-            props.setProperty("mail.pop3.socketFactory.port", this.POP3_SOCKETFACTORY_PORT);
+            props.setProperty("mail.pop3.socketFactory.port", POP3_SOCKETFACTORY_PORT);
         }
 
         String host = this.config.get("mail.pop3.host").trim(),

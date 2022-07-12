@@ -39,6 +39,7 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -107,7 +108,7 @@ public class DefaultTemplate implements Template {
         if (this.view.trim().length() > 0) {
             Document doc = null;
             try {
-                InputStream in = new ByteArrayInputStream(this.view.getBytes("UTF-8"));
+                InputStream in = new ByteArrayInputStream(this.view.getBytes(StandardCharsets.UTF_8));
 
                 DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
                 dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); // Compliant  

@@ -13,10 +13,10 @@ import java.util.concurrent.Future;
 
 public class KafkaClient extends AbstractApplication implements MessageQueue<ProducerRecord> {
 
-    private Properties properties = new Properties();
-    private KafkaProducer<String,String> producer;
+    private final KafkaProducer<String,String> producer;
 
     public KafkaClient() {
+        Properties properties = new Properties();
         properties.put("bootstrap.servers", "192.168.1.101:9092");
         properties.put("ack","all");
         properties.put("key.serializer", StringSerializer.class.getName());

@@ -18,8 +18,8 @@ package org.tinystruct.system.template.variable;
 
 public class ObjectVariable implements Variable<Object> {
 
-    private String name;
-    private Object value;
+    private final String name;
+    private final Object value;
 
     public ObjectVariable(String name, Object value) {
         this.name = name;

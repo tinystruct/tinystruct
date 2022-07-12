@@ -33,7 +33,7 @@ import java.util.Map;
  */
 public class ApplicationContext implements Context {
 
-    Map<String, Object> attr = new HashMap<String, Object>();
+    final Map<String, Object> attr = new HashMap<String, Object>();
 
     public void setAttribute(String name, Object value) {
         Variable<Object> variable = new ObjectVariable(name, value);

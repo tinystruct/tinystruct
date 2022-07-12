@@ -17,8 +17,8 @@ package org.tinystruct.system.template.variable;
 
 public class StringVariable implements Variable<String> {
 
-    private String name;
-    private String value;
+    private final String name;
+    private final String value;
 
     public StringVariable(String name, String value) {
         // TODO Auto-generated constructor stub

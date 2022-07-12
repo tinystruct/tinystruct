@@ -17,10 +17,10 @@ package org.tinystruct.dom;
 
 public enum XHTML {
     Transitional(0), Strict(1), Frameset(2), Latin(3), Symbols(4), Special(5);
-    public String PUBLIC;
-    public String SYSTEM;
+    public final String PUBLIC;
+    public final String SYSTEM;
 
-    private XHTML(int index) {
+    XHTML(int index) {
         switch (index) {
             case 0:
                 this.PUBLIC = "-//W3C//DTD XHTML 1.0 Transitional//EN";

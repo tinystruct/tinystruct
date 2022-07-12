@@ -17,8 +17,8 @@ package org.tinystruct.system.template.variable;
 
 public class IntegerVariable implements Variable<Integer> {
 
-    private String name;
-    private Integer value;
+    private final String name;
+    private final Integer value;
 
     public IntegerVariable(String name, Integer value) {
         this.name = name;

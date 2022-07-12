@@ -19,8 +19,8 @@ import java.util.HashMap;
 
 public class Attribute extends HashMap<String, String> implements Cloneable {
     private static final long serialVersionUID = 0;
-    public String name;
-    public String value;
+    public final String name;
+    public final String value;
 
     public Attribute(String name, String value) {
         this.name = name;
@@ -63,16 +63,12 @@ public class Attribute extends HashMap<String, String> implements Cloneable {
         } else if (!name.equals(other.name))
             return false;
         if (value == null) {
-            if (other.value != null)
-                return false;
-        } else if (!value.equals(other.value))
-            return false;
-        return true;
+            return other.value == null;
+        } else return value.equals(other.value);
     }
 
     @Override
     public Object clone() {
-        Attribute attribute = (Attribute) super.clone();
-        return attribute;
+        return (Attribute) super.clone();
     }
 }

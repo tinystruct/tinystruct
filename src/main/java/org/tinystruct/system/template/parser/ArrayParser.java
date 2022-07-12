@@ -26,8 +26,8 @@ import org.w3c.dom.Node;
 
 public class ArrayParser<T> implements Parser {
 
-    private Variable<T[]> variable;
-    private Document doc;
+    private final Variable<T[]> variable;
+    private final Document doc;
 
     public ArrayParser(Variable<T[]> variable, Document doc) {
         this.variable = variable;

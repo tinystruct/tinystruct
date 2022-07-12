@@ -17,8 +17,8 @@ package org.tinystruct.system.template.variable;
 
 public class ArrayVariable<T> implements Variable<T[]> {
 
-    private String name;
-    private T[] value;
+    private final String name;
+    private final T[] value;
 
     public ArrayVariable(String name, T[] value) {
         // TODO Auto-generated constructor stub

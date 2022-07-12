@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class TomcatServer extends AbstractApplication implements Bootstrap {
-    private Logger logger = Logger.getLogger(TomcatServer.class.getName());
+    private final Logger logger = Logger.getLogger(TomcatServer.class.getName());
 
     public TomcatServer(){
 

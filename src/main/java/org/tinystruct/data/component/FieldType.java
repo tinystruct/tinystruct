@@ -282,7 +282,7 @@ public final class FieldType {
     private String typeName;
     private int value;
     private static Vector<FieldType> typeList;
-    private String realType;
+    private final String realType;
 
     private FieldType(String typeName, int value, String realType) {
         this.typeName = typeName;

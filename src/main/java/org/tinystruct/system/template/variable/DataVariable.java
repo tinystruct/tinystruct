@@ -20,8 +20,8 @@ import org.tinystruct.data.Data;
 
 public class DataVariable implements Variable<Data> {
 
-	private String name;
-	private Data value;
+	private final String name;
+	private final Data value;
 
 	public DataVariable(String name, Data value) {
 		// TODO Auto-generated constructor stub

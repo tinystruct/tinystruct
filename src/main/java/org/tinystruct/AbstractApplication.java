@@ -47,7 +47,7 @@ public abstract class AbstractApplication implements Application {
      * Context of application
      */
     protected Context context;
-    protected Map<String, CommandLine> commandLines;
+    protected final Map<String, CommandLine> commandLines;
     /**
      * Configuration
      */

@@ -32,9 +32,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class PlainText implements Template {
 
-    private ConcurrentHashMap<String, Variable<?>> variables = Variables.getInstance();
+    private final ConcurrentHashMap<String, Variable<?>> variables = Variables.getInstance();
+    private final Application app;
     private InputStream in;
-    private Application app;
     private String text;
 
     public PlainText(Application app, InputStream in) {

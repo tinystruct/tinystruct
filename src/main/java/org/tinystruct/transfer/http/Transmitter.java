@@ -27,9 +27,8 @@ import java.util.Properties;
 
 public class Transmitter implements Transmission {
 
-    private Properties properties = new Properties();
+    private final Properties properties = new Properties();
     private Proxy proxy = null;
-    private URL url;
     private URLConnection connection;
 
     public void set(String name, Object value) {
@@ -74,7 +73,7 @@ public class Transmitter implements Transmission {
 
     public void start() throws ApplicationException {
         try {
-            url = (URL) this.get("url");
+            URL url = (URL) this.get("url");
 
             if (this.proxy != null)
                 this.connection = url.openConnection(this.proxy);

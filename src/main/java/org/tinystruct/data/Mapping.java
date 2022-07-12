@@ -35,7 +35,7 @@ public class Mapping {
     private static final String GENERATE = "generate";
     private static final String INCREMENT = "increment";
     private static final String ID = "id";
-    private Field fields;
+    private final Field fields;
 
     public Mapping() {
         this.fields = new Field();

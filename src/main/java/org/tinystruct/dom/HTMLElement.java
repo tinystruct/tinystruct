@@ -200,7 +200,7 @@ public class HTMLElement extends Element {
             // 判断是否为结束标记
             if (currentElement.getName().equalsIgnoreCase(
                     "/" + childElement.getName())
-                    && accept == true) {
+                    && accept) {
                 elements_amount--;
 
                 if (elements_amount == 0) {
@@ -252,7 +252,7 @@ public class HTMLElement extends Element {
             // 判断是否为开始标记
             if (currentElement.getName().equalsIgnoreCase(
                     childElement.getName())
-                    && accept == false) {
+                    && !accept) {
                 if (currentElement.getName().indexOf('/') == 0) {
                     System.out.println("[Jump the Element /][<"
                             + this.brother_element_position + ">]"
@@ -335,7 +335,7 @@ public class HTMLElement extends Element {
                 // 将已经读完的子元素保存到本级子元素集合中
                 // this.addElement(childElement);
 
-                System.out.print("ParentElement->" + currentElement.toString());
+                System.out.print("ParentElement->" + currentElement);
 
                 same_element_number++;
                 element_start = true;
@@ -402,8 +402,7 @@ public class HTMLElement extends Element {
         }
 
         StringBuffer buffer = new StringBuffer();
-        boolean invalidName = (this.getName() == null || this.getName().trim().length() == 0) ? false
-                : true;
+        boolean invalidName = this.getName() != null && this.getName().trim().length() != 0;
 
         if (invalidName) {
             buffer.append(this.getSpace());
@@ -480,10 +479,7 @@ public class HTMLElement extends Element {
         if (brother_element_position != other.brother_element_position)
             return false;
         if (resource == null) {
-            if (other.resource != null)
-                return false;
-        } else if (!resource.equals(other.resource))
-            return false;
-        return true;
+            return other.resource == null;
+        } else return resource.equals(other.resource);
     }
 }

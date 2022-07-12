@@ -20,18 +20,18 @@ import javax.mail.Session;
 
 public interface Connection {
 
-    public enum PROTOCOL {
+    enum PROTOCOL {
         SMTP, POP3
     }
 
-    public abstract Session getSession();
+    Session getSession();
 
-    public abstract boolean available();
+    boolean available();
 
-    public abstract void close() throws MessagingException;
+    void close() throws MessagingException;
 
-    public abstract String getId();
+    String getId();
 
-    public PROTOCOL getProtocol();
+    PROTOCOL getProtocol();
 
 }

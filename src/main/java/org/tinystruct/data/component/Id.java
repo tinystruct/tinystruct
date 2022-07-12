@@ -16,7 +16,7 @@
 package org.tinystruct.data.component;
 
 public class Id<T> {
-    private T _Id;
+    private final T _Id;
 
     public Id(T Id) {
         this._Id = Id;

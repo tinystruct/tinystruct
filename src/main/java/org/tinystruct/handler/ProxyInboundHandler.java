@@ -31,7 +31,7 @@ public abstract class ProxyInboundHandler extends ChannelInboundHandlerAdapter i
     private Channel outboundChannel;
 
     String remoteHost = "localhost";
-    int remotePort;
+    final int remotePort;
 
     public ProxyInboundHandler(String remoteHost, int remotePort) {
         this.remoteHost = remoteHost;

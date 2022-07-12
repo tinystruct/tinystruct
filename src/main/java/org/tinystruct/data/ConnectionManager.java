@@ -40,7 +40,6 @@ final class ConnectionManager implements Runnable {
     private final String user;
     private final String password;
     private final int max;
-    private Configuration<String> config;
 
     private String database;
     private Boolean pending;
@@ -52,8 +51,8 @@ final class ConnectionManager implements Runnable {
 
         this.connections = new ConcurrentLinkedQueue<Connection>();
 
-        this.config = new Settings();
-        this.driverName = this.config.get("driver");
+        Configuration<String> config = new Settings();
+        this.driverName = config.get("driver");
         try {
             assert this.driverName != null;
             Driver driver = (Driver) Class.forName(driverName).getDeclaredConstructor().newInstance();
@@ -72,10 +71,10 @@ final class ConnectionManager implements Runnable {
             e.printStackTrace();
         }
 
-        this.database = this.config.get("database");
-        String dbUrl = this.config.get("database.url");
-        String dbUser = this.config.get("database.user");
-        String dbPassword = this.config.get("database.password");
+        this.database = config.get("database");
+        String dbUrl = config.get("database.url");
+        String dbUser = config.get("database.user");
+        String dbPassword = config.get("database.password");
 
         if (null != dbUrl) {
             try {
@@ -122,7 +121,7 @@ final class ConnectionManager implements Runnable {
         this.url = dbUrl;
         this.user = dbUser;
         this.password = dbPassword;
-        this.max = this.config.get("database.connections.max").trim().length() > 0 ? Integer.parseInt(this.config.get(
+        this.max = config.get("database.connections.max").trim().length() > 0 ? Integer.parseInt(config.get(
                 "database.connections.max")) : 0;
         this.pending = false;
     }

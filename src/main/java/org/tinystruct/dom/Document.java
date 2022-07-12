@@ -63,7 +63,7 @@ public class Document extends DefaultHandler {
 
     // Buffer for collecting data from
     // the "characters" SAX event.
-    private CharArrayWriter contents = new CharArrayWriter();
+    private final CharArrayWriter contents = new CharArrayWriter();
     private URL url = null;
 
     public Document(URL url) {

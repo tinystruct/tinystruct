@@ -62,7 +62,7 @@ public class MSSQLGenerator implements Generator {
         this.fileName = this.fileName + className;
 
         if (this.packageName != null) {
-            java_resource.append("package " + this.packageName + ";\r\n");
+            java_resource.append("package ").append(this.packageName).append(";\r\n");
         } else {
             java_resource.append("package org.tinystruct.customer.object;\r\n");
         }
@@ -72,18 +72,18 @@ public class MSSQLGenerator implements Generator {
         if (this.packageList.length > 0) {
             java_resource.append("\r\n");
             for (int i = 0; i < this.packageList.length; i++) {
-                java_resource.append("import " + this.packageList[i] + ";\r\n");
+                java_resource.append("import ").append(this.packageList[i]).append(";\r\n");
             }
         }
 
         java_resource.append("\r\n");
         java_resource.append("import org.tinystruct.data.component.Row;\r\n");
         java_resource.append("import org.tinystruct.data.component.AbstractData;\r\n\r\n");
-        java_resource.append("public class " + className + " extends AbstractData implements Serializable {\r\n");
+        java_resource.append("public class ").append(className).append(" extends AbstractData implements Serializable {\r\n");
         java_resource.append("	/**\r\n");
         java_resource.append("   * Auto Generated Serial Version UID\r\n");
         java_resource.append("   */\r\n");
-        java_resource.append("  private static final long serialVersionUID = " + new SecureRandom().nextLong() + "L;\r\n");
+        java_resource.append("  private static final long serialVersionUID = ").append(new SecureRandom().nextLong()).append("L;\r\n");
 
         Element rootElement = new Element("mapping");
         Element classElement = rootElement.addElement("class");
@@ -115,12 +115,12 @@ public class MSSQLGenerator implements Generator {
                 if (java_method_tostring.length() > 0) spliter = ",";
 
                 if (currentFields.get("name").value().equals("id")) {
-                    increment = Integer.parseInt(currentFields.get("increment").value().toString()) == 1 ? true : false;
+                    increment = Integer.parseInt(currentFields.get("increment").value().toString()) == 1;
 
                     if (propertyType.equalsIgnoreCase("String"))
-                        java_method_tostring.append("\t\tbuffer.append(\"" + spliter + "\\\"" + propertyNameOfMethod + "\\\":\\\"\"+this.get" + propertyNameOfMethod + "()+\"\\\"\");\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
                     else
-                        java_method_tostring.append("\t\tbuffer.append(\"" + spliter + "\\\"" + propertyNameOfMethod + "\\\":\"+this.get" + propertyNameOfMethod + "());\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
 
                     Element idElement = classElement.addElement("id");
 
@@ -132,28 +132,28 @@ public class MSSQLGenerator implements Generator {
                     idElement.setAttribute("type", currentFields.get("type").value().toString());
 
                     if (propertyType.equalsIgnoreCase("String")) {
-                        java_method_declaration.append("\tpublic " + propertyType + " get" + propertyNameOfMethod + "()\r\n");
+                        java_method_declaration.append("\tpublic ").append(propertyType).append(" get").append(propertyNameOfMethod).append("()\r\n");
                         java_method_declaration.append("\t{\r\n");
-                        java_method_declaration.append("\t\treturn String.valueOf(this." + propertyNameOfMethod + ");\r\n");
+                        java_method_declaration.append("\t\treturn String.valueOf(this.").append(propertyNameOfMethod).append(");\r\n");
                     } else if (propertyType.equalsIgnoreCase("int")) {
-                        java_method_declaration.append("\tpublic Integer get" + propertyNameOfMethod + "()\r\n");
+                        java_method_declaration.append("\tpublic Integer get").append(propertyNameOfMethod).append("()\r\n");
                         java_method_declaration.append("\t{\r\n");
-                        java_method_declaration.append("\t\treturn Integer.parseInt(this." + propertyNameOfMethod + ".toString());\r\n");
+                        java_method_declaration.append("\t\treturn Integer.parseInt(this.").append(propertyNameOfMethod).append(".toString());\r\n");
                     }
 
                     java_method_declaration.append("\t}\r\n\r\n");
                 } else {
-                    java_member_declaration.append("\tprivate " + propertyType + " " + propertyName + ";\r\n");
+                    java_member_declaration.append("\tprivate ").append(propertyType).append(" ").append(propertyName).append(";\r\n");
 
-                    java_method_declaration.append("\tpublic void set" + propertyNameOfMethod + "(" + propertyType + " " + propertyName + ")\r\n");
+                    java_method_declaration.append("\tpublic void set").append(propertyNameOfMethod).append("(").append(propertyType).append(" ").append(propertyName).append(")\r\n");
                     java_method_declaration.append("\t{\r\n");
-                    java_method_declaration.append("\t\tthis." + propertyName + "=this.setFieldAs" + StringUtilities.setCharToUpper(propertyType, 0) + "(\"" + propertyName + "\"," + propertyName + ");\r\n");
+                    java_method_declaration.append("\t\tthis.").append(propertyName).append("=this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType, 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
                     java_method_declaration.append("\t}\r\n\r\n");
 
                     if (propertyType.equalsIgnoreCase("String") || propertyType.equalsIgnoreCase("Date"))
-                        java_method_tostring.append("\t\tbuffer.append(\"" + spliter + "\\\"" + propertyName + "\\\":\\\"\"+this.get" + propertyNameOfMethod + "()+\"\\\"\");\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
                     else
-                        java_method_tostring.append("\t\tbuffer.append(\"" + spliter + "\\\"" + propertyName + "\\\":\"+this.get" + propertyNameOfMethod + "());\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
 
                     Element propertyElement = classElement.addElement("property");
 
@@ -162,14 +162,14 @@ public class MSSQLGenerator implements Generator {
                     propertyElement.setAttribute("length", currentFields.get("length").value().toString());
                     propertyElement.setAttribute("type", currentFields.get("type").value().toString());
 
-                    java_method_declaration.append("\tpublic " + propertyType + " get" + propertyNameOfMethod + "()\r\n");
+                    java_method_declaration.append("\tpublic ").append(propertyType).append(" get").append(propertyNameOfMethod).append("()\r\n");
                     java_method_declaration.append("\t{\r\n");
-                    java_method_declaration.append("\t\treturn this." + propertyName + ";\r\n");
+                    java_method_declaration.append("\t\treturn this.").append(propertyName).append(";\r\n");
                     java_method_declaration.append("\t}\r\n\r\n");
                 }
 
-                java_method_setdata.append("\t\tif(row.getFieldInfo(\"" + currentFields.get("name").value().toString() + "\")!=null)");
-                java_method_setdata.append("\tthis.set" + propertyNameOfMethod + "(row.getFieldInfo(\"" + currentFields.get("name").value().toString() + "\")." + propertyType.toLowerCase() + "Value());\r\n");
+                java_method_setdata.append("\t\tif(row.getFieldInfo(\"").append(currentFields.get("name").value().toString()).append("\")!=null)");
+                java_method_setdata.append("\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("name").value().toString()).append("\").").append(propertyType.toLowerCase()).append("Value());\r\n");
 
             }
         }

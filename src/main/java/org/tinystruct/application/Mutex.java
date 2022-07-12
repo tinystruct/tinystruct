@@ -23,11 +23,11 @@ public class Mutex {
     private Mutex() {
     }
 
-    public static final int get() {
+    public static int get() {
         return resources.decrementAndGet();
     }
 
-    public static final int put() {
+    public static int put() {
         return resources.addAndGet(1);
     }
 }

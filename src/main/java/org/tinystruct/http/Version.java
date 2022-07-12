@@ -19,7 +19,7 @@ public enum Version {
     /**
      * HTTP message text
      */
-    String message;
+    final String message;
 
     Version(String message) {
         this.message = message;

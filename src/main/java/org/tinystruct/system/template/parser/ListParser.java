@@ -23,8 +23,8 @@ import org.w3c.dom.*;
 
 public class ListParser<T> implements Parser {
 
-    private Variable<T[]> variable;
-    private Document doc;
+    private final Variable<T[]> variable;
+    private final Document doc;
 
     public ListParser(Variable<T[]> variable, Document doc) {
         this.variable = variable;

@@ -23,10 +23,8 @@ public class MappingManager {
     private final ConcurrentHashMap<String, Document> map;
 
     private static final class SingletonHolder {
-        static MappingManager manager = new MappingManager();
+        static final MappingManager manager = new MappingManager();
     }
-
-    ;
 
     public static MappingManager getInstance() {
         return SingletonHolder.manager;

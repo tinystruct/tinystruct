@@ -25,7 +25,6 @@ public class Element implements Cloneable {
     private ElementType elementType = ElementType.NORMAL;
     private List<Attribute> attributes;
     private List<Element> childNodes;
-    private List<Element> foundElementList;
     private Element parent;
     private boolean haveData = false;
 
@@ -328,7 +327,7 @@ public class Element implements Cloneable {
     }
 
     private List<Element> getChildElementsByTagName(String tagName) {
-        this.foundElementList = new Vector<Element>();
+        List<Element> foundElementList = new Vector<Element>();
         Iterator<Element> iterator = this.childNodes.iterator();
 
         while (iterator.hasNext()) {
@@ -336,11 +335,11 @@ public class Element implements Cloneable {
             currentElement.getChildElementsByTagName(tagName);
 
             if (currentElement.name.equalsIgnoreCase(tagName)) {
-                this.foundElementList.add(currentElement);
+                foundElementList.add(currentElement);
             }
         }
 
-        return this.foundElementList;
+        return foundElementList;
     }
 
     public List<Element> getElementsByTagName(String tagName) {
@@ -570,7 +569,7 @@ public class Element implements Cloneable {
     @Override
     public boolean equals(Object obj) {
         boolean equal = false;
-        if ((obj != null) && (obj instanceof Element)) {
+        if ((obj instanceof Element)) {
             Element other = (Element) obj;
             if (equals(attributes, other.attributes)
                     && equals(data, other.data) && equals(name, other.name)

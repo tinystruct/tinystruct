@@ -29,7 +29,7 @@ public class AlarmClock {
         iterator.setInterval(7);
 
         this.scheduler.schedule(new SchedulerTask() {
-            private Object lock = new Object();
+            private final Object lock = new Object();
             private boolean status = false;
 
             public void start() {

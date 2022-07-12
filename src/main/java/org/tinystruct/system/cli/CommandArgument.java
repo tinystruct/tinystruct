@@ -2,8 +2,8 @@ package org.tinystruct.system.cli;
 
 public class CommandArgument<K, V> {
 
-    private K key;
-    private V value;
+    private final K key;
+    private final V value;
     private String description;
     boolean optional;
 

@@ -17,8 +17,8 @@ package org.tinystruct.system.template.variable;
 
 public class FloatVariable implements Variable<Float> {
 
-    private String name;
-    private Float value;
+    private final String name;
+    private final Float value;
 
     public FloatVariable(String name, Float value) {
         // TODO Auto-generated constructor stub

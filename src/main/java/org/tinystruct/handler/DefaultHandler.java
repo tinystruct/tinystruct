@@ -48,7 +48,6 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     public static final String METHOD = "METHOD";
     private String charsetName;
     private Configuration<String> settings;
-    private boolean ignore;
     private String path;
 
     @Override
@@ -67,10 +66,11 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         this.path = config.getServletContext().getRealPath("");
         String value = config.getInitParameter("ignore");
 
+        boolean ignore;
         if ("true".equalsIgnoreCase(value)) {
-            this.ignore = true;
+            ignore = true;
         } else
-            this.ignore = "yes".equalsIgnoreCase(value);
+            ignore = "yes".equalsIgnoreCase(value);
 
         try {
             this.start();

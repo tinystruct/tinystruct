@@ -112,11 +112,8 @@ public class DistributedLock implements Lock {
             return false;
         DistributedLock other = (DistributedLock) obj;
         if (id == null) {
-            if (other.id != null)
-                return false;
-        } else if (!id.equals(other.id))
-            return false;
-        return true;
+            return other.id == null;
+        } else return id.equals(other.id);
     }
 
     @Override
@@ -137,7 +134,7 @@ public class DistributedLock implements Lock {
 class LockEventListener implements EventListener {
     private static final Logger logger = Logger.getLogger(LockEventListener.class.getName());
     private final Lock lock;
-    private CountDownLatch latch;
+    private final CountDownLatch latch;
 
     public LockEventListener(Lock lock) {
         this.lock = lock;

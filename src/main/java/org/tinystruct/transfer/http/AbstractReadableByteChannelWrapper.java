@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 public abstract class AbstractReadableByteChannelWrapper implements ReadableByteChannel {
-    protected ReadableByteChannel rbc;
+    protected final ReadableByteChannel rbc;
     private int read;
     private int expected;
 

@@ -21,7 +21,6 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
     private final Headers headers = new Headers();
     private final Cookie[] cookies;
     private final HashMap<String, List<String>> params = new HashMap<String, List<String>>();
-    private final List<FileEntity> list = new ArrayList<>();
     private String query;
     private Version version;
     private Method method;
@@ -69,6 +68,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
                     while (decoder.hasNext()) {
                         fileData = decoder.next();
                         if (fileData != null && fileData.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
+                            List<FileEntity> list = new ArrayList<>();
                             list.add((FileEntity) fileData);
                         }
                     }

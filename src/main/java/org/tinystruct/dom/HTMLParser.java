@@ -22,7 +22,7 @@ import java.util.Vector;
 
 public class HTMLParser {
     private String HTML;
-    private Vector<HTMLElement> resources = new Vector<HTMLElement>();
+    private final Vector<HTMLElement> resources = new Vector<HTMLElement>();
 
     /**
      * @return the resources
@@ -33,9 +33,6 @@ public class HTMLParser {
 
     private int position = 0;
     private int length = 0;
-
-    private String read_content = "";
-    private String current_tag_attributes = "";
 
     private int current_position = -1;
     public int last_position = -1;
@@ -91,11 +88,13 @@ public class HTMLParser {
     }
 
     public String getTagName() {
-        return this.read_content.split(" ")[0];
+        String read_content = "";
+        return read_content.split(" ")[0];
     }
 
     public String getTagContent() {
-        return this.current_tag_attributes;
+        String current_tag_attributes = "";
+        return current_tag_attributes;
     }
 
     public void process() {

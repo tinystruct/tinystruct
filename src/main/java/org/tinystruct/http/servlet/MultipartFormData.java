@@ -50,7 +50,7 @@ public class MultipartFormData {
     /**
      * The request instance for this class
      */
-    protected Request<ServletInputStream> request;
+    protected final Request<ServletInputStream> request;
 
     /**
      * The input stream instance for this class
@@ -159,12 +159,10 @@ public class MultipartFormData {
                 data = text.getBytes();
             }
 
-            ContentDisposition element = new ContentDisposition(name,
+            return new ContentDisposition(name,
                     filename,
                     contentType,
                     data);
-
-            return element;
         }
         return null;
     }
