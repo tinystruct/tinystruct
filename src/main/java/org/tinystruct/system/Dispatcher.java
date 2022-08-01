@@ -372,7 +372,10 @@ public class Dispatcher extends AbstractApplication {
         this.commandLines.get("--version").setDescription("Print version");
 
         this.setAction("sql-query", "executeQuery");
-        this.commandLines.get("sql-query").setDescription("SQL query needs to be executed.");
+        List<CommandOption> sqlOpts = new ArrayList<>();
+        opt = new CommandOption("query", "", "Query needs to be executed");
+        sqlOpts.add(opt);
+        this.commandLines.get("sql-query").setOptions(sqlOpts).setDescription("SQL query needs to be executed.");
 
         this.setTemplateRequired(false);
     }
