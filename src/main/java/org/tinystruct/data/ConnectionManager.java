@@ -76,14 +76,15 @@ final class ConnectionManager implements Runnable {
         String dbUser = config.get("database.user");
         String dbPassword = config.get("database.password");
 
-        if (null != dbUrl) {
+        String dbType = getConfiguredType().name().toLowerCase();
+        if (null != dbUrl && !dbType.equalsIgnoreCase("h2")) {
             try {
                 URI dbUri;
-                if (dbUrl.startsWith("jdbc:mysql://")) {
+                if (dbUrl.startsWith("jdbc:" + dbType + "://")) {
                     dbUri = new URI(dbUrl.substring("jdbc:".length()));
                 } else {
-                    if (!dbUrl.startsWith("mysql://")) {
-                        dbUri = new URI("mysql://" + dbUrl);
+                    if (!dbUrl.startsWith(dbType + "://")) {
+                        dbUri = new URI(dbType + "://" + dbUrl);
                     } else {
                         dbUri = new URI(dbUrl);
                     }
@@ -93,7 +94,7 @@ final class ConnectionManager implements Runnable {
                     dbPassword = dbUri.getUserInfo().split(":")[1];
                 }
                 StringBuilder builder = new StringBuilder();
-                builder.append("jdbc:mysql://");
+                builder.append("jdbc:" + dbType + "://");
                 builder.append(dbUri.getHost());
                 builder.append(":");
 
@@ -130,7 +131,7 @@ final class ConnectionManager implements Runnable {
         return SingletonHolder.manager;
     }
 
-    public Type getConfiguredType() throws ApplicationException {
+    public Type getConfiguredType() {
 
         int index = -1, length = Type.values().length;
         for (int i = 0; i < length; i++) {
@@ -147,6 +148,8 @@ final class ConnectionManager implements Runnable {
                 return Type.SQLServer;
             case 2:
                 return Type.SQLite;
+            case 3:
+                return Type.H2;
             default:
                 break;
         }
