@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>0.5.1</version>
+    <version>0.5.2</version>
     <name>tinystruct framework</name>
     <description>A simple framework for Java development. Simple is hard, Complex is easy. Better thinking, better design.</description>
     <url>http://tinystruct.org</url>
@@ -78,12 +78,18 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.75.Final</version>
+            <version>4.1.77.Final</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-impl -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
             <version>0.11.5</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.openjdk.jol/jol-core -->

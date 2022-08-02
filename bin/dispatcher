@@ -1,14 +1,14 @@
 #!/usr/bin/env sh
-ROOT="`pwd`"
-VERSION="0.5.1"
-cd "`dirname "$0"`"
+ROOT="$(pwd)"
+VERSION="0.5.2"
+cd "$(dirname "$0")" || exit
 cd "../"
-cd "$ROOT"
+cd "$ROOT" || exit
 JAVA_OPTS=""
 args=""
 for arg
 do
- str=$(echo $arg | awk  '{ string=substr($0, 0, 2); print string; }' )
+ str=$(echo "$arg" | awk  '{ string=substr($0, 0, 2); print string; }' )
  if [ "$str" = "-D" -o "$str" = "-X" ]
  then
      JAVA_OPTS=$JAVA_OPTS" "$arg

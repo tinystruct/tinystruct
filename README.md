@@ -13,7 +13,7 @@ Installation and Getting Started
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>0.5.1</version>
+  <version>0.5.2</version>
   <classifier>jar-with-dependencies</classifier>
 </dependency>
 ```
@@ -22,6 +22,7 @@ Installation and Getting Started
 
 ```java
 import org.tinystruct.AbstractApplication;
+import org.tinystruct.ApplicationException;
 
 public class Example extends AbstractApplication {
 
@@ -37,22 +38,22 @@ public class Example extends AbstractApplication {
     public String version() {
         return "1.0";
     }
-    
+
     public String praise() {
         return "Praise to the Lord!";
     }
 
-    public String say() {
-        if(null != this.context.getParameter("words"))
-        return this.context.getParameter("words").toString();
+    public String say() throws ApplicationException {
+        if(null != this.context.getAttribute("words"))
+            return this.context.getAttribute("words").toString();
 
-        return "Invalid parameter(s).";
+        throw new ApplicationException("Could not find the parameter <i>words</i>.");
     }
 
     public String say(String words) {
         return words;
     }
-    
+
     public String smile() {
         return ":)";
     }
@@ -66,7 +67,7 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  0.5.1
+  /  /  /) (/ _)  /  /  (/ (  /  0.5.2
            /
 ```
 ```tcsh
