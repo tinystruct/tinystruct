@@ -2,7 +2,7 @@ package org.tinystruct.http;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class SessionManager {
+public final class SessionManager {
     private final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<String, Session>();
 
     private SessionManager() {

@@ -9,7 +9,6 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpRequestDecoder;
-import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
@@ -23,10 +22,10 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public class HttpProxyServer extends ProxyServer implements Bootstrap {
+    private final Logger logger = Logger.getLogger(HttpProxyServer.class.getName());
     private int port = 81;
     private String remoteHost = "localhost";
     private int remotePort = 80;
-    private final Logger logger = Logger.getLogger(HttpProxyServer.class.getName());
 
     public HttpProxyServer() {
     }

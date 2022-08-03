@@ -20,9 +20,8 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.logging.Logger;
 
-public class Resource {
+public final class Resource {
     private final static Logger logger = Logger.getLogger(Resource.class.getName());
-    ;
 
     private ResourceBundle resource;
     private static final HashMap<String, Resource> map = new HashMap<String, Resource>();

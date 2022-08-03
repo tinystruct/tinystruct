@@ -25,7 +25,7 @@ import java.util.Properties;
 /**
  * A class to simplify access to resources through the classloader.
  */
-public class Resources {
+public final class Resources {
 
     private static ClassLoader defaultClassLoader;
 

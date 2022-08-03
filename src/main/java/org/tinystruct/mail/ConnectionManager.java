@@ -23,7 +23,7 @@ import org.tinystruct.system.Settings;
 import javax.mail.MessagingException;
 import java.util.Vector;
 
-public class ConnectionManager implements Runnable {
+public final class ConnectionManager implements Runnable {
     private final Vector<Connection> list;
     private boolean pending;
 

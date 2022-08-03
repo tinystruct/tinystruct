@@ -19,7 +19,6 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.system.Configuration;
 
 import javax.mail.*;
-import java.security.Security;
 import java.util.Properties;
 
 

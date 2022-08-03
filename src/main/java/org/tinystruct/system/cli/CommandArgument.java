@@ -5,7 +5,7 @@ public class CommandArgument<K, V> {
     private final K key;
     private final V value;
     private String description;
-    boolean optional;
+    private boolean optional;
 
     public CommandArgument(K key, V value, String description) {
         this.key = key;

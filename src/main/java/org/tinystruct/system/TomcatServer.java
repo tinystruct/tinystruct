@@ -29,9 +29,6 @@ import org.tinystruct.http.Response;
 import org.tinystruct.http.Session;
 import org.tinystruct.system.cli.CommandOption;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +37,7 @@ import java.util.logging.Logger;
 public class TomcatServer extends AbstractApplication implements Bootstrap {
     private final Logger logger = Logger.getLogger(TomcatServer.class.getName());
 
-    public TomcatServer(){
+    public TomcatServer() {
 
     }
 
@@ -64,8 +61,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
         int webPort;
         if (this.context.getAttribute("--server-port") != null) {
             webPort = Integer.parseInt(this.context.getAttribute("--server-port").toString());
-        }
-        else
+        } else
             webPort = 8080;
 
         tomcat.setPort(webPort);
@@ -86,7 +82,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             ctx.addFilterMap(filterMap);
 
             tomcat.start();
-            logger.info("Server started in "+(System.currentTimeMillis() - start)/1000 + " seconds");
+            logger.info("Server started in " + (System.currentTimeMillis() - start) / 1000 + " seconds");
             tomcat.getServer().await();
         } catch (LifecycleException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());

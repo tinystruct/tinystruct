@@ -16,13 +16,10 @@
 package org.tinystruct;
 
 import org.tinystruct.application.Context;
-import org.tinystruct.data.FileEntity;
 import org.tinystruct.system.template.variable.ObjectVariable;
 import org.tinystruct.system.template.variable.Variable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,7 +30,7 @@ import java.util.Map;
  */
 public class ApplicationContext implements Context {
 
-    final Map<String, Object> attr = new HashMap<String, Object>();
+    private final Map<String, Object> attr = new HashMap<String, Object>();
 
     public void setAttribute(String name, Object value) {
         Variable<Object> variable = new ObjectVariable(name, value);

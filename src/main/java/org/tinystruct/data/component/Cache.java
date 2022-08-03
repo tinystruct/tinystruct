@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Cache implements Cacheable {
+public final class Cache implements Cacheable {
     private final Map<String, Object> map;
 
     private static final class SingletonHolder {

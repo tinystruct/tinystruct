@@ -5,7 +5,6 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.ApplicationManager;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
@@ -15,13 +14,17 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class DistributedMessageQueue extends AbstractApplication implements MessageQueue<String> {
 
-    private static final long TIMEOUT = 10000;
     protected static final int DEFAULT_MESSAGE_POOL_SIZE = 10;
+    private static final long TIMEOUT = 10000;
     protected final Map<String, BlockingQueue<Builder>> groups = new ConcurrentHashMap<String, BlockingQueue<Builder>>();
     protected final Map<String, Queue<Builder>> list = new ConcurrentHashMap<String, Queue<Builder>>();
-    private ExecutorService service;
     private final Lock lock = new ReentrantLock();
     private final Condition consumer = lock.newCondition();
+    private ExecutorService service;
+
+    public static void main(String[] args) throws ApplicationException {
+        new DistributedMessageQueue().testing(100);
+    }
 
     @Override
     public void init() {
@@ -54,9 +57,9 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     /**
      * To be used for testing.
      *
-     * @param groupId group id
+     * @param groupId   group id
      * @param sessionId session id
-     * @param message message
+     * @param message   message
      * @return message
      */
     public String put(Object groupId, String sessionId, String message) {
@@ -119,8 +122,8 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * Poll message from the messages of the session specified sessionId.
      *
      * @param sessionId session id
-     * @throws ApplicationException application exception
      * @return message
+     * @throws ApplicationException application exception
      */
     public final String take(final String sessionId) throws ApplicationException {
         Builder message;
@@ -281,9 +284,5 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
         });
 
         return true;
-    }
-
-    public static void main(String[] args) throws ApplicationException {
-        new DistributedMessageQueue().testing(100);
     }
 }

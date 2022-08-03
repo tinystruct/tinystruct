@@ -34,6 +34,7 @@ import java.util.Base64;
 public class Matrix {
     private static final int BLACK = 0xFF000000;
     private static final int WHITE = 0xFFFFFFFF;
+    private Matrix(){}
 
     public static BufferedImage toQRImage(String data, int width, int height) throws ApplicationException {
         MultiFormatWriter multiFormatWriter = new MultiFormatWriter();

@@ -16,7 +16,7 @@ import java.util.logging.Logger;
  *
  * @author James Zhou
  */
-public class Watcher implements Runnable {
+public final class Watcher implements Runnable {
     private static final Logger logger = Logger.getLogger(Watcher.class.getName());
 
     /**

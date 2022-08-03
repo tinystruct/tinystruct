@@ -18,7 +18,9 @@ package org.tinystruct.handler;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
-import org.tinystruct.http.*;
+import org.tinystruct.http.Request;
+import org.tinystruct.http.Response;
+import org.tinystruct.http.ResponseStatus;
 import org.tinystruct.http.servlet.RequestBuilder;
 import org.tinystruct.http.servlet.ResponseBuilder;
 import org.tinystruct.system.*;
@@ -32,20 +34,17 @@ import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.logging.Logger;
 
 public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
-    private static final Logger logger = Logger.getLogger(DefaultHandler.class.getName());
-
-    private static final long serialVersionUID = 0;
     public static final String HTTP_REQUEST = "HTTP_REQUEST";
     public static final String HTTP_RESPONSE = "HTTP_RESPONSE";
     public static final String HTTP_SCHEME = "HTTP_SCHEME";
     public static final String HTTP_SERVER = "HTTP_SERVER";
     public static final String HTTP_HOST = "HTTP_HOST";
     public static final String METHOD = "METHOD";
+    private static final Logger logger = Logger.getLogger(DefaultHandler.class.getName());
+    private static final long serialVersionUID = 0;
     private String charsetName;
     private Configuration<String> settings;
     private String path;

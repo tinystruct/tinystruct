@@ -16,12 +16,16 @@
 package org.tinystruct.data.component;
 
 import java.sql.Types;
-import java.time.LocalTime;
-import java.util.Iterator;
 import java.util.Vector;
 
 public final class FieldType {
 
+    public final static FieldType INT = new FieldType("INT", 0, "int");
+    public final static FieldType STRING = new FieldType("STRING", 0, "String");
+    public final static FieldType LONG = new FieldType("LONG", 0, "long");
+    public final static FieldType TEXT = new FieldType("TEXT", 0, "String");
+    public final static FieldType LONGTEXT = new FieldType("LONGTEXT", 0, "String");
+    public static final long serialVersionUID = -2800196753010521325L;
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
@@ -29,7 +33,6 @@ public final class FieldType {
      */
     private final static int _INTEGER = Types.INTEGER;
     public final static FieldType INTEGER = new FieldType("INTEGER", _INTEGER, "int");
-
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
@@ -37,7 +40,6 @@ public final class FieldType {
      */
     private final static int _BIGINT = Types.BIGINT;
     public final static FieldType BIGINT = new FieldType("BIGINT", _BIGINT, "int");
-
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
@@ -45,7 +47,6 @@ public final class FieldType {
      */
     private final static int _BIT = Types.BIT;
     public final static FieldType BIT = new FieldType("BIT", _BIT, "boolean");
-
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
@@ -60,7 +61,6 @@ public final class FieldType {
      */
     private final static int _SMALLINT = Types.SMALLINT;
     public final static FieldType SMALLINT = new FieldType("SMALLINT", _SMALLINT, "int");
-
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
@@ -75,7 +75,6 @@ public final class FieldType {
      */
     private final static int _REAL = Types.REAL;
     public final static FieldType REAL = new FieldType("REAL", _REAL, "real");
-
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
@@ -118,7 +117,6 @@ public final class FieldType {
      */
     private final static int _LONGVARCHAR = Types.LONGVARCHAR;
     public final static FieldType LONGVARCHAR = new FieldType("LONGVARCHAR", _LONGVARCHAR, "String");
-
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
@@ -133,7 +131,6 @@ public final class FieldType {
      */
     private final static int _TIME = Types.TIME;
     public final static FieldType TIME = new FieldType("TIME", _TIME, "Time");
-
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
@@ -170,7 +167,6 @@ public final class FieldType {
      */
     private final static int _OTHER = Types.OTHER;
     public final static FieldType OTHER = new FieldType("OTHER", _OTHER, "OTHER");
-
     /**
      * The constant in the Java programming language, sometimes referred to
      * as a type code, that identifies the generic SQL type
@@ -250,14 +246,6 @@ public final class FieldType {
      */
     private final static int _BOOLEAN = Types.BOOLEAN;
     public final static FieldType BOOLEAN = new FieldType("BIT", _BOOLEAN, "boolean");
-
-    public final static FieldType INT = new FieldType("INT", 0, "int");
-    public final static FieldType STRING = new FieldType("STRING", 0, "String");
-    public final static FieldType LONG = new FieldType("LONG", 0, "long");
-    public final static FieldType TEXT = new FieldType("TEXT", 0, "String");
-    public final static FieldType LONGTEXT = new FieldType("LONGTEXT", 0, "String");
-
-
     /**
      * The constant in the Java programming language, sometimes referred to
      * as a type code, that identifies the generic SQL type
@@ -267,7 +255,6 @@ public final class FieldType {
      */
     private final static int _DATETIME = Types.TIME_WITH_TIMEZONE;
     public final static FieldType DATETIME = new FieldType("DATETIME", _DATETIME, "LocalDateTime");
-
     /**
      * The constant in the Java programming language, sometimes referred to
      * as a type code, that identifies the generic SQL type
@@ -277,12 +264,10 @@ public final class FieldType {
      */
     private final static int _TIMESTAMP = Types.TIMESTAMP_WITH_TIMEZONE;
     public final static FieldType TIMESTAMP = new FieldType("TIMESTAMP", _TIMESTAMP, "Timestamp");
-
-    public static final long serialVersionUID = -2800196753010521325L;
-    private String typeName;
-    private int value;
     private static Vector<FieldType> typeList;
     private final String realType;
+    private String typeName;
+    private int value;
 
     private FieldType(String typeName, int value, String realType) {
         this.typeName = typeName;
@@ -292,6 +277,18 @@ public final class FieldType {
         if (typeList == null)
             typeList = new Vector<FieldType>();
         typeList.add(this);
+    }
+
+    public static FieldType valueOf(String s) {
+        FieldType currentType;
+        for (FieldType fieldType : typeList) {
+            currentType = fieldType;
+
+            if (currentType.typeName.equalsIgnoreCase(s)) {
+                return currentType;
+            }
+        }
+        return FieldType.NULL;
     }
 
     public String getRealType() {
@@ -320,18 +317,6 @@ public final class FieldType {
 
     public String toString() {
         return this.typeName;
-    }
-
-    public static FieldType valueOf(String s) {
-        FieldType currentType;
-        for (FieldType fieldType : typeList) {
-            currentType = fieldType;
-
-            if (currentType.typeName.equalsIgnoreCase(s)) {
-                return currentType;
-            }
-        }
-        return FieldType.NULL;
     }
 
 };

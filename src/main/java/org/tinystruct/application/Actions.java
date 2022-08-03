@@ -29,7 +29,7 @@ import java.util.regex.Matcher;
 
 import static org.tinystruct.application.Action.MAX_ARGUMENTS;
 
-public class Actions {
+public final class Actions {
 
     private static final Map<String, Action> map = new ConcurrentHashMap<String, Action>(16);
     private static final Map<String, CommandLine> commands = new ConcurrentHashMap<String, CommandLine>(16);

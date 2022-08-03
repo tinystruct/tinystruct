@@ -17,7 +17,7 @@ package org.tinystruct.application;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Mutex {
+public final class Mutex {
     private final static AtomicInteger resources = new AtomicInteger(0);
 
     private Mutex() {

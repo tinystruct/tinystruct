@@ -19,7 +19,7 @@ import org.tinystruct.dom.Document;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MappingManager {
+public final class MappingManager {
     private final ConcurrentHashMap<String, Document> map;
 
     private static final class SingletonHolder {
