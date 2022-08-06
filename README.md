@@ -79,6 +79,7 @@ Commands:
         install         Install a package
         say             Output words
         set             Set system property
+        sql-query       SQL query needs to be executed.
         update          Update for latest version
 
 Options: 
