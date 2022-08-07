@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 ROOT="$(pwd)"
-VERSION="0.5.2"
+VERSION="0.5.3"
 cd "$(dirname "$0")" || exit
 cd "../"
 cd "$ROOT" || exit
@@ -16,7 +16,13 @@ do
      args=$args" "$arg
  fi
 done
+JAR_FILE="$ROOT/lib/tinystruct-$VERSION-jar-with-dependencies.jar"
+if [ ! -f "$JAR_FILE" ]; then
+ JAR_FILE=""
+else
+ JAR_FILE=$JAR_FILE":"
+fi
 java \
 $JAVA_OPTS \
 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \
--cp "$ROOT/target/classes:$ROOT/lib/tinystruct-$VERSION-jar-with-dependencies.jar:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"
+-cp "$ROOT/target/classes:$JAR_FILE$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"
