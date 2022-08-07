@@ -37,7 +37,7 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.5.2";
+    public static final String VERSION = "0.5.3";
     private static final boolean WINDOWS = Platform.isWindows();
 
     private ApplicationManager() {
@@ -54,7 +54,7 @@ public final class ApplicationManager {
         synchronized (ApplicationManager.class) {
             if (initialized) return;
             // Generate Command Script
-            generateDispatcherCommand(VERSION, false);
+            generateDispatcherCommand(VERSION, true);
 
             settings = settings == null ? new Settings("/application.properties") : settings;
 
@@ -110,16 +110,16 @@ public final class ApplicationManager {
                             "@java -cp \"%ROOT%target\\classes;%ROOT%lib\\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%\\lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
                 } else {
                     cmd = "#!/usr/bin/env sh\n" +
-                            "ROOT=\"`pwd`\"\n" +
+                            "ROOT=\"$(pwd)\"\n" +
                             "VERSION=\"" + version + "\"\n" +
-                            "cd \"`dirname \"$0\"`\"\n" +
+                            "cd \"$(dirname \"$0\")\" || exit\n" +
                             "cd \"../\"\n" +
-                            "cd \"$ROOT\"\n" +
+                            "cd \"$ROOT\" || exit\n"+
                             "JAVA_OPTS=\"\"\n" +
                             "args=\"\"\n" +
                             "for arg\n" +
                             "do\n" +
-                            " str=$(echo $arg | awk  '{ string=substr($0, 0, 2); print string; }' )\n" +
+                            " str=$(echo \"$arg\" | awk  '{ string=substr($0, 0, 2); print string; }' )\n" +
                             " if [ \"$str\" = \"-D\" -o \"$str\" = \"-X\" ]\n" +
                             " then\n" +
                             "     JAVA_OPTS=$JAVA_OPTS\" \"$arg\n" +
@@ -127,10 +127,16 @@ public final class ApplicationManager {
                             "     args=$args\" \"$arg\n" +
                             " fi\n" +
                             "done\n" +
+                            "JAR_FILE=\"$ROOT/lib/tinystruct-$VERSION-jar-with-dependencies.jar\"\n" +
+                            "if [ ! -f \"$JAR_FILE\" ]; then\n" +
+                            " JAR_FILE=\"\"\n" +
+                            "else\n" +
+                            " JAR_FILE=$JAR_FILE\":\"\n" +
+                            "fi\n"+
                             "java \\\n" +
                             "$JAVA_OPTS \\\n" +
                             "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \\\n" +
-                            "-cp \"$ROOT/target/classes:$ROOT/lib/tinystruct-$VERSION-jar-with-dependencies.jar:$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"";
+                            "-cp \"$ROOT/target/classes:$JAR_FILE$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher \"$@\"";
                 }
 
                 path = Paths.get(origin);
