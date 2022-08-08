@@ -57,7 +57,7 @@ public class Dispatcher extends AbstractApplication {
 
         // Process the system.directory.
         Settings config = new Settings();
-        if (config.get("system.directory") == null) {
+        if (config.get("system.directory") == null || config.get("system.directory").equals("")) {
             config.set("system.directory", System.getProperty("user.dir"));
         }
 
