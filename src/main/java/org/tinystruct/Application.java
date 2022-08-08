@@ -169,7 +169,7 @@ public interface Application {
     /**
      * Set commandline.
      *
-     * @param command
+     * @param command Command
      * @return commandline
      */
     CommandLine setCommandLine(CommandLine command);
@@ -177,14 +177,14 @@ public interface Application {
     /**
      * Return a list of CommandLine for current application.
      *
-     * @return
+     * @return A map for commandline
      */
     Map<String, CommandLine> getCommandLines();
 
     /**
      * Help information.
      *
-     * @return
+     * @return help
      */
     String help();
 }
