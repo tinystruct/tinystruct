@@ -32,6 +32,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.tinystruct.AbstractApplication;
+import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.HttpRequestHandler;
 import org.tinystruct.handler.HttpStaticFileHandler;
@@ -101,7 +102,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                                 p.addLast(sslCtx.newHandler(ch.alloc()));
                             }
                             p.addLast(new LoggingHandler(LogLevel.INFO));
-                            p.addLast(new HttpServerCodec(), new HttpObjectAggregator(MAX_CONTENT_LENGTH), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration(), getContext()));
+                            p.addLast(new HttpServerCodec(), new HttpObjectAggregator(MAX_CONTENT_LENGTH), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration(), new ApplicationContext()));
                         }
                     }).option(ChannelOption.SO_BACKLOG, 1024)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
