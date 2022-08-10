@@ -43,11 +43,13 @@ public abstract class AbstractApplication implements Application {
     private final Actions actions = Actions.getInstance();
     private final String name;
     private final Map<String, Variable<?>> variables;
+
     /**
      * Context of application
      */
     protected Context context;
     protected final Map<String, CommandLine> commandLines;
+
     /**
      * Configuration
      */
@@ -249,7 +251,7 @@ public abstract class AbstractApplication implements Application {
      * Get a link.
      *
      * @param variable variable
-     * @return
+     * @return link string
      */
     public String getLink(String variable) {
         String linkName = "[%LINK:" + variable + "%]";
@@ -300,7 +302,7 @@ public abstract class AbstractApplication implements Application {
     }
 
     public String toString() {
-        if (!this.templateRequired) return null;
+        if (!this.templateRequired) return this.name + "@" + Integer.toHexString(hashCode());;
 
         InputStream in = null;
         String simpleName = this.getName().substring(this.getName().lastIndexOf('.') + 1);
