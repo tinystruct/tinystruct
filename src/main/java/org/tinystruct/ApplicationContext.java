@@ -28,7 +28,7 @@ import java.util.Map;
  * @author James Zhou
  * @since 0.1.0
  */
-public class ApplicationContext implements Context {
+public final class ApplicationContext implements Context {
 
     private final Map<String, Object> attr = new HashMap<String, Object>();
 
