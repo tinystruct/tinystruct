@@ -49,12 +49,12 @@ public final class Mutex {
 
         @Override
         protected boolean tryAcquire(int arg) {
-            return super.compareAndSetState(1, 0);
+            return super.compareAndSetState(arg, 0);
         }
 
         @Override
         protected boolean tryRelease(int arg) {
-            super.setState(1);
+            super.setState(arg);
             return true;
         }
     }
