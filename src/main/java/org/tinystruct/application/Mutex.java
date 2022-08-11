@@ -16,6 +16,7 @@
 package org.tinystruct.application;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 public final class Mutex {
     private final static AtomicInteger resources = new AtomicInteger(0);
@@ -30,4 +31,32 @@ public final class Mutex {
     public static int put() {
         return resources.addAndGet(1);
     }
+
+    private final Synchronizer synchronizer = new Synchronizer();
+
+    public void lock() {
+        synchronizer.acquire(1);
+    }
+
+    public void unlock() {
+        synchronizer.release(1);
+    }
+
+    static class Synchronizer extends AbstractQueuedSynchronizer {
+        public Synchronizer() {
+            super.setState(1);
+        }
+
+        @Override
+        protected boolean tryAcquire(int arg) {
+            return super.compareAndSetState(1, 0);
+        }
+
+        @Override
+        protected boolean tryRelease(int arg) {
+            super.setState(1);
+            return true;
+        }
+    }
+
 }
