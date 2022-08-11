@@ -32,7 +32,7 @@ public final class Mutex {
         return resources.addAndGet(1);
     }
 
-    private final Synchronizer synchronizer = new Synchronizer();
+    private final Synchronizer synchronizer = new Synchronizer(1);
 
     public void lock() {
         synchronizer.acquire(1);
@@ -43,8 +43,8 @@ public final class Mutex {
     }
 
     static class Synchronizer extends AbstractQueuedSynchronizer {
-        public Synchronizer() {
-            super.setState(1);
+        public Synchronizer(int state) {
+            super.setState(state);
         }
 
         @Override
