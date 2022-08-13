@@ -29,7 +29,6 @@ import org.tinystruct.system.util.URLResourceLoader;
 import org.tinystruct.transfer.http.ReadableByteChannelWrapper;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
@@ -94,8 +93,9 @@ public class Dispatcher extends AbstractApplication {
                                     list = (List<String>) context.getAttribute(arg);
                                 } else {
                                     list = new ArrayList<>();
-                                    list.add(context.getAttribute(arg).toString());
+                                    list.add(Objects.requireNonNull(context.getAttribute(arg)).toString());
                                 }
+                                assert list != null;
                                 list.add(value);
                                 context.setAttribute(arg, list);
                             } else
@@ -111,36 +111,15 @@ public class Dispatcher extends AbstractApplication {
                     command = arg;
             }
 
-            // Load the default import.
-            StringBuilder defaultImportApplications = new StringBuilder(config.get("default.import.applications"));
-
             // Load the packages from import attribute.
-            if (context.getAttribute("--import") != null && !Boolean.parseBoolean(context.getAttribute("--import").toString())) {
+            if (context.getAttribute("--import") != null && !Boolean.parseBoolean(Objects.requireNonNull(context.getAttribute("--import")).toString())) {
+                List<String> list;
                 if (context.getAttribute("--import") instanceof List) {
-                    List<String> list = (List<String>) context.getAttribute("--import");
-                    defaultImportApplications.append(';').append(String.join(";",list));
-                } else
-                    defaultImportApplications.append(';').append(context.getAttribute("--import"));
-            }
-
-            // Update the imports.
-            config.set("default.import.applications", defaultImportApplications.toString());
-
-            try {
-                // Initialize the application manager with the configuration.
-                ApplicationManager.init(config);
-            } catch (ApplicationException e) {
-                logger.log(Level.SEVERE, e.getMessage(), e);
-            }
-
-            // Load all the configuration to context.
-            Set<String> propertyNames = config.propertyNames();
-            Iterator<String> iterator = propertyNames.iterator();
-            String keyName;
-            while (iterator.hasNext()) {
-                keyName = iterator.next();
-                if (!keyName.startsWith("["))
-                    context.setAttribute(keyName, config.get(keyName));
+                    list = (List<String>) context.getAttribute("--import");
+                } else {
+                    list = List.of(Objects.requireNonNull(context.getAttribute("--import")).toString());
+                }
+                dispatcher.install(config, list);
             }
 
             execute(command, context);
@@ -176,30 +155,37 @@ public class Dispatcher extends AbstractApplication {
         }
     }
 
+    private void install(Configuration<String> config, List<String> list) {
+        // Load the default import.
+        // Merge the packages from list.
+        // Update the imports.
+        String defaults;
+        if (!(defaults = config.get("default.import.applications")).equals(""))
+            defaults += ";";
+
+        config.set("default.import.applications", defaults + String.join(";", list));
+
+        try {
+            // Initialize the application manager with the configuration.
+            ApplicationManager.init(config);
+        } catch (ApplicationException e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
+        }
+    }
+
     /**
      * Install specific app
      */
     public void install() {
-        if (this.context.getAttribute("--app") == null)
+        String appName;
+        if ((appName = (String) this.context.getAttribute("--app")) == null)
             throw new ApplicationRuntimeException("The app could not be found in the context.");
+
         System.out.println("Installing...");
-        String appName = this.context.getAttribute("--app").toString();
-        Application app = null;
-        try {
-            app = (Application) Class.forName(appName).getDeclaredConstructor().newInstance();
-        } catch (IllegalAccessException | ClassNotFoundException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
-        }
 
-        if (null != ApplicationManager.getConfiguration()) {
-            assert app != null;
-            app.setConfiguration(ApplicationManager.getConfiguration());
-        }
+        this.install(getConfiguration(), List.of(appName));
 
-        assert app != null;
-        ApplicationManager.install(app);
-
-        System.out.println("Completed!");
+        System.out.println("Completed installation for " + appName + "!");
     }
 
     public String update() {
@@ -318,7 +304,7 @@ public class Dispatcher extends AbstractApplication {
         }
 
         String query = this.context.getAttribute("--query").toString();
-        try(DatabaseOperator operator = new DatabaseOperator()) {
+        try (DatabaseOperator operator = new DatabaseOperator()) {
             operator.createStatement(false);
             operator.execute(query);
         } catch (ApplicationException e) {
@@ -413,7 +399,7 @@ public class Dispatcher extends AbstractApplication {
     }
 
     public String color(Object s, int color) {
-        if(!virtualTerminal && Platform.isWindows()) {
+        if (!virtualTerminal && Platform.isWindows()) {
             Kernel32.INSTANCE.SetConsoleMode(Kernel32.INSTANCE.GetStdHandle(-11), Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING);
             virtualTerminal = true;
         }
