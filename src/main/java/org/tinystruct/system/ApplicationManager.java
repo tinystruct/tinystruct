@@ -37,8 +37,8 @@ public final class ApplicationManager {
     private static final Actions actions = Actions.getInstance();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    public static final String VERSION = "0.5.4";
     private static final boolean WINDOWS = Platform.isWindows();
+    public static final String VERSION = "0.5.4";
 
     private ApplicationManager() {
     }
@@ -62,7 +62,7 @@ public final class ApplicationManager {
                 String[] apps = settings.get("default.import.applications").split(";");
                 int i = 0;
                 while (i < apps.length) {
-                    if (apps[i].trim().length() > 0) {
+                    if (!apps[i].equals("")) {
                         try {
                             Application app = (Application) Class.forName(apps[i]).getDeclaredConstructor().newInstance();
                             app.setConfiguration(settings);
