@@ -33,12 +33,12 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ApplicationManager {
+    public static final String VERSION = "0.5.4";
     private static final ConcurrentHashMap<String, Application> applications = new ConcurrentHashMap<String, Application>();
     private static final Actions actions = Actions.getInstance();
+    private static final boolean WINDOWS = Platform.isWindows();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
-    private static final boolean WINDOWS = Platform.isWindows();
-    public static final String VERSION = "0.5.4";
 
     private ApplicationManager() {
     }
@@ -53,10 +53,10 @@ public final class ApplicationManager {
 
         synchronized (ApplicationManager.class) {
             if (initialized) return;
-            // Generate Command Script
-            generateDispatcherCommand(VERSION, false);
 
             settings = settings == null ? new Settings("/application.properties") : settings;
+            // Generate Command Script
+            generateDispatcherCommand(VERSION, false);
 
             if (settings.get("default.import.applications").trim().length() > 0) {
                 String[] apps = settings.get("default.import.applications").split(";");
@@ -89,10 +89,11 @@ public final class ApplicationManager {
     }
 
     public static void generateDispatcherCommand(String version, boolean force) throws ApplicationException {
-        String paths = "bin" + File.separator + "dispatcher";
+        String scriptName = WINDOWS ? "dispatcher.cmd" : "dispatcher";
+        String paths = "bin" + File.separator + scriptName;
         String origin = paths;
         Path path = Paths.get(paths);
-        if (force || !Files.exists(path)) {
+        if (force || (!Files.exists(Paths.get(scriptName)) && !Files.exists(path))) {
             try {
                 while (!Files.exists(path)) {
                     paths = paths.substring(0, paths.indexOf(File.separator));
@@ -102,7 +103,6 @@ public final class ApplicationManager {
 
                 String cmd;
                 if (WINDOWS) {
-                    origin += ".cmd";
                     cmd = "@echo off\n" +
                             "set \"ROOT=%~dp0..\\\"\n" +
                             "set \"VERSION=\"" + version + "\"\n" +
@@ -114,7 +114,7 @@ public final class ApplicationManager {
                             "VERSION=\"" + version + "\"\n" +
                             "cd \"$(dirname \"$0\")\" || exit\n" +
                             "cd \"../\"\n" +
-                            "cd \"$ROOT\" || exit\n"+
+                            "cd \"$ROOT\" || exit\n" +
                             "JAVA_OPTS=\"\"\n" +
                             "args=\"\"\n" +
                             "for arg\n" +
@@ -132,7 +132,7 @@ public final class ApplicationManager {
                             " JAR_FILE=\"\"\n" +
                             "else\n" +
                             " JAR_FILE=$JAR_FILE\":\"\n" +
-                            "fi\n"+
+                            "fi\n" +
                             "java \\\n" +
                             "$JAVA_OPTS \\\n" +
                             "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \\\n" +
@@ -140,7 +140,7 @@ public final class ApplicationManager {
                 }
 
                 path = Paths.get(origin);
-                if(!Files.exists(path))
+                if (!Files.exists(path))
                     Files.createFile(path);
 
                 Files.write(path, cmd.getBytes());
