@@ -56,9 +56,10 @@ public abstract class AbstractApplication implements Application {
     protected Configuration<String> config;
     private Locale locale;
     private String output;
-    private boolean templateRequired = true;
-    private String templatePath;
 
+    private boolean templateRequired = true;
+
+    private String templatePath;
     /**
      * Abstract application constructor.
      */
@@ -75,6 +76,14 @@ public abstract class AbstractApplication implements Application {
      */
     public void setTemplateRequired(boolean templateRequired) {
         this.templateRequired = templateRequired;
+    }
+
+    /**
+     * Return if template is required or not.
+     * @return templateRequired boolean
+     */
+    public boolean isTemplateRequired() {
+        return templateRequired;
     }
 
     public void init(Context context) {

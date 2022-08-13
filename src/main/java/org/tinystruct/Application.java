@@ -91,6 +91,12 @@ public interface Application {
     void setTemplate(Template template) throws ApplicationException;
 
     /**
+     * Return if template is required or not.
+     * @return templateRequired boolean
+     */
+    boolean isTemplateRequired();
+
+    /**
      * Set up an action mapping for method trigger.
      *
      * @param action action name

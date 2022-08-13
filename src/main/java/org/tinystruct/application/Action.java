@@ -78,6 +78,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
             if (method.getReturnType().isAssignableFrom(Void.TYPE)) {
                 try {
                     method.invoke(app, arguments);
+                    if(!app.isTemplateRequired()) return null;
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     throw new ApplicationException(method.toGenericString() + ":" + e.getMessage(), e);
                 }
