@@ -106,7 +106,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                         }
                     }).option(ChannelOption.SO_BACKLOG, 1024)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true)
+                    .childOption(ChannelOption.SO_KEEPALIVE, false)
                     .childOption(ChannelOption.TCP_NODELAY, true);
 
             // Bind and start to accept incoming connections.
