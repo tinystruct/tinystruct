@@ -75,13 +75,15 @@ public class Dispatcher extends AbstractApplication {
         if (args.length > 0) {
             // Detect the command.
             String command = null;
+            int start = 0;
             if (!args[0].startsWith("--")) {
                 command = args[0];
+                start = 1;
             }
 
             // Process attributes / options.
             String arg;
-            for (int i = 0; i < args.length; i++) {
+            for (int i = start; i < args.length; i++) {
                 arg = args[i];
                 if (arg.startsWith("--")) {
                     if ((i + 1) < args.length) {
