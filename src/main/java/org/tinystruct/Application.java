@@ -38,7 +38,7 @@ public interface Application {
     /**
      * Constant for language.
      */
-    String LANGUAGE = "language";
+    String LANGUAGE = "LANGUAGE";
 
     /**
      * Constant for default base url.
