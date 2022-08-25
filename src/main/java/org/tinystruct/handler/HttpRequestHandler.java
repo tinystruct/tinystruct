@@ -24,8 +24,9 @@ import java.util.Collections;
 import java.util.Set;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
+import static org.tinystruct.Application.LANGUAGE;
 import static org.tinystruct.Application.METHOD;
-import static org.tinystruct.http.Constants.HTTP_HOST;
+import static org.tinystruct.http.Constants.*;
 
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
@@ -88,9 +89,9 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
         HttpResponseStatus status = HttpResponseStatus.OK;
         try {
-            context.setAttribute("HTTP_REQUEST", request);
-            context.setAttribute("HTTP_RESPONSE", new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status)));
-            context.setAttribute("HTTP_HOST", request.headers().get(Header.HOST));
+            context.setAttribute(HTTP_REQUEST, request);
+            context.setAttribute(HTTP_RESPONSE, new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status)));
+            context.setAttribute(HTTP_HOST, request.headers().get(Header.HOST));
 
             String lang = request.getParameter("lang"), language = "";
             if (lang != null && lang.trim().length() > 0) {
@@ -98,11 +99,10 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
                 if (Language.support(name) && !lang.equalsIgnoreCase(this.configuration.get("language"))) {
                     String[] local = name.split("_");
-                    context.setAttribute("language", name);
+                    context.setAttribute(LANGUAGE, name);
                     language = "lang=" + local[0] + "-" + local[1].toUpperCase() + "&";
                 }
-            } else
-                context.removeAttribute("language");
+            }
 
             String url_prefix = "/";
             if (this.configuration.get("default.url_rewrite") != null && !"enabled".equalsIgnoreCase(this.configuration.get("default.url_rewrite"))) {
@@ -139,7 +139,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                     return;
                 }
             } else {
-                message = ApplicationManager.call(this.configuration.get("default.home.page").toString(), context);
+                message = ApplicationManager.call(this.configuration.get("default.home.page"), context);
             }
         } catch (Exception e) {
             StackTraceElement[] trace = e.getStackTrace();
@@ -161,7 +161,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         FullHttpResponse _response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, resp);
         Response<HttpResponse> response = new ResponseBuilder(_response);
         ResponseHeaders responseHeaders = new ResponseHeaders(response);
-        Cookie cookie = new CookieImpl("jsessionid");
+        Cookie cookie = new CookieImpl(JSESSIONID);
         cookie.setValue(request.getSession().getId());
 
         String host = request.headers().get(Header.HOST).toString();
