@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.Set;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
-import static org.tinystruct.handler.DefaultHandler.HTTP_HOST;
-import static org.tinystruct.handler.DefaultHandler.METHOD;
+import static org.tinystruct.Application.METHOD;
+import static org.tinystruct.http.Constants.HTTP_HOST;
 
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
@@ -53,7 +53,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) {
         if (this.context == null)
             this.context = new ApplicationContext();
         this.request = new RequestBuilder(msg);
