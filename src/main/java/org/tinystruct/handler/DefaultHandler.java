@@ -37,14 +37,11 @@ import java.io.PrintWriter;
 import java.util.logging.Logger;
 
 import static org.tinystruct.Application.LANGUAGE;
+import static org.tinystruct.Application.METHOD;
+import static org.tinystruct.http.Constants.*;
 
 public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
-    public static final String HTTP_REQUEST = "HTTP_REQUEST";
-    public static final String HTTP_RESPONSE = "HTTP_RESPONSE";
-    public static final String HTTP_SCHEME = "HTTP_SCHEME";
-    public static final String HTTP_SERVER = "HTTP_SERVER";
-    public static final String HTTP_HOST = "HTTP_HOST";
-    public static final String METHOD = "METHOD";
+
     private static final Logger logger = Logger.getLogger(DefaultHandler.class.getName());
     private static final long serialVersionUID = 0;
     private String charsetName;
@@ -65,13 +62,6 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
 
     public void init(FilterConfig config) throws ServletException {
         this.path = config.getServletContext().getRealPath("");
-        String value = config.getInitParameter("ignore");
-
-        boolean ignore;
-        if ("true".equalsIgnoreCase(value)) {
-            ignore = true;
-        } else
-            ignore = "yes".equalsIgnoreCase(value);
 
         try {
             this.start();
