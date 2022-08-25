@@ -9,4 +9,5 @@ public interface Constants {
     String HTTP_SCHEME = "HTTP_SCHEME";
     String HTTP_SERVER = "HTTP_SERVER";
     String HTTP_HOST = "HTTP_HOST";
+    String JSESSIONID = "JSESSIONID";
 }
