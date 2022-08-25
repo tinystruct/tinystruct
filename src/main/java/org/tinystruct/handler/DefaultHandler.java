@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.logging.Logger;
 
+import static org.tinystruct.Application.LANGUAGE;
+
 public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     public static final String HTTP_REQUEST = "HTTP_REQUEST";
     public static final String HTTP_RESPONSE = "HTTP_RESPONSE";
@@ -106,7 +108,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
 
             if (Language.support(name) && !lang.equalsIgnoreCase(this.settings.get("language"))) {
                 String[] local = name.split("_");
-                context.setAttribute("language", name);
+                context.setAttribute(LANGUAGE, name);
                 language = "lang=" + local[0] + "-" + local[1].toUpperCase() + "&";
             }
         }
@@ -126,7 +128,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         }
 
         String ssl_enabled, http_protocol = "http://";
-        boolean ssl = false;
+        boolean ssl;
         if ((ssl_enabled = this.settings.get("ssl.enabled")) != null) {
             ssl = Boolean.parseBoolean(ssl_enabled);
 
