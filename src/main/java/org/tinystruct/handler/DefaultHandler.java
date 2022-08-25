@@ -109,8 +109,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                 context.setAttribute("language", name);
                 language = "lang=" + local[0] + "-" + local[1].toUpperCase() + "&";
             }
-        } else
-            context.removeAttribute("language");
+        }
 
         String url_prefix = "/";
         if (this.settings.get("default.url_rewrite") != null && !"enabled".equalsIgnoreCase(this.settings.get("default.url_rewrite"))) {
