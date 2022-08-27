@@ -15,7 +15,9 @@
  *******************************************************************************/
 package org.tinystruct.system.template.variable;
 
-public interface Variable<T> {
+import java.io.Serializable;
+
+public interface Variable<T> extends Serializable {
     String getName();
 
     T getValue();

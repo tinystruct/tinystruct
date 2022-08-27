@@ -15,7 +15,9 @@
  *******************************************************************************/
 package org.tinystruct.application;
 
-public interface Context {
+import java.io.Serializable;
+
+public interface Context extends Serializable {
     void setAttribute(String name, Object value);
 
     void removeAttribute(String name);
