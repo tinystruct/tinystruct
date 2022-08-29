@@ -36,13 +36,18 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-public class Dispatcher extends AbstractApplication {
+public class Dispatcher extends AbstractApplication implements RemoteDispatcher {
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
     private boolean virtualTerminal;
 
@@ -52,8 +57,7 @@ public class Dispatcher extends AbstractApplication {
      * @param args arguments
      */
     @SuppressSignatureCheck
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws RemoteException {
         // Process the system.directory.
         Settings config = new Settings();
         if (config.get("system.directory") == null || config.get("system.directory").equals("")) {
@@ -76,7 +80,7 @@ public class Dispatcher extends AbstractApplication {
             // Detect the command.
             String command = null;
             int start = 0;
-            if (!args[0].startsWith("--")) {
+            if (!args[0].startsWith("--") && !args[0].startsWith("-")) {
                 command = args[0];
                 start = 1;
             }
@@ -109,8 +113,42 @@ public class Dispatcher extends AbstractApplication {
                     } else {
                         context.setAttribute(arg, true);
                     }
+                } else if (arg.startsWith("-D")) {
+                    String[] args0 = arg.substring(2).split("=");
+                    System.setProperty(args0[0], args0[1]);
                 } else
                     command = arg;
+            }
+
+            boolean remote = false;
+            RemoteDispatcher remoteDispatcher = null;
+            if (context.getAttribute("--host") != null) {
+                Registry registry;
+                try {
+                    registry = LocateRegistry.getRegistry(context.getAttribute("--host").toString());
+                    remoteDispatcher = (RemoteDispatcher) registry.lookup("Dispatcher");
+                    if (remoteDispatcher != null) {
+                        remote = true;
+                    }
+                } catch (RemoteException e) {
+                    System.err.println(e.getCause().getMessage());
+                    System.exit(0);
+                } catch (NotBoundException e) {
+                    System.err.println(e.getCause().getMessage());
+                    System.exit(0);
+                }
+            }
+
+            boolean disableHelper = false;
+            if (context.getAttribute("--allow-remote-access") != null) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        dispatcher.bind(dispatcher);
+                    }
+                }).start();
+
+                disableHelper = true;
             }
 
             // Load the packages from import attribute.
@@ -121,43 +159,62 @@ public class Dispatcher extends AbstractApplication {
                 } else {
                     list = List.of(Objects.requireNonNull(context.getAttribute("--import")).toString());
                 }
-                dispatcher.install(config, list);
+
+                if (remote) {
+                    remoteDispatcher.install(config, list);
+                } else
+                    dispatcher.install(config, list);
             }
 
-            execute(command, context);
+            if (remote) {
+                System.out.print(remoteDispatcher.execute(command, context));
+                return;
+            }
+
+            if (!disableHelper || command != null) {
+                // Execute a local method.
+                dispatcher.execute(command, context);
+            }
         } else {
             System.out.println(dispatcher.help());
         }
     }
 
-    private static void execute(String command, Context context) {
+    @Override
+    public Object execute(String command, Context context) throws RemoteException {
+        Object output = "OK!";
         try {
             // Execute the command with the context.
             if (command != null) {
                 Object o = ApplicationManager.call(command, context);
                 if (o != null) {
                     System.out.println(o);
+                    return o;
                 }
             } else {
                 Dispatcher dispatcher = (Dispatcher) ApplicationManager.get(Dispatcher.class.getName());
 
                 if (context.getAttribute("--version") != null) {
-                    System.out.println(dispatcher.version());
+                    output = dispatcher.version();
                 } else if (context.getAttribute("--logo") != null) {
-                    System.out.println(dispatcher.logo());
+                    output = dispatcher.logo();
                 } else if (context.getAttribute("--settings") != null) {
-                    ApplicationManager.call("--settings", context);
+                    output = ApplicationManager.call("--settings", context);
                 } else {
-                    System.out.println(dispatcher.help());
+                    output = dispatcher.help();
                 }
+                System.out.println(output);
             }
 
         } catch (ApplicationException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
+
+        return output;
     }
 
-    private void install(Configuration<String> config, List<String> list) {
+    @Override
+    public void install(Configuration<String> config, List<String> list) throws RemoteException {
         // Load the default import.
         // Merge the packages from list.
         // Update the imports.
@@ -185,7 +242,11 @@ public class Dispatcher extends AbstractApplication {
 
         System.out.println("Installing...");
 
-        this.install(getConfiguration(), List.of(appName));
+        try {
+            this.install(getConfiguration(), List.of(appName));
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
 
         System.out.println("Completed installation for " + appName + "!");
     }
@@ -310,7 +371,7 @@ public class Dispatcher extends AbstractApplication {
             operator.createStatement(false);
             operator.execute(query);
         } catch (ApplicationException e) {
-            e.printStackTrace();
+            System.err.println(e.getCause().getMessage());
         }
     }
 
@@ -356,6 +417,12 @@ public class Dispatcher extends AbstractApplication {
         this.setAction("--logo", "logo");
         this.commandLines.get("--logo").setDescription("Print logo");
 
+        this.setAction("--allow-remote-access", "");
+        this.commandLines.get("--allow-remote-access").setDescription("Allow to be accessed remotely");
+
+        this.setAction("--host", "");
+        this.commandLines.get("--host").setDescription("Host name / IP");
+
         this.setAction("--version", "version");
         this.commandLines.get("--version").setDescription("Print version");
 
@@ -366,6 +433,19 @@ public class Dispatcher extends AbstractApplication {
         this.commandLines.get("sql-query").setOptions(sqlOpts).setDescription("SQL query needs to be executed.");
 
         this.setTemplateRequired(false);
+    }
+
+    private void bind(Dispatcher dispatcher) {
+        try {
+            String name = "Dispatcher";
+            RemoteDispatcher stub =
+                    (RemoteDispatcher) UnicastRemoteObject.exportObject(dispatcher, 0);
+            Registry registry = LocateRegistry.createRegistry(1099);
+            registry.bind(name, stub);
+            logger.info("You will be allowed to send your command to the machine with --host option.");
+        } catch (Exception e) {
+            System.err.println(e.getCause().getMessage());
+        }
     }
 
     public String say(String words) {
@@ -381,15 +461,14 @@ public class Dispatcher extends AbstractApplication {
         return propertyName + ":" + System.getProperty(propertyName);
     }
 
-    public void settings() {
-        String[] names = this.context.getAttributeNames();
+    public StringBuilder settings() {
+        String[] names = this.config.propertyNames().toArray(new String[0]);
         Arrays.sort(names);
         StringBuilder settings = new StringBuilder();
         for (String name : names) {
-            settings.append(name).append(":").append(this.context.getAttribute(name)).append("\n");
+            settings.append(name).append(":").append(this.config.get(name)).append("\n");
         }
-        if (settings.length() > 0)
-            logger.info(settings.toString());
+        return settings;
     }
 
     public String logo() {
