@@ -21,10 +21,13 @@ Installation and Getting Started
 * Extend the AbstractApplication in Java:
 
 ```java
+package tinystruct.examples;
+
+
 import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 
-public class Example extends AbstractApplication {
+public class example extends AbstractApplication {
 
     @Override
     public void init() {
@@ -44,8 +47,8 @@ public class Example extends AbstractApplication {
     }
 
     public String say() throws ApplicationException {
-        if(null != this.context.getAttribute("words"))
-            return this.context.getAttribute("words").toString();
+        if (null != this.context.getAttribute("--words"))
+            return this.context.getAttribute("--words").toString();
 
         throw new ApplicationException("Could not find the parameter <i>words</i>.");
     }
@@ -59,6 +62,7 @@ public class Example extends AbstractApplication {
     }
 
 }
+
 ```
 Smalltalk: <a href="https://github.com/tinystruct/smalltalk">https://github.com/tinystruct/smalltalk</a>
 
@@ -94,12 +98,14 @@ Run 'bin/dispatcher COMMAND --help' for more information on a command.
 	
 $ bin/dispatcher say/"Praise to the Lord"
 Praise to the Lord
+$ bin/dispatcher say --words Hello --import tinystruct.examples.example
+Hello
 ```
 
 Run it in a http server based on netty
 --
 ```tcsh
-# bin/dispatcher start --import org.tinystruct.system.NettyHttpServer
+# bin/dispatcher start --import org.tinystruct.system.NettyHttpServer 
 ```
 You can access the below URLs:
 
