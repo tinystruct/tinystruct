@@ -60,6 +60,7 @@ public class Example extends AbstractApplication {
 
 }
 ```
+Smalltalk: <a href="https://github.com/tinystruct/smalltalk">https://github.com/tinystruct/smalltalk</a>
 
 Execute in CLI mode
 --
@@ -95,13 +96,15 @@ $ bin/dispatcher say/"Praise to the Lord"
 Praise to the Lord
 ```
 
-
 Run it in a http server based on netty
 --
 ```tcsh
 # bin/dispatcher start --import org.tinystruct.system.NettyHttpServer
 ```
+You can access the below URLs:
 
+* <a href="http://localhost:8080/?q=say/Praise%20to%20the%20Lord!">http://localhost:8080/?q=say/Praise%20to%20the%20Lord! </a>
+* <a href="http://localhost:8080/?q=praise">http://localhost:8080/?q=praise</a>
 
 License
 --
