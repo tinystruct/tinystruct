@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 ROOT="$(pwd)"
-VERSION="0.5.7"
+VERSION="0.5.8"
 cd "$(dirname "$0")" || exit
 cd "../"
 cd "$ROOT" || exit
