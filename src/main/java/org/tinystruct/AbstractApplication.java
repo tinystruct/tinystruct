@@ -156,6 +156,11 @@ public abstract class AbstractApplication implements Application {
         // Only to be initialized once.
         this.init();
 
+        this.setAction("--help", "help");
+
+        if (this.commandLines.get("--help") != null)
+            this.commandLines.get("--help").setDescription("Help command");
+
         this.setLocale(this.config.get(LANGUAGE));
     }
 
@@ -303,11 +308,6 @@ public abstract class AbstractApplication implements Application {
 
     public void setLocale(Locale locale) {
         this.locale = locale;
-
-        this.setAction("--help", "help");
-
-        if (this.commandLines.get("--help") != null)
-            this.commandLines.get("--help").setDescription("Help command");
     }
 
     public String toString() {
