@@ -17,6 +17,7 @@ package org.tinystruct.application;
 
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationRuntimeException;
+import org.tinystruct.data.component.Cache;
 import org.tinystruct.system.cli.CommandArgument;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.util.StringUtilities;
@@ -33,10 +34,6 @@ public final class Actions {
 
     private static final Map<String, Action> map = new ConcurrentHashMap<String, Action>(16);
     private static final Map<String, CommandLine> commands = new ConcurrentHashMap<String, CommandLine>(16);
-
-    private static final class SingletonHolder {
-        static final Actions actions = new Actions();
-    }
 
     private Actions() {
     }
@@ -113,25 +110,12 @@ public final class Actions {
 
     private void initializePatterns(Application app, String path, String methodName) {
         Class<?> clazz = app.getClass();
-        Method[] functions = new Method[MAX_ARGUMENTS];
-        int n = 0;
-        try {
-            Method[] methods = clazz.getMethods();
-            for (Method value : methods) {
-                if (value.getName().equals(methodName)) {
-                    functions[n++] = value;
-                }
-            }
-        } catch (SecurityException e) {
-            throw new ApplicationRuntimeException("[" + methodName + "]"
-                    + e.getMessage(), e);
-        }
+        Method[] functions = getMethods(methodName, clazz);
 
         CommandLine cli = new CommandLine(app, path, "");
         commands.put(path, cli);
         String patternPrefix = "/?" + path;
-        for (int j = 0; j < n; j++) {
-            Method m = functions[j];
+        for (Method m : functions) {
             if (null != m) {
                 Class<?>[] types = m.getParameterTypes();
                 Parameter[] params = m.getParameters();
@@ -176,5 +160,46 @@ public final class Actions {
         }
 
         app.setCommandLine(cli);
+    }
+
+    /**
+     * Get methods and make it cacheable
+     *
+     * @param methodName method name
+     * @param clazz class
+     * @return array of methods
+     */
+    private Method[] getMethods(String methodName, Class<?> clazz) {
+        Cache instance = Cache.getInstance();
+
+        Method[] functions;
+        String key = clazz.getName() + ":" + methodName;
+        if ((functions = (Method[]) instance.get(key)) != null) {
+            return functions;
+        }
+        else {
+            functions = new Method[MAX_ARGUMENTS];
+            int n = 0;
+            try {
+                Method[] methods = clazz.getMethods();
+                for (Method value : methods) {
+                    if (value.getName().equals(methodName)) {
+                        functions[n++] = value;
+                    }
+                }
+
+                functions = Arrays.copyOf(functions, n);
+                instance.set(key, functions);
+            } catch (SecurityException e) {
+                throw new ApplicationRuntimeException("[" + methodName + "]"
+                        + e.getMessage(), e);
+            }
+        }
+
+        return functions;
+    }
+
+    private static final class SingletonHolder {
+        static final Actions actions = new Actions();
     }
 }
