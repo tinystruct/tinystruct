@@ -169,19 +169,7 @@ public abstract class AbstractApplication implements Application {
     }
 
     public Object invoke(String path) throws ApplicationException {
-        String method = null;
-        if (context != null && context.getAttribute(METHOD) != null) {
-            method = context.getAttribute(METHOD).toString();
-        }
-        Action action = this.actions.getAction(path, method);
-        if (action == null) {
-            throw new ApplicationException("Action [" + path + "] has not been registered.");
-        }
-        if (context != null) {
-            context.setAttribute(REQUEST_ACTION, path);
-            action.setContext(context);
-        }
-        return action.execute();
+        return this.invoke(path, null);
     }
 
     public Object invoke(String path, Object[] parameters)
@@ -194,6 +182,11 @@ public abstract class AbstractApplication implements Application {
         if (action == null)
             throw new ApplicationException("Action " + path
                     + " path does not registered.");
+
+        if(parameters == null) {
+            return action.execute();
+        }
+
         return action.execute(parameters);
     }
 
