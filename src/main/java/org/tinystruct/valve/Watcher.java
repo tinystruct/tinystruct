@@ -73,10 +73,18 @@ public final class Watcher implements Runnable {
      */
     @Override
     public void run() {
-        this.started = true;
+        synchronized (Lock.class) {
+            this.started = true;
+        }
+
         FileLock fileLock;
         while (!this.stopped) {
             synchronized (Watcher.class) {
+                try {
+                    Watcher.class.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 // Synchronize the locks map with Lock file.
                 try (RandomAccessFile lockFile = new RandomAccessFile(file, "rw")) {
                     // If the length of the lockFile is bigger than the default length: 44.
@@ -146,13 +154,6 @@ public final class Watcher implements Runnable {
                     this.stop();
                     e.printStackTrace();
                 }
-
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
             }
         }
     }
@@ -172,27 +173,21 @@ public final class Watcher implements Runnable {
         this.listeners.put(listener.id(), listener);
     }
 
-    protected void start(boolean daemon) {
-        Thread s = new Thread(this);
-        s.setDaemon(daemon);
-        s.start();
+    private void start() {
+        Thread monitor = new Thread(this);
+        monitor.setDaemon(true);
+        monitor.start();
     }
 
-    public boolean watch(Lock lock) throws ApplicationException {
-
-        synchronized (Watcher.class) {
+    public boolean watch(final Lock lock) throws ApplicationException {
+        synchronized (Lock.class) {
             // If the Watcher has not been started, then should be started to synchronize the locks.
             if (!this.started) {
-                this.start(true);
+                this.start();
             }
 
-            try {
-                Watcher.class.wait();
-                // Check if the lock is in the container.
-                return locks.contains(lock);
-            } catch (InterruptedException e) {
-                throw new ApplicationException(e.getMessage(), e);
-            }
+            // Check if the lock is in the container.
+            return locks.contains(lock);
         }
     }
 
@@ -283,7 +278,6 @@ public final class Watcher implements Runnable {
                 } catch (IOException e) {
                     throw new ApplicationException(e.getMessage(), e.getCause());
                 }
-
             }
         }
     }
