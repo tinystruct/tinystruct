@@ -39,7 +39,7 @@ import java.util.logging.Logger;
 public class DistributedLock implements Lock {
     private static final Logger logger = Logger.getLogger(DistributedLock.class.getName());
 
-    private String id;
+    private final String id;
     private final Watcher watcher = Watcher.getInstance();
 
     public DistributedLock() {
