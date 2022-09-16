@@ -168,7 +168,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
             if (remote) {
                 System.out.print(remoteDispatcher.execute(command, context));
-                return;
+                System.exit(0);
             }
 
             if (!disableHelper || command != null) {
