@@ -125,7 +125,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             if (context.getAttribute("--host") != null) {
                 Registry registry;
                 try {
-                    registry = LocateRegistry.getRegistry(context.getAttribute("--host").toString());
+                    registry = LocateRegistry.getRegistry(Objects.requireNonNull(context.getAttribute("--host")).toString());
                     remoteDispatcher = (RemoteDispatcher) registry.lookup("Dispatcher");
                     if (remoteDispatcher != null) {
                         remote = true;
@@ -403,7 +403,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         this.commandLines.get("exec").setOptions(execOpts).setDescription("To execute native command(s)");
 
         this.setAction("say", "say");
-        CommandArgument argument = new CommandArgument("words", "", "What you want to say");
+        CommandArgument<String, Object> argument = new CommandArgument<>("words", "", "What you want to say");
         Set<CommandArgument<String, Object>> arguments = new HashSet<>();
         arguments.add(argument);
         this.commandLines.get("say").setArguments(arguments).setDescription("Output words");
@@ -489,7 +489,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     public String version() {
-        return String.format("Dispatcher (cli) (built on tinystruct-%s) \nCopyright (c) 2013-%s James M. ZHOU", ApplicationManager.VERSION, LocalDate.now().getYear());
+        return String.format("Dispatcher (cli) (built on %sinystruct-%s) \nCopyright (c) 2013-%s James M. ZHOU", this.color("t", FORE_COLOR.blue), ApplicationManager.VERSION, LocalDate.now().getYear());
     }
 
     @Override
@@ -524,7 +524,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         return builder.toString();
     }
 
-    private static class FORE_COLOR {
+    static class FORE_COLOR {
         public static final int black = 30;
         public static final int red = 31;
         public static final int green = 32;
@@ -535,7 +535,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         public static final int white = 37;
     }
 
-    private static class BACKGROUND_COLOR {
+    static class BACKGROUND_COLOR {
         public static final int black = 40;
         public static final int red = 41;
         public static final int green = 42;
