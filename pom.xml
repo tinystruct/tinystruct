@@ -57,7 +57,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.28</version>
+            <version>${mysql.connector.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/javax.mail/javax.mail-api -->
         <dependency>
@@ -69,7 +69,7 @@
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
-            <version>3.4.1</version>
+            <version>3.5.0</version>
         </dependency>
         <dependency>
             <groupId>io.lettuce</groupId>
@@ -141,18 +141,18 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>3.1.0</version>
+            <version>3.2.1</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.8.2</version>
+            <version>5.9.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.4.0</version>
+            <version>4.8.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
         <dependency>
@@ -163,12 +163,12 @@
         <dependency>
             <groupId>org.openjdk.nashorn</groupId>
             <artifactId>nashorn-core</artifactId>
-            <version>15.3</version>
+            <version>15.4</version>
         </dependency>
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
-            <version>5.11.0</version>
+            <version>5.12.1</version>
         </dependency>
     </dependencies>
     <dependencyManagement>
@@ -188,8 +188,9 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <slf4j.version>1.6.1</slf4j.version>
-        <h2.version>2.1.210</h2.version>
-        <netty.version>4.1.79.Final</netty.version>
+        <h2.version>2.1.214</h2.version>
+        <netty.version>4.1.82.Final</netty.version>
+        <mysql.connector.version>8.0.30</mysql.connector.version>
     </properties>
     <build>
         <plugins>
