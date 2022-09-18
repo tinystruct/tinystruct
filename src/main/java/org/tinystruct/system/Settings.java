@@ -63,9 +63,10 @@ public class Settings implements Configuration<String> {
         }
 
         try {
-            assert value != null;
-            byte[] bytes = value.getBytes(StandardCharsets.ISO_8859_1);
-            return new String(bytes, StandardCharsets.UTF_8).trim();
+            if(value != null) {
+                byte[] bytes = value.getBytes(StandardCharsets.ISO_8859_1);
+                return new String(bytes, StandardCharsets.UTF_8).trim();
+            }
         } catch (Exception ignored) {
 
         }
