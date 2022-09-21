@@ -78,7 +78,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
             if (method.getReturnType().isAssignableFrom(Void.TYPE)) {
                 try {
                     method.invoke(app, arguments);
-                    if(!app.isTemplateRequired()) return null;
+                    if (!app.isTemplateRequired()) return null;
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     throw new ApplicationException(method.toGenericString() + ":" + e.getMessage(), e);
                 }
@@ -112,10 +112,16 @@ public class Action implements org.tinystruct.application.Method<Object> {
     private Object[] getArguments(Object[] args, Class<?>[] types) {
         if (args.length > 0 && types.length > 0) {
             Object[] arguments = new Object[types.length];
+            String format = "yyyy-MM-dd HH:mm:ss z";
             for (int n = 0; n < types.length; n++) {
                 if (types[n].isAssignableFrom(Date.class)) {
+                    String s = String.valueOf(args[n]);
                     try {
-                        arguments[n] = new SimpleDateFormat("yyyy-MM-dd").parse(String.valueOf(args[n]));
+                        if (s.length() < format.length()) {
+                            arguments[n] = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(s);
+                        } else {
+                            arguments[n] = new SimpleDateFormat(format).parse(s);
+                        }
                     } catch (ParseException e) {
                         throw new ApplicationRuntimeException(e.getMessage(), e);
                     }
