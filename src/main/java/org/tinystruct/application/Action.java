@@ -29,11 +29,11 @@ import java.util.regex.Pattern;
 
 public class Action implements org.tinystruct.application.Method<Object> {
     public static final int MAX_ARGUMENTS = 10;
-    private final Pattern pattern;
+    private static final Logger logger = Logger.getLogger(Action.class.getName());
     private final int id;
+    private final Pattern pattern;
     private final Application app;
     private final Method method;
-    private final Logger logger = Logger.getLogger(Action.class.getName());
     private String pathRule;
     private Object[] args = new Object[]{};
 
@@ -67,9 +67,8 @@ public class Action implements org.tinystruct.application.Method<Object> {
 
     @Override
     public Object execute(Object[] args) throws ApplicationException {
-        Object[] arguments = new Object[0];
-
         if (method != null) {
+            Object[] arguments = new Object[0];
             Class<?>[] types = method.getParameterTypes();
             if (types.length > 0 && args.length == types.length) {
                 arguments = getArguments(args, types);
