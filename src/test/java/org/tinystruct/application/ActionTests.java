@@ -26,9 +26,7 @@ public class ActionTests {
 
     @BeforeEach
     public void setUp() {
-        Application app = new testApp();
-        app.setConfiguration(new Settings());
-        ApplicationManager.install(app);
+        ApplicationManager.install(new testApp(), new Settings());
     }
 
     @Test
