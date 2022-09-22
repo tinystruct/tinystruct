@@ -14,7 +14,7 @@ class ApplicationManagerTest {
     @Test
     void testInstall() {
         Dispatcher dispatcher = new Dispatcher();
-        ApplicationManager.install(dispatcher);
+        ApplicationManager.install(dispatcher, new Settings());
         assertEquals("org.tinystruct.system.Dispatcher", dispatcher.getName());
         assertTrue(dispatcher.getConfiguration() instanceof Settings);
     }
@@ -23,7 +23,7 @@ class ApplicationManagerTest {
     void testInstall2() {
         Dispatcher dispatcher = new Dispatcher();
         dispatcher.setAction("Action", "Function", "Method");
-        ApplicationManager.install(dispatcher);
+        ApplicationManager.install(dispatcher, new Settings());
         assertEquals("org.tinystruct.system.Dispatcher", dispatcher.getName());
         assertTrue(dispatcher.getConfiguration() instanceof Settings);
     }
