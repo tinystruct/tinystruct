@@ -18,6 +18,7 @@ package org.tinystruct.system;
 import com.sun.jna.Platform;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.application.Action;
 import org.tinystruct.application.Actions;
 import org.tinystruct.application.Context;
@@ -65,7 +66,6 @@ public final class ApplicationManager {
                     if (!apps[i].equals("")) {
                         try {
                             Application app = (Application) Class.forName(apps[i]).getDeclaredConstructor().newInstance();
-                            app.setConfiguration(settings);
                             ApplicationManager.install(app);
                         } catch (InstantiationException e) {
                             throw new ApplicationException(e.getMessage(), e);
@@ -151,9 +151,16 @@ public final class ApplicationManager {
     }
 
     public static void install(Application app) {
+        if (null == settings) throw new ApplicationRuntimeException("Application configuration has not been initialized or specified.");
         if (!applications.containsKey(app.getName())) {
+            app.setConfiguration(settings);
             applications.put(app.getName(), app);
         }
+    }
+
+    public static void install(Application app, Configuration<String> config) {
+        settings = config;
+        install(app);
     }
 
     public static boolean uninstall(Application application) {
