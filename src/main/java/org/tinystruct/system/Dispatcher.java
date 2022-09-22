@@ -70,11 +70,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         // Initialize the dispatcher.
         Dispatcher dispatcher = new Dispatcher();
 
-        // Set configuration.
-        dispatcher.setConfiguration(config);
-
         // Install Dispatcher.
-        ApplicationManager.install(dispatcher);
+        ApplicationManager.install(dispatcher, config);
 
         if (args.length > 0) {
             // Detect the command.
