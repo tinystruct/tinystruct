@@ -39,9 +39,12 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     public String toString() {
         StringBuilder buffer = new StringBuilder();
-        Set<String> keys = this.keySet();
-        for (String key : keys) {
-            Object value = this.get(key);
+        Set<Entry<String, Object>> keys = this.entrySet();
+        Object value;
+        String key;
+        for (Entry<String, Object> entry : keys) {
+            value = entry.getValue();
+            key = entry.getKey();
 
             if (value instanceof String || value instanceof StringBuffer || value instanceof StringBuilder)
                 buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
@@ -207,9 +210,12 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public Row toData() {
         Row row = new Row();
         Field field = new Field();
-        Set<String> keySet = this.keySet();
-        for (String key : keySet) {
-            Object value = this.get(key);
+        Set<Entry<String, Object>> keySet = this.entrySet();
+        String key;
+        Object value;
+        for (Entry<String, Object> entry : keySet) {
+            value = entry.getValue();
+            key = entry.getKey();
             FieldInfo info = new FieldInfo();
             info.set("name", key);
             info.set("value", value);
