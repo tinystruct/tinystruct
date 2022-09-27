@@ -1,5 +1,10 @@
 package org.tinystruct.valve;
 
+import org.tinystruct.ApplicationRuntimeException;
+
+import java.nio.charset.Charset;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Random;
 
 /**
@@ -9,8 +14,8 @@ import java.util.Random;
  */
 public class LockKey {
 
-    private char[] alphabetNumbers = "0123456789-abcdefghijklmnopqrstuvwxyz".toCharArray();
-    private byte[] fixedBytes = new byte[36];
+    private final char[] alphabetNumbers = "0123456789-abcdefghijklmnopqrstuvwxyz".toCharArray();
+    private final byte[] fixedBytes = new byte[36];
     private final byte[] idb;
 
     public LockKey(byte[] idb) {
@@ -21,10 +26,15 @@ public class LockKey {
         for (int i = 0; i < fixedBytes.length; i++) {
             if (i < idb.length)
                 fixedBytes[i] = idb[i];
-            else
-                fixedBytes[i] = (byte) (alphabetNumbers[new Random().nextInt(alphabetNumbers.length - 1)]);
+            else {
+                try {
+                    fixedBytes[i] = (byte) (alphabetNumbers[SecureRandom.getInstance("NativePRNG").nextInt(alphabetNumbers.length - 1)]);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new ApplicationRuntimeException(e.getMessage());
+                }
+            }
         }
 
-        return new String(fixedBytes);
+        return new String(fixedBytes, Charset.defaultCharset());
     }
 }
