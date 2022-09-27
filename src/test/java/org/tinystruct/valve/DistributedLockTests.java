@@ -46,6 +46,23 @@ public class DistributedLockTests {
 
     }
 
+    @Test
+    void testLock() {
+        DistributedLock lock = new DistributedLock();
+        try {
+            lock.lock();
+            System.out.println("Printed after locked.");
+        } catch (ApplicationException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                lock.unlock();
+            } catch (ApplicationException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     static class ticket implements Runnable {
         private final Lock lock;
 
