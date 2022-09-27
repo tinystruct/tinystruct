@@ -151,10 +151,11 @@ public final class ApplicationManager {
     }
 
     public static void install(Application app) {
-        if (null == settings) throw new ApplicationRuntimeException("Application configuration has not been initialized or specified.");
+        if (null == settings)
+            throw new ApplicationRuntimeException("Application configuration has not been initialized or specified.");
         if (!applications.containsKey(app.getName())) {
             app.setConfiguration(settings);
-            applications.put(app.getName(), app);
+            applications.putIfAbsent(app.getName(), app);
         }
     }
 
