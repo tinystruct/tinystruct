@@ -36,14 +36,10 @@ public class Listing<T> implements ElementExpression<Variable<Set<T>>> {
 
             int i = 0, length = childNodes.getLength();
             while (i++ < length) {
-
                 Node node = childNodes.item(i);
-
                 String nodeValue = node.getNodeValue();
-
-                nodeValue.replaceAll("\\{%" + variable.getName() + "%\\}",
+                nodeValue = nodeValue.replaceAll("\\{%" + variable.getName() + "%\\}",
                         String.valueOf(iterator.next()));
-
                 node.setNodeValue(nodeValue);
             }
         }
