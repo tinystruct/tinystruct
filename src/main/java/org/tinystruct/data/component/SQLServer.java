@@ -31,7 +31,6 @@ public class SQLServer implements Repository {
 
     public boolean append(Field ready_fields, String table)
             throws ApplicationException {
-        boolean inserted = false;
         String SQL = "";
         StringBuilder keys = new StringBuilder();
         StringBuilder dataKeys = new StringBuilder();
@@ -99,11 +98,8 @@ public class SQLServer implements Repository {
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
             operator.createStatement(false);
-            if (operator.update(SQL) > 0) {
-                inserted = true;
-            }
+            return operator.update(SQL) > 0;
         }
-        return inserted;
     }
 
     public boolean delete(Object Id, String table) throws ApplicationException {
@@ -132,8 +128,6 @@ public class SQLServer implements Repository {
         final String dot = ",";
         String currentProperty;
         FieldInfo currentField;
-
-        boolean edited = false;
 
         for (Enumeration<String> _field = ready_fields.keys(); _field
                 .hasMoreElements(); ) {
@@ -203,15 +197,11 @@ public class SQLServer implements Repository {
         try (DatabaseOperator operator = new DatabaseOperator()) {
             operator.createStatement(false);
 
-            if (operator.update(sql.toString()) > 0) {
-                edited = true;
-            }
+            return operator.update(sql.toString()) > 0;
         }
-        return edited;
     }
 
     public Type getType() {
-
         return Type.SQLServer;
     }
 
@@ -258,7 +248,6 @@ public class SQLServer implements Repository {
         }
 
         return table;
-
     }
 
     public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
