@@ -16,7 +16,6 @@
 package org.tinystruct.system;
 
 import com.sun.jna.Platform;
-import org.mockito.internal.SuppressSignatureCheck;
 import org.tinystruct.*;
 import org.tinystruct.application.Context;
 import org.tinystruct.data.DatabaseOperator;
@@ -33,6 +32,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,7 +56,6 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
      *
      * @param args arguments
      */
-    @SuppressSignatureCheck
     public static void main(String[] args) throws RemoteException {
         // Process the system.directory.
         Settings config = new Settings();
@@ -285,7 +284,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         String path = new File("").getAbsolutePath() + File.separatorChar + destination;
         Path dest = Paths.get(path);
         try {
-            Files.createDirectories(dest.getParent());
+            Path parent = dest.getParent();
+            if (parent != null)
+                Files.createDirectories(parent);
             if (!Files.exists(dest))
                 Files.createFile(dest);
         } catch (IOException e) {
@@ -341,13 +342,13 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         try {
             String line;
             Process p = Runtime.getRuntime().exec(cmd);
-            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream(), Charset.defaultCharset()));
             while ((line = input.readLine()) != null) {
                 System.out.println(line);
             }
             input.close();
 
-            BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream(), Charset.defaultCharset()));
             while ((line = error.readLine()) != null) {
                 System.out.println(line);
             }
@@ -486,7 +487,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     public String version() {
-        return String.format("Dispatcher (cli) (built on %sinystruct-%s) \nCopyright (c) 2013-%s James M. ZHOU", this.color("t", FORE_COLOR.blue), ApplicationManager.VERSION, LocalDate.now().getYear());
+        return String.format("Dispatcher (cli) (built on %sinystruct-%s) %nCopyright (c) 2013-%s James M. ZHOU", this.color("t", FORE_COLOR.blue), ApplicationManager.VERSION, LocalDate.now().getYear());
     }
 
     @Override
