@@ -201,15 +201,15 @@ public abstract class AbstractApplication implements Application {
                 Builder builder = new Builder();
                 try {
                     builder.parse(variable.getValue().toString());
-                    Set<String> elements = builder.keySet();
-                    Iterator<String> list = elements.iterator();
-                    String key;
+                    Set<Map.Entry<String, Object>> elements = builder.entrySet();
+                    Iterator<Map.Entry<String, Object>> list = elements.iterator();
+                    Map.Entry<String, Object> entry;
                     while (list.hasNext()) {
-                        key = list.next();
+                        entry = list.next();
                         this.variables.put("{%" + variable.getName() + "."
-                                + key + "%}", new StringVariable("{%"
-                                + variable.getName() + "." + key + "%}",
-                                (String) builder.get(key)));
+                                + entry.getKey() + "%}", new StringVariable("{%"
+                                + variable.getName() + "." + entry.getKey() + "%}",
+                                entry.getValue().toString()));
                     }
                 } catch (ApplicationException e) {
                     e.printStackTrace();
