@@ -26,6 +26,8 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Iterator;
 import java.util.logging.Logger;
@@ -83,7 +85,11 @@ public class MSSQLGenerator implements Generator {
         java_resource.append("	/**\r\n");
         java_resource.append("   * Auto Generated Serial Version UID\r\n");
         java_resource.append("   */\r\n");
-        java_resource.append("  private static final long serialVersionUID = ").append(new SecureRandom().nextLong()).append("L;\r\n");
+        try {
+            java_resource.append("  private static final long serialVersionUID = ").append(SecureRandom.getInstance("NativePRNG").nextLong()).append("L;\r\n");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
 
         Element rootElement = new Element("mapping");
         Element classElement = rootElement.addElement("class");

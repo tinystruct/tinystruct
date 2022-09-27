@@ -26,6 +26,7 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Iterator;
 import java.util.logging.Logger;
@@ -96,7 +97,11 @@ public class SQLiteGenerator implements Generator {
         java_resource.append("	/**\r\n");
         java_resource.append("   * Auto Generated Serial Version UID\r\n");
         java_resource.append("   */\r\n");
-        java_resource.append("  private static final long serialVersionUID = " + new SecureRandom().nextLong() + "L;\r\n");
+        try {
+            java_resource.append("  private static final long serialVersionUID = " + SecureRandom.getInstance("NativePRNG").nextLong() + "L;\r\n");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
 
         Element rootElement = new Element("mapping");
         Element classElement = rootElement.addElement("class");
