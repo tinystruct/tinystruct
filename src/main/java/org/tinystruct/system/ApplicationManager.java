@@ -90,7 +90,7 @@ public final class ApplicationManager {
 
     public static void generateDispatcherCommand(String version, boolean force) throws ApplicationException {
         String scriptName = WINDOWS ? "dispatcher.cmd" : "dispatcher";
-        String paths = "bin" + File.separator + scriptName;
+        String paths = System.getProperty("user.dir") + File.separator + "bin" + File.separator + scriptName;
         String origin = paths;
         Path path = Paths.get(paths);
         if (force || (!Files.exists(Paths.get(scriptName)) && !Files.exists(path))) {
