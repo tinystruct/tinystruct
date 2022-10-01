@@ -45,7 +45,7 @@ public class CommandLine implements Comparable<CommandLine>{
     }
 
     public void setExample(Object value) {
-        this.example = String.format("bin/dispatcher %s/%s\n", this.command, value);
+        this.example = String.format("bin/dispatcher %s/%s%n", this.command, value);
     }
 
     public List<CommandOption> getOptions() {
