@@ -16,12 +16,14 @@
 package org.tinystruct.data;
 
 import org.tinystruct.ApplicationException;
+import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.component.Field;
 import org.tinystruct.data.component.FieldInfo;
 import org.tinystruct.dom.Attribute;
 import org.tinystruct.dom.Document;
 import org.tinystruct.dom.Element;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
@@ -35,10 +37,10 @@ public class Mapping {
     private static final String GENERATE = "generate";
     private static final String INCREMENT = "increment";
     private static final String ID = "id";
-    private final Field fields;
+    private final Field field;
 
     public Mapping() {
-        this.fields = new Field();
+        this.field = new Field();
     }
 
     public Field getMappedField(Data data) throws ApplicationException {
@@ -50,21 +52,23 @@ public class Mapping {
             Document document;
 
             if (manager.get(className) == null) {
-                InputStream in = data.getClass().getResourceAsStream("/" + mapFile);
                 document = new Document();
-                boolean loaded = document.load(in);
-                if (!loaded) {
-                    System.out.println(mapFile);
-                    return null;
+                try (InputStream in = data.getClass().getResourceAsStream("/" + mapFile)) {
+                    boolean loaded = document.load(in);
+                    if (!loaded) {
+                        throw new ApplicationRuntimeException("Failed to load mapping file: " + mapFile);
+                    }
+                    manager.set(className, document);
+                } catch (IOException e) {
+                    throw new ApplicationRuntimeException("Failed to load mapping file: " + mapFile + ", Error: " + e.getMessage());
                 }
-                manager.set(className, document);
             } else
                 document = manager.get(className);
 
             List<Element> list = null;
             Iterator<Element> iterator = document.getRoot().getElementsByTagName("class").iterator();
 
-            Element currentElement = null;
+            Element currentElement;
             while (iterator.hasNext()) {
                 currentElement = iterator.next();
                 if (className.equalsIgnoreCase(
@@ -79,8 +83,7 @@ public class Mapping {
                                     + currentElement.getAttribute("table") + "]");
                             break;
                         default:
-                            data.setTableName("`"
-                                    + currentElement.getAttribute("table") + "`");
+                            data.setTableName(currentElement.getAttribute("table"));
                             break;
                     }
                     list = currentElement.getChildNodes();
@@ -109,7 +112,7 @@ public class Mapping {
                             field.append("value", data.getId());
                         }
 
-                        this.fields.append(field.getName(), field);
+                        this.field.append(field.getName(), field);
                     }
 
                     if (currentElement.getName().equalsIgnoreCase(PROPERTY)) {
@@ -123,12 +126,12 @@ public class Mapping {
                                     currentAttribute.value);
                         }
 
-                        this.fields.append(field.getName(), field);
+                        this.field.append(field.getName(), field);
                     }
                 }
             }
 
-            return this.fields;
+            return this.field;
         }
     }
 }
