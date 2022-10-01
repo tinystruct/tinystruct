@@ -20,7 +20,8 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
     private final SessionManager manager = SessionManager.getInstance();
     private final Headers headers = new Headers();
     private final Cookie[] cookies;
-    private final HashMap<String, List<String>> params = new HashMap<String, List<String>>();
+    private final HashMap<String, List<String>> params = new HashMap<>();
+    private List<FileEntity> attachments = new ArrayList<>();
     private String query;
     private Version version;
     private Method method;
@@ -65,13 +66,14 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
                     final HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); // Disk if size exceed
                     HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(factory, request);
                     InterfaceHttpData fileData;
+                    List<FileEntity> list = new ArrayList<>();
                     while (decoder.hasNext()) {
                         fileData = decoder.next();
                         if (fileData != null && fileData.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
-                            List<FileEntity> list = new ArrayList<>();
                             list.add((FileEntity) fileData);
                         }
                     }
+                    this.attach(list);
                 case "application/x-www-form-urlencoded":
                 case "text/plain;charset=UTF-8":
                 case "application/json":
@@ -84,6 +86,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
                             this.setParameter(pair[0], List.of(pair[1]));
                         }
                     }
+
                     break;
             }
         }
@@ -96,6 +99,14 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
                 query = "";
             }
         }
+    }
+
+    private void attach(List<FileEntity> list) {
+        this.attachments = list;
+    }
+
+    public List<FileEntity> getAttachments() {
+        return this.attachments;
     }
 
     private QueryStringDecoder parseQuery(String uri, boolean hasPath) {
