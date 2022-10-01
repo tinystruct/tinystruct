@@ -63,7 +63,7 @@ public class Settings implements Configuration<String> {
         }
 
         try {
-            if(value != null) {
+            if (value != null) {
                 byte[] bytes = value.getBytes(StandardCharsets.ISO_8859_1);
                 return new String(bytes, StandardCharsets.UTF_8).trim();
             }
@@ -90,13 +90,18 @@ public class Settings implements Configuration<String> {
         return sets;
     }
 
-    public void update() throws IOException {
+    public void update() {
         if (!this.overwrite) return;
 
         String comments = "Tinystruct Configuration";
-        OutputStream out = new FileOutputStream(System.getProperty("user.dir")
-                + File.separatorChar + fileName);
-        properties.store(out, comments);
+        try (OutputStream out = new FileOutputStream(System.getProperty("user.dir")
+                + File.separatorChar + fileName)) {
+            properties.store(out, comments);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public boolean isEmpty() {
@@ -112,13 +117,11 @@ public class Settings implements Configuration<String> {
         private static final Properties properties = new Properties();
 
         static {
-            InputStream in = SingletonHolder.class.getResourceAsStream(fileName);
-            if (in != null)
-                try {
-                    properties.load(in);
-                } catch (IOException e) {
-                    throw new ApplicationRuntimeException(e.getMessage(), e);
-                }
+            try (InputStream in = SingletonHolder.class.getResourceAsStream(fileName)) {
+                properties.load(in);
+            } catch (IOException e) {
+                throw new ApplicationRuntimeException(e.getMessage(), e);
+            }
         }
 
         private SingletonHolder() {
@@ -128,5 +131,4 @@ public class Settings implements Configuration<String> {
             return properties;
         }
     }
-
 }
