@@ -26,6 +26,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.*;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -120,21 +121,25 @@ public class Document extends DefaultHandler {
         } catch (javax.xml.parsers.ParserConfigurationException ex) {
             LOG.severe("XML config error while attempting to read from the input stream \n'"
                     + input + "'");
-            LOG.severe(ex.toString());
-            ex.printStackTrace();
-            return (false);
+            LOG.severe(ex.getMessage());
+            return false;
         } catch (SAXException ex) {
             LOG.severe("XML parse error while attempting to read from the input stream \n'"
                     + input + "'");
-            LOG.severe(ex.toString());
-            ex.printStackTrace();
-            return (false);
+            LOG.severe(ex.getMessage());
+            return false;
         } catch (IOException ex) {
             LOG.severe("I/O error while attempting to read from the input stream \n'"
                     + input + "'");
-            LOG.severe(ex.toString());
-            ex.printStackTrace();
-            return (false);
+            LOG.severe(ex.getMessage());
+            return false;
+        }
+        finally {
+            try {
+                input.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         return true;
@@ -154,25 +159,21 @@ public class Document extends DefaultHandler {
         } catch (javax.xml.parsers.ParserConfigurationException ex) {
             LOG.severe("XML config error while attempting to read XML file \n'"
                     + inputURL + "'");
-            LOG.severe(ex.toString());
-            ex.printStackTrace();
-            return (false);
+            LOG.severe(ex.getMessage());
+            return false;
         } catch (SAXException ex) {
-            // Error
             LOG.severe("XML parse error while attempting to read XML file \n'"
                     + inputURL + "'");
-            LOG.severe(ex.toString());
-            ex.printStackTrace();
-            return (false);
+            LOG.severe(ex.getMessage());
+            return false;
         } catch (IOException ex) {
             LOG.severe("I/O error while attempting to read XML file \n'"
                     + inputURL + "'");
-            LOG.severe(ex.toString());
-            ex.printStackTrace();
-            return (false);
+            LOG.severe(ex.getMessage());
+            return false;
         }
 
-        return (true);
+        return true;
     }
 
     public boolean read(String text) throws ApplicationException {
@@ -182,20 +183,19 @@ public class Document extends DefaultHandler {
             saxParser.parse(new ByteArrayInputStream(text.getBytes()), this);
         } catch (javax.xml.parsers.ParserConfigurationException ex) {
             LOG.severe("XML config ParserConfigurationException error while attempting to read XML text");
-            LOG.severe(ex.toString());
+            LOG.severe(ex.getMessage());
             throw new ApplicationException(ex.getMessage(), ex);
         } catch (SAXException ex) {
-            // Error
             LOG.severe("XML config SAXException error while attempting to read XML text");
-            LOG.severe(ex.toString());
+            LOG.severe(ex.getMessage());
             throw new ApplicationException(ex.getMessage(), ex);
         } catch (IOException ex) {
             LOG.severe("XML config IOException error while attempting to read XML text");
-            LOG.severe(ex.toString());
+            LOG.severe(ex.getMessage());
             throw new ApplicationException(ex.getMessage(), ex);
         }
 
-        return (true);
+        return true;
 
     }
 
@@ -234,15 +234,12 @@ public class Document extends DefaultHandler {
                 }
             }
         } catch (java.lang.NullPointerException ex) {
-            LOG.severe("Null!!!");
-            LOG.severe(ex.toString());
-            ex.printStackTrace();
+            LOG.severe(ex.getMessage());
         }
     }
 
     @Override
-    public void endElement(String namespaceURI, String localName, String qName)
-            throws SAXException {
+    public void endElement(String namespaceURI, String localName, String qName) {
         if (this.currentElement != null) {
             this.currentElement.setData(contents.toString().trim());
             contents.reset();
@@ -251,8 +248,7 @@ public class Document extends DefaultHandler {
     }
 
     @Override
-    public void characters(char[] ch, int start, int length)
-            throws SAXException {
+    public void characters(char[] ch, int start, int length) {
         // accumulate the contents into a buffer.
         contents.write(ch, start, length);
     }
@@ -275,21 +271,22 @@ public class Document extends DefaultHandler {
         save(new FileOutputStream(url.getPath()));
     }
 
-    //
-    // Writer interface
-    //
+    /**
+    * Writer interface
+    **/
     public void save(OutputStream out) throws IOException {
-        BufferedWriter PW = new BufferedWriter(new OutputStreamWriter(out,
-                "UTF-8"));
-        PW.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(out,
+                StandardCharsets.UTF_8));
+        bufferedWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
         if (rootElement.getChildNodes().size() > 0) {
-            PW.write(rootElement.toString());
+            bufferedWriter.write(rootElement.toString());
         }
-        PW.flush();
+        bufferedWriter.flush();
+        out.close();
     }
 
     public InputSource resolveEntity(String publicId, String systemId)
-            throws IOException, SAXException {
+            throws SAXException {
         InputSource source = null;
 
         try {
@@ -299,9 +296,6 @@ public class Document extends DefaultHandler {
                 path = (String) doctypeMap.get(systemId);
                 source = getInputSource(path, source);
             }
-            /*
-             * else { throw new SAXException("Input Source is NULL"); }
-             */
         } catch (Exception e) {
             throw new SAXException(e.toString());
         }
@@ -316,8 +310,7 @@ public class Document extends DefaultHandler {
                 in = Resources.getResourceAsStream(path);
                 source = new InputSource(in);
             } catch (IOException e) {
-                LOG.severe(e.toString());
-                e.printStackTrace();
+                LOG.severe(e.getMessage());
             }
         }
         return source;
