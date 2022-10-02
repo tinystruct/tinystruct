@@ -46,20 +46,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class DefaultTemplate implements Template {
 
-    private final ConcurrentHashMap<String, Variable<?>> variables = Variables.getInstance();
-    private InputStream in;
     // create a script engine manager
     // create a JavaScript engine
     private static final String engineName = "JavaScript";
-
-    private static final class SingletonHolder {
-        static final ScriptEngineManager manager = new ScriptEngineManager();
-    }
-
+    private final ConcurrentHashMap<String, Variable<?>> variables = Variables.getInstance();
     private final Application app;
-    private String view;
     private final ScriptEngine engine;
-
+    private InputStream in;
+    private String view;
     public DefaultTemplate(Application app, InputStream in) {
         this.app = app;
         this.engine = SingletonHolder.manager.getEngineByName(engineName);
@@ -75,6 +69,20 @@ public class DefaultTemplate implements Template {
         if (null != this.engine) {
             this.engine.put("self", this.app);
             this.engine.put("self.toString", "Please don't execute like this.");
+        }
+    }
+
+    private static void stripEmptyTextNode(Node node) {
+        NodeList children = node.getChildNodes();
+        for (int i = 0; i < children.getLength(); ++i) {
+            Node child = children.item(i);
+            if (child.getNodeType() == Node.TEXT_NODE) {
+                if (child.getTextContent().trim().length() == 0) {
+                    child.getParentNode().removeChild(child);
+                    i--;
+                }
+            }
+            stripEmptyTextNode(child);
         }
     }
 
@@ -106,7 +114,7 @@ public class DefaultTemplate implements Template {
         }
 
         if (this.view.trim().length() > 0) {
-            Document doc = null;
+            Document doc;
             try {
                 InputStream in = new ByteArrayInputStream(this.view.getBytes(StandardCharsets.UTF_8));
 
@@ -118,6 +126,8 @@ public class DefaultTemplate implements Template {
 
                 doc = builder.parse(in);
                 in.close();
+
+                stripEmptyTextNode(doc);
 
                 if (this.engine != null) {
                     NodeList js = doc.getElementsByTagName("javascript");
@@ -175,6 +185,7 @@ public class DefaultTemplate implements Template {
                 transformer.setOutputProperty(OutputKeys.INDENT, "no");
                 transformer.setOutputProperty(OutputKeys.MEDIA_TYPE, "xml");
                 transformer.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "script");
+                transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
                 transformer.transform(domSource, result);
             } catch (TransformerConfigurationException e) {
                 throw new ApplicationException(e.getMessage(), e);
@@ -225,5 +236,9 @@ public class DefaultTemplate implements Template {
 
     public void setVariable(Variable<?> arg0) {
         this.variables.put(arg0.getName(), arg0);
+    }
+
+    private static final class SingletonHolder {
+        static final ScriptEngineManager manager = new ScriptEngineManager();
     }
 }
