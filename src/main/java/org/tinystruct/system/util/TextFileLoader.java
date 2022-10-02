@@ -61,10 +61,9 @@ public class TextFileLoader {
             InputStreamReader reader = new InputStreamReader(this.inputStream, this.charsetName);
             BufferedReader bufferedReader = new BufferedReader(reader);
 
-            String line = bufferedReader.readLine();
-            while (line != null) {
-                content.append(line).append("\r\n");
-                line = bufferedReader.readLine();
+            String line, lineSeparator = System.getProperty("line.separator", "\r\n");
+            while ((line = bufferedReader.readLine()) != null) {
+                content.append(line).append(lineSeparator);
             }
             bufferedReader.close();
             reader.close();
