@@ -125,7 +125,7 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
         File file = new File(filepath);
         if (file.isHidden() || !file.exists()) {
             if (filepath.endsWith("/favicon.ico")) {
-                try (InputStream stream = getClass().getResource("/favicon.ico").openStream(); ReadableByteChannel channel = Channels.newChannel(stream);) {
+                try (InputStream stream = Objects.requireNonNull(getClass().getResource("/favicon.ico")).openStream(); ReadableByteChannel channel = Channels.newChannel(stream)) {
                     ByteBuffer buffer = ByteBuffer.allocate(stream.available());
                     channel.read(buffer);
                     buffer.rewind();
