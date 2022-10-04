@@ -33,11 +33,9 @@ import java.util.Iterator;
 import java.util.logging.Logger;
 
 public class MySQLGenerator implements Generator {
+    private final static Logger logger = Logger.getLogger(MSSQLGenerator.class.getName());
     private String fileName;
     private String packageName;
-
-    private final static Logger logger = Logger.getLogger(MSSQLGenerator.class.getName());
-
     private String[] packageList;
 
     public MySQLGenerator() {
@@ -120,7 +118,7 @@ public class MySQLGenerator implements Generator {
 
                 System.out.println(currentFields);
                 propertyName = StringUtilities.setCharToUpper(currentFields.get("COLUMN_NAME").value().toString(), '_');
-                propertyName = StringUtilities.remove(propertyName,'_');
+                propertyName = StringUtilities.remove(propertyName, '_');
 
                 String propertyNameOfMethod = StringUtilities.setCharToUpper(propertyName, 0);
 
@@ -190,9 +188,9 @@ public class MySQLGenerator implements Generator {
             }
         }
 
-        Document Document = new Document(rootElement);
-        try {
-            Document.save(new FileOutputStream(this.fileName.replace("main" + File.separator + "java", "main" + File.separator + "resources") + ".map.xml"));
+        Document document = new Document(rootElement);
+        try (FileOutputStream out = new FileOutputStream(this.fileName.replace("main" + File.separator + "java", "main" + File.separator + "resources") + ".map.xml")) {
+            document.save(out);
         } catch (IOException IO) {
             logger.severe(IO.getMessage());
         }

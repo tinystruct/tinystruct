@@ -26,17 +26,15 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Iterator;
 import java.util.logging.Logger;
 
 public class MSSQLGenerator implements Generator {
+    private final static Logger logger = Logger.getLogger(MSSQLGenerator.class.getName());
     private String fileName;
     private String packageName;
-
-    private final static Logger logger = Logger.getLogger(MSSQLGenerator.class.getName());
     private String[] packageList;
 
     public MSSQLGenerator() {
@@ -114,7 +112,7 @@ public class MSSQLGenerator implements Generator {
                 currentFields = fields.next();
 
                 propertyName = StringUtilities.setCharToUpper(currentFields.get("name").value().toString(), '_');
-                propertyName = StringUtilities.remove(propertyName,'_');
+                propertyName = StringUtilities.remove(propertyName, '_');
                 propertyType = FieldType.valueOf(currentFields.get("type").value().toString()).getRealType();
 
                 String propertyNameOfMethod = StringUtilities.setCharToUpper(propertyName, 0);
@@ -180,9 +178,9 @@ public class MSSQLGenerator implements Generator {
             }
         }
 
-        Document Document = new Document(rootElement);
-        try {
-            Document.save(new FileOutputStream(this.fileName + ".map.xml"));
+        Document document = new Document(rootElement);
+        try (FileOutputStream out = new FileOutputStream(this.fileName + ".map.xml")) {
+            document.save(out);
         } catch (IOException IO) {
             logger.severe(IO.getMessage());
         }
