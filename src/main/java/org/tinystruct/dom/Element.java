@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.tinystruct.dom;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
@@ -327,19 +328,15 @@ public class Element implements Cloneable {
     }
 
     private List<Element> getChildElementsByTagName(String tagName) {
-        List<Element> foundElementList = new Vector<Element>();
-        Iterator<Element> iterator = this.childNodes.iterator();
+        List<Element> found = new ArrayList<>();
 
-        while (iterator.hasNext()) {
-            Element currentElement = iterator.next();
-            currentElement.getChildElementsByTagName(tagName);
-
+        for (Element currentElement : this.childNodes) {
             if (currentElement.name.equalsIgnoreCase(tagName)) {
-                foundElementList.add(currentElement);
+                found.add(currentElement);
             }
         }
 
-        return foundElementList;
+        return found;
     }
 
     public List<Element> getElementsByTagName(String tagName) {
