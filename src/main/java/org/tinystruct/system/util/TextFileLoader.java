@@ -49,33 +49,32 @@ public class TextFileLoader {
 
     public StringBuilder getContent() throws ApplicationException {
         StringBuilder content = new StringBuilder();
-        try {
-            if (this.file != null) {
-                this.inputStream = new FileInputStream(this.file);
+        if (this.file != null) {
+            try (InputStream inputStream = new FileInputStream(this.file)) {
+                read(inputStream, this.charsetName, content);
+            } catch (FileNotFoundException e) {
+                throw new ApplicationException(e.getMessage() + " - " + this.file.getAbsolutePath(), e);
+            } catch (IOException e) {
+                throw new ApplicationException(e.getMessage(), e);
             }
+        } else {
+            read(this.inputStream, this.charsetName, content);
+        }
 
-            if (this.inputStream == null) {
-                throw new ApplicationException("The file input stream is not ready.");
-            }
+        return content;
+    }
 
-            InputStreamReader reader = new InputStreamReader(this.inputStream, this.charsetName);
-            BufferedReader bufferedReader = new BufferedReader(reader);
-
+    private void read(InputStream inputStream, String charsetName, StringBuilder content) throws ApplicationException {
+        try (InputStreamReader reader = new InputStreamReader(inputStream, charsetName); BufferedReader bufferedReader = new BufferedReader(reader)) {
             String line, lineSeparator = System.getProperty("line.separator", "\r\n");
             while ((line = bufferedReader.readLine()) != null) {
                 content.append(line).append(lineSeparator);
             }
-            bufferedReader.close();
-            reader.close();
-
-            this.inputStream.close();
-        } catch (FileNotFoundException e) {
-            throw new ApplicationException(e.getMessage() + " - " + this.file.getAbsolutePath(), e);
+        } catch (UnsupportedEncodingException e) {
+            throw new ApplicationException(e.getMessage(), e);
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
-
-        return content;
     }
 
     public String getFilePath() {
