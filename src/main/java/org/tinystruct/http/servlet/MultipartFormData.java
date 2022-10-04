@@ -101,7 +101,7 @@ public class MultipartFormData {
             String filename = parseDispositionFilename(disposition);
             String contentType = null;
 
-            byte[] data = null;
+            byte[] data;
 
             if (filename != null) {
                 filename = new File(filename).getName();
