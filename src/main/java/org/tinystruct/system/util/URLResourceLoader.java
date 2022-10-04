@@ -47,7 +47,7 @@ public class URLResourceLoader extends TextFileLoader {
 
             this.setInputStream(connection.getInputStream());
         } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e);
+            throw new ApplicationException(e.toString(), e);
         }
     }
 
