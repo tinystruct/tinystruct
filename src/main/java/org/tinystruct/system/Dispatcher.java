@@ -30,7 +30,6 @@ import org.tinystruct.transfer.http.ReadableByteChannelWrapper;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -263,61 +262,36 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             System.out.print("\rUpdating..");
             ApplicationManager.generateDispatcherCommand(latestVersion, true);
         } catch (ApplicationException | MalformedURLException e) {
-            return e.toString();
+            return e.getMessage();
         }
         return "\rCompleted! \nRun 'bin/dispatcher --help' for more information.";
     }
 
     public void download(URL uri, String destination) throws ApplicationException {
-        ReadableByteChannel rbc;
-        try {
-            Channels.newChannel(uri.openStream());
-            rbc = new ReadableByteChannelWrapper(uri);
+        try (ReadableByteChannel rbc = new ReadableByteChannelWrapper(uri)) {
+            if (destination.trim().length() <= 1) {
+                destination = uri.toString().replaceAll("http://|https://|/", "+");
+            }
+
+            String path = new File("").getAbsolutePath() + File.separatorChar + destination;
+            Path dest = Paths.get(path);
+            try {
+                Path parent = dest.getParent();
+                if (parent != null)
+                    Files.createDirectories(parent);
+                if (!Files.exists(dest))
+                    Files.createFile(dest);
+            } catch (IOException e) {
+                throw new ApplicationException(e.getMessage(), e.getCause());
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(path)) {
+                fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+            } catch (IOException e) {
+                throw new ApplicationException(e.getMessage(), e.getCause());
+            }
         } catch (Exception e) {
             throw new ApplicationException("Could not be downloaded:" + e.getMessage(), e.getCause());
-        }
-
-        if (destination.trim().length() <= 1) {
-            destination = uri.toString().replaceAll("http://|https://|/", "+");
-        }
-
-        String path = new File("").getAbsolutePath() + File.separatorChar + destination;
-        Path dest = Paths.get(path);
-        try {
-            Path parent = dest.getParent();
-            if (parent != null)
-                Files.createDirectories(parent);
-            if (!Files.exists(dest))
-                Files.createFile(dest);
-        } catch (IOException e) {
-            try {
-                rbc.close();
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-            throw new ApplicationException(e.getMessage(), e.getCause());
-        }
-
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(path);
-            fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-        } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e.getCause());
-        } finally {
-            if (fos != null) {
-                try {
-                    fos.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            try {
-                rbc.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
