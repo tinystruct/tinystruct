@@ -18,25 +18,17 @@ package org.tinystruct.dom;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.system.util.TextFileLoader;
 
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
+@Deprecated
 public class HTMLParser {
+    private final List<HTMLElement> resources = new ArrayList<>();
     private String HTML;
-    private final Vector<HTMLElement> resources = new Vector<HTMLElement>();
-
-    /**
-     * @return the resources
-     */
-    public Vector<HTMLElement> getResources() {
-        return resources;
-    }
-
     private int position = 0;
     private int length = 0;
 
     private int current_position = -1;
-    public int last_position = -1;
-
     public HTMLParser(StringBuffer HTML) {
         this.HTML = HTML.toString();
         this.length = this.HTML.length();
@@ -45,6 +37,13 @@ public class HTMLParser {
     public HTMLParser(String FileName) throws ApplicationException {
         this.HTML = new TextFileLoader(FileName).getContent().toString();
         this.length = this.HTML.length();
+    }
+
+    /**
+     * @return the resources
+     */
+    public List<HTMLElement> getResources() {
+        return resources;
     }
 
     /**
@@ -76,7 +75,7 @@ public class HTMLParser {
         //初始化当前位置
         for (int i = this.current_position + 1; i < _text.length; i++) {
             if (_text[i] == c) {
-                this.last_position = this.current_position;
+                int last_position = this.current_position;
                 this.current_position = i;
                 this.position = this.current_position;
                 return i;

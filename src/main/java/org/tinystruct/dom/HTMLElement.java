@@ -15,13 +15,15 @@
  *******************************************************************************/
 package org.tinystruct.dom;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
 
+@Deprecated
 public class HTMLElement extends Element {
 
-    private Vector<HTMLElement> resource = new Vector<HTMLElement>();
+    private List<HTMLElement> resource = new ArrayList<>();
 
     public HTMLElement() {
         super();
@@ -35,9 +37,9 @@ public class HTMLElement extends Element {
         super(name, attributes);
     }
 
-    public Vector<HTMLElement> getChildElements(Vector<HTMLElement> elements) {
+    public List<HTMLElement> getChildElements(List<HTMLElement> elements) {
         Iterator<HTMLElement> iterator = elements.iterator();
-        this.resource = new Vector<HTMLElement>();
+        this.resource = new ArrayList<>();
 
         HTMLElement element;
 
@@ -175,19 +177,18 @@ public class HTMLElement extends Element {
      *
      * return this; }
      */
-    public HTMLElement getDocumentElement(Vector<HTMLElement> resource) {
+    public HTMLElement getDocumentElement(List<HTMLElement> resource) {
         this.resource = resource;
         if (this.resource.size() == 0)
             return this;
 
-        HTMLElement childElement = this.resource.firstElement();
+        HTMLElement childElement = this.resource.get(0);
         HTMLElement currentElement;
 
         int elements_amount = 0;
         boolean accept = false;
-        Iterator<HTMLElement> html = this.resource.iterator();
-        while (html.hasNext()) {
-            currentElement = html.next();
+        for (HTMLElement htmlElement : this.resource) {
+            currentElement = htmlElement;
             this.brother_element_position++;
 
             System.out.println(this.brother_element_position + "->[" + accept
@@ -236,9 +237,8 @@ public class HTMLElement extends Element {
 
                     System.out.println("[" + this.getName()
                             + "]___________________________________________");
-                    Iterator<HTMLElement> ets = this.resource.iterator();
-                    while (ets.hasNext()) {
-                        System.out.print(ets.next());
+                    for (HTMLElement element : this.resource) {
+                        System.out.print(element);
                     }
                     System.out
                             .println("["
@@ -299,7 +299,7 @@ public class HTMLElement extends Element {
         return this;
     }
 
-    public HTMLElement getDocumentFromResource(Vector<HTMLElement> resource) {
+    public HTMLElement getDocumentFromResource(List<HTMLElement> resource) {
         if (resource == null || resource.size() == 0)
             return new HTMLElement("NULL_ELEMENT");
 
@@ -309,7 +309,7 @@ public class HTMLElement extends Element {
         this.resource = resource;
 
         // 遍历子元素，从第一个子元素开始遍历，将第一个子元素记录下来，并寻找此元素的闭合元素
-        HTMLElement childElement = this.resource.firstElement();
+        HTMLElement childElement = this.resource.get(0);
         HTMLElement currentElement;
         Iterator<HTMLElement> iter = this.resource.iterator();
 
@@ -358,7 +358,7 @@ public class HTMLElement extends Element {
         return this;
     }
 
-    public HTMLElement getDocument(Vector<HTMLElement> resource) {
+    public HTMLElement getDocument(List<HTMLElement> resource) {
         // 获取当前的HTMLElement的子资源内容,如果当前的HTMLElement为HTML，那么它的子资源的第一个元素为HEAD
         this.resource = this.getChildElements(resource);
 
@@ -376,7 +376,7 @@ public class HTMLElement extends Element {
         // 如果子资源长度不为空，对该子元素进行遍历
         if (this.resource.size() > 0) {
             // 获取子资源内容的第一个子元素，如HEAD，作为将要操作的对象
-            HTMLElement element = this.resource.firstElement();
+            HTMLElement element = this.resource.get(0);
             element.getDocument(this.resource);
             this.addElement(element);
 
