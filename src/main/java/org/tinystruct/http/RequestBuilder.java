@@ -60,8 +60,18 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
         }
 
         if (content.capacity() > 0) {
+            String requestBody;
+            String[] args, pair;
             switch (this.headers.get(Header.CONTENT_TYPE).toString()) {
                 case "multipart/form-data":
+                    requestBody = content.toString(CharsetUtil.UTF_8);
+                    args = requestBody.split("&");
+                    for (i = 0; i < args.length; i++) {
+                        if (args[i].contains("=")) {
+                            pair = args[i].split("=");
+                            this.setParameter(pair[0], List.of(pair[1]));
+                        }
+                    }
                     // TODO
                     final HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE); // Disk if size exceed
                     HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(factory, request);
@@ -73,13 +83,13 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
                             list.add((FileEntity) fileData);
                         }
                     }
-                    this.attach(list);
+                    this.attach(list); break;
                 case "application/x-www-form-urlencoded":
                 case "text/plain;charset=UTF-8":
                 case "application/json":
                 default:
-                    String requestBody = content.toString(CharsetUtil.UTF_8);
-                    String[] args = requestBody.split("&"), pair;
+                    requestBody = content.toString(CharsetUtil.UTF_8);
+                    args = requestBody.split("&");
                     for (i = 0; i < args.length; i++) {
                         if (args[i].contains("=")) {
                             pair = args[i].split("=");
