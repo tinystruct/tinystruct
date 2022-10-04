@@ -199,7 +199,6 @@ public class DefaultTemplate implements Template {
             Iterator<Entry<String, Variable<?>>> iterator = sets
                     .iterator();
 
-            List<Variable<?>> list = new ArrayList<Variable<?>>();
             Variable<?> variable;
             Context ctx = app.getContext();
 
@@ -208,7 +207,7 @@ public class DefaultTemplate implements Template {
                 variable = v.getValue();
 
                 if (variable.getType() == DataType.ARRAY) {
-                    list.add(variable);
+                    // TODO
                 } else {
                     if (v.getKey().startsWith("[%LINK:")) {
                         String baseUrl;
