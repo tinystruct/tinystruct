@@ -38,7 +38,6 @@ import java.util.logging.Logger;
  */
 public class Document extends DefaultHandler {
     private static final Logger LOG = Logger.getLogger(Document.class.getName());
-
     private static final String DOCTYPE_CONFIGURATION = "org/tinystruct/application/application-1.0.dtd";
     private static final String XHTML_TRANSITIONAL_DOCTYPE_CONFIGURATION = "org/tinystruct/application/application-1.0.dtd";
     private static final String XHTML_STRICT_DOCTYPE_CONFIGURATION = "org/tinystruct/application/application-1.0.dtd";
@@ -46,8 +45,7 @@ public class Document extends DefaultHandler {
     private static final Map<String, String> doctypeMap = new HashMap<String, String>();
 
     static {
-        doctypeMap
-                .put("-//development.tinystruct.org//DTD APPLICATION Configuration 2.0//EN",
+        doctypeMap.put("-//development.tinystruct.org//DTD APPLICATION Configuration 2.0//EN",
                         DOCTYPE_CONFIGURATION);
         doctypeMap.put("http://development.tinystruct.org/dtd/application-1.0.dtd",
                 DOCTYPE_CONFIGURATION);
@@ -57,14 +55,13 @@ public class Document extends DefaultHandler {
                 XHTML_STRICT_DOCTYPE_CONFIGURATION);
     }
 
+    // Buffer for collecting data from
+    // the "characters" SAX event.
+    private final CharArrayWriter contents = new CharArrayWriter();
     // Top level element (Used to hold everything else)
     private Element rootElement;
     // The current element you are working on
     private Element currentElement;
-
-    // Buffer for collecting data from
-    // the "characters" SAX event.
-    private final CharArrayWriter contents = new CharArrayWriter();
     private URL url = null;
 
     public Document(URL url) {
@@ -77,8 +74,6 @@ public class Document extends DefaultHandler {
         this.currentElement = null;
         this.rootElement = null;
     }
-
-    // setup and load constructor
 
     /**
      * Creates a XmlIO object with the specified element at the top.
@@ -98,12 +93,13 @@ public class Document extends DefaultHandler {
     }
 
     public boolean load(String file) throws ApplicationException {
-        try {
-            InputStream input = new FileInputStream(file);
+        try (InputStream input = new FileInputStream(file)) {
             return load(input);
-        } catch (FileNotFoundException FileNotFound) {
-            throw new ApplicationException(FileNotFound.getMessage(),
-                    FileNotFound);
+        } catch (FileNotFoundException notFoundException) {
+            throw new ApplicationException(notFoundException.getMessage(),
+                    notFoundException);
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e.getCause());
         }
     }
 
@@ -133,8 +129,7 @@ public class Document extends DefaultHandler {
                     + input + "'");
             LOG.severe(ex.getMessage());
             return false;
-        }
-        finally {
+        } finally {
             try {
                 input.close();
             } catch (IOException e) {
@@ -268,12 +263,14 @@ public class Document extends DefaultHandler {
     }
 
     public void save() throws Exception {
-        save(new FileOutputStream(url.getPath()));
+        try (FileOutputStream out = new FileOutputStream(url.getPath())) {
+            save(out);
+        }
     }
 
     /**
-    * Writer interface
-    **/
+     * Writer interface
+     **/
     public void save(OutputStream out) throws IOException {
         BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(out,
                 StandardCharsets.UTF_8));
@@ -282,7 +279,6 @@ public class Document extends DefaultHandler {
             bufferedWriter.write(rootElement.toString());
         }
         bufferedWriter.flush();
-        out.close();
     }
 
     public InputSource resolveEntity(String publicId, String systemId)
@@ -290,10 +286,10 @@ public class Document extends DefaultHandler {
         InputSource source = null;
 
         try {
-            String path = (String) doctypeMap.get(publicId);
+            String path = doctypeMap.get(publicId);
             source = getInputSource(path, source);
             if (source != null) {
-                path = (String) doctypeMap.get(systemId);
+                path = doctypeMap.get(systemId);
                 source = getInputSource(path, source);
             }
         } catch (Exception e) {
@@ -305,15 +301,13 @@ public class Document extends DefaultHandler {
 
     private InputSource getInputSource(String path, InputSource source) {
         if (path != null) {
-            InputStream in = null;
-            try {
-                in = Resources.getResourceAsStream(path);
+            try (InputStream in = Resources.getResourceAsStream(path)) {
                 source = new InputSource(in);
             } catch (IOException e) {
                 LOG.severe(e.getMessage());
             }
         }
+
         return source;
     }
-
 }
