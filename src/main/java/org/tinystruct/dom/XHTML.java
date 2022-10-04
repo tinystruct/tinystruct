@@ -22,11 +22,6 @@ public enum XHTML {
 
     XHTML(int index) {
         switch (index) {
-            case 0:
-                this.PUBLIC = "-//W3C//DTD XHTML 1.0 Transitional//EN";
-                this.SYSTEM = "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd";
-                break;
-
             case 1:
                 this.PUBLIC = "-//W3C//DTD XHTML 1.0 Strict//EN";
                 this.SYSTEM = "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd";
