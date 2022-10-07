@@ -1,6 +1,7 @@
 package org.tinystruct.valve;
 
 import org.tinystruct.ApplicationException;
+import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.valve.Watcher.EventListener;
 
 import java.util.UUID;
@@ -12,33 +13,26 @@ import java.util.logging.Logger;
  * Distributed lock depends on File system.
  * Usage:
  * <code>
+ * <p>
  * Lock lock = Watcher.getInstance().acquire();
+ * </p>
  * ...
- * try {
- *  if (lock != null) {
- *  lock.lock();
- *
- * // TODO
- *  logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
- *  }
+ * <p>
+ * try {</p>
+ *      lock.lock();
+ * <p>
+ * // TODO </p>
+ *      logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
  * } catch (ApplicationException e) {
- * e.printStackTrace();
+ *      e.printStackTrace();
  * } finally {
- *  if (lock != null) {
- *      try {
- *        lock.unlock();
- *      } catch (ApplicationException e) {
- *          e.printStackTrace();
- *      }
- *  }
+ *      lock.unlock();
  * }
  * </code>
  *
  * @author James Zhou
  */
 public class DistributedLock implements Lock {
-    private static final Logger logger = Logger.getLogger(DistributedLock.class.getName());
-
     private final String id;
     private final Watcher watcher = Watcher.getInstance();
 
@@ -55,7 +49,7 @@ public class DistributedLock implements Lock {
     }
 
     @Override
-    public void lock() throws ApplicationException {
+    public void lock() {
         // If try lock successfully, then the lock does exist, then don't need to lock.
         // And continue to work on the next steps.
         if (!tryLock()) {
@@ -64,13 +58,16 @@ public class DistributedLock implements Lock {
     }
 
     @Override
-    public boolean tryLock() throws ApplicationException {
-        return tryLock(0L, null);
+    public boolean tryLock() {
+        try {
+            return tryLock(0L, TimeUnit.SECONDS);
+        } catch (ApplicationException e) {
+            throw new ApplicationRuntimeException(e.getMessage(), e.getCause());
+        }
     }
 
     @Override
     public boolean tryLock(long timeout, TimeUnit unit) throws ApplicationException {
-
         // If the lock is existing, then wait for it to be released.
         if (watcher.watch(this)) {
             try {
@@ -86,14 +83,18 @@ public class DistributedLock implements Lock {
             this.watcher.register(this);
         }
 
-        // If get this step, that means the lock has not been registered. and the thread can work on the next steps.
+        // If you get this step, that means the lock has not been registered. and the thread can work on the next steps.
         return true;
     }
 
     @Override
-    public void unlock() throws ApplicationException {
-        if (watcher.watch(this)) {
-            watcher.unregister(this);
+    public void unlock() {
+        try {
+            if (watcher.watch(this)) {
+                watcher.unregister(this);
+            }
+        } catch (ApplicationException e) {
+            throw new ApplicationRuntimeException(e.getMessage(), e.getCause());
         }
     }
 
