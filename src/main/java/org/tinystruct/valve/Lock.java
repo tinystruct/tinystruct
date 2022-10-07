@@ -5,13 +5,13 @@ import org.tinystruct.ApplicationException;
 import java.util.concurrent.TimeUnit;
 
 public interface Lock {
-    void lock() throws ApplicationException;
+    void lock();
 
-    boolean tryLock() throws ApplicationException;
+    boolean tryLock();
 
     boolean tryLock(long time, TimeUnit unit) throws ApplicationException;
 
-    void unlock() throws ApplicationException;
+    void unlock();
 
     String id();
 }
