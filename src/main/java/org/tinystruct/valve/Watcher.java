@@ -8,7 +8,6 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -83,7 +82,7 @@ public final class Watcher implements Runnable {
                     logger.severe(e.getMessage());
                 }
                 // Synchronize the locks map with Lock file.
-                try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rw")) {
+                try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "r")) {
                     // If the length of the lockFile is bigger than the default length: 44.
                     // then the size of the locks map would be easy to be calculated.
                     // Lock the file.
@@ -101,39 +100,23 @@ public final class Watcher implements Runnable {
                                 String lockId;
                                 EventListener listener;
                                 // Assume all the locks are in use.
-                                int availableLockSize = size;
                                 // Read all locks into the map.
                                 for (int i = 0; i < size && lockFile.length() > 0; i++) { // Cautious!!!
                                     byte[] id = EMPTY_BYTES;
                                     // Read lock id.
                                     if (lockFile.read(id) != -1) {
-                                        lockId = new String(id, StandardCharsets.UTF_8);
                                         // Read lock status.
-                                        // If the lock is expired, then it should not be in the locks map
-                                        if (lockFile.readLong() == 0L) {
-                                            if (this.locks.containsKey(lockId)) {
-                                                this.locks.remove(lockId);
-                                                if ((listener = this.listeners.get(lockId)) != null)
-                                                    listener.onDelete(lockId);
-                                            }
-                                            // If all locks are not available, then remove them all and set the lockFile to be empty.
-                                            if (--availableLockSize == 0) {
-                                                if (!this.locks.isEmpty())
-                                                    this.locks.clear();
-
-                                                lockFile.setLength(0);
-                                            }
+                                        // If the lock is expired, then it should not be in the locks map.
+                                        // Only read the lock which status is active.
+                                        if (lockFile.readLong() == 1L) {
+                                            lockId = new String(id, StandardCharsets.UTF_8);
+                                            // No need to check if the lock exists.
+                                            // Add a new lock with id.
+                                            this.locks.putIfAbsent(lockId, new DistributedLock(id));
+                                            if ((listener = this.listeners.get(lockId)) != null)
+                                                listener.onCreate(lockId);
                                         }
-                                        // Otherwise, the lock should be in the locks map
-                                        else {
-                                            // Check if the lock exists.
-                                            if (!this.locks.containsKey(lockId)) {
-                                                // Add a new lock with id.
-                                                this.locks.putIfAbsent(lockId, new DistributedLock(lockId.getBytes(StandardCharsets.UTF_8)));
-                                                if ((listener = this.listeners.get(lockId)) != null)
-                                                    listener.onCreate(lockId);
-                                            }
-                                        }
+                                        // Otherwise, the lock should not be in the locks map.
                                     }
                                 }
                             }
@@ -173,10 +156,8 @@ public final class Watcher implements Runnable {
             }
         }
 
-        synchronized (Watcher.class) {
-            // Check if the lock is in the container.
-            return locks.containsKey(lock.id());
-        }
+        // Check if the lock is in the container.
+        return locks.containsKey(lock.id());
     }
 
     public void register(Lock lock) throws ApplicationException {
@@ -185,9 +166,10 @@ public final class Watcher implements Runnable {
 
     public void register(Lock lock, long expiration, TimeUnit tu) throws ApplicationException {
         synchronized (Watcher.class) {
-            if (!locks.containsKey(lock.id())) {
+            String lockId = lock.id();
+            if (!locks.containsKey(lockId)) {
                 try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rw")) {
-                    String id = lock.id();
+
                     FileLock fileLock = lockFile.getChannel().tryLock();
 
                     long length = lockFile.length();
@@ -209,7 +191,7 @@ public final class Watcher implements Runnable {
                                 position = i * FIXED_LOCK_DATA_SIZE;
                                 lockFile.seek(position);
                                 if (lockFile.read(empty) != -1) {
-                                    if (Arrays.equals(lock.id().getBytes(), empty)) {
+                                    if (Arrays.equals(lockId.getBytes(), empty)) {
                                         if (lockFile.readLong() == 0L) {
                                             // If the Lock does exist, then just update the status for the Lock
                                             lockFile.seek(position + EMPTY_BYTES.length);
@@ -235,7 +217,7 @@ public final class Watcher implements Runnable {
                                     if (this.interspace[i] == 1) {
                                         // If the Lock does exist, then just update the status for the Lock
                                         lockFile.seek((long) i * FIXED_LOCK_DATA_SIZE);
-                                        lockFile.writeBytes(id);
+                                        lockFile.writeBytes(lockId);
                                         lockFile.writeLong(1L);
 
                                         this.interspace[i] = 0;
@@ -249,18 +231,18 @@ public final class Watcher implements Runnable {
 
                         if (required) {
                             lockFile.seek((long) size * FIXED_LOCK_DATA_SIZE);
-                            lockFile.writeBytes(id);
+                            lockFile.writeBytes(lockId);
                             lockFile.writeLong(1L);
                         }
 
-                        this.locks.put(id, lock);
-                        if (this.listeners.get(id) != null)
-                            this.listeners.get(id).onCreate(id);
+                        this.locks.putIfAbsent(lockId, lock);
+                        if (this.listeners.get(lockId) != null)
+                            this.listeners.get(lockId).onCreate(lockId);
 
                         fileLock.release();
 
                         // Notify the other thread to work on.
-                        Watcher.class.notifyAll();
+                        Watcher.class.notify();
                     }
                 } catch (IOException e) {
                     throw new ApplicationException(e.getMessage(), e.getCause());
@@ -284,6 +266,7 @@ public final class Watcher implements Runnable {
                         int size = (int) (length / FIXED_LOCK_DATA_SIZE);
                         this.interspace = new int[size];
 
+                        int availableLockSize = size;
                         int position;
                         for (int i = 0; i < size; i++) {
                             position = i * FIXED_LOCK_DATA_SIZE;
@@ -295,6 +278,15 @@ public final class Watcher implements Runnable {
                                     this.locks.remove(lockId);
                                     if (this.listeners.get(lockId) != null)
                                         this.listeners.get(lockId).onDelete(lockId);
+
+                                    // If all locks are not available, then remove them all and set the lockFile to be empty.
+                                    if (--availableLockSize == 0) {
+                                        if (!this.locks.isEmpty())
+                                            this.locks.clear();
+
+                                        lockFile.setLength(0);
+                                    }
+
                                     break;
                                 }
                             }
@@ -302,7 +294,7 @@ public final class Watcher implements Runnable {
 
                         fileLock.release();
                         // Notify the other thread to work on.
-                        Watcher.class.notifyAll();
+                        Watcher.class.notify();
                     } else {
                         this.unregister(lock);
                     }
