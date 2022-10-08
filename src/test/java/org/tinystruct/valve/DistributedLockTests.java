@@ -62,8 +62,10 @@ public class DistributedLockTests {
 
     @Test
     void testLock2() throws InterruptedException {
-        final Lock lock = new DistributedLock("7439e9a6-0828-422f-8c86-3f9b4f7e1460".getBytes(StandardCharsets.UTF_8));
+//        final Lock lock = new DistributedLock("7439e9a6-0828-422f-8c86-3f9b4f7e1460".getBytes(StandardCharsets.UTF_8));
 //        final ReentrantLock lock = new ReentrantLock();
+        final Lock lock = new DistributedLock();
+
         n = 0L;
         Thread[] threads = new Thread[100];
         CountDownLatch latch = new CountDownLatch(threads.length);
