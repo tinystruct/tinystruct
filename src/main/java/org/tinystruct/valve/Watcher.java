@@ -9,7 +9,9 @@ import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -82,7 +84,7 @@ public final class Watcher implements Runnable {
                     logger.severe(e.getMessage());
                 }
                 // Synchronize the locks map with Lock file.
-                try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "r")) {
+                try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rwd")) {
                     // If the length of the lockFile is bigger than the default length: 44.
                     // then the size of the locks map would be easy to be calculated.
                     // Lock the file.
@@ -111,10 +113,12 @@ public final class Watcher implements Runnable {
                                         if (lockFile.readLong() == 1L) {
                                             lockId = new String(id, StandardCharsets.UTF_8);
                                             // No need to check if the lock exists.
-                                            // Add a new lock with id.
-                                            this.locks.putIfAbsent(lockId, new DistributedLock(id));
-                                            if ((listener = this.listeners.get(lockId)) != null)
-                                                listener.onCreate(lockId);
+                                            if(!this.locks.containsKey(lockId)) {
+                                                // Add a new lock with id.
+                                                this.locks.put(lockId, new DistributedLock(id));
+                                                if ((listener = this.listeners.get(lockId)) != null)
+                                                    listener.onCreate(lockId);
+                                            }
                                         }
                                         // Otherwise, the lock should not be in the locks map.
                                     }
@@ -357,5 +361,56 @@ public final class Watcher implements Runnable {
      */
     private static final class SingletonHolder {
         static final Watcher manager = new Watcher();
+    }
+
+    /**
+     * EventListener implementation for Lock.
+     *
+     * @author James Zhou
+     */
+    static class LockEventListener implements EventListener {
+        private static final Logger logger = Logger.getLogger(LockEventListener.class.getName());
+        private final Lock lock;
+        private CountDownLatch latch;
+
+        public LockEventListener(Lock lock) {
+            this.lock = lock;
+        }
+
+        @Override
+        public void onCreate(String lockId) {
+            if (lockId.equalsIgnoreCase(lock.id())) {
+                latch = new CountDownLatch(1);
+                logger.log(Level.INFO, "Created " + lockId);
+            }
+        }
+
+        @Override
+        public void onUpdate() {
+
+        }
+
+        @Override
+        public void onDelete(String lockId) {
+            if (lockId.equalsIgnoreCase(lock.id())) {
+                logger.log(Level.INFO,"Deleted " + lockId);
+                latch.countDown();
+            }
+        }
+
+        @Override
+        public String id() {
+            return lock.id();
+        }
+
+        @Override
+        public void waitFor() throws InterruptedException {
+            latch.await();
+        }
+
+        @Override
+        public boolean waitFor(long timeout, TimeUnit unit) throws InterruptedException {
+            return latch.await(timeout, unit);
+        }
     }
 }

@@ -1,4 +1,4 @@
-package org.tinystruct.transfer;
+package org.tinystruct.valve;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.valve.DistributedLock;
@@ -98,9 +98,6 @@ public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> {
                 }
             }
             this.lock.unlock();
-        } catch (ApplicationException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -126,15 +123,10 @@ public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> {
 
     @Override
     public Queue<T> remove(Object key) {
-        try {
-            this.lock.lock();
-            Paths.get(this.hash).toFile().delete();
-            super.remove(key);
-            this.lock.unlock();
-        } catch (ApplicationException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        this.lock.lock();
+        Paths.get(this.hash).toFile().delete();
+        super.remove(key);
+        this.lock.unlock();
 
         return null;
     }

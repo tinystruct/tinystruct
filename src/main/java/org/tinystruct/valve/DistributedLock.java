@@ -2,12 +2,9 @@ package org.tinystruct.valve;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
-import org.tinystruct.valve.Watcher.EventListener;
 
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 /**
  * Distributed lock depends on File system.
@@ -19,14 +16,14 @@ import java.util.logging.Logger;
  * ...
  * <p>
  * try {</p>
- *      lock.lock();
+ * lock.lock();
  * <p>
  * // TODO </p>
- *      logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
+ * logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
  * } catch (ApplicationException e) {
- *      e.printStackTrace();
+ * e.printStackTrace();
  * } finally {
- *      lock.unlock();
+ * lock.unlock();
  * }
  * </code>
  *
@@ -39,13 +36,13 @@ public class DistributedLock implements Lock {
     public DistributedLock() {
         this.id = UUID.randomUUID().toString();
         // Set event listener.
-        this.watcher.addListener(new LockEventListener(this));
+        this.watcher.addListener(new Watcher.LockEventListener(this));
     }
 
     public DistributedLock(byte[] idb) {
         this.id = new LockKey(idb).value();
         // Set event listener.
-        this.watcher.addListener(new LockEventListener(this));
+        this.watcher.addListener(new Watcher.LockEventListener(this));
     }
 
     @Override
@@ -125,55 +122,4 @@ public class DistributedLock implements Lock {
         return result;
     }
 
-}
-
-/**
- * EventListener implementation for Lock.
- *
- * @author James Zhou
- */
-class LockEventListener implements EventListener {
-    private static final Logger logger = Logger.getLogger(LockEventListener.class.getName());
-    private final Lock lock;
-    private final CountDownLatch latch;
-
-    public LockEventListener(Lock lock) {
-        this.lock = lock;
-        this.latch = new CountDownLatch(1);
-    }
-
-    @Override
-    public void onCreate(String lockId) {
-        if (lockId.equalsIgnoreCase(lock.id())) {
-            logger.info("Created " + lockId);
-        }
-    }
-
-    @Override
-    public void onUpdate() {
-
-    }
-
-    @Override
-    public void onDelete(String lockId) {
-        if (lockId.equalsIgnoreCase(lock.id())) {
-            logger.info("Deleted " + lockId);
-            latch.countDown();
-        }
-    }
-
-    @Override
-    public String id() {
-        return lock.id();
-    }
-
-    @Override
-    public void waitFor() throws InterruptedException {
-        latch.await();
-    }
-
-    @Override
-    public boolean waitFor(long timeout, TimeUnit unit) throws InterruptedException {
-        return latch.await(timeout, unit);
-    }
 }
