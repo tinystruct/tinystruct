@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.logging.LogManager;
 
 /**
  * Get properties in the configuration file.
@@ -29,7 +30,6 @@ import java.util.Set;
  * @author Mover
  */
 public class Settings implements Configuration<String> {
-
     private static final long serialVersionUID = 8348657988449703373L;
     private static final String FILE = "/application.properties";
     private static String fileName;
@@ -115,10 +115,14 @@ public class Settings implements Configuration<String> {
     private static final class SingletonHolder {
         public static final SingletonHolder INSTANCE = new SingletonHolder();
         private static final Properties properties = new Properties();
+        private static final LogManager logManager = LogManager.getLogManager();
 
         static {
             try (InputStream in = SingletonHolder.class.getResourceAsStream(fileName)) {
                 properties.load(in);
+                if (properties.getProperty("logging.override") != null && properties.getProperty("logging.override").equalsIgnoreCase("true")) {
+                    logManager.readConfiguration(in);
+                }
             } catch (IOException e) {
                 throw new ApplicationRuntimeException(e.getMessage(), e);
             }
