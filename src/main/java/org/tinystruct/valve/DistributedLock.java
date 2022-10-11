@@ -9,23 +9,19 @@ import java.util.concurrent.TimeUnit;
 /**
  * Distributed lock depends on File system.
  * Usage:
- * <code>
- * <p>
+ * <pre>
+ * {@code
  * Lock lock = Watcher.getInstance().acquire();
- * </p>
  * ...
- * <p>
- * try {</p>
- * lock.lock();
- * <p>
- * // TODO </p>
- * logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
- * } catch (ApplicationException e) {
- * e.printStackTrace();
+ * try {
+ *    lock.lock();
+ *    // TODO
+ *    logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
  * } finally {
- * lock.unlock();
+ *    lock.unlock();
  * }
- * </code>
+ * }
+ * </pre>
  *
  * @author James Zhou
  */
