@@ -125,6 +125,8 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             if (ssl) http_protocol = "https://";
         }
 
+        context.setAttribute(HTTP_PROTOCOL, http_protocol);
+
         if (request.getServerPort() == 80)
             context.setAttribute(HTTP_HOST, http_protocol + hostName + url_prefix);
         else
