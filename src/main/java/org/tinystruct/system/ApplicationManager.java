@@ -68,15 +68,15 @@ public final class ApplicationManager {
                             Application app = (Application) Class.forName(apps[i]).getDeclaredConstructor().newInstance();
                             ApplicationManager.install(app);
                         } catch (InstantiationException e) {
-                            throw new ApplicationException(e.getMessage(), e);
+                            throw new ApplicationException(e.toString(), e);
                         } catch (IllegalAccessException e) {
-                            throw new ApplicationException(e.getMessage(), e);
+                            throw new ApplicationException(e.toString(), e);
                         } catch (ClassNotFoundException e) {
-                            throw new ApplicationException(e.getMessage(), e);
+                            throw new ApplicationException(e.toString(), e);
                         } catch (InvocationTargetException e) {
-                            throw new ApplicationException(e.getMessage(), e);
+                            throw new ApplicationException(e.toString(), e);
                         } catch (NoSuchMethodException e) {
-                            throw new ApplicationException(e.getMessage(), e);
+                            throw new ApplicationException(e.toString(), e);
                         }
                     }
 
