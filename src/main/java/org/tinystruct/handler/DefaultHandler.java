@@ -33,7 +33,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.logging.Logger;
 
 import static org.tinystruct.Application.LANGUAGE;
@@ -85,7 +84,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
 
         final Context context = new ApplicationContext();
         Request _request = new RequestBuilder(request);
-        Response<PrintWriter> _response = new ResponseBuilder(response);
+        Response<ServletOutputStream> _response = new ResponseBuilder(response);
 
         context.setAttribute(HTTP_REQUEST, _request);
         context.setAttribute(HTTP_RESPONSE, _response);
@@ -144,13 +143,16 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                 } else {
                     Object message;
                     if ((message = ApplicationManager.call(query, context)) != null)
-                        _response.get().println(message);
+                        if (message instanceof byte[])
+                            _response.get().write((byte[]) message);
+                        else
+                            _response.get().print(String.valueOf(message));
                     else
                         _response.get().println("No response retrieved!");
                     _response.get().close();
                 }
             } else {
-                _response.get().println(ApplicationManager.call(this.settings.get("default.home.page"), context));
+                _response.get().print(String.valueOf(ApplicationManager.call(this.settings.get("default.home.page"), context)));
                 _response.get().close();
             }
         } catch (ApplicationException e) {
