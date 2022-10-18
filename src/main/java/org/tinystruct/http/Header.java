@@ -123,6 +123,11 @@ public enum Header {
     CONTENT_LENGTH("Content-Length"),
 
     /**
+     * {@code "Content-Disposition"}
+     */
+    CONTENT_DISPOSITION("Content-Disposition"),
+
+    /**
      * {@code "Content-Location"}
      */
     CONTENT_LOCATION("Content-Location"),
