@@ -2,13 +2,13 @@ package org.tinystruct.http.servlet;
 
 import org.tinystruct.http.*;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
 
 public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
     private final Headers headers = new ResponseHeaders(this);
-    private PrintWriter printWriter;
+    private ServletOutputStream outputStream;
     private ResponseStatus status;
     private Version version;
 
@@ -16,7 +16,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
         super(response);
 
         try {
-            this.printWriter = response.getWriter();
+            this.outputStream = response.getOutputStream();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -70,8 +70,8 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
     }
 
     @Override
-    public PrintWriter get() {
-        return this.printWriter;
+    public ServletOutputStream get() {
+        return this.outputStream;
     }
 
     @Override
