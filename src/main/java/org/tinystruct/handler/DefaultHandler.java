@@ -18,6 +18,7 @@ package org.tinystruct.handler;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
+import org.tinystruct.http.Header;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.ResponseStatus;
@@ -143,8 +144,11 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                 } else {
                     Object message;
                     if ((message = ApplicationManager.call(query, context)) != null)
-                        if (message instanceof byte[])
-                            _response.get().write((byte[]) message);
+                        if (message instanceof byte[]) {
+                            byte[] bytes = (byte[]) message;
+                            _response.addHeader(Header.CONTENT_LENGTH.toString(), bytes.length);
+                            _response.get().write(bytes);
+                        }
                         else
                             _response.get().print(String.valueOf(message));
                     else
