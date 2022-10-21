@@ -32,8 +32,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.Charset;
 import java.util.logging.Logger;
 
 import static org.tinystruct.Application.LANGUAGE;
@@ -148,16 +148,23 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                             byte[] bytes = (byte[]) message;
                             _response.addHeader(Header.CONTENT_LENGTH.toString(), bytes.length);
                             _response.get().write(bytes);
+                            _response.get().close();
                         }
-                        else
-                            _response.get().print(String.valueOf(message));
-                    else
-                        _response.get().println("No response retrieved!");
-                    _response.get().close();
+                        else {
+                            BufferedWriter bufferedWriter = getWriter(_response.get());
+                            bufferedWriter.write(String.valueOf(message));
+                            bufferedWriter.close();
+                        }
+                    else {
+                        BufferedWriter bufferedWriter = getWriter(_response.get());
+                        bufferedWriter.write("No response retrieved!");
+                        bufferedWriter.close();
+                    }
                 }
             } else {
-                _response.get().print(String.valueOf(ApplicationManager.call(this.settings.get("default.home.page"), context)));
-                _response.get().close();
+                BufferedWriter bufferedWriter = getWriter(_response.get());
+                bufferedWriter.write(String.valueOf(ApplicationManager.call(this.settings.get("default.home.page"), context)));
+                bufferedWriter.close();
             }
         } catch (ApplicationException e) {
             _response.setStatus(ResponseStatus.valueOf(e.getStatus()));
@@ -193,6 +200,16 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             this.settings.set("system.directory", this.path);
 
         ApplicationManager.init(this.settings);
+    }
+
+    /**
+     * Use BufferedWriter for top efficiency.
+     *
+     * @param out OutputStream
+     * @return BufferedWriter
+     */
+    private BufferedWriter getWriter(OutputStream out) {
+        return new BufferedWriter(new OutputStreamWriter(out, Charset.defaultCharset()));
     }
 
     public void stop() {
