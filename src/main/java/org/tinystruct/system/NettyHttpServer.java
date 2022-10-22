@@ -75,12 +75,13 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
 
     @Override
     public void start() throws ApplicationException {
+
         if (this.context != null && this.context.getAttribute("--server-port") != null) {
             this.port = Integer.parseInt(this.context.getAttribute("--server-port").toString());
         }
 
         System.out.println(ApplicationManager.call("--logo", this.context));
-
+        long start = System.currentTimeMillis();
         try {
             // Configure SSL.
             final SslContext sslCtx;
@@ -111,7 +112,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
 
             // Bind and start to accept incoming connections.
             ChannelFuture future = bootstrap.bind(port).sync();
-            logger.info("Netty server(" + port + ") started.");
+            logger.info("Netty server (" + port + ") startup in " + (System.currentTimeMillis() - start) + " ms");
 
             // Wait until the server socket is closed.
             future.channel().closeFuture().sync();
