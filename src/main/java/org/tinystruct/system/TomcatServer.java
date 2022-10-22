@@ -78,7 +78,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
         try {
             LifecycleListener config = new DefaultContextConfig();
-            Context ctx = tomcat.addWebapp(host, "/", new File(webappDirLocation).getAbsolutePath(), config);
+            Context ctx = tomcat.addWebapp(host, "", new File(webappDirLocation).getAbsolutePath(), config);
             logger.info("Configuring app with basedir: "
                     + new File(webappDirLocation).getAbsolutePath());
 
