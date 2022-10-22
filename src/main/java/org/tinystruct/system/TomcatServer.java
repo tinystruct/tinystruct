@@ -15,9 +15,12 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
-import org.apache.catalina.Context;
-import org.apache.catalina.LifecycleException;
+import org.apache.catalina.*;
+import org.apache.catalina.startup.Constants;
+import org.apache.catalina.startup.ContextConfig;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
 import org.apache.tomcat.util.descriptor.web.FilterDef;
 import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.tinystruct.AbstractApplication;
@@ -36,9 +39,9 @@ import java.util.logging.Logger;
 
 public class TomcatServer extends AbstractApplication implements Bootstrap {
     private final Logger logger = Logger.getLogger(TomcatServer.class.getName());
+    private boolean started = false;
 
     public TomcatServer() {
-
     }
 
     public void init() {
@@ -48,9 +51,13 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
         this.commandLines.get("start").setOptions(options).setDescription("Start a Tomcat server");
 
         this.setAction("error", "exceptionCaught");
+
+        this.setTemplateRequired(false);
     }
 
     public void start() throws ApplicationException {
+        if (started) return;
+
         System.out.println(ApplicationManager.call("--logo", this.context));
 
         long start = System.currentTimeMillis();
@@ -65,8 +72,13 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             webPort = 8080;
 
         tomcat.setPort(webPort);
+
+        Host host = tomcat.getHost();
+        host.setConfigClass(DefaultContextConfig.class.getName());
+
         try {
-            Context ctx = tomcat.addWebapp("/", new File(webappDirLocation).getAbsolutePath());
+            LifecycleListener config = new DefaultContextConfig();
+            Context ctx = tomcat.addWebapp(host, "/", new File(webappDirLocation).getAbsolutePath(), config);
             logger.info("Configuring app with basedir: "
                     + new File(webappDirLocation).getAbsolutePath());
 
@@ -82,7 +94,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             ctx.addFilterMap(filterMap);
 
             tomcat.start();
-            logger.info("Server started in " + (System.currentTimeMillis() - start) / 1000 + " seconds");
+            logger.info("Server startup in " + (System.currentTimeMillis() - start) + " ms");
             tomcat.getServer().await();
         } catch (LifecycleException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
@@ -124,5 +136,64 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
     public String version() {
         return "";
+    }
+
+    static class DefaultContextConfig extends ContextConfig {
+        private static final Log log = LogFactory.getLog(ContextConfig.class);
+
+        @Override
+        protected synchronized void configureStart() {
+            // Called from StandardContext.start()
+
+            if (log.isDebugEnabled()) {
+                log.debug(sm.getString("contextConfig.start"));
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug(sm.getString("contextConfig.xmlSettings",
+                        context.getName(),
+                        Boolean.valueOf(context.getXmlValidation()),
+                        Boolean.valueOf(context.getXmlNamespaceAware())));
+            }
+
+            if (this.defaultWebXml != null && !this.defaultWebXml.equals(Constants.NoDefaultWebXml))
+                webConfig();
+
+            if (!context.getIgnoreAnnotations()) {
+                applicationAnnotationsConfig();
+            }
+            if (ok) {
+                validateSecurityRoles();
+            }
+
+            // Configure an authenticator if we need one
+            if (ok) {
+                authenticatorConfig();
+            }
+
+            // Dump the contents of this pipeline if requested
+            if (log.isDebugEnabled()) {
+                log.debug("Pipeline Configuration:");
+                Pipeline pipeline = context.getPipeline();
+                Valve valves[] = null;
+                if (pipeline != null) {
+                    valves = pipeline.getValves();
+                }
+                if (valves != null) {
+                    for (Valve valve : valves) {
+                        log.debug("  " + valve.getClass().getName());
+                    }
+                }
+                log.debug("======================");
+            }
+
+            // Make our application available if no problems were encountered
+            if (ok) {
+                context.setConfigured(true);
+            } else {
+                log.error(sm.getString("contextConfig.unavailable"));
+                context.setConfigured(false);
+            }
+        }
     }
 }
