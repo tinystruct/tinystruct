@@ -68,8 +68,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
         int webPort;
         if (this.context.getAttribute("--server-port") != null) {
             webPort = Integer.parseInt(this.context.getAttribute("--server-port").toString());
-        } else
-            webPort = 8080;
+        } else webPort = 8080;
 
         tomcat.setPort(webPort);
 
@@ -78,9 +77,9 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
         try {
             LifecycleListener config = new DefaultContextConfig();
-            Context ctx = tomcat.addWebapp(host, "", new File(webappDirLocation).getAbsolutePath(), config);
-            logger.info("Configuring app with basedir: "
-                    + new File(webappDirLocation).getAbsolutePath());
+            String docBase = new File(webappDirLocation).getAbsolutePath();
+            Context ctx = tomcat.addWebapp(host, "", docBase, config);
+            logger.info("Configuring app with basedir: " + docBase);
 
             Class<?> filterClass = DefaultHandler.class;
             FilterDef filterDef = new FilterDef();
@@ -106,8 +105,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
     public void stop() {
     }
 
-    public Object exceptionCaught()
-            throws ApplicationException {
+    public Object exceptionCaught() throws ApplicationException {
         Request request = (Request) this.context.getAttribute("HTTP_REQUEST");
         Response response = (Response) this.context.getAttribute("HTTP_RESPONSE");
 
@@ -119,10 +117,8 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             ApplicationException exception = (ApplicationException) session.getAttribute("error");
 
             String message = exception.getRootCause().getMessage();
-            if (message != null)
-                this.setVariable("exception.message", message);
-            else
-                this.setVariable("exception.message", "Unknown error");
+            if (message != null) this.setVariable("exception.message", message);
+            else this.setVariable("exception.message", "Unknown error");
 
             logger.severe(exception.toString());
             exception.printStackTrace();
@@ -150,14 +146,10 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             }
 
             if (log.isDebugEnabled()) {
-                log.debug(sm.getString("contextConfig.xmlSettings",
-                        context.getName(),
-                        Boolean.valueOf(context.getXmlValidation()),
-                        Boolean.valueOf(context.getXmlNamespaceAware())));
+                log.debug(sm.getString("contextConfig.xmlSettings", context.getName(), Boolean.valueOf(context.getXmlValidation()), Boolean.valueOf(context.getXmlNamespaceAware())));
             }
 
-            if (this.defaultWebXml != null && !this.defaultWebXml.equals(Constants.NoDefaultWebXml))
-                webConfig();
+            if (this.defaultWebXml != null && !this.defaultWebXml.equals(Constants.NoDefaultWebXml)) webConfig();
 
             if (!context.getIgnoreAnnotations()) {
                 applicationAnnotationsConfig();
