@@ -60,9 +60,9 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
         System.out.println(ApplicationManager.call("--logo", this.context));
 
-        long start = System.currentTimeMillis();
-        String webappDirLocation = ".";
-        Tomcat tomcat = new Tomcat();
+        final long start = System.currentTimeMillis();
+        final String webappDirLocation = ".";
+        final Tomcat tomcat = new Tomcat();
         // The port that we should run on can be set into an environment variable
         // Look for that variable and default to 8080 if it isn't there.
         int webPort;
@@ -149,7 +149,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
                 log.debug(sm.getString("contextConfig.xmlSettings", context.getName(), Boolean.valueOf(context.getXmlValidation()), Boolean.valueOf(context.getXmlNamespaceAware())));
             }
 
-            if (this.defaultWebXml != null && !this.defaultWebXml.equals(Constants.NoDefaultWebXml)) webConfig();
+            if (!skipWebXmlFileScan()) webConfig();
 
             if (!context.getIgnoreAnnotations()) {
                 applicationAnnotationsConfig();
@@ -186,6 +186,10 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
                 log.error(sm.getString("contextConfig.unavailable"));
                 context.setConfigured(false);
             }
+        }
+
+        public boolean skipWebXmlFileScan() {
+            return true;
         }
     }
 }
