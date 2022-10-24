@@ -54,7 +54,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         try {
             this.start();
         } catch (ApplicationException e) {
-            e.printStackTrace();
+            logger.severe(e.getMessage());
         }
 
         System.out.println("Initialize servlet config and starting...");
@@ -66,7 +66,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         try {
             this.start();
         } catch (ApplicationException e) {
-            e.printStackTrace();
+            logger.severe(e.getMessage());
         }
 
         logger.info("Initialize filter config and starting...");
@@ -216,6 +216,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         System.out.println("Stopping...");
     }
 
+    @Override
     public void doFilter(ServletRequest request, ServletResponse response,
                          FilterChain chain) throws IOException, ServletException {
         final HttpServletRequest req = (HttpServletRequest) request;
@@ -224,20 +225,16 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         resp.addHeader("Cache-Control", "public, max-age=86400, must-revalidate");
         resp.setDateHeader("Expires", now + 86400000L);
 
+        // Process the static files in the project
         String uri = req.getRequestURI().replaceAll("^/+", "");
         if (uri.length() > 1) {
-            System.out.println("Request URI:" + uri);
-
             if (uri.indexOf('/') != -1)
                 uri = uri.substring(0, uri.indexOf("/"));
 
             File resource = new File(uri);
             if (resource.exists()) {
-                System.out.println("Resource exists:" + uri);
-
                 chain.doFilter(request, response);
             } else {
-                System.out.println("Resource exists:" + uri);
                 this.service(req, resp);
             }
         } else
