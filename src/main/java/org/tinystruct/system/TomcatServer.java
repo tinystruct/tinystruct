@@ -16,7 +16,6 @@
 package org.tinystruct.system;
 
 import org.apache.catalina.*;
-import org.apache.catalina.startup.Constants;
 import org.apache.catalina.startup.ContextConfig;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.juli.logging.Log;
@@ -51,7 +50,6 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
         this.commandLines.get("start").setOptions(options).setDescription("Start a Tomcat server");
 
         this.setAction("error", "exceptionCaught");
-
         this.setTemplateRequired(false);
     }
 
@@ -68,17 +66,23 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
         int webPort;
         if (this.context.getAttribute("--server-port") != null) {
             webPort = Integer.parseInt(this.context.getAttribute("--server-port").toString());
-        } else webPort = 8080;
+        } else {
+            webPort = 8080;
+        }
 
         tomcat.setPort(webPort);
+        tomcat.setAddDefaultWebXmlToWebapp(false);
 
         Host host = tomcat.getHost();
         host.setConfigClass(DefaultContextConfig.class.getName());
-
+        host.setAutoDeploy(false);
         try {
             LifecycleListener config = new DefaultContextConfig();
+
             String docBase = new File(webappDirLocation).getAbsolutePath();
             Context ctx = tomcat.addWebapp(host, "", docBase, config);
+            initWebappDefaults(ctx);
+
             logger.info("Configuring app with basedir: " + docBase);
 
             Class<?> filterClass = DefaultHandler.class;
@@ -93,12 +97,34 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             ctx.addFilterMap(filterMap);
 
             tomcat.start();
+            this.started = true;
             logger.info("Server startup in " + (System.currentTimeMillis() - start) + " ms");
+
             tomcat.getServer().await();
         } catch (LifecycleException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
         }
 
+    }
+
+    private void initWebappDefaults(Context ctx) {
+        // Default servlet
+        Wrapper servlet = Tomcat.addServlet(
+                ctx, "default", "org.apache.catalina.servlets.DefaultServlet");
+        servlet.setLoadOnStartup(1);
+        servlet.setOverridable(true);
+
+        // Servlet mappings
+        ctx.addServletMappingDecoded("/", "default");
+
+        // Sessions
+        ctx.setSessionTimeout(30);
+
+        // MIME type mappings
+        Tomcat.addDefaultMimeTypeMappings(ctx);
+
+        // Welcome files
+        ctx.addWelcomeFile("index.html");
     }
 
     @Override
