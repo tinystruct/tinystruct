@@ -48,6 +48,7 @@ import java.util.stream.Stream;
 
 public class Dispatcher extends AbstractApplication implements RemoteDispatcher {
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
+    public static final String OK = "OK!";
     private boolean virtualTerminal;
 
     /**
@@ -177,7 +178,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
     @Override
     public Object execute(String command, Context context) throws RemoteException {
-        Object output = "OK!";
+        Object output = OK;
         try {
             // Execute the command with the context.
             if (command != null) {
