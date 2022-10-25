@@ -109,9 +109,9 @@ public final class ApplicationManager {
                 if (WINDOWS) {
                     cmd = "@echo off\n" +
                             "set \"ROOT=%~dp0..\\\"\n" +
-                            "set \"VERSION=\"" + version + "\"\n" +
-                            "set \"classpath=%ROOT%target\\classes:%ROOT%lib\\*:%ROOT%WEB-INF\\lib\\*:%ROOT%WEB-INF\\classes\":%classpath%\n" +
-                            "@java -cp \"%ROOT%target\\classes;%ROOT%lib\\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%\\lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
+                            "set \"VERSION=" + version + "\"\n" +
+                            "set \"classpath=%ROOT%target\\classes;%ROOT%lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%classpath%\n" +
+                            "@java -cp \"%ROOT%target\\classes;%ROOT%lib\\*;%ROOT%lib\\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
                 } else {
                     cmd = "#!/usr/bin/env sh\n" +
                             "ROOT=\"$(pwd)\"\n" +
