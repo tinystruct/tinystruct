@@ -40,16 +40,17 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 
 public class DefaultTemplate implements Template {
 
     // create a script engine manager
     // create a JavaScript engine
     private static final String engineName = "JavaScript";
-    private final ConcurrentHashMap<String, Variable<?>> variables = Variables.getInstance();
+    private Map<String, Variable<?>> variables = Variables.getInstance();
     private final Application app;
     private final ScriptEngine engine;
     private InputStream in;
@@ -60,6 +61,11 @@ public class DefaultTemplate implements Template {
         if (null != this.engine)
             this.engine.put("self", this.app);
         this.in = in;
+    }
+
+    public DefaultTemplate(Application app, InputStream in, Map<String, Variable<?>> variables) {
+        this(app, in);
+        this.variables = variables;
     }
 
     public DefaultTemplate(Application app, String view) {

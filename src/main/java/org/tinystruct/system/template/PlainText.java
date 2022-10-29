@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.tinystruct.system.template;
 
+import org.tinystruct.AbstractApplication;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
@@ -32,8 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class PlainText implements Template {
 
-    private final ConcurrentHashMap<String, Variable<?>> variables = Variables.getInstance();
     private final Application app;
+    private Map<String, Variable<?>> variables = Variables.getInstance();
     private InputStream in;
     private String text;
 
@@ -45,6 +46,11 @@ public class PlainText implements Template {
     public PlainText(Application app, String text) {
         this.app = app;
         this.text = text;
+    }
+
+    public PlainText(Application app, String text, Map<String, Variable<?>> variables) {
+        this(app, text);
+        this.variables = variables;
     }
 
     public String getName() {
