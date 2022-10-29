@@ -16,17 +16,21 @@
 package org.tinystruct.application;
 
 import org.tinystruct.system.template.variable.Variable;
-import java.util.concurrent.ConcurrentHashMap;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public final class Variables {
-    private static final class SingletonHolder {
-        static final ConcurrentHashMap<String, Variable<?>> variables = new ConcurrentHashMap<String, Variable<?>>(16);
-    }
+    private final Map<String, Variable<?>> variables = new HashMap<>(16);
 
     private Variables() {
     }
 
-    public static ConcurrentHashMap<String, Variable<?>> getInstance() {
-        return SingletonHolder.variables;
+    public static Map<String, Variable<?>> getInstance() {
+        return SingletonHolder.local.get().variables;
+    }
+
+    private static final class SingletonHolder {
+        static final ThreadLocal<Variables> local = ThreadLocal.withInitial(Variables::new);
     }
 }
