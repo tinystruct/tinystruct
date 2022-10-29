@@ -303,6 +303,7 @@ public abstract class AbstractApplication implements Application {
         this.locale = locale;
     }
 
+    @Override
     public String toString() {
         if (!this.templateRequired) return this.name + "@" + Integer.toHexString(hashCode());;
 
@@ -320,7 +321,7 @@ public abstract class AbstractApplication implements Application {
 
         if (null != in) {
             try {
-                this.setTemplate(new DefaultTemplate(this, in));
+                this.setTemplate(new DefaultTemplate(this, in, this.variables));
                 return this.output;
             } catch (ApplicationException e) {
                 throw new ApplicationRuntimeException(e.getMessage(), e);
@@ -328,7 +329,7 @@ public abstract class AbstractApplication implements Application {
         } else {
             if (this.output != null && this.output.trim().length() > 0) {
                 try {
-                    this.setTemplate(new PlainText(this, this.output));
+                    this.setTemplate(new PlainText(this, this.output, this.variables));
                 } catch (ApplicationException e) {
                     throw new ApplicationRuntimeException(e.getMessage(), e);
                 }
