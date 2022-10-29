@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>0.6.9</version>
+    <version>0.7.0</version>
     <name>tinystruct framework</name>
     <description>A simple framework for Java development. Simple is hard, Complex is easy. Better thinking, better
         design.
@@ -68,7 +68,7 @@
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
-            <version>6.2.0.RELEASE</version>
+            <version>6.2.1.RELEASE</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
         <dependency>
@@ -109,7 +109,7 @@
         <dependency>
             <groupId>io.netty.incubator</groupId>
             <artifactId>netty-incubator-transport-native-io_uring</artifactId>
-            <version>0.0.14.Final</version>
+            <version>0.0.15.Final</version>
             <classifier>linux-x86_64</classifier>
             <optional>true</optional>
         </dependency>
@@ -135,7 +135,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>3.2.1</version>
+            <version>3.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -164,18 +164,25 @@
             <artifactId>jna</artifactId>
             <version>5.12.1</version>
         </dependency>
-<!--        <dependency>
+        <!-- https://mvnrepository.com/artifact/org.bouncycastle/bctls-jdk15on -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bctls-jdk15on</artifactId>
+            <version>1.70</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.graalvm.sdk</groupId>
             <artifactId>graal-sdk</artifactId>
             <version>${graalvm.version}</version>
             <scope>provided</scope>
-        </dependency>-->
+        </dependency>
         <!-- https://mvnrepository.com/artifact/org.graalvm.nativeimage/native-image-maven-plugin -->
-        <dependency>
+<!--        <dependency>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
             <version>${native.maven.plugin.version}</version>
-        </dependency>
+        </dependency>-->
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -190,14 +197,14 @@
     </dependencyManagement>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>1.8</java.version>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <java.version>11</java.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <slf4j.version>1.6.1</slf4j.version>
         <h2.version>2.1.214</h2.version>
-        <netty.version>4.1.82.Final</netty.version>
+        <netty.version>4.1.84.Final</netty.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
-        <graalvm.version>22.2.0</graalvm.version>
+        <graalvm.version>22.3.0</graalvm.version>
         <native.maven.plugin.version>0.9.16</native.maven.plugin.version>
     </properties>
     <build>
@@ -325,7 +332,13 @@
                         </executions>
                         <configuration>
                             <fallback>false</fallback>
-                            <buildArgs>-H:+StaticExecutableWithDynamicLibC --native-image-info --verbose</buildArgs>
+                            <buildArgs>
+                                --initialize-at-run-time=io.netty.handler.ssl.BouncyCastleAlpnSslUtils
+                                --initialize-at-run-time=io.netty.util.AbstractReferenceCounted
+                                --initialize-at-run-time=io.netty.channel.epoll.Epoll,io.netty.channel.epoll.EpollEventLoop,io.netty.channel.epoll.Native
+                                --report-unsupported-elements-at-runtime
+                                -H:+StaticExecutableWithDynamicLibC &#45;&#45;native-image-info &#45;&#45;verbose
+                            </buildArgs>
                             <imageName>dispatcher-native</imageName>
                             <mainClass>org.tinystruct.system.Dispatcher</mainClass>
                         </configuration>
