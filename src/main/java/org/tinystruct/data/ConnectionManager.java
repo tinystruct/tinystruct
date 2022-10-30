@@ -43,7 +43,7 @@ final class ConnectionManager implements Runnable {
     private final int max;
 
     private String database;
-    private Boolean pending;
+    private volatile boolean pending;
 
     /**
      * Connection Manager Constructor.
@@ -95,7 +95,7 @@ final class ConnectionManager implements Runnable {
                     dbPassword = dbUri.getUserInfo().split(":")[1];
                 }
                 StringBuilder builder = new StringBuilder();
-                builder.append("jdbc:" + dbType + "://");
+                builder.append("jdbc:").append(dbType).append("://");
                 builder.append(dbUri.getHost());
                 builder.append(":");
 
@@ -181,7 +181,9 @@ final class ConnectionManager implements Runnable {
                 logger.severe("the current connection size("
                         + this.connections.size()
                         + ") is out of the max number.");
-                new Thread(this).start();
+                Thread thread = new Thread(this);
+                thread.setDaemon(true);
+                thread.start();
             } finally {
                 lock.unlock();
             }
@@ -232,19 +234,11 @@ final class ConnectionManager implements Runnable {
     }
 
     public void run() {
-        Connection current;
-        while (!this.connections.isEmpty()) {
-            if ((current = this.connections.poll()) != null) {
-                try {
-                    if (!current.isClosed())
-                        current.close();
-                } catch (SQLException ex) {
-                    logger.log(Level.WARNING, "关闭连接出错！信息：" + ex.getMessage(), ex);
-                }
-            }
-        }
+        if(this.pending) {
+            this.clear();
 
-        this.pending = false;
+            this.pending = false;
+        }
     }
 
     public void clear() {
