@@ -17,8 +17,9 @@ package org.tinystruct.data.component;
 
 import java.util.Iterator;
 import java.util.Vector;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Table extends Vector<Row> {
+public class Table extends CopyOnWriteArrayList<Row> {
     private final static long serialVersionUID = 0;
     private String name;
 
@@ -38,7 +39,7 @@ public class Table extends Vector<Row> {
     }
 
     public void append(Row row) {
-        this.addElement(row);
+        this.add(row);
     }
 
     public String toString() {
