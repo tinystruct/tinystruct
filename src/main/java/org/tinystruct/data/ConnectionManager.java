@@ -28,6 +28,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -135,7 +136,7 @@ final class ConnectionManager implements Runnable {
 
         int index = -1, length = Type.values().length;
         for (int i = 0; i < length; i++) {
-            if (this.driverName.indexOf(Type.values()[i].name().toLowerCase()) != -1) {
+            if (this.driverName.contains(Type.values()[i].name().toLowerCase())) {
                 index = i;
                 break;
             }
@@ -171,15 +172,18 @@ final class ConnectionManager implements Runnable {
      */
     public void flush(Connection connection)// 从外面获取连接并放入连接向量中
     {
-        synchronized (ConnectionManager.class) {
-            this.connections.add(connection);
-
-            if (this.connections.size() > this.max && !this.pending) {
+        this.connections.add(connection);
+        if (this.connections.size() > this.max && !this.pending) {
+            ReentrantLock lock = new ReentrantLock();
+            try {
+                lock.lock();
                 this.pending = true;
                 logger.severe("the current connection size("
                         + this.connections.size()
                         + ") is out of the max number.");
                 new Thread(this).start();
+            } finally {
+                lock.unlock();
             }
         }
     }
@@ -193,36 +197,34 @@ final class ConnectionManager implements Runnable {
     public Connection getConnection() throws ApplicationException// 从里面获取可用连接并返回到外部
     {
         Connection connection;
-        synchronized (ConnectionManager.class) {
-            if (!this.connections.isEmpty()) {
-                connection = this.connections.poll();// 从连接向量中提取第一个空闲的连接。由于是提取，所以要把它从连接向量中删除
-                try {
-                    if (connection.isClosed())// 对提取出来的连接进行判断，如果关闭了，那么提取下一个连接，否则直接获取一个新的连接
-                    {
-                        logger.severe("发现了无效连接，系统已把它删除掉了！");
-                        connection = this.getConnection();
-                    }
-                } catch (SQLException ex) {
-                    logger.log(Level.WARNING, "获取连接出错！信息：" + ex.getMessage(), ex);
+        if (!this.connections.isEmpty()) {
+            connection = this.connections.poll();// 从连接向量中提取第一个空闲的连接。由于是提取，所以要把它从连接向量中删除
+            try {
+                if (connection.isClosed())// 对提取出来的连接进行判断，如果关闭了，那么提取下一个连接，否则直接获取一个新的连接
+                {
+                    logger.severe("发现了无效连接，系统已把它删除掉了！");
                     connection = this.getConnection();
                 }
-            } else {
-                try {
-                    if (null == this.user || this.user.trim().length() == 0)
-                        connection = DriverManager.getConnection(this.url);
-                    else
-                        connection = DriverManager.getConnection(this.url, this.user, this.password);
-
-                    logger.log(Level.INFO, "System default database: " + connection.getCatalog());
-
-                    if (this.database.trim().length() > 0)
-                        connection.setCatalog(this.database);
-                } catch (SQLException ex) {
-                    throw new ApplicationException(ex.getMessage(), ex);
-                }
+            } catch (SQLException ex) {
+                logger.log(Level.WARNING, "获取连接出错！信息：" + ex.getMessage(), ex);
+                connection = this.getConnection();
             }
-            return connection;
+        } else {
+            try {
+                if (null == this.user || this.user.trim().length() == 0)
+                    connection = DriverManager.getConnection(this.url);
+                else
+                    connection = DriverManager.getConnection(this.url, this.user, this.password);
+
+                logger.log(Level.INFO, "System default database: " + connection.getCatalog());
+
+                if (this.database.trim().length() > 0)
+                    connection.setCatalog(this.database);
+            } catch (SQLException ex) {
+                throw new ApplicationException(ex.getMessage(), ex);
+            }
         }
+        return connection;
     }
 
     public int size() {
@@ -230,45 +232,32 @@ final class ConnectionManager implements Runnable {
     }
 
     public void run() {
-
         Connection current;
-        synchronized (ConnectionManager.class) {
-
-            while (!this.connections.isEmpty()) {
-                current = this.connections.poll();
-
-                if (current != null) {
-                    try {
-                        if (!current.isClosed())
-                            current.close();
-                    } catch (SQLException ex) {
-                        logger.log(Level.WARNING, "关闭连接出错！信息：" + ex.getMessage(), ex);
-                        continue;
-                    }
+        while (!this.connections.isEmpty()) {
+            if ((current = this.connections.poll()) != null) {
+                try {
+                    if (!current.isClosed())
+                        current.close();
+                } catch (SQLException ex) {
+                    logger.log(Level.WARNING, "关闭连接出错！信息：" + ex.getMessage(), ex);
                 }
             }
-
-            this.pending = false;
         }
+
+        this.pending = false;
     }
 
     public void clear() {
         Connection current;
-        synchronized (ConnectionManager.class) {
-            while (!this.connections.isEmpty()) {
-                current = this.connections.poll();
-
-                if (current != null) {
-                    try {
-                        if (!current.isClosed())
-                            current.close();
-                    } catch (SQLException ex) {
-                        logger.log(Level.WARNING, "关闭连接出错！信息：" + ex.getMessage(), ex);
-                        continue;
-                    }
+        while (!this.connections.isEmpty()) {
+            if ((current = this.connections.poll()) != null) {
+                try {
+                    if (!current.isClosed())
+                        current.close();
+                } catch (SQLException ex) {
+                    logger.log(Level.WARNING, "关闭连接出错！信息：" + ex.getMessage(), ex);
                 }
             }
-
         }
     }
 
