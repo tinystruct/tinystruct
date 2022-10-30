@@ -17,8 +17,9 @@ package org.tinystruct.data.component;
 
 import java.util.Iterator;
 import java.util.Vector;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Row extends Vector<Field> {
+public class Row extends CopyOnWriteArrayList<Field> {
     private final static long serialVersionUID = 1;
 
     public Row() {
