@@ -47,8 +47,8 @@ import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 public class Dispatcher extends AbstractApplication implements RemoteDispatcher {
-    private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
     public static final String OK = "OK!";
+    private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
     private boolean virtualTerminal;
 
     /**
@@ -160,6 +160,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                     remoteDispatcher.install(config, list);
                 } else
                     dispatcher.install(config, list);
+            } else {
+                dispatcher.install(config, null);
             }
 
             if (remote) {
@@ -211,14 +213,16 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
     @Override
     public void install(Configuration<String> config, List<String> list) throws RemoteException {
-        // Load the default import.
-        // Merge the packages from list.
-        // Update the imports.
-        String defaults;
-        if (!(defaults = config.get("default.import.applications")).equals(""))
-            defaults += ";";
+        if (list != null && list.size() > 0) {
+            // Load the default import.
+            // Merge the packages from list.
+            // Update the imports.
+            String defaults;
+            if (!(defaults = config.get("default.import.applications")).equals(""))
+                defaults += ";";
 
-        config.set("default.import.applications", defaults + String.join(";", list));
+            config.set("default.import.applications", defaults + String.join(";", list));
+        }
 
         try {
             // Initialize the application manager with the configuration.
