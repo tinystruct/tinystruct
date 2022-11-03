@@ -28,7 +28,6 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,7 +42,7 @@ final class ConnectionManager implements Runnable {
     private final int max;
 
     private String database;
-    private volatile boolean pending;
+    private boolean pending;
 
     /**
      * Connection Manager Constructor.
@@ -173,19 +172,16 @@ final class ConnectionManager implements Runnable {
     public void flush(Connection connection)// 从外面获取连接并放入连接向量中
     {
         this.connections.add(connection);
-        if (this.connections.size() > this.max && !this.pending) {
-            ReentrantLock lock = new ReentrantLock();
-            try {
-                lock.lock();
-                this.pending = true;
-                logger.severe("the current connection size("
-                        + this.connections.size()
-                        + ") is out of the max number.");
-                Thread thread = new Thread(this);
-                thread.setDaemon(true);
-                thread.start();
-            } finally {
-                lock.unlock();
+        if (this.connections.size() > this.max) {
+            synchronized (ConnectionManager.class) {
+                if (this.connections.size() > this.max && !this.pending) {
+                    this.pending = true;
+                    logger.severe("the current connection size("
+                            + this.connections.size()
+                            + ") is out of the max number.");
+                    Thread thread = new Thread(this);
+                    thread.start();
+                }
             }
         }
     }
@@ -234,24 +230,24 @@ final class ConnectionManager implements Runnable {
     }
 
     public void run() {
-        if(this.pending) {
-            this.clear();
-
-            this.pending = false;
-        }
+        this.clear();
     }
 
     public void clear() {
-        Connection current;
-        while (!this.connections.isEmpty()) {
-            if ((current = this.connections.poll()) != null) {
-                try {
-                    if (!current.isClosed())
-                        current.close();
-                } catch (SQLException ex) {
-                    logger.log(Level.WARNING, "关闭连接出错！信息：" + ex.getMessage(), ex);
+        synchronized (ConnectionManager.class) {
+            Connection current;
+            if (!this.connections.isEmpty()) {
+                while (this.connections.size() > this.max && (current = this.connections.poll()) != null) {
+                    try {
+                        if (!current.isClosed())
+                            current.close();
+                    } catch (SQLException ex) {
+                        logger.log(Level.WARNING, "关闭连接出错！信息：" + ex.getMessage(), ex);
+                    }
                 }
             }
+
+            this.pending = false;
         }
     }
 
