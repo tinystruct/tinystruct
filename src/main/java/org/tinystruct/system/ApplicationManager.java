@@ -171,7 +171,7 @@ public final class ApplicationManager {
     public static boolean uninstall(Application application) {
         applications.remove(application.getName());
 
-        Actions actions = application.actions();
+        Actions actions = Actions.getInstance();
         Object[] list = actions.list().toArray();
 
         Action action;
