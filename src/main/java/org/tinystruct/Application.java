@@ -15,7 +15,6 @@
  *******************************************************************************/
 package org.tinystruct;
 
-import org.tinystruct.application.Actions;
 import org.tinystruct.application.Context;
 import org.tinystruct.application.Template;
 import org.tinystruct.system.Configuration;
@@ -119,11 +118,12 @@ public interface Application {
     Configuration<String> getConfiguration();
 
     /**
-     * Return a list of action.
+     * Return a specific instance for this application.
      *
-     * @return actions
+     * @return an instance of this application
+     * @param contextId Context Id
      */
-    Actions actions();
+    Application getInstance(String contextId);
 
     /**
      * To invoke the action with action name specified.
