@@ -30,6 +30,7 @@ import org.tinystruct.system.util.StringUtilities;
 import java.io.File;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
@@ -40,6 +41,7 @@ import java.util.logging.Logger;
 public abstract class AbstractApplication implements Application {
 
     private final static Logger logger = Logger.getLogger(AbstractApplication.class.getName());
+    private static final Map<String, Application> instances = new ConcurrentHashMap<>();
     private final Actions actions = Actions.getInstance();
     private final String name;
     private final Map<String, Variable<?>> variables;
@@ -97,10 +99,16 @@ public abstract class AbstractApplication implements Application {
         }
 
         this.setLocale(this.config.get(LANGUAGE));
+
+        try {
+            instances.putIfAbsent(context.getId(), (Application) this.clone());
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
     }
 
-    public Actions actions() {
-        return this.actions;
+    public Application getInstance(String contextId) {
+        return instances.get(contextId);
     }
 
     public void setAction(String path, Action action) {
@@ -305,7 +313,7 @@ public abstract class AbstractApplication implements Application {
 
     @Override
     public String toString() {
-        if (!this.templateRequired) return this.name + "@" + Integer.toHexString(hashCode());;
+        if (!this.templateRequired) return this.name + "@" + Integer.toHexString(hashCode());
 
         InputStream in = null;
         String simpleName = this.getName().substring(this.getName().lastIndexOf('.') + 1);
