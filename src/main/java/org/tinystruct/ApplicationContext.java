@@ -31,11 +31,15 @@ import java.util.UUID;
  */
 public final class ApplicationContext implements Context {
 
-    private final String id = UUID.randomUUID().toString();
+    private String id;
     private final Map<String, Object> attr = new HashMap<String, Object>();
 
     public String getId() {
         return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public void setAttribute(String name, Object value) {

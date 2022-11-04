@@ -27,4 +27,6 @@ public interface Context extends Serializable {
     String[] getAttributeNames();
 
     String getId();
+
+    void setId(String id);
 }
