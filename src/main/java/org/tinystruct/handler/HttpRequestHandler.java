@@ -58,6 +58,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         if (this.context == null)
             this.context = new ApplicationContext();
         this.request = new RequestBuilder(msg);
+        this.context.setId(request.getSession().getId());
         this.service(ctx, request, context);
     }
 
