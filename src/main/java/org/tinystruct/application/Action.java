@@ -74,6 +74,13 @@ public class Action implements org.tinystruct.application.Method<Object> {
                 arguments = getArguments(args, types);
             }
 
+            Application app;
+            if (this.app.getContext() != null) {
+                app = this.app.getInstance(this.app.getContext().getId());
+            } else {
+                app = this.app;
+            }
+
             if (method.getReturnType().isAssignableFrom(Void.TYPE)) {
                 try {
                     method.invoke(app, arguments);
