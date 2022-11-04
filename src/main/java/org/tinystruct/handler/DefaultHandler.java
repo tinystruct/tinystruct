@@ -87,6 +87,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         Request _request = new RequestBuilder(request);
         Response<ServletOutputStream> _response = new ResponseBuilder(response);
 
+        context.setId(_request.getSession().getId());
         context.setAttribute(HTTP_REQUEST, _request);
         context.setAttribute(HTTP_RESPONSE, _response);
         context.setAttribute(HTTP_SCHEME, request.getScheme());
@@ -149,8 +150,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                             _response.addHeader(Header.CONTENT_LENGTH.toString(), bytes.length);
                             _response.get().write(bytes);
                             _response.get().close();
-                        }
-                        else {
+                        } else {
                             BufferedWriter bufferedWriter = getWriter(_response.get());
                             bufferedWriter.write(String.valueOf(message));
                             bufferedWriter.close();
