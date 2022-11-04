@@ -42,16 +42,14 @@ public abstract class AbstractApplication implements Application {
 
     private final static Logger logger = Logger.getLogger(AbstractApplication.class.getName());
     private static final Map<String, Application> instances = new ConcurrentHashMap<>();
+    protected final Map<String, CommandLine> commandLines;
     private final Actions actions = Actions.getInstance();
     private final String name;
     private final Map<String, Variable<?>> variables;
-
     /**
      * Context of application
      */
     protected Context context;
-    protected final Map<String, CommandLine> commandLines;
-
     /**
      * Configuration
      */
@@ -62,6 +60,7 @@ public abstract class AbstractApplication implements Application {
     private boolean templateRequired = true;
 
     private String templatePath;
+
     /**
      * Abstract application constructor.
      */
@@ -72,20 +71,21 @@ public abstract class AbstractApplication implements Application {
     }
 
     /**
+     * Return if template is required or not.
+     *
+     * @return templateRequired boolean
+     */
+    public boolean isTemplateRequired() {
+        return templateRequired;
+    }
+
+    /**
      * Set template to be required or not.
      *
      * @param templateRequired boolean
      */
     public void setTemplateRequired(boolean templateRequired) {
         this.templateRequired = templateRequired;
-    }
-
-    /**
-     * Return if template is required or not.
-     * @return templateRequired boolean
-     */
-    public boolean isTemplateRequired() {
-        return templateRequired;
     }
 
     public void init(Context context) {
@@ -101,14 +101,14 @@ public abstract class AbstractApplication implements Application {
         this.setLocale(this.config.get(LANGUAGE));
 
         try {
-            instances.putIfAbsent(context.getId(), (Application) this.clone());
+            instances.putIfAbsent(context.getId() + this.getName(), (Application) this.clone());
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();
         }
     }
 
     public Application getInstance(String contextId) {
-        return instances.get(contextId);
+        return instances.get(contextId + this.getName());
     }
 
     public void setAction(String path, Action action) {
@@ -191,7 +191,7 @@ public abstract class AbstractApplication implements Application {
             throw new ApplicationException("Action " + path
                     + " path does not registered.");
 
-        if(parameters == null) {
+        if (parameters == null) {
             return action.execute();
         }
 
