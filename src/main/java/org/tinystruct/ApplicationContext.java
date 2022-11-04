@@ -21,7 +21,6 @@ import org.tinystruct.system.template.variable.Variable;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Implementation of {@link Context} for application.
@@ -31,8 +30,8 @@ import java.util.UUID;
  */
 public final class ApplicationContext implements Context {
 
-    private String id;
     private final Map<String, Object> attr = new HashMap<String, Object>();
+    private String id;
 
     public String getId() {
         return id;
