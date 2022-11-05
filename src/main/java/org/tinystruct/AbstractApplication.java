@@ -16,20 +16,21 @@
 package org.tinystruct;
 
 import org.tinystruct.application.*;
-import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Resource;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.template.DefaultTemplate;
 import org.tinystruct.system.template.PlainText;
-import org.tinystruct.system.template.variable.DataType;
 import org.tinystruct.system.template.variable.StringVariable;
 import org.tinystruct.system.template.variable.Variable;
 import org.tinystruct.system.util.StringUtilities;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -38,27 +39,28 @@ import java.util.logging.Logger;
  *
  * @author James Zhou
  */
-public abstract class AbstractApplication implements Application {
+public abstract class AbstractApplication implements Application, Cloneable {
 
-    private final static Logger logger = Logger.getLogger(AbstractApplication.class.getName());
+    private static final Logger logger = Logger.getLogger(AbstractApplication.class.getName());
     private static final Map<String, Application> instances = new ConcurrentHashMap<>();
-    protected final Map<String, CommandLine> commandLines;
     private final Actions actions = Actions.getInstance();
     private final String name;
-    private final Map<String, Variable<?>> variables;
+    private final Variables variables;
+    private final Map<String, Variable<?>> shared;
+    protected final Map<String, CommandLine> commandLines;
+
     /**
      * Context of application
      */
     protected Context context;
+
     /**
      * Configuration
      */
     protected Configuration<String> config;
     private Locale locale;
     private String output;
-
     private boolean templateRequired = true;
-
     private String templatePath;
 
     /**
@@ -66,7 +68,8 @@ public abstract class AbstractApplication implements Application {
      */
     public AbstractApplication() {
         this.name = getClass().getName();
-        this.variables = Variables.getInstance();
+        this.shared = Variables.getInstance();
+        this.variables = new Variables();
         this.commandLines = new HashMap<String, CommandLine>();
     }
 
@@ -90,17 +93,18 @@ public abstract class AbstractApplication implements Application {
 
     public void init(Context context) {
         this.context = context;
-        if (this.context.getAttribute(LANGUAGE) != null
-                && !this.context.getAttribute(LANGUAGE).toString()
-                .equalsIgnoreCase(this.config.get(DEFAULT_LANGUAGE))) {
-            this.config.set(LANGUAGE, this.context.getAttribute(LANGUAGE).toString());
-        } else {
-            this.config.set(LANGUAGE, this.config.get(DEFAULT_LANGUAGE));
+        try {
+            AbstractApplication clone = (AbstractApplication) this.clone();
+            if (clone.context.getAttribute(LANGUAGE) != null) {
+                clone.setLocale(clone.context.getAttribute(LANGUAGE).toString());
+            }
+            else {
+                clone.setLocale(this.config.get(DEFAULT_LANGUAGE));
+            }
+            instances.put(context.getId() + this.getName(), clone);
+        } catch (CloneNotSupportedException e) {
+            throw new ApplicationRuntimeException(e.toString(), e.getCause());
         }
-
-        this.setLocale(this.config.get(LANGUAGE));
-
-        instances.putIfAbsent(context.getId() + this.getName(), this);
     }
 
     public Application getInstance(String contextId) {
@@ -150,12 +154,15 @@ public abstract class AbstractApplication implements Application {
     }
 
     public void setConfiguration(Configuration<String> config) {
+        config.set(CLSID, this.name);
+        config.set(DEFAULT_LANGUAGE, "zh_CN");
+        config.set(LANGUAGE, config.get(DEFAULT_LANGUAGE));
+        config.set(CHARSET, "utf-8");
+        config.set(DEFAULT_BASE_URL, "/?q=");
+
+        this.setLocale(config.get(DEFAULT_LANGUAGE));
+
         this.config = config;
-        this.config.set(CLSID, this.name);
-        this.config.set(DEFAULT_LANGUAGE, "zh_CN");
-        this.config.set(LANGUAGE, this.config.get(DEFAULT_LANGUAGE));
-        this.config.set(CHARSET, "utf-8");
-        this.config.set(DEFAULT_BASE_URL, "/?q=");
 
         // Only to be initialized once.
         this.init();
@@ -164,8 +171,6 @@ public abstract class AbstractApplication implements Application {
 
         if (this.commandLines.get("--help") != null)
             this.commandLines.get("--help").setDescription("Help command");
-
-        this.setLocale(this.config.get(LANGUAGE));
     }
 
     public String getName() {
@@ -182,6 +187,7 @@ public abstract class AbstractApplication implements Application {
         if (context != null && context.getAttribute(METHOD) != null) {
             method = context.getAttribute(METHOD).toString();
         }
+
         Action action = this.actions.getAction(path, method);
         if (action == null)
             throw new ApplicationException("Action " + path
@@ -198,63 +204,46 @@ public abstract class AbstractApplication implements Application {
         return this.context;
     }
 
-    public void setVariable(Variable<?> variable, boolean forcely) {
-        String variableName = "{%" + variable.getName() + "%}";
-        if (forcely || !this.variables.containsKey(variableName)) {
-            if (variable.getType() == DataType.OBJECT) {
-                Builder builder = new Builder();
-                try {
-                    builder.parse(variable.getValue().toString());
-                    Set<Map.Entry<String, Object>> elements = builder.entrySet();
-                    Iterator<Map.Entry<String, Object>> list = elements.iterator();
-                    Map.Entry<String, Object> entry;
-                    while (list.hasNext()) {
-                        entry = list.next();
-                        this.variables.put("{%" + variable.getName() + "."
-                                + entry.getKey() + "%}", new StringVariable("{%"
-                                + variable.getName() + "." + entry.getKey() + "%}",
-                                entry.getValue().toString()));
-                    }
-                } catch (ApplicationException e) {
-                    e.printStackTrace();
-                }
-            }
-            this.variables.put(variableName, variable);
-        }
+    public void setVariable(Variable<?> variable, boolean force) {
+        this.variables.setVariable(variable, force);
     }
 
     public void setVariable(String name, String value) {
         this.setVariable(name, value, true);
     }
 
-    public void setVariable(String name, String value, boolean forced) {
+    public void setVariable(String name, String value, boolean force) {
         if (value == null) value = "";
         StringVariable variable = new StringVariable(name, value);
-        this.setVariable(variable, forced);
+        this.setVariable(variable, force);
     }
 
     public Variable<?> getVariable(String variable) {
-        return this.variables.get("{%" + variable + "%}");
+        return this.variables.getVariable(variable);
+    }
+
+    public void setSharedVariable(String name, String value) {
+        this.variables.setSharedVariable(new StringVariable(name, value), true);
     }
 
     public String setText(String fieldName) {
         String text = this.getProperty(fieldName);
         String key = "[%" + fieldName + "%]";
-        this.variables.put(key, new StringVariable(key, text));
+        this.shared.put(key, new StringVariable(key, text));
         return text;
     }
 
     public String setText(String fieldName, Object... args) {
         String text = String.format(this.getProperty(fieldName), args);
         String key = "[%" + fieldName + "%]";
-        this.variables.put(key, new StringVariable(key, text));
+        this.shared.put(key, new StringVariable(key, text));
         return text;
     }
 
     private void setLink(String name) {
         String key = "[%LINK:" + name + "%]";
-        if (!this.variables.containsKey(key)) {
-            this.variables.put(key, new StringVariable(key, name));
+        if (!this.shared.containsKey(key)) {
+            this.shared.put(key, new StringVariable(key, name));
         }
     }
 
@@ -266,13 +255,13 @@ public abstract class AbstractApplication implements Application {
      */
     public String getLink(String variable) {
         String linkName = "[%LINK:" + variable + "%]";
-        if (this.variables.get(linkName) != null) {
+        if (this.shared.get(linkName) != null) {
             String baseUrl;
             if (this.getContext() != null && this.getContext().getAttribute("HTTP_HOST") != null)
                 baseUrl = this.getContext().getAttribute("HTTP_HOST").toString();
             else
                 baseUrl = this.config.get(DEFAULT_BASE_URL);
-            return baseUrl + this.variables.get(linkName).getValue();
+            return baseUrl + this.shared.get(linkName).getValue();
         }
         return "#";
     }
@@ -288,7 +277,7 @@ public abstract class AbstractApplication implements Application {
     }
 
     public String getProperty(String propertyName) {
-        Resource resource = Resource.getInstance(this.locale);
+        Resource resource = Resource.getInstance(getLocale());
         return resource.getLocaleString(propertyName);
     }
 
@@ -325,7 +314,7 @@ public abstract class AbstractApplication implements Application {
 
         if (null != in) {
             try {
-                this.setTemplate(new DefaultTemplate(this, in, this.variables));
+                this.setTemplate(new DefaultTemplate(this, in, this.variables.getVariables()));
                 return this.output;
             } catch (ApplicationException e) {
                 throw new ApplicationRuntimeException(e.getMessage(), e);
@@ -333,7 +322,7 @@ public abstract class AbstractApplication implements Application {
         } else {
             if (this.output != null && this.output.trim().length() > 0) {
                 try {
-                    this.setTemplate(new PlainText(this, this.output, this.variables));
+                    this.setTemplate(new PlainText(this, this.output, this.variables.getVariables()));
                 } catch (ApplicationException e) {
                     throw new ApplicationRuntimeException(e.getMessage(), e);
                 }
