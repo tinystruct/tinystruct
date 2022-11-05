@@ -31,7 +31,7 @@ import java.util.Map;
 public final class ApplicationContext implements Context {
 
     private final Map<String, Object> attr = new HashMap<String, Object>();
-    private String id;
+    private String id = "";
 
     public String getId() {
         return id;
