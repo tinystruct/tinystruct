@@ -34,23 +34,27 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PlainText implements Template {
 
     private final Application app;
-    private Map<String, Variable<?>> variables = Variables.getInstance();
+    private Map<String, Variable<?>> variables;
     private InputStream in;
     private String text;
 
     public PlainText(Application app, InputStream in) {
         this.app = app;
         this.in = in;
+        this.variables = Variables.getInstance();
     }
 
     public PlainText(Application app, String text) {
         this.app = app;
         this.text = text;
+        this.variables = Variables.getInstance();
     }
 
     public PlainText(Application app, String text, Map<String, Variable<?>> variables) {
         this(app, text);
-        this.variables = variables;
+        this.variables = new HashMap<>();
+        this.variables.putAll(Variables.getInstance());
+        this.variables.putAll(variables);
     }
 
     public String getName() {

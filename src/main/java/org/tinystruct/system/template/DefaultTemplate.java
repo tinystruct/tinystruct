@@ -40,6 +40,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -50,22 +51,26 @@ public class DefaultTemplate implements Template {
     // create a script engine manager
     // create a JavaScript engine
     private static final String engineName = "JavaScript";
-    private Map<String, Variable<?>> variables = Variables.getInstance();
     private final Application app;
     private final ScriptEngine engine;
+    private Map<String, Variable<?>> variables;
     private InputStream in;
     private String view;
+
     public DefaultTemplate(Application app, InputStream in) {
         this.app = app;
         this.engine = SingletonHolder.manager.getEngineByName(engineName);
         if (null != this.engine)
             this.engine.put("self", this.app);
         this.in = in;
+        this.variables = Variables.getInstance();
     }
 
     public DefaultTemplate(Application app, InputStream in, Map<String, Variable<?>> variables) {
         this(app, in);
-        this.variables = variables;
+        this.variables = new HashMap<>();
+        this.variables.putAll(Variables.getInstance());
+        this.variables.putAll(variables);
     }
 
     public DefaultTemplate(Application app, String view) {
@@ -76,6 +81,7 @@ public class DefaultTemplate implements Template {
             this.engine.put("self", this.app);
             this.engine.put("self.toString", "Please don't execute like this.");
         }
+        this.variables = Variables.getInstance();
     }
 
     private static void stripEmptyTextNode(Node node) {
