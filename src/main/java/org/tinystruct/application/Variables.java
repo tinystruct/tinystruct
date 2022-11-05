@@ -15,18 +15,78 @@
  *******************************************************************************/
 package org.tinystruct.application;
 
+import org.tinystruct.ApplicationException;
+import org.tinystruct.data.component.Builder;
+import org.tinystruct.system.template.variable.DataType;
+import org.tinystruct.system.template.variable.StringVariable;
 import org.tinystruct.system.template.variable.Variable;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class Variables {
-    private static final class SingletonHolder {
-        static final ConcurrentHashMap<String, Variable<?>> variables = new ConcurrentHashMap<String, Variable<?>>(16);
-    }
+    private static final ThreadLocal<Map<String, Variable<?>>> threadLocal = ThreadLocal.withInitial(HashMap::new);
 
-    private Variables() {
+    public Variables() {
     }
 
     public static ConcurrentHashMap<String, Variable<?>> getInstance() {
         return SingletonHolder.variables;
+    }
+
+    public void setVariable(Variable<?> variable, boolean force) {
+        saveVariable(variable, force, false);
+    }
+
+    public void setSharedVariable(Variable<?> variable, boolean force) {
+        saveVariable(variable, force, true);
+    }
+
+    private void saveVariable(Variable<?> variable, boolean force, boolean shared) {
+        String variableName = "{%" + variable.getName() + "%}";
+        Map<String, Variable<?>> map;
+        if (!shared) {
+            map = this.getVariables();
+        }
+        else {
+            map = getInstance();
+        }
+
+        if (force || !map.containsKey(variableName)) {
+            if (variable.getType() == DataType.OBJECT) {
+                Builder builder = new Builder();
+                try {
+                    builder.parse(variable.getValue().toString());
+                    Set<Map.Entry<String, Object>> elements = builder.entrySet();
+                    Iterator<Map.Entry<String, Object>> list = elements.iterator();
+                    Map.Entry<String, Object> entry;
+                    while (list.hasNext()) {
+                        entry = list.next();
+                        map.put("{%" + variable.getName() + "."
+                                + entry.getKey() + "%}", new StringVariable("{%"
+                                + variable.getName() + "." + entry.getKey() + "%}",
+                                entry.getValue().toString()));
+                    }
+                } catch (ApplicationException e) {
+                    e.printStackTrace();
+                }
+            }
+            map.put(variableName, variable);
+        }
+    }
+
+    public Variable<?> getVariable(String variable) {
+        return getVariables().get("{%" + variable + "%}");
+    }
+
+    public Map<String, Variable<?>> getVariables() {
+        return threadLocal.get();
+    }
+
+    private static final class SingletonHolder {
+        static final ConcurrentHashMap<String, Variable<?>> variables = new ConcurrentHashMap<String, Variable<?>>(16);
     }
 }

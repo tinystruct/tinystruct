@@ -100,11 +100,7 @@ public abstract class AbstractApplication implements Application {
 
         this.setLocale(this.config.get(LANGUAGE));
 
-        try {
-            instances.putIfAbsent(context.getId() + this.getName(), (Application) this.clone());
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        }
+        instances.putIfAbsent(context.getId() + this.getName(), this);
     }
 
     public Application getInstance(String contextId) {
