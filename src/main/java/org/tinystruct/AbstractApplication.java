@@ -43,12 +43,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
     private static final Logger logger = Logger.getLogger(AbstractApplication.class.getName());
     private static final Map<String, Application> instances = new ConcurrentHashMap<>();
+    protected final Map<String, CommandLine> commandLines;
     private final Actions actions = Actions.getInstance();
     private final String name;
     private final Variables variables;
     private final Map<String, Variable<?>> shared;
-    protected final Map<String, CommandLine> commandLines;
-
     /**
      * Context of application
      */
@@ -94,21 +93,23 @@ public abstract class AbstractApplication implements Application, Cloneable {
     public void init(Context context) {
         this.context = context;
         try {
-            AbstractApplication clone = (AbstractApplication) this.clone();
-            if (clone.context.getAttribute(LANGUAGE) != null) {
-                clone.setLocale(clone.context.getAttribute(LANGUAGE).toString());
+            String key = context.getId() + File.separatorChar + this.getName();
+            if(!instances.containsKey(key)) {
+                AbstractApplication clone = (AbstractApplication) this.clone();
+                if (clone.context.getAttribute(LANGUAGE) != null) {
+                    clone.setLocale(clone.context.getAttribute(LANGUAGE).toString());
+                } else {
+                    clone.setLocale(this.config.get(DEFAULT_LANGUAGE));
+                }
+                instances.put(key, clone);
             }
-            else {
-                clone.setLocale(this.config.get(DEFAULT_LANGUAGE));
-            }
-            instances.put(context.getId() + this.getName(), clone);
         } catch (CloneNotSupportedException e) {
             throw new ApplicationRuntimeException(e.toString(), e.getCause());
         }
     }
 
     public Application getInstance(String contextId) {
-        return instances.get(contextId + this.getName());
+        return instances.get(contextId + File.separatorChar + this.getName());
     }
 
     public void setAction(String path, Action action) {
