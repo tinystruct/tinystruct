@@ -20,7 +20,7 @@ import java.util.*;
 public class Scheduler {
 
     private final static Set<TimerTask> set = new HashSet<>();
-    private final static Scheduler INSTANCE = new Scheduler(false);
+    private final static Scheduler INSTANCE = new Scheduler(true);
     private final Timer timer;
 
     public Scheduler(boolean isDaemon) {
