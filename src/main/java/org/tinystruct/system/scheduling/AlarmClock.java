@@ -20,7 +20,7 @@ import java.util.Date;
 
 public class AlarmClock {
 
-    private final Scheduler scheduler = Scheduler.getInstance();
+    private final Scheduler scheduler = new Scheduler(false);
     private final SimpleDateFormat dateFormat =
             new SimpleDateFormat("dd MMM yyyy HH:mm:ss.SSS");
 
