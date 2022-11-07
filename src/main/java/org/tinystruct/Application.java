@@ -21,6 +21,7 @@ import org.tinystruct.system.Configuration;
 import org.tinystruct.system.cli.CommandLine;
 
 import java.util.Map;
+import java.util.TimerTask;
 
 /**
  * Application interface used to indicate that an application should provide the standard methods.
@@ -28,7 +29,7 @@ import java.util.Map;
  * @author James Zhou
  * @since 0.1.0
  */
-public interface Application extends Runnable {
+public interface Application {
     /**
      * Constants for Language code.
      */
@@ -193,4 +194,11 @@ public interface Application extends Runnable {
      * @return help
      */
     String help();
+
+    /**
+     * Return a TimerTask.
+     *
+     * @return the object of TimeTask
+     */
+    TimerTask getTimerTask();
 }
