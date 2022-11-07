@@ -18,6 +18,8 @@ package org.tinystruct.application;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
+import org.tinystruct.system.scheduling.Scheduler;
+import org.tinystruct.system.scheduling.TimeIterator;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -81,7 +83,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
                 app = this.app;
             }
 
-            new Thread(app).start();
+            Scheduler.getInstance().schedule(app.getTimerTask(), new TimeIterator(0,0,1800), 18000);
 
             if (method.getReturnType().isAssignableFrom(Void.TYPE)) {
                 try {
