@@ -16,14 +16,14 @@
 package org.tinystruct.system.scheduling;
 
 
-public abstract class SchedulerTask {
-    final Object lock = new Object();
+public interface SchedulerTask {
+    Object lock = new Object();
 
-    public abstract void start();
+    void start();
 
-    public abstract boolean next();
+    boolean next();
 
-    public abstract void cancel();
+    void cancel();
 
 }
 
