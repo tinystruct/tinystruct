@@ -19,6 +19,7 @@ import org.tinystruct.application.*;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Resource;
 import org.tinystruct.system.cli.CommandLine;
+import org.tinystruct.system.scheduling.Scheduler;
 import org.tinystruct.system.template.DefaultTemplate;
 import org.tinystruct.system.template.PlainText;
 import org.tinystruct.system.template.variable.StringVariable;
@@ -27,10 +28,7 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.OptionalInt;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
@@ -39,13 +37,14 @@ import java.util.logging.Logger;
  *
  * @author James Zhou
  */
-public abstract class AbstractApplication implements Application, Cloneable {
+public abstract class AbstractApplication extends TimerTask implements Application, Cloneable {
 
     private static final Logger logger = Logger.getLogger(AbstractApplication.class.getName());
     /**
      * Application instances.
      */
     private static final Map<String, Application> INSTANCES = new ConcurrentHashMap<>();
+
     protected final Map<String, CommandLine> commandLines;
     private final Actions actions = Actions.getInstance();
     private final String name;
@@ -97,7 +96,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
         this.context = context;
         try {
             String key = context.getId() + File.separatorChar + this.getName();
-            if(!INSTANCES.containsKey(key)) {
+            if (!INSTANCES.containsKey(key)) {
                 AbstractApplication clone = (AbstractApplication) this.clone();
                 if (clone.context.getAttribute(LANGUAGE) != null) {
                     clone.setLocale(clone.context.getAttribute(LANGUAGE).toString());
@@ -343,12 +342,10 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     public void run() {
-        INSTANCES.forEach((a, b)->{
-            String contextId = a.substring(0, a.indexOf(File.separatorChar));
-            if(this.context.getId().equals(contextId)) {
-                INSTANCES.remove(a);
-            }
-        });
+        String key = context.getId() + File.separatorChar + this.getName();
+        INSTANCES.remove(key);
+
+        Scheduler.getInstance().remove(this);
     }
 
     @Override
@@ -375,6 +372,10 @@ public abstract class AbstractApplication implements Application, Cloneable {
         builder.append(options);
 
         return builder.toString();
+    }
+
+    public TimerTask getTimerTask() {
+        return this;
     }
 
     public Map<String, CommandLine> getCommandLines() {
