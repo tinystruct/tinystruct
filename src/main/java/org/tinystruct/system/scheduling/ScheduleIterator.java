@@ -18,9 +18,9 @@ package org.tinystruct.system.scheduling;
 import java.util.Date;
 
 public interface ScheduleIterator {
-    public ScheduleIterator next();
+    ScheduleIterator next();
 
-    public Date getTime();
+    Date getTime();
 
-    public void setInterval(int seconds);
+    void setInterval(int seconds);
 }
