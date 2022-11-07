@@ -19,8 +19,8 @@ import java.util.Calendar;
 import java.util.Date;
 
 /**
- * A DailyIterator class returns a sequence of dates on subsequent days
- * representing the same time each day.
+ * A time iterator class returns a sequence of dates on subsequent seconds
+ * representing the same time by interval.
  */
 public class TimeIterator implements ScheduleIterator {
 

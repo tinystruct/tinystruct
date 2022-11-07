@@ -15,16 +15,20 @@
  *******************************************************************************/
 package org.tinystruct.system.scheduling;
 
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class Scheduler {
 
+    private final static Set<TimerTask> set = new HashSet<>();
+    private final static Scheduler INSTANCE = new Scheduler(false);
     private final Timer timer;
 
     public Scheduler(boolean isDaemon) {
         this.timer = new Timer(isDaemon);
+    }
+
+    public static Scheduler getInstance() {
+        return INSTANCE;
     }
 
     public void cancel() {
@@ -32,7 +36,6 @@ public class Scheduler {
     }
 
     public void schedule(final SchedulerTask schedulerTask, final ScheduleIterator iterator) {
-
         synchronized (schedulerTask.lock) {
             final Scheduler scheduler = this;
 
@@ -55,5 +58,14 @@ public class Scheduler {
         }
     }
 
+    public void schedule(final TimerTask task, final ScheduleIterator iterator, long period) {
+        if (!set.contains(task)) {
+            this.timer.scheduleAtFixedRate(task, iterator.getTime(), period);
+            set.add(task);
+        }
+    }
 
+    public void remove(final TimerTask task) {
+        set.remove(task);
+    }
 }
