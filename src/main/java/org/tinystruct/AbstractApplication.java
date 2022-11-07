@@ -42,7 +42,10 @@ import java.util.logging.Logger;
 public abstract class AbstractApplication implements Application, Cloneable {
 
     private static final Logger logger = Logger.getLogger(AbstractApplication.class.getName());
-    private static final Map<String, Application> instances = new ConcurrentHashMap<>();
+    /**
+     * Application instances.
+     */
+    private static final Map<String, Application> INSTANCES = new ConcurrentHashMap<>();
     protected final Map<String, CommandLine> commandLines;
     private final Actions actions = Actions.getInstance();
     private final String name;
@@ -94,14 +97,14 @@ public abstract class AbstractApplication implements Application, Cloneable {
         this.context = context;
         try {
             String key = context.getId() + File.separatorChar + this.getName();
-            if(!instances.containsKey(key)) {
+            if(!INSTANCES.containsKey(key)) {
                 AbstractApplication clone = (AbstractApplication) this.clone();
                 if (clone.context.getAttribute(LANGUAGE) != null) {
                     clone.setLocale(clone.context.getAttribute(LANGUAGE).toString());
                 } else {
                     clone.setLocale(this.config.get(DEFAULT_LANGUAGE));
                 }
-                instances.put(key, clone);
+                INSTANCES.put(key, clone);
             }
         } catch (CloneNotSupportedException e) {
             throw new ApplicationRuntimeException(e.toString(), e.getCause());
@@ -109,7 +112,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     public Application getInstance(String contextId) {
-        return instances.get(contextId + File.separatorChar + this.getName());
+        return INSTANCES.get(contextId + File.separatorChar + this.getName());
     }
 
     public void setAction(String path, Action action) {
@@ -340,7 +343,12 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     public void run() {
-        throw new ApplicationRuntimeException("The method has not been implemented yet.");
+        INSTANCES.forEach((a, b)->{
+            String contextId = a.substring(0, a.indexOf(File.separatorChar));
+            if(this.context.getId().equals(contextId)) {
+                INSTANCES.remove(a);
+            }
+        });
     }
 
     @Override
