@@ -59,13 +59,18 @@ public class Scheduler {
     }
 
     public void schedule(final TimerTask task, final ScheduleIterator iterator, long period) {
-        if (!set.contains(task)) {
-            this.timer.scheduleAtFixedRate(task, iterator.getTime(), period);
-            set.add(task);
+        synchronized (Scheduler.class) {
+            if (!set.contains(task)) {
+                this.timer.scheduleAtFixedRate(task, iterator.getTime(), period);
+                set.add(task);
+            }
         }
     }
 
     public void remove(final TimerTask task) {
-        set.remove(task);
+        synchronized (Scheduler.class) {
+            set.remove(task);
+            task.cancel();
+        }
     }
 }
