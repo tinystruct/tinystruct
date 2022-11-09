@@ -19,7 +19,6 @@ import org.tinystruct.application.*;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Resource;
 import org.tinystruct.system.cli.CommandLine;
-import org.tinystruct.system.scheduling.Scheduler;
 import org.tinystruct.system.template.DefaultTemplate;
 import org.tinystruct.system.template.PlainText;
 import org.tinystruct.system.template.variable.StringVariable;
@@ -29,7 +28,6 @@ import org.tinystruct.system.util.StringUtilities;
 import java.io.File;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
@@ -37,13 +35,13 @@ import java.util.logging.Logger;
  *
  * @author James Zhou
  */
-public abstract class AbstractApplication extends TimerTask implements Application, Cloneable {
+public abstract class AbstractApplication implements Application, Cloneable {
 
     private static final Logger logger = Logger.getLogger(AbstractApplication.class.getName());
     /**
-     * Application instances.
+     * Application instances container.
      */
-    private static final Map<String, Application> INSTANCES = new ConcurrentHashMap<>();
+    private static final Container CONTAINER = Container.getInstance();
 
     protected final Map<String, CommandLine> commandLines;
     private final Actions actions = Actions.getInstance();
@@ -96,14 +94,14 @@ public abstract class AbstractApplication extends TimerTask implements Applicati
         this.context = context;
         try {
             String key = context.getId() + File.separatorChar + this.getName();
-            if (!INSTANCES.containsKey(key)) {
+            if (!CONTAINER.containsKey(key)) {
                 AbstractApplication clone = (AbstractApplication) this.clone();
                 if (clone.context.getAttribute(LANGUAGE) != null) {
                     clone.setLocale(clone.context.getAttribute(LANGUAGE).toString());
                 } else {
                     clone.setLocale(this.config.get(DEFAULT_LANGUAGE));
                 }
-                INSTANCES.put(key, clone);
+                CONTAINER.put(key, clone);
             }
         } catch (CloneNotSupportedException e) {
             throw new ApplicationRuntimeException(e.toString(), e.getCause());
@@ -111,7 +109,7 @@ public abstract class AbstractApplication extends TimerTask implements Applicati
     }
 
     public Application getInstance(String contextId) {
-        return INSTANCES.get(contextId + File.separatorChar + this.getName());
+        return CONTAINER.get(contextId + File.separatorChar + this.getName());
     }
 
     public void setAction(String path, Action action) {
@@ -342,10 +340,6 @@ public abstract class AbstractApplication extends TimerTask implements Applicati
     }
 
     public void run() {
-        String key = context.getId() + File.separatorChar + this.getName();
-        INSTANCES.remove(key);
-
-        Scheduler.getInstance().remove(this);
     }
 
     @Override
@@ -372,10 +366,6 @@ public abstract class AbstractApplication extends TimerTask implements Applicati
         builder.append(options);
 
         return builder.toString();
-    }
-
-    public TimerTask getTimerTask() {
-        return this;
     }
 
     public Map<String, CommandLine> getCommandLines() {
