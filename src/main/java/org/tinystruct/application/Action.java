@@ -83,8 +83,6 @@ public class Action implements org.tinystruct.application.Method<Object> {
                 app = this.app;
             }
 
-            Scheduler.getInstance().schedule(app.getTimerTask(), new TimeIterator(0,0,1800), 18000);
-
             if (method.getReturnType().isAssignableFrom(Void.TYPE)) {
                 try {
                     method.invoke(app, arguments);
