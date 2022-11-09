@@ -21,7 +21,6 @@ import org.tinystruct.system.Configuration;
 import org.tinystruct.system.cli.CommandLine;
 
 import java.util.Map;
-import java.util.TimerTask;
 
 /**
  * Application interface used to indicate that an application should provide the standard methods.
@@ -92,6 +91,7 @@ public interface Application {
 
     /**
      * Return if template is required or not.
+     *
      * @return templateRequired boolean
      */
     boolean isTemplateRequired();
@@ -99,17 +99,10 @@ public interface Application {
     /**
      * Set up an action mapping for method trigger.
      *
-     * @param action action name
+     * @param action     action name
      * @param methodName method name
      */
     void setAction(String action, String methodName);
-
-    /**
-     * Set configuration for application.
-     *
-     * @param config configuration
-     */
-    void setConfiguration(Configuration<String> config);
 
     /**
      * Return the configuration was set.
@@ -119,10 +112,17 @@ public interface Application {
     Configuration<String> getConfiguration();
 
     /**
+     * Set configuration for application.
+     *
+     * @param config configuration
+     */
+    void setConfiguration(Configuration<String> config);
+
+    /**
      * Return a specific instance for this application.
      *
-     * @return an instance of this application
      * @param contextId Context Id
+     * @return an instance of this application
      */
     Application getInstance(String contextId);
 
@@ -138,7 +138,7 @@ public interface Application {
     /**
      * To invoke the action with action name specified.
      *
-     * @param action action name
+     * @param action     action name
      * @param parameters parameters
      * @return the result after method invoked
      * @throws ApplicationException application exception
@@ -194,11 +194,4 @@ public interface Application {
      * @return help
      */
     String help();
-
-    /**
-     * Return a TimerTask.
-     *
-     * @return the object of TimeTask
-     */
-    TimerTask getTimerTask();
 }
