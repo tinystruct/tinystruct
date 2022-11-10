@@ -16,8 +16,6 @@
 package org.tinystruct;
 
 import org.tinystruct.application.Context;
-import org.tinystruct.system.template.variable.ObjectVariable;
-import org.tinystruct.system.template.variable.Variable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +28,11 @@ import java.util.Map;
  */
 public final class ApplicationContext implements Context {
 
-    private final Map<String, Object> attr = new HashMap<String, Object>();
+    private static final ThreadLocal<HashMap<String, Object>> threadLocal = ThreadLocal.withInitial(HashMap<String, Object>::new);
     private String id = "";
+
+    public ApplicationContext() {
+    }
 
     public String getId() {
         return id;
@@ -42,24 +43,22 @@ public final class ApplicationContext implements Context {
     }
 
     public void setAttribute(String name, Object value) {
-        Variable<Object> variable = new ObjectVariable(name, value);
-        this.attr.put(name, variable);
+        threadLocal.get().put(name, value);
     }
 
     public Object getAttribute(String name) {
-        if (attr.containsKey(name) && attr.get(name) instanceof Variable<?>) {
-            Variable<?> var = (Variable<?>) (attr.get(name));
-            if (var.getName().equals(name)) return var.getValue();
+        if (threadLocal.get().containsKey(name)) {
+            return threadLocal.get().get(name);
         }
 
         return null;
     }
 
     public void removeAttribute(String name) {
-        attr.remove(name);
+        threadLocal.get().remove(name);
     }
 
     public String[] getAttributeNames() {
-        return attr.keySet().toArray(new String[]{});
+        return threadLocal.get().keySet().toArray(new String[]{});
     }
 }
