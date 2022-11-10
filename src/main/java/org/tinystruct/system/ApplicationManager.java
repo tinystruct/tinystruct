@@ -34,7 +34,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ApplicationManager {
-    public static final String VERSION = "0.7.4";
+    public static final String VERSION = "0.7.5";
     private static final ConcurrentHashMap<String, Application> applications = new ConcurrentHashMap<String, Application>();
     private static final Actions actions = Actions.getInstance();
     private static final boolean WINDOWS = Platform.isWindows();
@@ -111,7 +111,7 @@ public final class ApplicationManager {
                             "set \"ROOT=%~dp0..\\\"\n" +
                             "set \"VERSION=" + version + "\"\n" +
                             "set \"classpath=%ROOT%target\\classes;%ROOT%lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%classpath%\"\n" +
-                            "@java -cp \"%ROOT%target\\classes;%ROOT%lib\\*;%ROOT%lib\\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
+                            "@java -cp \"%ROOT%target\\classes;%ROOT%lib\\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%lib\\*;%ROOT%WEB-INF\\lib\\*;%ROOT%WEB-INF\\classes;%USERPROFILE%\\.m2\\repository\\org\\tinystruct\\tinystruct\\%VERSION%\\tinystruct-%VERSION%-jar-with-dependencies.jar\" org.tinystruct.system.Dispatcher %*";
                 } else {
                     cmd = "#!/usr/bin/env sh\n" +
                             "ROOT=\"$(pwd)\"\n" +
