@@ -7,27 +7,30 @@ import org.tinystruct.system.scheduling.TimeIterator;
 import java.util.Map;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 public class Container extends TimerTask {
-    private static final Map<String, Application> map = new ConcurrentHashMap<>(16);
-    private static final Scheduler scheduler = Scheduler.getInstance();
+    private static final Logger logger = Logger.getLogger(Container.class.getName());
+    private final Map<String, Application> map = new ConcurrentHashMap<>(16);
+
+    private Container() {
+        Scheduler.getInstance().schedule(this, new TimeIterator(0, 0, 0), 60000);
+    }
+
     public static Container getInstance() {
         return SingletonHolder.container;
     }
 
-    private Container(){
-        scheduler.schedule(this, new TimeIterator(0, 0, 0), 18000);
-    }
-
     @Override
     public void run() {
-        map.forEach((appId, b)->{
+        map.forEach((appId, b) -> {
             map.remove(appId);
+            logger.info(appId + " removed.");
         });
     }
 
     public void put(String appId, Application app) {
-        map.put(appId, app);
+        map.putIfAbsent(appId, app);
     }
 
     public boolean containsKey(String appId) {
