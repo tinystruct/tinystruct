@@ -15,11 +15,12 @@
  *******************************************************************************/
 package org.tinystruct.system.scheduling;
 
-import java.util.*;
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Scheduler {
 
-    private final static Set<TimerTask> set = new HashSet<>();
     private final static Scheduler INSTANCE = new Scheduler(true);
     private final Timer timer;
 
@@ -59,18 +60,10 @@ public class Scheduler {
     }
 
     public void schedule(final TimerTask task, final ScheduleIterator iterator, long period) {
-        synchronized (Scheduler.class) {
-            if (!set.contains(task)) {
-                this.timer.scheduleAtFixedRate(task, iterator.getTime(), period);
-                set.add(task);
-            }
-        }
+        this.timer.scheduleAtFixedRate(task, iterator.getTime(), period);
     }
 
     public void remove(final TimerTask task) {
-        synchronized (Scheduler.class) {
-            set.remove(task);
-            task.cancel();
-        }
+        task.cancel();
     }
 }
