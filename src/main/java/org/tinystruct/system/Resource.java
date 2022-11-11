@@ -17,14 +17,16 @@ package org.tinystruct.system;
 
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 public final class Resource {
     private final static Logger logger = Logger.getLogger(Resource.class.getName());
 
     private ResourceBundle resource;
-    private static final HashMap<String, Resource> map = new HashMap<String, Resource>();
+    private static final Map<String, Resource> map = new ConcurrentHashMap<>();
 
     private Resource() {
     }
