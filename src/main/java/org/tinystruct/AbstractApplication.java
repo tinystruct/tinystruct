@@ -95,15 +95,16 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
     public void init(Context context) {
         this.context = context;
+        if (this.context.getAttribute(LANGUAGE) != null) {
+            this.setLocale(this.context.getAttribute(LANGUAGE).toString());
+        } else {
+            this.setLocale(this.config.get(DEFAULT_LANGUAGE));
+        }
+
         try {
             String key = context.getId() + File.separatorChar + this.getName();
             if (!CONTAINER.containsKey(key)) {
                 AbstractApplication clone = (AbstractApplication) this.clone();
-                if (clone.context.getAttribute(LANGUAGE) != null) {
-                    clone.setLocale(clone.context.getAttribute(LANGUAGE).toString());
-                } else {
-                    clone.setLocale(this.config.get(DEFAULT_LANGUAGE));
-                }
                 CONTAINER.put(key, clone);
             }
         } catch (CloneNotSupportedException e) {
@@ -282,6 +283,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
     public String getProperty(String propertyName) {
         Resource resource = Resource.getInstance(getLocale());
+        return resource.getLocaleString(propertyName);
+    }
+
+    public String getProperty(String propertyName, Locale locale) {
+        Resource resource = Resource.getInstance(locale);
         return resource.getLocaleString(propertyName);
     }
 
