@@ -28,6 +28,7 @@ import org.tinystruct.system.util.ClassInfo;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,7 +42,7 @@ public abstract class AbstractData implements Data {
     private String className;
     protected Object Id;
     private String table;
-    private Field readyFields;
+    private final Field readyFields;
     private Condition condition;
     private static Repository repository;
 
@@ -53,7 +54,7 @@ public abstract class AbstractData implements Data {
         }
     }
 
-    protected AbstractData() {
+    public AbstractData() {
         this.className = this.getClass().getSimpleName();
 
         try {
@@ -62,12 +63,15 @@ public abstract class AbstractData implements Data {
             logger.severe(e.getMessage());
         }
 
-        this.readyFields = new Field();
+        Field tmp;
         try {
-            this.readyFields = new Mapping().getMappedField(this);
+            tmp = Mapping.getMappedField(this);
         } catch (ApplicationException e) {
+            tmp = new Field();
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
+
+        this.readyFields = tmp;
     }
 
     private static Repository getDefaultServer() throws ApplicationException {
@@ -80,7 +84,7 @@ public abstract class AbstractData implements Data {
         Repository repository;
         int index = -1, length = Type.values().length;
         for (int i = 0; i < length; i++) {
-            if (driver.indexOf(Type.values()[i].name().toLowerCase()) != -1) {
+            if (driver.contains(Type.values()[i].name().toLowerCase())) {
                 index = i;
                 break;
             }
@@ -227,11 +231,7 @@ public abstract class AbstractData implements Data {
     }
 
     public Table findWith(String where, Object[] parameters) throws ApplicationException {
-        if (this.condition == null) {
-            return this.find(new Condition().select(this.table).with(where), parameters);
-        } else {
-            return this.find(this.condition.select(this.table).with(where), parameters);
-        }
+        return this.find(Objects.requireNonNullElseGet(this.condition, Condition::new).select(this.table).with(where), parameters);
     }
 
     public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
@@ -259,11 +259,7 @@ public abstract class AbstractData implements Data {
     }
 
     public Table findAll() throws ApplicationException {
-        if (this.condition == null) {
-            return this.find(new Condition().select(this.table), new Object[]{});
-        } else {
-            return this.find(this.condition.select(this.table), new Object[]{});
-        }
+        return this.find(Objects.requireNonNullElseGet(this.condition, Condition::new).select(this.table), new Object[]{});
     }
 
     public abstract void setData(Row row);
