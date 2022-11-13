@@ -38,12 +38,6 @@ import java.util.logging.Logger;
 public abstract class AbstractData implements Data {
 
     private final static Logger logger = Logger.getLogger(AbstractData.class.getName());
-    private String classPath;
-    private String className;
-    protected Object Id;
-    private String table;
-    private final Field readyFields;
-    private Condition condition;
     private static Repository repository;
 
     static {
@@ -54,6 +48,13 @@ public abstract class AbstractData implements Data {
         }
     }
 
+    protected Object Id;
+    private String classPath;
+    private String className;
+    private String table;
+    private Field readyFields;
+    private Condition condition;
+
     public AbstractData() {
         this.className = this.getClass().getSimpleName();
 
@@ -63,15 +64,11 @@ public abstract class AbstractData implements Data {
             logger.severe(e.getMessage());
         }
 
-        Field tmp;
         try {
-            tmp = Mapping.getMappedField(this);
+            this.readyFields = Mapping.getMappedField(this);
         } catch (ApplicationException e) {
-            tmp = new Field();
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
-
-        this.readyFields = tmp;
     }
 
     private static Repository getDefaultServer() throws ApplicationException {
@@ -115,7 +112,7 @@ public abstract class AbstractData implements Data {
     public Object setId(Object id) {
         this.Id = id;
 
-        if (this.readyFields.containsKey("Id")) {
+        if (this.readyFields != null && this.readyFields.containsKey("Id")) {
             this.readyFields.get("Id").set("value", this.Id);
         }
 
@@ -266,12 +263,12 @@ public abstract class AbstractData implements Data {
 
     public abstract String toString();
 
-    protected void setClassName(String className) {
-        this.className = className;
-    }
-
     public String getClassName() {
         return className;
+    }
+
+    protected void setClassName(String className) {
+        this.className = className;
     }
 
     public Object getId() {
