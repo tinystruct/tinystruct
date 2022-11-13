@@ -9,12 +9,17 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
+/**
+ * Application instance container. By default, the container will be automatically clean up per min.
+ *
+ * @author James M. ZHOU
+ */
 public class Container extends TimerTask {
     private static final Logger logger = Logger.getLogger(Container.class.getName());
     private final Map<String, Application> map = new ConcurrentHashMap<>(16);
 
     private Container() {
-        Scheduler.getInstance().schedule(this, new TimeIterator(0, 0, 0), 60000);
+        Scheduler.getInstance().schedule(this, new TimeIterator(0, 0, 0), 600000);
     }
 
     public static Container getInstance() {
