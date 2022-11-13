@@ -21,6 +21,7 @@ import org.tinystruct.system.Resource;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.template.DefaultTemplate;
 import org.tinystruct.system.template.PlainText;
+import org.tinystruct.system.template.variable.ObjectVariable;
 import org.tinystruct.system.template.variable.StringVariable;
 import org.tinystruct.system.template.variable.Variable;
 import org.tinystruct.system.util.StringUtilities;
@@ -62,7 +63,6 @@ public abstract class AbstractApplication implements Application, Cloneable {
     protected Configuration<String> config;
     private String output;
     private boolean templateRequired = true;
-    private String templatePath;
 
     /**
      * Abstract application constructor.
@@ -101,7 +101,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
         }
 
         try {
-            String key = context.getId() + File.separatorChar + this.getName();
+            String key = context.getId() + this.getVariable(LANGUAGE).getValue() + File.separatorChar + this.getName();
             if (!CONTAINER.containsKey(key)) {
                 AbstractApplication clone = (AbstractApplication) this.clone();
                 CONTAINER.put(key, clone);
@@ -112,7 +112,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     public Application getInstance(String contextId) {
-        return CONTAINER.get(contextId + File.separatorChar + this.getName());
+        return CONTAINER.get(contextId + this.getVariable(LANGUAGE).getValue() + File.separatorChar + this.getName());
     }
 
     public void setAction(String path, Action action) {
@@ -147,10 +147,10 @@ public abstract class AbstractApplication implements Application, Cloneable {
         this.output = buffer;
     }
 
-    public void setTemplate(Template template) throws ApplicationException {
+    public String setTemplate(Template template) throws ApplicationException {
         // When the template has not been disabled or the locale does not
         // compared.
-        this.output = template.parse();
+        return template.parse();
     }
 
     public Configuration<String> getConfiguration() {
@@ -291,18 +291,19 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     public Locale getLocale() {
-        return this.locale;
+        return (Locale) this.getVariable("locale").getValue();
     }
 
     private void setLocale(String locale) {
         String[] local = locale.split("_");
-        this.setLocale(new Locale(local[0], local[1]));
-        this.setVariable("locale", new Locale(local[0], local[1]));
+        Locale _locale = new Locale(local[0], local[1]);
+        this.setLocale(_locale);
     }
 
     public void setLocale(Locale locale) {
         this.setVariable(LANGUAGE_CODE, locale.getLanguage());
         this.setVariable(LANGUAGE, locale.toString());
+        this.setVariable(new ObjectVariable("locale", locale), true);
     }
 
     @Override
@@ -311,36 +312,36 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         InputStream in = null;
         String simpleName = this.getName().substring(this.getName().lastIndexOf('.') + 1);
+        Locale locale = this.getLocale();
+        String templatePath = "UNKNOWN";
         if (locale != Locale.CHINA) {
-            this.templatePath = "themes" + File.separatorChar + simpleName + "_" + locale.toString() + ".view";
-            in = AbstractApplication.class.getClassLoader().getResourceAsStream(this.templatePath);
+            templatePath = "themes" + File.separatorChar + simpleName + "_" + locale.toString() + ".view";
+            in = AbstractApplication.class.getClassLoader().getResourceAsStream(templatePath);
         }
 
         if (null == in) {
-            this.templatePath = "themes" + File.separatorChar + simpleName + ".view";
-            in = AbstractApplication.class.getClassLoader().getResourceAsStream(this.templatePath);
+            templatePath = "themes" + File.separatorChar + simpleName + ".view";
+            in = AbstractApplication.class.getClassLoader().getResourceAsStream(templatePath);
         }
 
         if (null != in) {
             try {
-                this.setTemplate(new DefaultTemplate(this, in, this.variables.getVariables()));
-                return this.output;
+                return this.setTemplate(new DefaultTemplate(this, in, this.variables.getVariables()));
             } catch (ApplicationException e) {
                 throw new ApplicationRuntimeException(e.getMessage(), e);
             }
         } else {
             if (this.output != null && this.output.trim().length() > 0) {
                 try {
-                    this.setTemplate(new PlainText(this, this.output, this.variables.getVariables()));
+                    String output = this.setTemplate(new PlainText(this, this.output, this.variables.getVariables()));
+                    return output.replace("[%", "").replace("%]", "");
                 } catch (ApplicationException e) {
                     throw new ApplicationRuntimeException(e.getMessage(), e);
                 }
-                this.output = this.output.replace("[%", "").replace("%]", "");
-                return this.output;
             }
         }
 
-        throw new ApplicationRuntimeException("The template " + this.templatePath + " could not be found and the output has not been set.");
+        throw new ApplicationRuntimeException("The template " + templatePath + " could not be found and the output has not been set.");
     }
 
     public CommandLine setCommandLine(CommandLine command) {
