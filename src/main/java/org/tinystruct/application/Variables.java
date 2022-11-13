@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class Variables {
-    private static final ThreadLocal<Map<String, Variable<?>>> threadLocal = ThreadLocal.withInitial(HashMap::new);
+    private final Map<String, Variable<?>> variableMap = new HashMap<>();
 
     public Variables() {
     }
@@ -83,7 +83,7 @@ public final class Variables {
     }
 
     public Map<String, Variable<?>> getVariables() {
-        return threadLocal.get();
+        return variableMap;
     }
 
     private static final class SingletonHolder {
