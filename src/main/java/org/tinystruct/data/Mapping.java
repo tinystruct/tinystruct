@@ -37,101 +37,98 @@ public class Mapping {
     private static final String GENERATE = "generate";
     private static final String INCREMENT = "increment";
     private static final String ID = "id";
-    private final Field field;
 
-    public Mapping() {
-        this.field = new Field();
-    }
-
-    public Field getMappedField(Data data) throws ApplicationException {
+    public static Field getMappedField(Data data) throws ApplicationException {
         String className = data.getClassName();
         String mapFile = data.getClassPath() + className + ".map.xml";
 
         MappingManager manager = MappingManager.getInstance();
-        synchronized (Mapping.class) {
-            Document document;
-
-            if (manager.get(className) == null) {
-                document = new Document();
-                try (InputStream in = data.getClass().getResourceAsStream("/" + mapFile)) {
-                    boolean loaded = document.load(in);
-                    if (!loaded) {
-                        throw new ApplicationRuntimeException("Failed to load mapping file: " + mapFile);
+        Document document;
+        if (manager.get(className) == null) {
+            synchronized (Mapping.class) {
+                if (manager.get(className) == null) {
+                    document = new Document();
+                    try (InputStream in = data.getClass().getResourceAsStream("/" + mapFile)) {
+                        boolean loaded = document.load(in);
+                        if (!loaded) {
+                            throw new ApplicationRuntimeException("Failed to load mapping file: " + mapFile);
+                        }
+                        manager.set(className, document);
+                    } catch (IOException e) {
+                        throw new ApplicationRuntimeException("Failed to load mapping file: " + mapFile + ", Error: " + e.getMessage());
                     }
-                    manager.set(className, document);
-                } catch (IOException e) {
-                    throw new ApplicationRuntimeException("Failed to load mapping file: " + mapFile + ", Error: " + e.getMessage());
+                } else
+                    document = manager.get(className);
+            }
+        } else {
+            document = manager.get(className);
+        }
+
+        Iterator<Element> iterator = document.getRoot().getElementsByTagName("class").iterator();
+
+        List<Element> list = null;
+        Element currentElement;
+        while (iterator.hasNext()) {
+            currentElement = iterator.next();
+            if (className.equalsIgnoreCase(
+                    currentElement.getAttribute(NAME))) {
+                switch (data.getRepository().getType().ordinal()) {
+                    case 0:
+                        data.setTableName("`"
+                                + currentElement.getAttribute("table") + "`");
+                        break;
+                    case 1:
+                        data.setTableName("["
+                                + currentElement.getAttribute("table") + "]");
+                        break;
+                    default:
+                        data.setTableName(currentElement.getAttribute("table"));
+                        break;
                 }
-            } else
-                document = manager.get(className);
+                list = currentElement.getChildNodes();
+                break;
+            }
+        }
 
-            List<Element> list = null;
-            Iterator<Element> iterator = document.getRoot().getElementsByTagName("class").iterator();
+        Field field = new Field();
+        if (list != null && list.size() > 0) {
+            iterator = list.iterator();
 
-            Element currentElement;
+            FieldInfo fieldInfo;
             while (iterator.hasNext()) {
                 currentElement = iterator.next();
-                if (className.equalsIgnoreCase(
-                        currentElement.getAttribute(NAME))) {
-                    switch (data.getRepository().getType().ordinal()) {
-                        case 0:
-                            data.setTableName("`"
-                                    + currentElement.getAttribute("table") + "`");
-                            break;
-                        case 1:
-                            data.setTableName("["
-                                    + currentElement.getAttribute("table") + "]");
-                            break;
-                        default:
-                            data.setTableName(currentElement.getAttribute("table"));
-                            break;
+                if (currentElement.getName().equalsIgnoreCase(ID)) {
+                    fieldInfo = new FieldInfo();
+                    fieldInfo.append(ID, currentElement.getAttribute(NAME));
+                    fieldInfo.append(NAME, currentElement.getAttribute(NAME));
+                    fieldInfo.append(INCREMENT, currentElement.getAttribute(INCREMENT));
+                    fieldInfo.append(GENERATE, currentElement.getAttribute(GENERATE));
+                    fieldInfo.append(TYPE, currentElement.getAttribute(TYPE));
+                    fieldInfo.append(COLUMN, currentElement.getAttribute(COLUMN));
+                    fieldInfo.append(LENGTH, currentElement.getAttribute(LENGTH));
+
+                    if (Boolean.parseBoolean(currentElement.getAttribute(GENERATE))) {
+                        data.setId(java.util.UUID.randomUUID().toString());
+                        fieldInfo.append("value", data.getId());
                     }
-                    list = currentElement.getChildNodes();
-                    break;
+
+                    field.append(fieldInfo.getName(), fieldInfo);
+                }
+
+                if (currentElement.getName().equalsIgnoreCase(PROPERTY)) {
+                    fieldInfo = new FieldInfo();
+                    List<Attribute> attributes = currentElement.getAttributes();
+
+                    for (Attribute attribute : attributes) {
+                        fieldInfo.append(attribute.name,
+                                attribute.value);
+                    }
+
+                    field.append(fieldInfo.getName(), fieldInfo);
                 }
             }
-
-            if (list != null && list.size() > 0) {
-                iterator = list.iterator();
-
-                FieldInfo field;
-                while (iterator.hasNext()) {
-                    currentElement = iterator.next();
-                    if (currentElement.getName().equalsIgnoreCase(ID)) {
-                        field = new FieldInfo();
-                        field.append(ID, currentElement.getAttribute(NAME));
-                        field.append(NAME, currentElement.getAttribute(NAME));
-                        field.append(INCREMENT, currentElement.getAttribute(INCREMENT));
-                        field.append(GENERATE, currentElement.getAttribute(GENERATE));
-                        field.append(TYPE, currentElement.getAttribute(TYPE));
-                        field.append(COLUMN, currentElement.getAttribute(COLUMN));
-                        field.append(LENGTH, currentElement.getAttribute(LENGTH));
-
-                        if (Boolean.parseBoolean(currentElement.getAttribute(GENERATE))) {
-                            data.setId(java.util.UUID.randomUUID().toString());
-                            field.append("value", data.getId());
-                        }
-
-                        this.field.append(field.getName(), field);
-                    }
-
-                    if (currentElement.getName().equalsIgnoreCase(PROPERTY)) {
-                        field = new FieldInfo();
-                        List<Attribute> attributes = currentElement.getAttributes();
-                        Attribute currentAttribute;
-
-                        for (Attribute attribute : attributes) {
-                            currentAttribute = attribute;
-                            field.append(currentAttribute.name,
-                                    currentAttribute.value);
-                        }
-
-                        this.field.append(field.getName(), field);
-                    }
-                }
-            }
-
-            return this.field;
         }
+
+        return field;
     }
 }
