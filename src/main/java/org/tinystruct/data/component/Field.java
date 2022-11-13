@@ -23,7 +23,7 @@ public class Field extends ConcurrentHashMap<String, FieldInfo> {
 
     public void append(String fieldName, FieldInfo fieldInfo) {
         if (fieldName != null)
-            this.put(fieldName, fieldInfo);
+            this.putIfAbsent(fieldName, fieldInfo);
     }
 
     public FieldInfo get(String fieldName) {
