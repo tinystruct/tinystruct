@@ -22,40 +22,40 @@ import org.tinystruct.data.component.Table;
 
 public interface Data {
 
-    public String getClassPath();
+    String getClassPath();
 
-    public String getClassName();
+    String getClassName();
 
-    public void setTableName(String attribute);
+    void setTableName(String attribute);
 
-    public Object setId(Object Id);
+    Object setId(Object Id);
 
-    public Object getId();
+    Object getId();
 
-    public boolean append() throws ApplicationException;
+    boolean append() throws ApplicationException;
 
-    public boolean update() throws ApplicationException;
+    boolean update() throws ApplicationException;
 
-    public boolean delete() throws ApplicationException;
+    boolean delete() throws ApplicationException;
 
-    public Data setRequestFields(String fields);
+    Data setRequestFields(String fields);
 
-    public Data orderBy(String[] fieldNames);
+    Data orderBy(String[] fieldNames);
 
-    public Table find(String SQL, Object[] parameters) throws ApplicationException;
+    Table find(String SQL, Object[] parameters) throws ApplicationException;
 
-    public Table find(Condition condition, Object[] parameters) throws ApplicationException;
+    Table find(Condition condition, Object[] parameters) throws ApplicationException;
 
-    public Table findWith(String where, Object[] parameters) throws ApplicationException;
+    Table findWith(String where, Object[] parameters) throws ApplicationException;
 
-    public Row findOne(String SQL, Object[] parameters) throws ApplicationException;
+    Row findOne(String SQL, Object[] parameters) throws ApplicationException;
 
-    public Row findOneById() throws ApplicationException;
+    Row findOneById() throws ApplicationException;
 
-    public Row findOneByKey(String PK, String value) throws ApplicationException;
+    Row findOneByKey(String PK, String value) throws ApplicationException;
 
-    public Table findAll() throws ApplicationException;
+    Table findAll() throws ApplicationException;
 
-    public Repository getRepository();
+    Repository getRepository();
 
 }
