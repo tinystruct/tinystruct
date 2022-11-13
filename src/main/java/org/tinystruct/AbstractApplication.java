@@ -60,7 +60,6 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * Configuration
      */
     protected Configuration<String> config;
-    private Locale locale;
     private String output;
     private boolean templateRequired = true;
     private String templatePath;
@@ -298,12 +297,12 @@ public abstract class AbstractApplication implements Application, Cloneable {
     private void setLocale(String locale) {
         String[] local = locale.split("_");
         this.setLocale(new Locale(local[0], local[1]));
-        this.setVariable(LANGUAGE_CODE, local[0]);
-        this.setVariable(LANGUAGE, this.locale.toString());
+        this.setVariable("locale", new Locale(local[0], local[1]));
     }
 
     public void setLocale(Locale locale) {
-        this.locale = locale;
+        this.setVariable(LANGUAGE_CODE, locale.getLanguage());
+        this.setVariable(LANGUAGE, locale.toString());
     }
 
     @Override

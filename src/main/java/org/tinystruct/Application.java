@@ -86,8 +86,9 @@ public interface Application {
      *
      * @param template {@link Template}
      * @throws ApplicationException application exception
+     * @return
      */
-    void setTemplate(Template template) throws ApplicationException;
+    String setTemplate(Template template) throws ApplicationException;
 
     /**
      * Return if template is required or not.
