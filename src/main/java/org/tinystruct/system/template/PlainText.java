@@ -15,21 +15,22 @@
  *******************************************************************************/
 package org.tinystruct.system.template;
 
-import org.tinystruct.AbstractApplication;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
 import org.tinystruct.application.Template;
 import org.tinystruct.application.Variables;
+import org.tinystruct.system.Configuration;
 import org.tinystruct.system.template.variable.DataType;
 import org.tinystruct.system.template.variable.Variable;
-import org.tinystruct.system.Configuration;
 import org.tinystruct.system.util.TextFileLoader;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 
 public class PlainText implements Template {
 
@@ -44,13 +45,13 @@ public class PlainText implements Template {
         this.variables = Variables.getInstance();
     }
 
-    public PlainText(Application app, String text) {
+    public PlainText(Application app, final String text) {
         this.app = app;
         this.text = text;
         this.variables = Variables.getInstance();
     }
 
-    public PlainText(Application app, String text, Map<String, Variable<?>> variables) {
+    public PlainText(Application app, final String text, Map<String, Variable<?>> variables) {
         this(app, text);
         this.variables = new HashMap<>();
         this.variables.putAll(Variables.getInstance());
