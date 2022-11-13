@@ -22,20 +22,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class MappingManager {
     private final ConcurrentHashMap<String, Document> map;
 
-    private static final class SingletonHolder {
-        static final MappingManager manager = new MappingManager();
+    private MappingManager() {
+        this.map = new ConcurrentHashMap<String, Document>();
     }
 
     public static MappingManager getInstance() {
         return SingletonHolder.manager;
     }
 
-    private MappingManager() {
-        this.map = new ConcurrentHashMap<String, Document>();
-    }
-
     public void set(String name, Document value) {
-        map.put(name, value);
+        map.putIfAbsent(name, value);
     }
 
     public Document get(String name) {
@@ -48,6 +44,10 @@ public final class MappingManager {
 
     public int size() {
         return map.size();
+    }
+
+    private static final class SingletonHolder {
+        static final MappingManager manager = new MappingManager();
     }
 
 }
