@@ -86,7 +86,7 @@ public interface Application {
      *
      * @param template {@link Template}
      * @throws ApplicationException application exception
-     * @return
+     * @return A string of template rendered
      */
     String setTemplate(Template template) throws ApplicationException;
 

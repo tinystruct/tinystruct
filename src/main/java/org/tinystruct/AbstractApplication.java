@@ -274,7 +274,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * Get the specific configuration with property name.
      *
      * @param propertyName property name
-     * @return
+     * @return A string value of the property
      */
     public String getConfiguration(String propertyName) {
         return this.config.get(propertyName);
