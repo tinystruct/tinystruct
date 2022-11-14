@@ -83,9 +83,19 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
                             list.add((FileEntity) fileData);
                         }
                     }
-                    this.attach(list); break;
-                case "application/x-www-form-urlencoded":
-                case "text/plain;charset=UTF-8":
+                    this.attach(list);
+                    break;
+                case "application/x-www-form-urlencoded; charset=UTF-8":
+                    requestBody = java.net.URLDecoder.decode(content.toString(CharsetUtil.UTF_8), CharsetUtil.UTF_8);
+                    args = requestBody.split("&");
+                    for (i = 0; i < args.length; i++) {
+                        if (args[i].contains("=")) {
+                            pair = args[i].split("=");
+                            this.setParameter(pair[0], List.of(pair[1]));
+                        }
+                    }
+                    break;
+                case "text/plain; charset=UTF-8":
                 case "application/json":
                 default:
                     requestBody = content.toString(CharsetUtil.UTF_8);
