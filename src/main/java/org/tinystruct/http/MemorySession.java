@@ -1,5 +1,7 @@
 package org.tinystruct.http;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -7,9 +9,12 @@ public class MemorySession implements Session {
 
     private final Map<String, Object> storage = new ConcurrentHashMap<>();
     private final String sessionId;
+    private final long expiry;
 
     public MemorySession(String sessionId) {
         this.sessionId = sessionId;
+        this.expiry = System.currentTimeMillis() + 1800000L;
+
         SessionManager.getInstance().setSession(sessionId, this);
     }
 
@@ -31,5 +36,10 @@ public class MemorySession implements Session {
     @Override
     public void removeAttribute(String key) {
         storage.remove(key);
+    }
+
+    @Override
+    public boolean isExpired() {
+        return System.currentTimeMillis() > expiry;
     }
 }
