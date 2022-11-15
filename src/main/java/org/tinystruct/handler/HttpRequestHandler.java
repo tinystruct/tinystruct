@@ -166,7 +166,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         cookie.setValue(request.getSession().getId());
 
         String host = request.headers().get(Header.HOST).toString();
-        cookie.setDomain(host.substring(0, host.indexOf(":")));
+        if (host.contains(":"))
+            cookie.setDomain(host.substring(0, host.indexOf(":")));
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         cookie.setMaxAge(1800);
