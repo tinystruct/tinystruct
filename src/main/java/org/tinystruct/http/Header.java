@@ -405,7 +405,12 @@ public enum Header {
     /**
      * {@code "x-requested-with"}
      */
-    X_REQUESTED_WITH("X-Requested-With");
+    X_REQUESTED_WITH("X-Requested-With"),
+
+    /**
+     * {@code "X-Request-Id"}
+     */
+    X_REQUEST_ID("X-Request-Id");
 
     private final String name;
     private StandardValue[] options;
