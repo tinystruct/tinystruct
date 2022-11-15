@@ -433,7 +433,7 @@ public enum Header {
     public static Header value0f(String name) {
         try {
             return Header.valueOf(Header.class, name.toUpperCase(Locale.ROOT).replaceAll("-", "_"));
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return Header.NOT_SUPPORTED;
         }
     }
