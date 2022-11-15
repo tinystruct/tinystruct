@@ -410,7 +410,12 @@ public enum Header {
     /**
      * {@code "X-Request-Id"}
      */
-    X_REQUEST_ID("X-Request-Id");
+    X_REQUEST_ID("X-Request-Id"),
+
+    /**
+     * {@code "Not-Supported"}
+     */
+    NOT_SUPPORTED("Not-Supported");
 
     private final String name;
     private StandardValue[] options;
@@ -426,7 +431,11 @@ public enum Header {
     }
 
     public static Header value0f(String name) {
-        return Header.valueOf(Header.class, name.toUpperCase(Locale.ROOT).replaceAll("-","_"));
+        try {
+            return Header.valueOf(Header.class, name.toUpperCase(Locale.ROOT).replaceAll("-", "_"));
+        } catch (Exception e) {
+            return Header.NOT_SUPPORTED;
+        }
     }
 
     @Override
