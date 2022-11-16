@@ -18,8 +18,6 @@ package org.tinystruct.application;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
-import org.tinystruct.system.scheduling.Scheduler;
-import org.tinystruct.system.scheduling.TimeIterator;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -88,8 +86,10 @@ public class Action implements org.tinystruct.application.Method<Object> {
                 try {
                     method.invoke(app, arguments);
                     if (!app.isTemplateRequired()) return null;
-                } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new ApplicationException(method.toGenericString() + ":" + e.getMessage(), e);
+                } catch (IllegalAccessException e) {
+                    throw new ApplicationException(method + ":" + e.getMessage(), e.getCause());
+                } catch (InvocationTargetException e) {
+                    throw new ApplicationException(method + ":" + e.getTargetException().getMessage(), e.getCause());
                 }
 
                 return app.toString();
@@ -97,8 +97,10 @@ public class Action implements org.tinystruct.application.Method<Object> {
 
             try {
                 return method.invoke(app, arguments);
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new ApplicationException(method.toGenericString() + ":" + e.getMessage(), e);
+            } catch (IllegalAccessException e) {
+                throw new ApplicationException(method + ":" + e.getMessage(), e.getCause());
+            } catch (InvocationTargetException e) {
+                throw new ApplicationException(method + ":" + e.getTargetException().getMessage(), e.getCause());
             }
         }
 
