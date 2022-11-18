@@ -44,11 +44,11 @@ import java.util.logging.Logger;
 
 public class NettyHttpServer extends AbstractApplication implements Bootstrap {
     private static final boolean SSL = System.getProperty("ssl") != null;
-    private int port = 8080;
     private static final int MAX_CONTENT_LENGTH = 1024 * 100;
     private final EventLoopGroup bossgroup;
     private final EventLoopGroup workgroup;
     private final Logger logger = Logger.getLogger(NettyHttpServer.class.getName());
+    private int port = 8080;
 
     public NettyHttpServer() {
         if (Epoll.isAvailable()) {
@@ -92,8 +92,9 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                 sslCtx = null;
             }
 
+            final int maxContentLength = this.config.get("default.http.max_content_length").equalsIgnoreCase("") ? MAX_CONTENT_LENGTH : Integer.parseInt(this.config.get("default.http.max_content_length"));
             ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup)
-                    .channel(Epoll.isAvailable()? EpollServerSocketChannel.class:
+                    .channel(Epoll.isAvailable() ? EpollServerSocketChannel.class :
                             NioServerSocketChannel.class)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
@@ -103,7 +104,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                                 p.addLast(sslCtx.newHandler(ch.alloc()));
                             }
                             p.addLast(new LoggingHandler(LogLevel.INFO));
-                            p.addLast(new HttpServerCodec(), new HttpObjectAggregator(MAX_CONTENT_LENGTH), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration(), new ApplicationContext()));
+                            p.addLast(new HttpServerCodec(), new HttpObjectAggregator(maxContentLength), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration(), new ApplicationContext()));
                         }
                     }).option(ChannelOption.SO_BACKLOG, 1024)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
