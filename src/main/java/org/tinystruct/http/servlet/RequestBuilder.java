@@ -1,12 +1,19 @@
 package org.tinystruct.http.servlet;
 
+import org.tinystruct.ApplicationException;
+import org.tinystruct.data.Attachment;
+import org.tinystruct.data.FileEntity;
 import org.tinystruct.http.*;
+import org.tinystruct.transfer.http.upload.ContentDisposition;
 
+import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 
 public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
     private final SessionManager manager = SessionManager.getInstance();
@@ -48,8 +55,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
                 cookie.setSecure(_cookie.getSecure());
                 cookies[--i] = cookie;
             }
-        }
-        else
+        } else
             this.cookies = new Cookie[]{};
 
         HttpSession session = this.request.getSession();
@@ -136,6 +142,32 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
     @Override
     public String getParameter(String name) {
         return this.request.getParameter(name);
+    }
+
+    /**
+     * Return the attachments if there are.
+     *
+     * @return list of {@link FileEntity}
+     */
+    @Override
+    public List<FileEntity> getAttachments() throws ApplicationException {
+        List<FileEntity> list = new ArrayList<>();
+        try {
+            final MultipartFormData iterator = new MultipartFormData(this);
+            ContentDisposition e;
+            while ((e = iterator.getNextPart()) != null) {
+                Attachment attachment = new Attachment();
+                attachment.setContentType(e.getContentType());
+                attachment.setFilename(e.getFileName());
+                attachment.setContent(e.getData());
+
+                list.add(attachment);
+            }
+        } catch (ServletException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        }
+
+        return list;
     }
 
     @Override
