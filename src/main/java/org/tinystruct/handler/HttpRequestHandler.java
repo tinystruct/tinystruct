@@ -89,9 +89,10 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         }
 
         HttpResponseStatus status = HttpResponseStatus.OK;
+        ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
         try {
             context.setAttribute(HTTP_REQUEST, request);
-            context.setAttribute(HTTP_RESPONSE, new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status)));
+            context.setAttribute(HTTP_RESPONSE, response);
             context.setAttribute(HTTP_HOST, request.headers().get(Header.HOST));
 
             String lang = request.getParameter("lang"), language = "";
@@ -154,14 +155,18 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
         ByteBuf resp;
         try {
-            resp = copiedBuffer(message.toString(), CharsetUtil.UTF_8);
+            if (message instanceof byte[]) {
+                resp = copiedBuffer((byte[]) message);
+            } else {
+                resp = copiedBuffer(message.toString(), CharsetUtil.UTF_8);
+            }
         } catch (Exception e) {
             resp = copiedBuffer(e.getMessage(), CharsetUtil.UTF_8);
         }
 
-        FullHttpResponse _response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, resp);
-        Response<HttpResponse> response = new ResponseBuilder(_response);
-        ResponseHeaders responseHeaders = new ResponseHeaders(response);
+        FullHttpResponse replacement = response.get().replace(resp);
+        response = new ResponseBuilder(replacement);
+        Headers responseHeaders = response.headers();
         Cookie cookie = new CookieImpl(JSESSIONID);
         cookie.setValue(request.getSession().getId());
 
@@ -173,7 +178,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         cookie.setMaxAge(1800);
 
         responseHeaders.add(Header.SET_COOKIE.set(cookie));
-        responseHeaders.add(Header.CONTENT_TYPE.set("text/html; charset=UTF-8"));
+        if (!responseHeaders.contains(Header.CONTENT_TYPE))
+            responseHeaders.add(Header.CONTENT_TYPE.set("text/html; charset=UTF-8"));
         responseHeaders.add(Header.CONTENT_LENGTH.setInt(resp.readableBytes()));
         ctx.write(response.get());
     }
