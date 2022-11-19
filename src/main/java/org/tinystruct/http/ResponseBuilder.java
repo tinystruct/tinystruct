@@ -1,33 +1,36 @@
 package org.tinystruct.http;
 
-import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 
-public class ResponseBuilder extends ResponseWrapper<HttpResponse> {
+public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
     private final Headers headers = new ResponseHeaders(this);
     private ResponseStatus status;
     private Version version;
 
-    public ResponseBuilder(HttpResponse response) {
+    public ResponseBuilder(FullHttpResponse response) {
         super(response);
+
+        for (Map.Entry<String, String> map: response.headers()) {
+            this.headers.add(Header.value0f(map.getKey().replace('-','_').toUpperCase(Locale.ROOT)).set(map.getValue()));
+        }
     }
 
     public void setContentType(String contentType) {
-        this.response.headers().add(Header.CONTENT_TYPE.name(), contentType);
+        this.headers.add(Header.CONTENT_TYPE.set(contentType));
     }
 
     public void addHeader(String header, Object value) {
-        if (value instanceof Integer) {
-            this.response.headers().addInt(header, (Integer) value);
-        } else
-            this.response.headers().add(header, value);
-    }
-
-    public String getHeader(String header) {
-        return this.response.headers().get(header);
+        if(!this.response.headers().contains(header) || !this.response.headers().get(header).equalsIgnoreCase(value.toString())) {
+            if (value instanceof Integer) {
+                this.response.headers().addInt(header, (Integer) value);
+            } else
+                this.response.headers().add(header, value);
+        }
     }
 
     public void addCookie(Cookie cookie) {
@@ -58,14 +61,11 @@ public class ResponseBuilder extends ResponseWrapper<HttpResponse> {
 
     @Override
     public Headers headers() {
-        for (Map.Entry<String, String> header : this.response.headers()) {
-            this.headers.add(Header.valueOf(header.getKey()).set(header.getValue()));
-        }
         return this.headers;
     }
 
     @Override
-    public HttpResponse get() {
+    public FullHttpResponse get() {
         return this.response;
     }
 
