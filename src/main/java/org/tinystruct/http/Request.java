@@ -1,5 +1,10 @@
 package org.tinystruct.http;
 
+import org.tinystruct.ApplicationException;
+import org.tinystruct.data.FileEntity;
+
+import java.util.List;
+
 public interface Request<T> extends Protocol {
 
     /**
@@ -41,6 +46,13 @@ public interface Request<T> extends Protocol {
     Session getSession();
 
     String getParameter(String name);
+
+    /**
+     * Return the attachments if there are.
+     *
+     * @return list of {@link FileEntity}
+     */
+    List<FileEntity> getAttachments() throws ApplicationException;
 
     Cookie[] cookies();
 
