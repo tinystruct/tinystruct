@@ -18,6 +18,8 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
         for (Map.Entry<String, String> map: response.headers()) {
             this.headers.add(Header.value0f(map.getKey().replace('-','_').toUpperCase(Locale.ROOT)).set(map.getValue()));
         }
+
+        this.status = ResponseStatus.valueOf(response.status().code());
     }
 
     public void setContentType(String contentType) {
