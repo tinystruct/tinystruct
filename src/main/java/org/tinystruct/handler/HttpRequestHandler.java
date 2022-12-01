@@ -57,12 +57,15 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) {
         if (this.context == null)
             this.context = new ApplicationContext();
+        // Decide whether to close the connection or not.
+        boolean keepAlive = HttpUtil.isKeepAlive(msg);
+
         this.request = new RequestBuilder(msg);
         this.context.setId(request.getSession().getId());
-        this.service(ctx, request, context);
+        this.service(ctx, request, context, keepAlive);
     }
 
-    private void service(final ChannelHandlerContext ctx, final Request request, final Context context) {
+    private void service(final ChannelHandlerContext ctx, final Request request, final Context context, boolean keepAlive) {
         Headers headers = request.headers();
         String auth, token;
         Object message;
@@ -137,7 +140,12 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                 if (null == (message = ApplicationManager.call(query, context))) {
                     message = "No response retrieved!";
                 } else if (message instanceof Response) {
-                    ctx.write(((Response) message).get());
+                    // Write the response.
+                    ChannelFuture future = ctx.writeAndFlush(((Response) message).get());
+                    // Close the connection after the write operation is done if necessary.
+                    if (!keepAlive) {
+                        future.addListener(ChannelFutureListener.CLOSE);
+                    }
                     return;
                 }
             } else {
@@ -181,7 +189,13 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         if (!responseHeaders.contains(Header.CONTENT_TYPE))
             responseHeaders.add(Header.CONTENT_TYPE.set("text/html; charset=UTF-8"));
         responseHeaders.add(Header.CONTENT_LENGTH.setInt(resp.readableBytes()));
-        ctx.write(response.get());
+
+        // Write the response.
+        ChannelFuture future = ctx.writeAndFlush(response.get());
+        // Close the connection after the write operation is done if necessary.
+        if (!keepAlive) {
+            future.addListener(ChannelFutureListener.CLOSE);
+        }
     }
 
     @Override
