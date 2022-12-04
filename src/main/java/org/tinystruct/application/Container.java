@@ -19,7 +19,7 @@ public class Container extends TimerTask {
     private final Map<String, Application> map = new ConcurrentHashMap<>(16);
 
     private Container() {
-        Scheduler.getInstance().schedule(this, new TimeIterator(0, 0, 0), 600000);
+        Scheduler.getInstance().schedule(this, new TimeIterator(0, 0, 0), 1800000);
     }
 
     public static Container getInstance() {
@@ -30,7 +30,7 @@ public class Container extends TimerTask {
     public void run() {
         map.forEach((appId, b) -> {
             map.remove(appId);
-            logger.info(appId + " removed.");
+            logger.fine(appId + " removed.");
         });
     }
 
