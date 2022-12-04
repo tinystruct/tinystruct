@@ -94,17 +94,21 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
     public void init(Context context) {
         this.context = context;
+        String language;
         if (this.context.getAttribute(LANGUAGE) != null) {
-            this.setLocale(this.context.getAttribute(LANGUAGE).toString());
+            language = this.context.getAttribute(LANGUAGE).toString();
         } else {
-            this.setLocale(this.config.get(DEFAULT_LANGUAGE));
+            language = config.get(DEFAULT_LANGUAGE);
         }
 
         try {
-            String key = context.getId() + this.getVariable(LANGUAGE).getValue() + File.separatorChar + this.getName();
+            String key = context.getId() + language + File.separatorChar + this.getName();
             if (!CONTAINER.containsKey(key)) {
-                AbstractApplication clone = (AbstractApplication) this.clone();
-                CONTAINER.put(key, clone);
+                synchronized (AbstractApplication.class) {
+                    AbstractApplication clone = (AbstractApplication) this.clone();
+                    clone.setLocale(language);
+                    CONTAINER.put(key, clone);
+                }
             }
         } catch (CloneNotSupportedException e) {
             throw new ApplicationRuntimeException(e.toString(), e.getCause());
