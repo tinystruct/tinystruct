@@ -4,32 +4,27 @@ import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.ApplicationManager;
+import org.tinystruct.valve.Lock;
+import org.tinystruct.valve.Watcher;
 
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class DistributedMessageQueue extends AbstractApplication implements MessageQueue<String> {
 
+    private static final long TIMEOUT = 100;
     protected static final int DEFAULT_MESSAGE_POOL_SIZE = 10;
-    private static final long TIMEOUT = 10000;
-    protected final Map<String, BlockingQueue<Builder>> groups = new ConcurrentHashMap<String, BlockingQueue<Builder>>();
-    protected final Map<String, Queue<Builder>> list = new ConcurrentHashMap<String, Queue<Builder>>();
-    private final Lock lock = new ReentrantLock();
-    private final Condition consumer = lock.newCondition();
+    protected final Map<String, BlockingQueue<Builder>> groups = Maps.GROUPS;
+    protected final Map<String, Queue<Builder>> list = Maps.LIST;
+    protected final Map<String, List<String>> sessions = Maps.SESSIONS;
     private ExecutorService service;
-
-    public static void main(String[] args) throws ApplicationException {
-        new DistributedMessageQueue().testing(100);
-    }
+    private final Lock lock = Watcher.getInstance().acquire();
 
     @Override
     public void init() {
-        this.setAction("message/update", "take");
-        this.setAction("message/save", "put");
+        this.setAction("message/take", "take");
+        this.setAction("message/put", "put");
         this.setAction("message/version", "version");
         this.setAction("message/testing", "testing");
 
@@ -62,7 +57,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @param message   message
      * @return message
      */
-    public String put(Object groupId, String sessionId, String message) {
+    public final String put(Object groupId, String sessionId, String message) {
         if (groupId != null) {
             if (message != null && !message.isEmpty()) {
                 final Builder builder = new Builder();
@@ -132,16 +127,14 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
         if ((message = messages.poll()) != null)
             return message.toString();
         long startTime = System.currentTimeMillis();
-        while ((message = messages.poll()) == null && (System.currentTimeMillis() - startTime) <= TIMEOUT) {
-            // If waited less than 10 seconds, then continue to wait
-            lock.lock();
-            try {
-                consumer.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                throw new ApplicationException(e.getMessage(), e);
-            } finally {
-                lock.unlock();
+        // If waited less than 10 seconds, then continue to wait
+        try {
+            lock.tryLock(TIMEOUT, TimeUnit.MILLISECONDS);
+            while ((message = messages.poll()) == null && (System.currentTimeMillis() - startTime) <= TIMEOUT) {
+                ;
             }
+        } finally {
+            lock.unlock();
         }
 
         return message != null ? message.toString() : "{}";
@@ -150,22 +143,26 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     /**
      * Copy message to the list of each session.
      *
-     * @param meetingCode
+     * @param groupId group Id
      * @param builder
      */
-    private void copy(Object meetingCode, Builder builder) {
+    private void copy(Object groupId, Builder builder) {
+        final List<String> _sessions;
 
-        final Collection<Entry<String, Queue<Builder>>> set = this.list.entrySet();
-        final Iterator<Entry<String, Queue<Builder>>> iterator = set.iterator();
-        lock.lock();
-        try {
-            while (iterator.hasNext()) {
-                Entry<String, Queue<Builder>> list = iterator.next();
-                list.getValue().add(builder);
-                consumer.signalAll();
+        if ((_sessions = this.sessions.get(groupId)) != null) {
+            final Collection<Entry<String, Queue<Builder>>> set = this.list.entrySet();
+            final Iterator<Entry<String, Queue<Builder>>> iterator = set.iterator();
+            try {
+                lock.lock();
+                while (iterator.hasNext()) {
+                    Entry<String, Queue<Builder>> list = iterator.next();
+                    if (_sessions.contains(list.getKey())) {
+                        list.getValue().add(builder);
+                    }
+                }
+            } finally {
+                lock.unlock();
             }
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -173,12 +170,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * Wake up those threads are working in message update.
      */
     final protected void wakeup() {
-        lock.lock();
-        try {
-            consumer.signalAll();
-        } finally {
-            lock.unlock();
-        }
+
     }
 
     /**
@@ -215,7 +207,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                 int i = 0;
                 while (i++ < n)
                     try {
-                        ApplicationManager.call("custom.application.talk/save/[M001]/{A}/A post " + i, null);
+                        ApplicationManager.call("talk/save/[M001]/{A}/A post " + i, null);
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
@@ -233,7 +225,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                 int i = 0;
                 while (i++ < n)
                     try {
-                        ApplicationManager.call("custom.application.talk/save/[M001]/{B}/B post " + i, null);
+                        ApplicationManager.call("talk/save/[M001]/{B}/B post " + i, null);
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
@@ -252,7 +244,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                 System.out.println("[A] is started...");
                 while (true)
                     try {
-                        System.out.println("**A**:" + ApplicationManager.call("custom.application.talk/update/{A}", null));
+                        System.out.println("**A**:" + ApplicationManager.call("talk/update/{A}", null));
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
@@ -271,7 +263,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                 System.out.println("[B] is started...");
                 while (true)
                     try {
-                        System.out.println("**B**:" + ApplicationManager.call("custom.application.talk/update/{B}", null));
+                        System.out.println("**B**:" + ApplicationManager.call("talk/update/{B}", null));
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
@@ -285,4 +277,11 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
 
         return true;
     }
+
+}
+
+class Maps {
+    public static final Map<String, BlockingQueue<Builder>> GROUPS = new ConcurrentHashMap<String, BlockingQueue<Builder>>();
+    public static final Map<String, Queue<Builder>> LIST = new ConcurrentHashMap<String, Queue<Builder>>();
+    public static final Map<String, List<String>> SESSIONS = new ConcurrentHashMap<String, List<String>>();
 }
