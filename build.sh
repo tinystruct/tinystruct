@@ -22,7 +22,7 @@ $JAVA_HOME/bin/native-image --no-fallback \
                         --report-unsupported-elements-at-runtime \
                         --add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core=ALL-UNNAMED \
                         --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED \
--cp ./target/tinystruct-0.8.4-jar-with-dependencies.jar \
+-cp ./target/tinystruct-0.8.5-jar-with-dependencies.jar \
 -H:Name=dispatcher-native \
 -H:Class=org.tinystruct.system.Dispatcher \
 -H:+ReportExceptionStackTraces \
