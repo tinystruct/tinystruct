@@ -12,6 +12,7 @@ import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Settings;
 
 import java.util.Collection;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,6 +42,7 @@ public class ActionTests {
         assertEquals(String.valueOf(ApplicationManager.call("hi", null)), "Hi.");
         assertEquals(String.valueOf(ApplicationManager.call("hi/10", null)), "hi, 10");
         assertEquals(String.valueOf(ApplicationManager.call("hi/James", null)), "Hi, James");
+        assertEquals(String.valueOf(ApplicationManager.call("set/2022-12-13 00:00:00", null)), "Tue Dec 13 00:00:00 CST 2022");
     }
 
     //    @AfterEach
@@ -68,6 +70,7 @@ public class ActionTests {
         @Override
         public void init() {
             this.setAction("hi", "hi");
+            this.setAction("set", "set");
             this.setTemplateRequired(false);
         }
 
@@ -81,6 +84,10 @@ public class ActionTests {
 
         public String hi(String name) {
             return "Hi, " + name;
+        }
+
+        public Date set(Date date) {
+            return date;
         }
 
         @Override
