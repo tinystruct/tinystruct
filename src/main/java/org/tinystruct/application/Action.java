@@ -125,7 +125,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
             Object[] arguments = new Object[types.length];
             String format = "yyyy-MM-dd HH:mm:ss z";
             for (int n = 0; n < types.length; n++) {
-                if (types[n].isAssignableFrom(Date.class)) {
+                if (!types[n].isAssignableFrom(Object.class) && types[n].isAssignableFrom(Date.class)) {
                     String s = String.valueOf(args[n]);
                     try {
                         if (s.length() < format.length()) {
