@@ -1,6 +1,7 @@
 package org.tinystruct.transfer;
 
 import org.tinystruct.AbstractApplication;
+import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.ApplicationManager;
@@ -57,7 +58,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @param message   message
      * @return message
      */
-    public final String put(Object groupId, String sessionId, String message) {
+    public final String put(final Object groupId, final String sessionId, final String message) {
         if (groupId != null) {
             if (message != null && !message.isEmpty()) {
                 final Builder builder = new Builder();
@@ -146,7 +147,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @param groupId group Id
      * @param builder
      */
-    private void copy(Object groupId, Builder builder) {
+    private void copy(final Object groupId, final Builder builder) {
         final List<String> _sessions;
 
         if ((_sessions = this.sessions.get(groupId)) != null) {
@@ -190,24 +191,25 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
 
     /**
      * This is a testing. It can be executed with the command:
-     * $ bin/dispatcher --import-applications=tinystruct.examples.custom.application.talk custom.application.talk/testing/100
+     * $ bin/dispatcher --import org.tinystruct.transfer.DistributedMessageQueue message/testing/100
      *
      * @param n number of tests.
      * @return a boolean value
      * @throws ApplicationException application exception
      */
     public boolean testing(final int n) throws ApplicationException {
+        this.sessions.put("[M001]", List.of("{A}","{B}"));
         this.groups.put("[M001]", new ArrayBlockingQueue<Builder>(DEFAULT_MESSAGE_POOL_SIZE));
         this.list.put("{A}", new ArrayDeque<Builder>());
         this.list.put("{B}", new ArrayDeque<Builder>());
 
         this.getService().execute(new Runnable() {
+            int i = 0;
             @Override
             public void run() {
-                int i = 0;
                 while (i++ < n)
                     try {
-                        ApplicationManager.call("talk/save/[M001]/{A}/A post " + i, null);
+                        ApplicationManager.call("message/put/[M001]/{A}/A post " + i, null);
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
@@ -220,12 +222,13 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
         });
 
         this.getService().execute(new Runnable() {
+            int i = 0;
+
             @Override
             public void run() {
-                int i = 0;
                 while (i++ < n)
                     try {
-                        ApplicationManager.call("talk/save/[M001]/{B}/B post " + i, null);
+                        ApplicationManager.call("message/put/[M001]/{B}/B post " + i, null);
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
@@ -244,7 +247,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                 System.out.println("[A] is started...");
                 while (true)
                     try {
-                        System.out.println("**A**:" + ApplicationManager.call("talk/update/{A}", null));
+                        System.out.println("**A**:" + ApplicationManager.call("message/take/{A}", null));
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
@@ -263,7 +266,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                 System.out.println("[B] is started...");
                 while (true)
                     try {
-                        System.out.println("**B**:" + ApplicationManager.call("talk/update/{B}", null));
+                        System.out.println("**B**:" + ApplicationManager.call("message/take/{B}", null));
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
