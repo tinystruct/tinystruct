@@ -34,7 +34,6 @@ public class example extends AbstractApplication {
         // TODO Auto-generated method stub
         this.setAction("praise", "praise");
         this.setAction("say", "say");
-        this.setAction("smile", "smile");
     }
 
     @Override
@@ -55,10 +54,6 @@ public class example extends AbstractApplication {
 
     public String say(String words) {
         return words;
-    }
-
-    public String smile() {
-        return ":)";
     }
 
 }
