@@ -123,7 +123,7 @@ public final class Actions {
                 if (types.length > 0) {
                     StringBuilder patterns = new StringBuilder();
 
-                    for (int i = types.length - 1; i >= 0; i--) {
+                    for (int i = 0; i < types.length; i++) {
                         cli.addArgument(new CommandArgument<>(params[i].getName(), null, ""));
                         String pattern = "(";
                         if (types[i].isAssignableFrom(Integer.TYPE)) {
