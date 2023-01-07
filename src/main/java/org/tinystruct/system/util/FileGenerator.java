@@ -23,8 +23,7 @@ import java.util.logging.Logger;
 
 public class FileGenerator {
     private final static Logger logger = Logger.getLogger(FileGenerator.class.getName());
-    ;
-    private String filename;
+    private final String filename;
     private StringBuilder content;
     private File file;
 
@@ -50,7 +49,7 @@ public class FileGenerator {
      * Save the content into the file that its name is 'filename'.
      */
     public void save() {
-        try (FileOutputStream fos = new FileOutputStream(file); PrintWriter printer = new PrintWriter(fos, true);) {
+        try (FileOutputStream fos = new FileOutputStream(file); PrintWriter printer = new PrintWriter(fos, true)) {
             printer.write(this.content.toString());
         } catch (IOException io) {
             logger.severe("File cannot be created!Exception was happened:" + io.getMessage());

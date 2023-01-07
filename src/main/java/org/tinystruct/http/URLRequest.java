@@ -22,6 +22,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -117,7 +118,7 @@ public class URLRequest {
         if (parameters != null && parameters.size() > 0) {
             OutputStream os = connection.getOutputStream();
             String query = this.buildQuery(parameters);
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, "UTF-8"));
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
             writer.write(query);
             writer.flush();
             writer.close();

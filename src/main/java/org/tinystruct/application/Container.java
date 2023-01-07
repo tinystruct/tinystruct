@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  *
  * @author James M. ZHOU
  */
-public class Container extends TimerTask {
+public final class Container extends TimerTask {
     private static final Logger logger = Logger.getLogger(Container.class.getName());
     private final Map<String, Application> map = new ConcurrentHashMap<>(16);
 

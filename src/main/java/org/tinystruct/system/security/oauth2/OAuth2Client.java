@@ -10,6 +10,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +19,7 @@ public class OAuth2Client implements Authentication {
     boolean status;
     Object token;
 
-    public static enum GRANT_TYPE {
+    public enum GRANT_TYPE {
         client_credentials, password, authorization_code, refresh_token, token
     }
 
@@ -35,7 +36,7 @@ public class OAuth2Client implements Authentication {
             headers.put("Authorization", basicAuth);
 
             URLRequest request = new URLRequest(uri);
-            String resp = new String(request.setHeaders(headers).send(parameters), "utf-8");
+            String resp = new String(request.setHeaders(headers).send(parameters), StandardCharsets.UTF_8);
             Builder struct = new Builder();
             struct.parse(resp);
             if ((this.token = struct.get("access_token")) != null) {
@@ -43,8 +44,6 @@ public class OAuth2Client implements Authentication {
             }
 
         } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         } catch (URISyntaxException e) {
             e.printStackTrace();

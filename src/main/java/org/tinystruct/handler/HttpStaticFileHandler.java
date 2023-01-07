@@ -30,6 +30,7 @@ import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -251,11 +252,7 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
 
     private static String sanitizeUri(String uri) {
         // Decode the path.
-        try {
-            uri = URLDecoder.decode(uri, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new Error(e);
-        }
+        uri = URLDecoder.decode(uri, StandardCharsets.UTF_8);
 
         if (uri.isEmpty() || uri.charAt(0) != '/') {
             return null;

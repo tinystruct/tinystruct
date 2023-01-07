@@ -319,6 +319,6 @@ public final class FieldType {
         return this.typeName;
     }
 
-};
+}
 
 

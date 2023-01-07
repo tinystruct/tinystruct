@@ -373,7 +373,7 @@ public final class Watcher implements Runnable {
         private final Lock lock;
         private CountDownLatch latch;
 
-        public LockEventListener(Lock lock) {
+        LockEventListener(Lock lock) {
             this.lock = lock;
         }
 

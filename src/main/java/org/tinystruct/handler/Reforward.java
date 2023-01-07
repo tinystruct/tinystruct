@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public class Reforward {
     private String fromURL = "";
@@ -50,12 +51,9 @@ public class Reforward {
     }
 
     public void setDefault(String url) throws ApplicationException {
-        if (url.indexOf("%3A") != -1)
-            try {
-                this.fromURL = URLDecoder.decode(url, "utf8");
-            } catch (UnsupportedEncodingException e) {
-                throw new ApplicationException(e.getMessage(), e);
-            }
+        if (url.indexOf("%3A") != -1) {
+            this.fromURL = URLDecoder.decode(url, StandardCharsets.UTF_8);
+        }
         else this.fromURL = url;
     }
 
@@ -77,19 +75,11 @@ public class Reforward {
     }
 
     public String getCurrentURL() throws ApplicationException {
-        try {
-            return URLEncoder.encode(this.currentURL, "utf8");
-        } catch (UnsupportedEncodingException e) {
-            throw new ApplicationException(e.getMessage(), e);
-        }
+        return URLEncoder.encode(this.currentURL, StandardCharsets.UTF_8);
     }
 
     public String getFromURL() throws ApplicationException {
-        try {
-            return URLEncoder.encode(this.fromURL, "utf8");
-        } catch (UnsupportedEncodingException e) {
-            throw new ApplicationException(e.getMessage(), e);
-        }
+        return URLEncoder.encode(this.fromURL, StandardCharsets.UTF_8);
     }
 
 }

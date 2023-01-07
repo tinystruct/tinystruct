@@ -22,7 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-public class ClassFileLoader extends ClassLoader {
+public final class ClassFileLoader extends ClassLoader {
 
     private static final Logger logger = Logger.getLogger(ClassFileLoader.class.getName());
 

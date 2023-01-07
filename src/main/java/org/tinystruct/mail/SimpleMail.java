@@ -37,7 +37,7 @@ import java.util.logging.Logger;
 public class SimpleMail {
     private final static Logger logger = Logger.getLogger(SimpleMail.class.getName());
 
-    private String username; // smtp认证用户名和密码
+    private final String username; // smtp认证用户名和密码
     private String fromName;
     private List<InternetAddress> to;
     private List<InternetAddress> copyTo;

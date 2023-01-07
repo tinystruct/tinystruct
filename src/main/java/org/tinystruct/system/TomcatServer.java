@@ -193,7 +193,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             if (log.isDebugEnabled()) {
                 log.debug("Pipeline Configuration:");
                 Pipeline pipeline = context.getPipeline();
-                Valve valves[] = null;
+                Valve[] valves = null;
                 if (pipeline != null) {
                     valves = pipeline.getValves();
                 }

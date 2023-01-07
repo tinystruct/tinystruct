@@ -77,7 +77,6 @@ public class Action implements org.tinystruct.application.Method<Object> {
             Application app;
             Context context;
             if ((context = this.app.getContext()) != null && (app = this.app.getInstance(context.getId())) != null) {
-                ;
             } else {
                 app = this.app;
             }

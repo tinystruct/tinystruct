@@ -24,6 +24,7 @@ import javax.servlet.ServletInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * The MultipartFormData class is responsible for reading the
@@ -92,10 +93,7 @@ public class MultipartFormData {
         String disposition = readLine();
         if ((disposition != null) && (disposition.startsWith("Content-Disposition"))) {
             //convert line into byte form for Content-Disposition filename and name
-            try {
-                disposition = new String(disposition.getBytes("ISO-8859-1"), "utf-8");
-            } catch (UnsupportedEncodingException e) {
-            }
+            disposition = new String(disposition.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
 
             String name = parseDispositionName(disposition);
             String filename = parseDispositionFilename(disposition);
@@ -116,7 +114,7 @@ public class MultipartFormData {
                     //then consider this filename to be a full
                     //windows filepath, and parse it accordingly
                     //to retrieve just the file name
-                    filename = filename.substring(slashIndex + 1, filename.length());
+                    filename = filename.substring(slashIndex + 1);
                 }
 
                 //get the content type
@@ -153,11 +151,7 @@ public class MultipartFormData {
 
             text = textData.toString();
             //convert data into byte form for ContentDisposition
-            try {
-                data = text.getBytes("ISO-8859-1");
-            } catch (UnsupportedEncodingException uee) {
-                data = text.getBytes();
-            }
+            data = text.getBytes(StandardCharsets.ISO_8859_1);
 
             return new ContentDisposition(name,
                     filename,
@@ -327,10 +321,6 @@ public class MultipartFormData {
             return null;
         }
 
-        try {
-            return new String(bufferByte, 0, bytesRead, "ISO-8859-1");
-        } catch (UnsupportedEncodingException uee) {
-            return new String(bufferByte);
-        }
+        return new String(bufferByte, 0, bytesRead, StandardCharsets.ISO_8859_1);
     }
 }

@@ -19,11 +19,11 @@ import org.tinystruct.ApplicationException;
 
 
 public interface Generator {
-    public void setFileName(String fileName);
+    void setFileName(String fileName);
 
-    public void setPackageName(String packageName);
+    void setPackageName(String packageName);
 
-    public void importPackages(String packageNameList);
+    void importPackages(String packageNameList);
 
-    public void create(String className, String table) throws ApplicationException;
+    void create(String className, String table) throws ApplicationException;
 }

@@ -132,7 +132,6 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
         try {
             lock.tryLock(TIMEOUT, TimeUnit.MILLISECONDS);
             while ((message = messages.poll()) == null && (System.currentTimeMillis() - startTime) <= TIMEOUT) {
-                ;
             }
         } finally {
             lock.unlock();

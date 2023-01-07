@@ -24,7 +24,7 @@ import java.util.List;
 @Deprecated
 public class HTMLParser {
     private final List<HTMLElement> resources = new ArrayList<>();
-    private String HTML;
+    private final String HTML;
     private int position = 0;
     private int length = 0;
 

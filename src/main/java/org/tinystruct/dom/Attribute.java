@@ -69,6 +69,6 @@ public class Attribute extends HashMap<String, String> implements Cloneable {
 
     @Override
     public Object clone() {
-        return (Attribute) super.clone();
+        return super.clone();
     }
 }

@@ -33,7 +33,6 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
                 String h = headerNames.nextElement();
                 this.headers.add(Header.value0f(h).set(this.request.getHeader(h)));
             } catch (IllegalArgumentException ignored) {
-                ;
             }
         }
 

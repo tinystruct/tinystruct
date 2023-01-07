@@ -27,7 +27,7 @@ public class POP3Connection implements Connection {
     /**
      * Email Connection .
      */
-    private Configuration<String> config;
+    private final Configuration<String> config;
 
     private Session session;
     private Store store;

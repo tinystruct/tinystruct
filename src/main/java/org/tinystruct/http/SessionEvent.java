@@ -4,7 +4,7 @@ import java.util.EventObject;
 
 public class SessionEvent extends EventObject {
 
-    private Type type;
+    private final Type type;
 
     /**
      * Constructs a prototypical Event.

@@ -26,7 +26,7 @@ public class SMTPConnection implements Connection {
     /**
      * Email Connection .
      */
-    private Configuration<String> config;
+    private final Configuration<String> config;
 
     private Session session;
     private Transport transport;

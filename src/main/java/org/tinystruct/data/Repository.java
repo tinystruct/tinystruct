@@ -20,18 +20,18 @@ import org.tinystruct.data.component.Field;
 import org.tinystruct.data.component.Row;
 import org.tinystruct.data.component.Table;
 
-public interface Repository {
-    public enum Type {MySQL, SQLServer, SQLite, H2}
+interface Repository {
+    enum Type {MySQL, SQLServer, SQLite, H2}
 
-    public Type getType();
+    Type getType();
 
-    public boolean append(Field ready_fields, String table) throws ApplicationException;
+    boolean append(Field ready_fields, String table) throws ApplicationException;
 
-    public boolean update(Field ready_fields, String table) throws ApplicationException;
+    boolean update(Field ready_fields, String table) throws ApplicationException;
 
-    public boolean delete(Object Id, String table) throws ApplicationException;
+    boolean delete(Object Id, String table) throws ApplicationException;
 
-    public Table find(String SQL, Object[] parameters) throws ApplicationException;
+    Table find(String SQL, Object[] parameters) throws ApplicationException;
 
-    public Row findOne(String SQL, Object[] parameters) throws ApplicationException;
+    Row findOne(String SQL, Object[] parameters) throws ApplicationException;
 }

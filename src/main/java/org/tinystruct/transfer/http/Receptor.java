@@ -22,27 +22,36 @@ import org.tinystruct.transfer.Transmission;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.URLConnection;
+import java.net.HttpURLConnection;
 
 public class Receptor implements Reception {
 
-    private URLConnection connection;
+    private HttpURLConnection connection;
 
     public void accept(Transmission transmission) throws ApplicationException {
+        this.connection = (HttpURLConnection) transmission.getConnection();
+
         try {
-            this.connection = transmission.getConnection();
-            transmission.stop();
+            // Get the response code
+            int responseCode = this.connection.getResponseCode();
+            // Check if the request was successful
+            if (responseCode == 200) {
+                // Read the response data
+                transmission.stop();
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                    this.connection.getInputStream()));
+                BufferedReader in = new BufferedReader(new InputStreamReader(
+                        this.connection.getInputStream()));
 
-            String line;
-            StringBuffer buffer = new StringBuffer();
-            while ((line = in.readLine()) != null) {
-                buffer.append("\n").append(line);
+                String line;
+                StringBuffer buffer = new StringBuffer();
+                while ((line = in.readLine()) != null) {
+                    buffer.append("\n").append(line);
+                }
+                in.close();
+                this.stop();
+            } else {
+                System.out.println("Request failed with response code: " + responseCode);
             }
-            in.close();
-            this.stop();
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
         }

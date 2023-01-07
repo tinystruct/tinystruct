@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayInputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 import org.tinystruct.ApplicationException;
@@ -31,7 +32,7 @@ class TextFileLoaderTest {
         //   See https://diff.blue/R004 to resolve this issue.
 
         TextFileLoader textFileLoader = new TextFileLoader();
-        textFileLoader.setInputStream(new ByteArrayInputStream("AAAAAAAAAAAAAAAAAAAAAAAA".getBytes("UTF-8")));
+        textFileLoader.setInputStream(new ByteArrayInputStream("AAAAAAAAAAAAAAAAAAAAAAAA".getBytes(StandardCharsets.UTF_8)));
         textFileLoader.getContent();
     }
 
@@ -43,7 +44,7 @@ class TextFileLoaderTest {
     @Test
     void testGetFilePath2() throws UnsupportedEncodingException {
         TextFileLoader textFileLoader = new TextFileLoader("foo.txt");
-        textFileLoader.setInputStream(new ByteArrayInputStream("AAAAAAAA".getBytes("UTF-8")));
+        textFileLoader.setInputStream(new ByteArrayInputStream("AAAAAAAA".getBytes(StandardCharsets.UTF_8)));
         assertEquals("foo.txt", textFileLoader.getFilePath());
     }
 }

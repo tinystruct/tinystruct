@@ -28,7 +28,7 @@ import java.util.Map;
  */
 public final class ApplicationContext implements Context {
 
-    private static final ThreadLocal<HashMap<String, Object>> threadLocal = ThreadLocal.withInitial(HashMap<String, Object>::new);
+    private static final ThreadLocal<HashMap<String, Object>> threadLocal = ThreadLocal.withInitial(HashMap::new);
     private String id = "";
 
     public ApplicationContext() {

@@ -168,12 +168,10 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             char c = chars[i];
             if (c == '{') {
                 if (i - 1 >= 0 && chars[i - 1] == '\\') {
-                    ;
                 } else
                     n++;
             } else if (c == '}') {
                 if (i - 1 >= 0 && chars[i - 1] == '\\') {
-                    ;
                 } else
                     n--;
             }
@@ -194,7 +192,6 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             char c = chars[i];
             if (c == begin) {
                 if (i - 1 >= 0 && chars[i - 1] == '\\') {
-                    ;
                 } else
                     n++;
             }

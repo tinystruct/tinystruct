@@ -18,9 +18,9 @@ package org.tinystruct.system.scheduling;
 import java.util.TimerTask;
 
 public class SchedulerTimerTask extends TimerTask {
-    private SchedulerTask schedulerTask;
-    private ScheduleIterator iterator;
-    private Scheduler scheduler;
+    private final SchedulerTask schedulerTask;
+    private final ScheduleIterator iterator;
+    private final Scheduler scheduler;
 
     public SchedulerTimerTask(Scheduler scheduler,
                               SchedulerTask schedulerTask, ScheduleIterator iterator) {

@@ -41,7 +41,7 @@ public class DistributedRedisLock implements Lock {
             logger.log(Level.SEVERE, "Load lock.lua error.", e);
         }
 
-        try (InputStream stream = Objects.requireNonNull(DistributedRedisLock.class.getResource("/unlock.lua")).openStream(); ReadableByteChannel channel = Channels.newChannel(stream);) {
+        try (InputStream stream = Objects.requireNonNull(DistributedRedisLock.class.getResource("/unlock.lua")).openStream(); ReadableByteChannel channel = Channels.newChannel(stream)) {
             buff = ByteBuffer.allocate(1024);
             channel.read(buff);
             unlockScript = new String(buff.array(), StandardCharsets.UTF_8).trim();
@@ -53,7 +53,7 @@ public class DistributedRedisLock implements Lock {
     private final RedisURI uri;
     private final StatefulRedisConnection<String, String> redisClient;
     private String id;
-    private String value;
+    private final String value;
 
     public DistributedRedisLock() {
         this(UUID.randomUUID().toString());
