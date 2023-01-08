@@ -39,7 +39,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
     }
 
     public void addCookie(Cookie cookie) {
-        addHeader(Header.SET_COOKIE.toString(), cookie.toString());
+        addHeader(Header.SET_COOKIE.name(), cookie.toString());
     }
 
     @Override
