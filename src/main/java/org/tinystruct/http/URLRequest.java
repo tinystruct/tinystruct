@@ -18,8 +18,12 @@ package org.tinystruct.http;
 
 import org.tinystruct.ApplicationException;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.Proxy;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -31,44 +35,12 @@ public class URLRequest {
 
     private URL url;
     private Map<String, String> headers;
-
     private Method method = Method.GET;
+    private Proxy proxy = null;
+    private HttpURLConnection connection;
 
     public URLRequest(URL url) {
         this.url = url;
-    }
-
-    public Method getMethod() {
-        return method;
-    }
-
-    /**
-     * Set the method for the URL request, one of:
-     * <UL>
-     * <LI>GET
-     * <LI>POST
-     * <LI>HEAD
-     * <LI>OPTIONS
-     * <LI>PUT
-     * <LI>DELETE
-     * <LI>TRACE
-     * </UL> are legal, subject to protocol restrictions.  The default
-     * method is GET.
-     *
-     * @param method the HTTP method
-     * @see #getMethod()
-     */
-    public void setMethod(Method method) {
-        this.method = method;
-    }
-
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
-
-    public URLRequest setHeaders(Map<String, String> headers) {
-        this.headers = headers;
-        return this;
     }
 
     public URL getUrl() {
@@ -80,9 +52,13 @@ public class URLRequest {
         return this;
     }
 
-    public byte[] send(Map<String, Object> parameters) throws ApplicationException, URISyntaxException {
+    public void proxy(Proxy proxy) {
+        this.proxy = proxy;
+    }
+
+    public byte[] send(HttpRequestBuilder request) throws ApplicationException, URISyntaxException {
         try {
-            return send(parameters, new Callback<ByteArrayOutputStream>() {
+            return send(request, new Callback<ByteArrayOutputStream>() {
                 public byte[] process(ByteArrayOutputStream out) throws ApplicationException {
                     return out.toByteArray();
                 }
@@ -92,52 +68,60 @@ public class URLRequest {
         }
     }
 
-    public byte[] send(Map<String, Object> parameters, Callback<ByteArrayOutputStream> callback)
+    public byte[] send(HttpRequestBuilder request, Callback<ByteArrayOutputStream> callback)
             throws ApplicationException, IOException {
-        HttpURLConnection connection = (HttpURLConnection) this.url.openConnection();
-        connection.setRequestProperty("accept", "*/*");
-        connection.setRequestProperty("connection", "Keep-Alive");
-        connection.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1)");
-        connection.setReadTimeout(10000);
-        connection.setConnectTimeout(15000);
-        connection.setRequestMethod(method.name());
-
-        if (headers != null) {
-            Set<Map.Entry<String, String>> set = headers.entrySet();
-            Iterator<Map.Entry<String, String>> i = set.iterator();
-
-            while (i.hasNext()) {
-                Map.Entry<String, String> key = i.next();
-                connection.setRequestProperty(key.getKey(), key.getValue());
+        try {
+            String parameters = "";
+            URL url;
+            if (request.parameters().size() > 0) {
+                parameters = this.buildQuery(request.parameters());
+                if (request.uri().contains("?"))
+                    url = new URL(this.url.toString() + "&" + parameters);
+                else
+                    url = new URL(this.url.toString() + "?" + parameters);
+            } else {
+                url = this.url;
             }
-        }
 
-        connection.setDoInput(true);
-        connection.setDoOutput(true);
+            if (this.proxy != null) {
+                this.connection = (HttpURLConnection) url.openConnection(this.proxy);
+            } else {
+                this.connection = (HttpURLConnection) url.openConnection();
+            }
 
-        if (parameters != null && parameters.size() > 0) {
-            OutputStream os = connection.getOutputStream();
-            String query = this.buildQuery(parameters);
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8));
-            writer.write(query);
-            writer.flush();
-            writer.close();
-            os.close();
+            // Set headers
+            request.headers().values().forEach(h -> this.connection.setRequestProperty(h.name(), h.value().toString()));
+
+            this.connection.setRequestMethod(request.method().name());
+
+            if (request.requestBody() != null) {
+                this.connection.setDoOutput(true);
+            }
+
+            try (OutputStream wr = connection.getOutputStream()) {
+                // Send request
+                wr.write(request.requestBody().getBytes(StandardCharsets.UTF_8));
+                wr.flush();
+            } catch (IOException e) {
+                throw new ApplicationException(e.getMessage(), e.getCause());
+            }
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e.getCause());
         }
 
         connection.connect();
 
-        InputStream in = connection.getInputStream();
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] bytes = new byte[1024];
-        int len;
-        while ((len = in.read(bytes)) != -1) {
-            out.write(bytes, 0, len);
+        try (final InputStream in = connection.getInputStream(); final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] bytes = new byte[1024];
+            int len;
+            while ((len = in.read(bytes)) != -1) {
+                out.write(bytes, 0, len);
+            }
+            out.close();
+            return callback.process(out);
+        } finally {
+            connection.disconnect();
         }
-        in.close();
-        out.close();
-        connection.disconnect();
-        return callback.process(out);
     }
 
     private String buildQuery(Map<String, Object> parameters) {
