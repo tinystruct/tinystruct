@@ -26,4 +26,8 @@ public class Headers {
     public boolean contains(Header header) {
         return headers.contains(header);
     }
+
+    public HashSet<Header> values() {
+        return this.headers;
+    }
 }
