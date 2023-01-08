@@ -20,7 +20,7 @@ import org.tinystruct.data.component.Field;
 import org.tinystruct.data.component.Row;
 import org.tinystruct.data.component.Table;
 
-interface Repository {
+public interface Repository {
     enum Type {MySQL, SQLServer, SQLite, H2}
 
     Type getType();
