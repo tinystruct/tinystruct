@@ -147,7 +147,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                     if ((message = ApplicationManager.call(query, context)) != null)
                         if (message instanceof byte[]) {
                             byte[] bytes = (byte[]) message;
-                            _response.addHeader(Header.CONTENT_LENGTH.toString(), bytes.length);
+                            _response.addHeader(Header.CONTENT_LENGTH.name(), bytes.length);
                             _response.get().write(bytes);
                             _response.get().close();
                         } else {
