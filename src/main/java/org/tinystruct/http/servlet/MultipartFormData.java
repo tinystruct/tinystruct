@@ -23,7 +23,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -79,6 +78,96 @@ public class MultipartFormData {
         this.request = request;
 
         parseRequest();
+    }
+
+    /**
+     * Parses a content-type String for the boundary.  Appends a
+     * "--" to the beginning of the boundary, because thats the
+     * real boundary as opposed to the shortened one in the
+     * content type.
+     *
+     * @param contentType content type
+     * @return boundary
+     */
+    public static String parseBoundary(String contentType) {
+        if (contentType.lastIndexOf("boundary=") != -1) {
+            String _boundary = "--" + contentType.substring(contentType.lastIndexOf("boundary=") + 9);
+            if (_boundary.endsWith("\n")) {
+                //strip it off
+                return _boundary.substring(0, _boundary.length() - 1);
+            }
+            return _boundary;
+        }
+        return null;
+    }
+
+    /**
+     * Parses the "Content-Type" line of a multipart form for a content type
+     *
+     * @param contentTypeString A String representing the Content-Type line,
+     *                          with a trailing "\n"
+     * @return The content type specified, or <code>null</code> if one can't be
+     * found.
+     */
+    public static String parseContentType(String contentTypeString) {
+        int nameIndex = contentTypeString.indexOf("Content-Type: ");
+
+        if (nameIndex != -1) {
+            int endLineIndex = contentTypeString.indexOf("\n");
+            if (endLineIndex != -1) {
+                return contentTypeString.substring(nameIndex + 14, endLineIndex);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Retrieves the "name" attribute from a content disposition line
+     *
+     * @param dispositionString The entire "Content-disposition" string
+     * @return <code>null</code> if no name could be found, otherwise,
+     * returns the name
+     * @see #parseForAttribute(String, String)
+     */
+    public static String parseDispositionName(String dispositionString) {
+        return parseForAttribute("name", dispositionString);
+    }
+
+    /**
+     * Retrieves the "filename" attribute from a content disposition line
+     *
+     * @param dispositionString The entire "Content-disposition" string
+     * @return <code>null</code> if no filename could be found, otherwise,
+     * returns the filename
+     * @see #parseForAttribute(String, String)
+     */
+    public static String parseDispositionFilename(String dispositionString) {
+        return parseForAttribute("filename", dispositionString);
+    }
+
+    /**
+     * Parses a string looking for a attribute-value pair, and returns the value.
+     * For example:
+     * <pre>
+     *      String parseString = "Content-Disposition: filename=\"bob\" name=\"jack\"";
+     *      MultipartFormData.parseForAttribute(parseString, "name");
+     * </pre>
+     * That will return "bob".
+     *
+     * @param attribute   The name of the attribute you're trying to get
+     * @param parseString The string to retrieve the value from
+     * @return The value of the attribute, or <code>null</code> if none could be found
+     */
+    public static String parseForAttribute(String attribute, String parseString) {
+        int nameIndex = parseString.indexOf(attribute + "=\"");
+        if (nameIndex != -1) {
+            int endQuoteIndex = parseString.indexOf("\"", nameIndex + attribute.length() + 3);
+
+            if (endQuoteIndex != -1) {
+                return parseString.substring(nameIndex + attribute.length() + 2, endQuoteIndex);
+            }
+        }
+        return null;
     }
 
     /**
@@ -162,6 +251,16 @@ public class MultipartFormData {
     }
 
     /**
+     * Get the maximum amount of bytes read from a line at one time
+     *
+     * @return buffer size
+     * @see javax.servlet.ServletInputStream#readLine(byte[], int, int)
+     */
+    public int getBufferSize() {
+        return bufferSize;
+    }
+
+    /**
      * Set the maximum amount of bytes read from a line at one time
      *
      * @param bufferSize buffer size
@@ -169,16 +268,6 @@ public class MultipartFormData {
      */
     public void setBufferSize(int bufferSize) {
         this.bufferSize = bufferSize;
-    }
-
-    /**
-     * Get the maximum amount of bytes read from a line at one time
-     *
-     * @see javax.servlet.ServletInputStream#readLine(byte[], int, int)
-     * @return buffer size
-     */
-    public int getBufferSize() {
-        return bufferSize;
     }
 
     /**
@@ -207,98 +296,6 @@ public class MultipartFormData {
         if (!readLine().startsWith(boundary)) {
             throw new ServletException("MultipartFormData: invalid multipart request data");
         }
-    }
-
-    /**
-     * Parses a content-type String for the boundary.  Appends a
-     * "--" to the beginning of the boundary, because thats the
-     * real boundary as opposed to the shortened one in the
-     * content type.
-     *
-     * @param contentType content type
-     * @return boundary
-     */
-    public static String parseBoundary(String contentType) {
-        if (contentType.lastIndexOf("boundary=") != -1) {
-            String _boundary = "--" + contentType.substring(contentType.lastIndexOf("boundary=") + 9);
-            if (_boundary.endsWith("\n")) {
-                //strip it off
-                return _boundary.substring(0, _boundary.length() - 1);
-            }
-            return _boundary;
-        }
-        return null;
-    }
-
-    /**
-     * Parses the "Content-Type" line of a multipart form for a content type
-     *
-     * @param contentTypeString A String representing the Content-Type line,
-     *                          with a trailing "\n"
-     * @return The content type specified, or <code>null</code> if one can't be
-     * found.
-     */
-    public static String parseContentType(String contentTypeString) {
-        int nameIndex = contentTypeString.indexOf("Content-Type: ");
-
-        if (nameIndex != -1) {
-            int endLineIndex = contentTypeString.indexOf("\n");
-            if (endLineIndex != -1) {
-                return contentTypeString.substring(nameIndex + 14, endLineIndex);
-            }
-        }
-        return null;
-    }
-
-
-    /**
-     * Retrieves the "name" attribute from a content disposition line
-     *
-     * @param dispositionString The entire "Content-disposition" string
-     * @return <code>null</code> if no name could be found, otherwise,
-     * returns the name
-     * @see #parseForAttribute(String, String)
-     */
-    public static String parseDispositionName(String dispositionString) {
-        return parseForAttribute("name", dispositionString);
-    }
-
-    /**
-     * Retrieves the "filename" attribute from a content disposition line
-     *
-     * @param dispositionString The entire "Content-disposition" string
-     * @return <code>null</code> if no filename could be found, otherwise,
-     * returns the filename
-     * @see #parseForAttribute(String, String)
-     */
-    public static String parseDispositionFilename(String dispositionString) {
-        return parseForAttribute("filename", dispositionString);
-    }
-
-
-    /**
-     * Parses a string looking for a attribute-value pair, and returns the value.
-     * For example:
-     * <pre>
-     *      String parseString = "Content-Disposition: filename=\"bob\" name=\"jack\"";
-     *      MultipartFormData.parseForAttribute(parseString, "name");
-     * </pre>
-     * That will return "bob".
-     *
-     * @param attribute   The name of the attribute you're trying to get
-     * @param parseString The string to retrieve the value from
-     * @return The value of the attribute, or <code>null</code> if none could be found
-     */
-    public static String parseForAttribute(String attribute, String parseString) {
-        int nameIndex = parseString.indexOf(attribute + "=\"");
-        if (nameIndex != -1) {
-            int endQuoteIndex = parseString.indexOf("\"", nameIndex + attribute.length() + 3);
-
-            if (endQuoteIndex != -1) {
-                return parseString.substring(nameIndex + attribute.length() + 2, endQuoteIndex);
-            }
-        }
-        return null;
     }
 
     /**
