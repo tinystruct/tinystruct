@@ -1,428 +1,430 @@
 package org.tinystruct.http;
 
-import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Standard Header Names.
  */
-public enum Header {
+public class Header implements Cloneable {
+    private static final Map<String, Header> map = new HashMap<>();
 
     /**
      * {@code "Accept"}
      */
-    ACCEPT("Accept", new StandardValue[]{StandardValue.APPLICATION_JSON, StandardValue.APPLICATION_X_WWW_FORM_URLENCODED}),
+    public static final Header ACCEPT = new Header("Accept", new StandardValue[]{StandardValue.APPLICATION_JSON, StandardValue.APPLICATION_X_WWW_FORM_URLENCODED});
 
     /**
      * {@code "Accept-Charset"}
      */
-    ACCEPT_CHARSET("Accept-Charset"),
+    public static final Header ACCEPT_CHARSET = new Header("Accept-Charset");
 
     /**
      * {@code "Accept-Encoding"}
      */
-    ACCEPT_ENCODING("Accept-Encoding"),
+    public static final Header ACCEPT_ENCODING = new Header("Accept-Encoding");
 
     /**
      * {@code "Accept-Language"}
      */
-    ACCEPT_LANGUAGE("Accept-Language"),
+    public static final Header ACCEPT_LANGUAGE = new Header("Accept-Language");
 
     /**
      * {@code "Accept-Ranges"}
      */
-    ACCEPT_RANGES("Accept-Ranges"),
+    public static final Header ACCEPT_RANGES = new Header("Accept-Ranges");
 
     /**
      * {@code "Accept-Patch"}
      */
-    ACCEPT_PATCH("Accept-Patch"),
+    public static final Header ACCEPT_PATCH = new Header("Accept-Patch");
 
     /**
      * {@code "Access-Control-Allow-Credentials"}
      */
-    ACCESS_CONTROL_ALLOW_CREDENTIALS("Access-Control-Allow-Credentials"),
+    public static final Header ACCESS_CONTROL_ALLOW_CREDENTIALS = new Header("Access-Control-Allow-Credentials");
 
     /**
      * {@code "Access-Control-Allow-Headers"}
      */
-    ACCESS_CONTROL_ALLOW_HEADERS("Access-Control-Allow-Headers"),
+    public static final Header ACCESS_CONTROL_ALLOW_HEADERS = new Header("Access-Control-Allow-Headers");
 
     /**
      * {@code "Access-Control-Allow-Methods"}
      */
-    ACCESS_CONTROL_ALLOW_METHODS("Access-Control-Allow-Methods"),
+    public static final Header ACCESS_CONTROL_ALLOW_METHODS = new Header("Access-Control-Allow-Methods");
 
     /**
      * {@code "Access-Control-Allow-Origin"}
      */
-    ACCESS_CONTROL_ALLOW_ORIGIN("Access-Control-Allow-Origin"),
+    public static final Header ACCESS_CONTROL_ALLOW_ORIGIN = new Header("Access-Control-Allow-Origin");
 
     /**
      * {@code "Access-Control-Expose-Headers"}
      */
-    ACCESS_CONTROL_EXPOSE_HEADERS("Access-Control-Expose-Headers"),
+    public static final Header ACCESS_CONTROL_EXPOSE_HEADERS = new Header("Access-Control-Expose-Headers");
 
     /**
      * {@code "Access-Control-Max-Age"}
      */
-    ACCESS_CONTROL_MAX_AGE("Access-Control-Max-Age"),
+    public static final Header ACCESS_CONTROL_MAX_AGE = new Header("Access-Control-Max-Age");
 
     /**
      * {@code "Access-Control-Request-Headers"}
      */
-    ACCESS_CONTROL_REQUEST_HEADERS("Access-Control-Request-Headers"),
+    public static final Header ACCESS_CONTROL_REQUEST_HEADERS = new Header("Access-Control-Request-Headers");
 
     /**
      * {@code "Access-Control-Request-Method"}
      */
-    ACCESS_CONTROL_REQUEST_METHOD("Access-Control-Request-Method"),
+    public static final Header ACCESS_CONTROL_REQUEST_METHOD = new Header("Access-Control-Request-Method");
 
     /**
      * {@code "Age"}
      */
-    AGE("Age"),
+    public static final Header AGE = new Header("Age");
 
     /**
      * {@code "Allow"}
      */
-    ALLOW("Allow"),
+    public static final Header ALLOW = new Header("Allow");
 
     /**
      * {@code "Authorization"}
      */
-    AUTHORIZATION("Authorization"),
+    public static final Header AUTHORIZATION = new Header("Authorization");
 
     /**
      * {@code "Cache-Control"}
      */
-    CACHE_CONTROL("Cache-Control"),
+    public static final Header CACHE_CONTROL = new Header("Cache-Control");
 
     /**
      * {@code "Connection"}
      */
-    CONNECTION("Connection"),
+    public static final Header CONNECTION = new Header("Connection");
 
     /**
      * {@code "Content-Base"}
      */
-    CONTENT_BASE("Content-Base"),
+    public static final Header CONTENT_BASE = new Header("Content-Base");
 
     /**
      * {@code "Content-Encoding"}
      */
-    CONTENT_ENCODING("Content-Encoding"),
+    public static final Header CONTENT_ENCODING = new Header("Content-Encoding");
 
     /**
      * {@code "Content-Language"}
      */
-    CONTENT_LANGUAGE("Content-Language"),
+    public static final Header CONTENT_LANGUAGE = new Header("Content-Language");
 
     /**
      * {@code "Content-Length"}
      */
-    CONTENT_LENGTH("Content-Length"),
+    public static final Header CONTENT_LENGTH = new Header("Content-Length");
 
     /**
      * {@code "Content-Disposition"}
      */
-    CONTENT_DISPOSITION("Content-Disposition"),
+    public static final Header CONTENT_DISPOSITION = new Header("Content-Disposition");
 
     /**
      * {@code "Content-Location"}
      */
-    CONTENT_LOCATION("Content-Location"),
+    public static final Header CONTENT_LOCATION = new Header("Content-Location");
 
     /**
      * {@code "Content-Transfer-Encoding"}
      */
-    CONTENT_TRANSFER_ENCODING("Content-Transfer-Encoding"),
+    public static final Header CONTENT_TRANSFER_ENCODING = new Header("Content-Transfer-Encoding");
 
     /**
      * {@code "Content-MD5"}
      */
-    CONTENT_MD5("Content-MD5"),
+    public static final Header CONTENT_MD5 = new Header("Content-MD5");
 
     /**
      * {@code "Content-Range"}
      */
-    CONTENT_RANGE("Content-Range"),
+    public static final Header CONTENT_RANGE = new Header("Content-Range");
 
     /**
      * {@code "Content-Type"}
      */
-    CONTENT_TYPE("Content-Type"),
+    public static final Header CONTENT_TYPE = new Header("Content-Type");
 
     /**
      * {@code "Cookie"}
      */
-    COOKIE("Cookie"),
+    public static final Header COOKIE = new Header("Cookie");
 
     /**
      * {@code "Date"}
      */
-    DATE("Date"),
+    public static final Header DATE = new Header("Date");
 
     /**
      * {@code "ETag"}
      */
-    ETAG("ETag"),
+    public static final Header ETAG = new Header("ETag");
 
     /**
      * {@code "Expect"}
      */
-    EXPECT("Expect"),
+    public static final Header EXPECT = new Header("Expect");
 
     /**
      * {@code "Expires"}
      */
-    EXPIRES("Expires"),
+    public static final Header EXPIRES = new Header("Expires");
 
     /**
      * {@code "From"}
      */
-    FROM("From"),
+    public static final Header FROM = new Header("From");
 
     /**
      * {@code "Host"}
      */
-    HOST("Host"),
+    public static final Header HOST = new Header("Host");
 
     /**
      * {@code "If-Match"}
      */
-    IF_MATCH("If-Match"),
+    public static final Header IF_MATCH = new Header("If-Match");
 
     /**
      * {@code "If-Modified-Since"}
      */
-    IF_MODIFIED_SINCE("If-Modified-Since"),
+    public static final Header IF_MODIFIED_SINCE = new Header("If-Modified-Since");
 
     /**
      * {@code "If-None-Match"}
      */
-    IF_NONE_MATCH("If-None-Match"),
+    public static final Header IF_NONE_MATCH = new Header("If-None-Match");
 
     /**
      * {@code "If-Range"}
      */
-    IF_RANGE("If-Range"),
+    public static final Header IF_RANGE = new Header("If-Range");
 
     /**
      * {@code "If-Unmodified-Since"}
      */
-    IF_UNMODIFIED_SINCE("If-Unmodified-Since"),
+    public static final Header IF_UNMODIFIED_SINCE = new Header("If-Unmodified-Since");
 
     /**
      * {@code "Last-Modified"}
      */
-    LAST_MODIFIED("Last-Modified"),
+    public static final Header LAST_MODIFIED = new Header("Last-Modified");
 
     /**
      * {@code "Location"}
      */
-    LOCATION("Location"),
+    public static final Header LOCATION = new Header("Location");
 
     /**
      * {@code "Max-Forwards"}
      */
-    MAX_FORWARDS("Max-Forwards"),
+    public static final Header MAX_FORWARDS = new Header("Max-Forwards");
 
     /**
      * {@code "Origin"}
      */
-    ORIGIN("Origin"),
+    public static final Header ORIGIN = new Header("Origin");
 
     /**
      * {@code "Pragma"}
      */
-    PRAGMA("Pragma"),
+    public static final Header PRAGMA = new Header("Pragma");
 
     /**
      * {@code "Proxy-Authenticate"}
      */
-    PROXY_AUTHENTICATE("Proxy-Authenticate"),
+    public static final Header PROXY_AUTHENTICATE = new Header("Proxy-Authenticate");
 
     /**
      * {@code "Proxy-Authorization"}
      */
-    PROXY_AUTHORIZATION("Proxy-Authorization"),
+    public static final Header PROXY_AUTHORIZATION = new Header("Proxy-Authorization");
 
     /**
      * {@code "Range"}
      */
-    RANGE("Range"),
+    public static final Header RANGE = new Header("Range");
 
     /**
      * {@code "Referer"}
      */
-    REFERER("Referer"),
+    public static final Header REFERER = new Header("Referer");
 
     /**
      * {@code "Retry-After"}
      */
-    RETRY_AFTER("Retry-After"),
+    public static final Header RETRY_AFTER = new Header("Retry-After");
 
     /**
      * {@code "Sec-WebSocket-Key1"}
      */
-    SEC_WEBSOCKET_KEY1("Sec-WebSocket-Key1"),
+    public static final Header SEC_WEBSOCKET_KEY1 = new Header("Sec-WebSocket-Key1");
 
     /**
      * {@code "Sec-WebSocket-Key2"}
      */
-    SEC_WEBSOCKET_KEY2("Sec-WebSocket-Key2"),
+    public static final Header SEC_WEBSOCKET_KEY2 = new Header("Sec-WebSocket-Key2");
 
     /**
      * {@code "Sec-WebSocket-Location"}
      */
-    SEC_WEBSOCKET_LOCATION("Sec-WebSocket-Location"),
+    public static final Header SEC_WEBSOCKET_LOCATION = new Header("Sec-WebSocket-Location");
 
     /**
      * {@code "Sec-WebSocket-Origin"}
      */
-    SEC_WEBSOCKET_ORIGIN("Sec-WebSocket-Origin"),
+    public static final Header SEC_WEBSOCKET_ORIGIN = new Header("Sec-WebSocket-Origin");
 
     /**
      * {@code "Sec-WebSocket-Protocol"}
      */
-    SEC_WEBSOCKET_PROTOCOL("Sec-WebSocket-Protocol"),
+    public static final Header SEC_WEBSOCKET_PROTOCOL = new Header("Sec-WebSocket-Protocol");
 
     /**
      * {@code "Sec-WebSocket-Version"}
      */
-    SEC_WEBSOCKET_VERSION("Sec-WebSocket-Version"),
+    public static final Header SEC_WEBSOCKET_VERSION = new Header("Sec-WebSocket-Version");
 
     /**
      * {@code "Sec-WebSocket-Key"}
      */
-    SEC_WEBSOCKET_KEY("Sec-WebSocket-Key"),
+    public static final Header SEC_WEBSOCKET_KEY = new Header("Sec-WebSocket-Key");
 
     /**
      * {@code "Sec-WebSocket-Accept"}
      */
-    SEC_WEBSOCKET_ACCEPT("Sec-WebSocket-Accept"),
+    public static final Header SEC_WEBSOCKET_ACCEPT = new Header("Sec-WebSocket-Accept");
 
     /**
      * {@code "Sec-Fetch-Dest"}
      */
-    SEC_FETCH_DEST("Sec-Fetch-Dest"),
+    public static final Header SEC_FETCH_DEST = new Header("Sec-Fetch-Dest");
 
     /**
      * {@code "Sec-Fetch-Mode"}
      */
-    SEC_FETCH_MODE("Sec-Fetch-Mode"),
+    public static final Header SEC_FETCH_MODE = new Header("Sec-Fetch-Mode");
 
     /**
      * {@code "Sec-Fetch-Site"}
      */
-    SEC_FETCH_SITE("Sec-Fetch-Site"),
+    public static final Header SEC_FETCH_SITE = new Header("Sec-Fetch-Site");
 
     /**
      * {@code "Sec-Fetch-User"}
      */
-    SEC_FETCH_USER("Sec-Fetch-User"),
+    public static final Header SEC_FETCH_USER = new Header("Sec-Fetch-User");
 
     /**
      * {@code "Server"}
      */
-    SERVER("Server"),
+    public static final Header SERVER = new Header("Server");
 
     /**
      * {@code "Set-Cookie"}
      */
-    SET_COOKIE("Set-Cookie"),
+    public static final Header SET_COOKIE = new Header("Set-Cookie");
 
     /**
      * {@code "Set-Cookie2"}
      */
-    SET_COOKIE2("Set-Cookie2"),
+    public static final Header SET_COOKIE2 = new Header("Set-Cookie2");
 
     /**
      * {@code "TE"}
      */
-    TE("TE"),
+    public static final Header TE = new Header("TE");
 
     /**
      * {@code "Trailer"}
      */
-    TRAILER("Trailer"),
+    public static final Header TRAILER = new Header("Trailer");
 
     /**
      * {@code "Transfer-Encoding"}
      */
-    TRANSFER_ENCODING("Transfer-Encoding"),
+    public static final Header TRANSFER_ENCODING = new Header("Transfer-Encoding");
 
     /**
      * {@code "Upgrade"}
      */
-    UPGRADE("Upgrade"),
+    public static final Header UPGRADE = new Header("Upgrade");
 
     /**
      * {@code "Upgrade-Insecure-Requests"}
      */
-    UPGRADE_INSECURE_REQUESTS("Upgrade-Insecure-Requests"),
+    public static final Header UPGRADE_INSECURE_REQUESTS = new Header("Upgrade-Insecure-Requests");
 
     /**
      * {@code "User-Agent"}
      */
-    USER_AGENT("User-Agent"),
+    public static final Header USER_AGENT = new Header("User-Agent");
 
     /**
      * {@code "Vary"}
      */
-    VARY("Vary"),
+    public static final Header VARY = new Header("Vary");
 
     /**
      * {@code "Via"}
      */
-    VIA("Via"),
+    public static final Header VIA = new Header("Via");
 
     /**
      * {@code "Warning"}
      */
-    WARNING("Warning"),
+    public static final Header WARNING = new Header("Warning");
 
     /**
      * {@code "WebSocket-Location"}
      */
-    WEBSOCKET_LOCATION("WebSocket-Location"),
+    public static final Header WEBSOCKET_LOCATION = new Header("WebSocket-Location");
 
     /**
      * {@code "WebSocket-Origin"}
      */
-    WEBSOCKET_ORIGIN("WebSocket-Origin"),
+    public static final Header WEBSOCKET_ORIGIN = new Header("WebSocket-Origin");
 
     /**
      * {@code "WebSocket-Protocol"}
      */
-    WEBSOCKET_PROTOCOL("WebSocket-Protocol"),
+    public static final Header WEBSOCKET_PROTOCOL = new Header("WebSocket-Protocol");
 
     /**
      * {@code "WWW-Authenticate"}
      */
-    WWW_AUTHENTICATE("WWW-Authenticate"),
+    public static final Header WWW_AUTHENTICATE = new Header("WWW-Authenticate");
 
     /**
      * {@code "x-requested-with"}
      */
-    X_REQUESTED_WITH("X-Requested-With"),
+    public static final Header X_REQUESTED_WITH = new Header("X-Requested-With");
 
     /**
      * {@code "X-Request-Id"}
      */
-    X_REQUEST_ID("X-Request-Id"),
+    public static final Header X_REQUEST_ID = new Header("X-Request-Id");
 
     /**
      * {@code "Not-Supported"}
      */
-    NOT_SUPPORTED("Not-Supported");
-
+    public static final Header NOT_SUPPORTED = new Header("Not-Supported");
     private final String name;
     private StandardValue[] options;
     private Object value;
 
     Header(String name) {
         this.name = name;
+        map.put(this.name, this);
     }
 
     Header(String name, StandardValue[] options) {
@@ -432,13 +434,20 @@ public enum Header {
 
     public static Header value0f(String name) {
         try {
-            return Header.valueOf(Header.class, name.toUpperCase(Locale.ROOT).replaceAll("-", "_"));
+            return Header.valueOf(name);
         } catch (IllegalArgumentException e) {
             return Header.NOT_SUPPORTED;
         }
     }
 
+    private static Header valueOf(String name) {
+        Header header;
+        if ((header = map.get(name)) == null) throw new IllegalArgumentException();
+        return header;
+    }
+
     @Override
+    @Deprecated
     public String toString() {
         return this.name;
     }
@@ -453,16 +462,32 @@ public enum Header {
 
     public Header set(Object value) {
         this.value = value;
+        try {
+            return (Header) this.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+
         return this;
     }
 
     public Header setInt(int readableBytes) {
         this.value = readableBytes;
+        try {
+            return (Header) this.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+
         return this;
     }
 
     public Object value() {
         return this.value;
+    }
+
+    public String name() {
+        return this.name;
     }
 
     /**
