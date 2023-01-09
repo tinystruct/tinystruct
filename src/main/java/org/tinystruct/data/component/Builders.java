@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Builders extends ArrayList<Object> implements Serializable {
+public class Builders extends ArrayList<Builder> implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(Builders.class.getName());
