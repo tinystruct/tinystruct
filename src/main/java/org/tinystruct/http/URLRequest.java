@@ -22,10 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.Proxy;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
@@ -83,6 +80,16 @@ public class URLRequest {
                 url = this.url;
             }
 
+            // Autodetect proxy for http connection
+            if (this.proxy == null) {
+                if (System.getProperty("https.proxyHost") != null && System.getProperty("https.proxyPort") != null) {
+                    this.proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(System.getProperty("https.proxyHost"), Integer.parseInt(System.getProperty("https.proxyPort"))));
+                } else if (System.getProperty("http.proxyHost") != null && System.getProperty("http.proxyPort") != null) {
+                    this.proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(System.getProperty("http.proxyHost"), Integer.parseInt(System.getProperty("http.proxyPort"))));
+                }
+            }
+
+            // Check proxy first
             if (this.proxy != null) {
                 this.connection = (HttpURLConnection) url.openConnection(this.proxy);
             } else {
