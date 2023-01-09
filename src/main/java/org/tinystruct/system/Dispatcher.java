@@ -364,9 +364,13 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         this.setAction("download", "download");
         List<CommandOption> opts = new ArrayList<>();
         opts.add(new CommandOption("url", "", "URL resource to be downloaded"));
-        CommandOption opt = new CommandOption("http.proxyHost", "127.0.0.1", "Proxy host");
+        CommandOption opt = new CommandOption("http.proxyHost", "127.0.0.1", "Proxy host for http");
         opts.add(opt);
-        opt = new CommandOption("http.proxyPort", "3128", "Proxy port");
+        opt = new CommandOption("http.proxyPort", "3128", "Proxy port for http");
+        opts.add(opt);
+        opt = new CommandOption("https.proxyHost", "127.0.0.1", "Proxy host for https");
+        opts.add(opt);
+        opt = new CommandOption("https.proxyPort", "3128", "Proxy port for https");
         opts.add(opt);
         this.commandLines.get("download").setOptions(opts).setDescription("Download a resource from other servers");
 
