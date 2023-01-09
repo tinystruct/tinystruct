@@ -117,7 +117,6 @@ public class URLRequest {
             while ((len = in.read(bytes)) != -1) {
                 out.write(bytes, 0, len);
             }
-            out.close();
             return callback.process(out);
         } finally {
             connection.disconnect();
