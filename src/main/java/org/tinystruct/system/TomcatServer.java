@@ -45,8 +45,19 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
     public void init() {
         this.setAction("start", "start");
+
         List<CommandOption> options = new ArrayList<CommandOption>();
-        options.add(new CommandOption("server-port", "", "Server port"));
+        CommandOption option = new CommandOption("server-port", "", "Server port");
+        options.add(option);
+        option = new CommandOption("http.proxyHost", "127.0.0.1", "Proxy host for http");
+        options.add(option);
+        option = new CommandOption("http.proxyPort", "3128", "Proxy port for http");
+        options.add(option);
+        option = new CommandOption("https.proxyHost", "127.0.0.1", "Proxy host for https");
+        options.add(option);
+        option = new CommandOption("https.proxyPort", "3128", "Proxy port for https");
+        options.add(option);
+
         this.commandLines.get("start").setOptions(options).setDescription("Start a Tomcat server");
 
         this.setAction("error", "exceptionCaught");
@@ -55,6 +66,16 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
     public void start() throws ApplicationException {
         if (started) return;
+
+        if (this.context.getAttribute("--http.proxyHost") != null && this.context.getAttribute("--http.proxyPort") != null) {
+            System.setProperty("http.proxyHost", this.context.getAttribute("--http.proxyHost").toString());
+            System.setProperty("http.proxyPort", this.context.getAttribute("--http.proxyPort").toString());
+        }
+
+        if (this.context.getAttribute("--https.proxyHost") != null && this.context.getAttribute("--https.proxyPort") != null) {
+            System.setProperty("https.proxyHost", this.context.getAttribute("--https.proxyHost").toString());
+            System.setProperty("https.proxyPort", this.context.getAttribute("--https.proxyPort").toString());
+        }
 
         System.out.println(ApplicationManager.call("--logo", this.context));
 
