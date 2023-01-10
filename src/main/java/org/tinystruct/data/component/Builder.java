@@ -23,9 +23,11 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 public class Builder extends HashMap<String, Object> implements Struct, Serializable {
 
@@ -146,17 +148,42 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                 keyValue = builders;
             } else {
                 if ($value.indexOf(',') != -1) {
-                    keyValue = $value.substring(0, $value.indexOf(','));
-                    $value = $value.substring($value.indexOf(',') + 1);
+                    String _value = $value.substring(0, $value.indexOf(','));
+                    if (_value.length() > 0) {
+                        keyValue = getValue(_value);
+                    }
+                    else {
+                        keyValue = _value;
+                    }
 
+                    $value = $value.substring($value.indexOf(',') + 1);
                     this.parseValue($value);
                 } else {
-                    keyValue = $value;
+                    if ($value.length() > 0) {
+                        keyValue = getValue($value);
+                    }
+                    else {
+                        keyValue = $value;
+                    }
                 }
             }
 
             this.put(keyName, keyValue);
         }
+    }
+
+    private Object getValue(String value) {
+        Object keyValue;
+        if (Pattern.compile("^-?\\d+$").matcher(value).find()) {
+            keyValue = Integer.parseInt(value);
+        } else if (Pattern.compile("^-?\\d+(\\.\\d+)$").matcher(value).find()) {
+            keyValue = Double.parseDouble(value);
+        } else if (Pattern.compile("^(true|false)$").matcher(value.toLowerCase(Locale.ROOT)).find()) {
+            keyValue = Boolean.parseBoolean(value);
+        } else {
+            keyValue = value;
+        }
+        return keyValue;
     }
 
     private int seekPosition(String value) {
