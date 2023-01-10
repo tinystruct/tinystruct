@@ -118,13 +118,15 @@ public class URLRequest {
 
         connection.connect();
 
-        try (final InputStream in = connection.getInputStream(); final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+        try (final InputStream in = connection.getResponseCode() == HttpURLConnection.HTTP_OK ? connection.getInputStream() : connection.getErrorStream(); final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             byte[] bytes = new byte[1024];
             int len;
             while ((len = in.read(bytes)) != -1) {
                 out.write(bytes, 0, len);
             }
             return callback.process(out);
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e.getCause());
         } finally {
             connection.disconnect();
         }
