@@ -276,15 +276,18 @@ public class MultipartFormData {
      * @throws ServletException servlet exception
      */
     protected void parseRequest() throws ServletException {
+        // validate the content type header
+        if (request.headers().get(Header.CONTENT_TYPE) == null)
+            throw new ServletException("MultipartFormData: invalid multipart request data");
 
-        //set boundary
+        // set boundary
         boundary = parseBoundary(request.headers().get(Header.CONTENT_TYPE).toString());
 
-        //set the input stream
+        // set the input stream
         inputStream = request.stream();
 
         if ((boundary == null) || (boundary.length() < 1)) {
-            //try retrieving the header through more "normal" means
+            // try retrieving the header through more "normal" means
             boundary = parseBoundary(request.headers().get(Header.CONTENT_TYPE).toString());
         }
 
@@ -292,7 +295,7 @@ public class MultipartFormData {
             throw new ServletException("MultipartFormData: cannot retrieve boundary for multipart request");
         }
 
-        //read first line
+        // read first line
         if (!readLine().startsWith(boundary)) {
             throw new ServletException("MultipartFormData: invalid multipart request data");
         }
