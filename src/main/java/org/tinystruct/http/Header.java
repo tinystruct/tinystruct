@@ -1,6 +1,7 @@
 package org.tinystruct.http;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -424,17 +425,17 @@ public class Header implements Cloneable {
 
     Header(String name) {
         this.name = name;
-        map.put(this.name, this);
+        map.put(this.name.toLowerCase(Locale.ROOT), this);
     }
 
     Header(String name, StandardValue[] options) {
-        this.name = name;
+        this(name);
         this.options = options;
     }
 
     public static Header value0f(String name) {
         try {
-            return Header.valueOf(name);
+            return Header.valueOf(name.toLowerCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return Header.NOT_SUPPORTED;
         }
