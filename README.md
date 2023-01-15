@@ -1,6 +1,6 @@
 
-"How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."
-Psalms 104:24
+`"How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."`
+***Psalms 104:24***
 
 The tinystruct framework
 --
