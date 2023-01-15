@@ -90,9 +90,12 @@ Options:
         --version       Print version
 
 Run 'bin/dispatcher COMMAND --help' for more information on a command.
-	
+```
+```tcsh
 $ bin/dispatcher say/"Praise to the Lord"
 Praise to the Lord
+```
+```tcsh
 $ bin/dispatcher say --words Hello --import tinystruct.examples.example
 Hello
 ```
