@@ -1,6 +1,6 @@
 
-"How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."
-Psalms 104:24
+`"How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."`
+***Psalms 104:24***
 
 The tinystruct framework
 --
@@ -90,9 +90,12 @@ Options:
         --version       Print version
 
 Run 'bin/dispatcher COMMAND --help' for more information on a command.
-	
+```
+```tcsh
 $ bin/dispatcher say/"Praise to the Lord"
 Praise to the Lord
+```
+```tcsh
 $ bin/dispatcher say --words Hello --import tinystruct.examples.example
 Hello
 ```
