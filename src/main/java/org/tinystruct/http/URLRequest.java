@@ -1,7 +1,7 @@
 package org.tinystruct.http;
 
 /*******************************************************************************
- * Copyright  (c) 2013, 2017 James Mover Zhou
+ * Copyright  (c) 2013, 2023 James Mover Zhou
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,10 +110,10 @@ public class URLRequest {
                 wr.write(request.requestBody().getBytes(StandardCharsets.UTF_8));
                 wr.flush();
             } catch (IOException e) {
-                throw new ApplicationException(e.getMessage(), e.getCause());
+                throw new ApplicationException(e.toString(), e);
             }
         } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e.getCause());
+            throw new ApplicationException(e.toString(), e);
         }
 
         connection.connect();

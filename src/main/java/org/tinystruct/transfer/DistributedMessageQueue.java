@@ -185,7 +185,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
 
     @Override
     public String version() {
-        return "Talk core version:1.0 stable; Released on 2017-07-24";
+        return "Talk core version:1.0 stable; Released on 2023-07-24";
     }
 
     /**
