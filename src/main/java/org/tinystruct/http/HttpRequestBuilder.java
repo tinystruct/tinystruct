@@ -10,7 +10,7 @@ public class HttpRequestBuilder {
     private final Map<String, Object> parameters = new HashMap<>();
     private Version version;
     private Headers headers;
-    private Method method;
+    private Method method = Method.GET;
     private String uri;
     private String requestBody;
 
