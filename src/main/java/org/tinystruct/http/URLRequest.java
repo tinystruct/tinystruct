@@ -105,14 +105,13 @@ public class URLRequest {
 
             if (request.requestBody() != null) {
                 this.connection.setDoOutput(true);
-            }
-
-            try (OutputStream wr = connection.getOutputStream()) {
-                // Send request
-                wr.write(request.requestBody().getBytes(StandardCharsets.UTF_8));
-                wr.flush();
-            } catch (IOException e) {
-                throw new ApplicationException(e.toString(), e);
+                try (OutputStream wr = connection.getOutputStream()) {
+                    // Send request
+                    wr.write(request.requestBody().getBytes(StandardCharsets.UTF_8));
+                    wr.flush();
+                } catch (IOException e) {
+                    throw new ApplicationException(e.toString(), e);
+                }
             }
         } catch (IOException e) {
             throw new ApplicationException(e.toString(), e);
