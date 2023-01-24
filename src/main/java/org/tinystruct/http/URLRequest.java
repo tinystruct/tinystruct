@@ -68,14 +68,14 @@ public class URLRequest {
     public byte[] send(HttpRequestBuilder request, Callback<ByteArrayOutputStream> callback)
             throws ApplicationException, IOException {
         try {
-            String parameters = "";
+            String parameters;
             URL url;
             if (request.parameters().size() > 0) {
                 parameters = this.buildQuery(request.parameters());
-                if (request.uri().contains("?"))
-                    url = new URL(this.url.toString() + "&" + parameters);
+                if (this.url.toString().contains("?"))
+                    url = new URL(this.url + "&" + parameters);
                 else
-                    url = new URL(this.url.toString() + "?" + parameters);
+                    url = new URL(this.url + "?" + parameters);
             } else {
                 url = this.url;
             }
