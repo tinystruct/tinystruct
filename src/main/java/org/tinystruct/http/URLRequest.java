@@ -97,7 +97,9 @@ public class URLRequest {
             }
 
             // Set headers
-            request.headers().values().forEach(h -> this.connection.setRequestProperty(h.name(), h.value().toString()));
+            if (request.headers() != null) {
+                request.headers().values().forEach(h -> this.connection.setRequestProperty(h.name(), h.value().toString()));
+            }
 
             this.connection.setRequestMethod(request.method().name());
 
