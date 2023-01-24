@@ -155,7 +155,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             StackTraceElement[] trace = e.getStackTrace();
             message = e.getMessage();
             if (trace.length > 0 && null != e.getCause()) {
-                message = e.getCause().getMessage();
+                message = e.getCause().toString();
             }
 
             status = HttpResponseStatus.NOT_FOUND;
