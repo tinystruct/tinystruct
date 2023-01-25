@@ -58,8 +58,7 @@ public class Reforward {
     }
 
     public void match(String action, String fromURL) {
-        String action1 = "";
-        if (action1.equals(action)) {
+        if ("".equals(action)) {
             this.fromURL = fromURL;
         }
     }
