@@ -31,7 +31,8 @@ public class Local {
         return this.path;
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         return this.path;
     }
 }

@@ -26,17 +26,20 @@ public class ObjectVariable implements Variable<Object> {
         this.value = value;
     }
 
-    public String getName() {
+    @Override
+	public String getName() {
 
         return this.name;
     }
 
-    public DataType getType() {
+    @Override
+	public DataType getType() {
 
         return null;
     }
 
-    public Object getValue() {
+    @Override
+	public Object getValue() {
 
         return this.value;
     }

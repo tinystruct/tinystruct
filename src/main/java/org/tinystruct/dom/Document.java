@@ -208,7 +208,7 @@ public class Document extends DefaultHandler {
         try {
             contents.reset();
             String name = localName; // element name
-            if (name.equals("")) {
+            if ("".equals(name)) {
                 name = qName; // namespaceAware = false
             }
 
@@ -222,7 +222,7 @@ public class Document extends DefaultHandler {
             if (attrs != null) {
                 for (int i = 0; i < attrs.getLength(); i++) {
                     String aName = attrs.getLocalName(i); // Attr name
-                    if (aName.equals("")) {
+                    if ("".equals(aName)) {
                         aName = attrs.getQName(i);
                     }
                     this.currentElement.setAttribute(aName, attrs.getValue(i));
@@ -281,7 +281,8 @@ public class Document extends DefaultHandler {
         bufferedWriter.flush();
     }
 
-    public InputSource resolveEntity(String publicId, String systemId)
+    @Override
+	public InputSource resolveEntity(String publicId, String systemId)
             throws SAXException {
         InputSource source = null;
 

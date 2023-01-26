@@ -71,11 +71,11 @@ public class POP3Connection implements Connection {
                 port = this.config.get("mail.pop3.port").trim(),
                 autho = this.config.get("mail.pop3.auth").trim();
 
-        props.setProperty("mail.pop3.host", host.length() == 0 ? "localhost" : host); // eg. smtp.gmail.com
-        props.setProperty("mail.pop3.port", port.length() == 0 ? "995" : port); // eg. // 443
-        props.setProperty("mail.pop3.auth", autho.length() == 0 ? "false" : autho); // "true" or "false"
+        props.setProperty("mail.pop3.host", host.isEmpty() ? "localhost" : host); // eg. smtp.gmail.com
+        props.setProperty("mail.pop3.port", port.isEmpty() ? "995" : port); // eg. // 443
+        props.setProperty("mail.pop3.auth", autho.isEmpty() ? "false" : autho); // "true" or "false"
 
-        if (autho.equalsIgnoreCase("true")) {
+        if ("true".equalsIgnoreCase(autho)) {
             javax.mail.Authenticator auth = new javax.mail.Authenticator() {
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {
@@ -115,15 +115,18 @@ public class POP3Connection implements Connection {
         return this.store;
     }
 
-    public Session getSession() {
+    @Override
+	public Session getSession() {
         return this.session;
     }
 
-    public boolean available() {
+    @Override
+	public boolean available() {
         return this.store.isConnected();
     }
 
-    public void close() throws MessagingException {
+    @Override
+	public void close() throws MessagingException {
         if (this.available())
             this.store.close();
 
@@ -136,11 +139,13 @@ public class POP3Connection implements Connection {
         return this.store.getFolder(folder);
     }
 
-    public String getId() {
+    @Override
+	public String getId() {
         return id;
     }
 
-    public PROTOCOL getProtocol() {
+    @Override
+	public PROTOCOL getProtocol() {
         return PROTOCOL.POP3;
     }
 }

@@ -75,7 +75,7 @@ public abstract class AbstractData implements Data {
         Configuration<String> properties = new Settings("/application.properties");
         String driver = properties.get("driver");
 
-        if (driver.trim().length() == 0)
+        if (driver.trim().isEmpty())
             throw new ApplicationRuntimeException("Database Connection Driver has not been set in application.properties!");
 
         Repository repository;
@@ -105,11 +105,13 @@ public abstract class AbstractData implements Data {
         return repository;
     }
 
-    public String getClassPath() {
+    @Override
+	public String getClassPath() {
         return this.classPath;
     }
 
-    public Object setId(Object id) {
+    @Override
+	public Object setId(Object id) {
         this.Id = id;
 
         if (this.readyFields != null && this.readyFields.containsKey("Id")) {
@@ -180,15 +182,18 @@ public abstract class AbstractData implements Data {
         return false;
     }
 
-    public boolean append() throws ApplicationException {
+    @Override
+	public boolean append() throws ApplicationException {
         return repository.append(this.readyFields, this.table);
     }
 
-    public boolean update() throws ApplicationException {
+    @Override
+	public boolean update() throws ApplicationException {
         return repository.update(readyFields, this.table);
     }
 
-    public boolean delete() throws ApplicationException {
+    @Override
+	public boolean delete() throws ApplicationException {
         return repository.delete(this.Id, this.table);
     }
 
@@ -196,14 +201,16 @@ public abstract class AbstractData implements Data {
         return 0;
     }
 
-    public Data setRequestFields(String fields) {
+    @Override
+	public Data setRequestFields(String fields) {
         this.condition = new Condition();
         this.condition.setRequestFields(fields);
 
         return this;
     }
 
-    public Data orderBy(String[] fieldNames) {
+    @Override
+	public Data orderBy(String[] fieldNames) {
         StringBuilder orders = new StringBuilder();
         for (String fields : fieldNames) {
             if (orders.length() > 0)
@@ -219,23 +226,28 @@ public abstract class AbstractData implements Data {
         return this;
     }
 
-    public Table find(String SQL, Object[] parameters) throws ApplicationException {
+    @Override
+	public Table find(String SQL, Object[] parameters) throws ApplicationException {
         return repository.find(SQL, parameters);
     }
 
-    public Table find(Condition condition, Object[] parameters) throws ApplicationException {
+    @Override
+	public Table find(Condition condition, Object[] parameters) throws ApplicationException {
         return this.find(condition.toString(), parameters);
     }
 
-    public Table findWith(String where, Object[] parameters) throws ApplicationException {
+    @Override
+	public Table findWith(String where, Object[] parameters) throws ApplicationException {
         return this.find(Objects.requireNonNullElseGet(this.condition, Condition::new).select(this.table).with(where), parameters);
     }
 
-    public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
+    @Override
+	public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
         return repository.findOne(SQL, parameters);
     }
 
-    public Row findOneById() throws ApplicationException {
+    @Override
+	public Row findOneById() throws ApplicationException {
         Row row = this.findOne(new Condition().select(this.table).and(
                 "id=?").toString(), new Object[]{this.Id});
 
@@ -245,7 +257,8 @@ public abstract class AbstractData implements Data {
         return row;
     }
 
-    public Row findOneByKey(String PK, String value) throws ApplicationException {
+    @Override
+	public Row findOneByKey(String PK, String value) throws ApplicationException {
         Row row = this.findOne(new Condition().select(this.table).and(
                 PK + "=?").toString(), new Object[]{value});
 
@@ -255,15 +268,18 @@ public abstract class AbstractData implements Data {
         return row;
     }
 
-    public Table findAll() throws ApplicationException {
+    @Override
+	public Table findAll() throws ApplicationException {
         return this.find(Objects.requireNonNullElseGet(this.condition, Condition::new).select(this.table), new Object[]{});
     }
 
     public abstract void setData(Row row);
 
-    public abstract String toString();
+    @Override
+	public abstract String toString();
 
-    public String getClassName() {
+    @Override
+	public String getClassName() {
         return className;
     }
 
@@ -271,7 +287,8 @@ public abstract class AbstractData implements Data {
         this.className = className;
     }
 
-    public Object getId() {
+    @Override
+	public Object getId() {
         return this.Id;
     }
 
@@ -279,11 +296,13 @@ public abstract class AbstractData implements Data {
         return this.table;
     }
 
-    public void setTableName(String table) {
+    @Override
+	public void setTableName(String table) {
         this.table = table;
     }
 
-    public Repository getRepository() {
+    @Override
+	public Repository getRepository() {
         return repository;
     }
 }

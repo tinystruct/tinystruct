@@ -58,19 +58,23 @@ public class PlainText implements Template {
         this.variables.putAll(variables);
     }
 
-    public String getName() {
+    @Override
+	public String getName() {
         return "Textplain";
     }
 
-    public Variable<?> getVariable(String arg0) {
+    @Override
+	public Variable<?> getVariable(String arg0) {
         return this.variables.get(arg0);
     }
 
-    public Map<String, Variable<?>> getVariables() {
+    @Override
+	public Map<String, Variable<?>> getVariables() {
         return this.variables;
     }
 
-    public String parse() throws ApplicationException {
+    @Override
+	public String parse() throws ApplicationException {
 
         Configuration<String> config = app.getConfiguration();
         String value;
@@ -121,7 +125,8 @@ public class PlainText implements Template {
         return this.text;
     }
 
-    public void setVariable(Variable<?> arg0) {
+    @Override
+	public void setVariable(Variable<?> arg0) {
         this.variables.put(arg0.getName(), arg0);
     }
 

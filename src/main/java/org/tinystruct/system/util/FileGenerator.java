@@ -32,8 +32,9 @@ public class FileGenerator {
     }
 
     public FileGenerator(String path, String filename, StringBuilder content) throws ApplicationException {
-        if (!new File(path).isDirectory()) if (!new File(path.toLowerCase()).mkdir())
-            throw new ApplicationException("Make directory for preparing generate class file directory error");
+        boolean condition = !new File(path).isDirectory() && !new File(path.toLowerCase()).mkdir();
+		if (condition)
+			throw new ApplicationException("Make directory for preparing generate class file directory error");
         this.filename = path + File.separator + filename;
         this.file = new File(this.filename.toLowerCase());
         this.content = content;

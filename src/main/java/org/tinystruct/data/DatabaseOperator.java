@@ -199,7 +199,8 @@ public class DatabaseOperator implements Closeable {
         }
     }
 
-    public void close() {
+    @Override
+	public void close() {
         try {
             if (this.resultSet != null) {
                 this.resultSet.close();

@@ -59,7 +59,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     public static void main(String[] args) throws RemoteException {
         // Process the system.directory.
         Settings config = new Settings();
-        if (config.get("system.directory") == null || config.get("system.directory").equals("")) {
+        if (config.get("system.directory") == null || "".equals(config.get("system.directory"))) {
             config.set("system.directory", System.getProperty("user.dir"));
         }
 
@@ -218,7 +218,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             // Merge the packages from list.
             // Update the imports.
             String defaults;
-            if (!(defaults = config.get("default.import.applications")).equals(""))
+            if (!"".equals((defaults = config.get("default.import.applications"))))
                 defaults += ";";
 
             config.set("default.import.applications", defaults + String.join(";", list));
@@ -352,7 +352,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         }
     }
 
-    public void init() {
+    @Override
+	public void init() {
         this.setAction("install", "install");
         List<CommandOption> options = new ArrayList<CommandOption>();
         options.add(new CommandOption("app", "", "Packages to be installed"));
@@ -469,7 +470,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         return "\u001b[" + color + "m" + s + "\u001b[0m";
     }
 
-    public String version() {
+    @Override
+	public String version() {
         return String.format("Dispatcher (cli) (built on %sinystruct-%s) %nCopyright (c) 2013-%s James M. ZHOU", this.color("t", FORE_COLOR.blue), ApplicationManager.VERSION, LocalDate.now().getYear());
     }
 

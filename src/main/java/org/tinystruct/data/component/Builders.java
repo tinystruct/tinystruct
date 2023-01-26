@@ -15,12 +15,12 @@
  *******************************************************************************/
 package org.tinystruct.data.component;
 
-import org.tinystruct.ApplicationException;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.tinystruct.ApplicationException;
 
 public class Builders extends ArrayList<Builder> implements Serializable {
 
@@ -30,7 +30,8 @@ public class Builders extends ArrayList<Builder> implements Serializable {
     public Builders() {
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         StringBuilder buffer = new StringBuilder();
 
         for (Object o : this) {
@@ -53,12 +54,11 @@ public class Builders extends ArrayList<Builder> implements Serializable {
             this.add(builder);
 
             int p = builder.getClosedPosition();
-            if (p < value.length()) {
-                if (value.charAt(p) == ',') {
-                    value = value.substring(p + 1);
-                    this.parse(value);
-                }
-            }
+            boolean condition = p < value.length() && value.charAt(p) == ',';
+			if (condition) {
+			    value = value.substring(p + 1);
+			    this.parse(value);
+			}
         }
 
         if (value.indexOf('[') == 0) {
@@ -77,7 +77,9 @@ public class Builders extends ArrayList<Builder> implements Serializable {
 
     private int seekPosition(String value) {
         char[] chars = value.toCharArray();
-        int i = 0, n = 0, position = chars.length;
+        int i = 0;
+		int n = 0;
+		int position = chars.length;
 
         while (i < position) {
             char c = chars[i++];

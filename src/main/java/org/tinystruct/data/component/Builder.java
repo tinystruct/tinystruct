@@ -15,9 +15,6 @@
  *******************************************************************************/
 package org.tinystruct.data.component;
 
-import org.tinystruct.ApplicationException;
-import org.tinystruct.system.util.StringUtilities;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -29,6 +26,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import org.tinystruct.ApplicationException;
+import org.tinystruct.system.util.StringUtilities;
+
 public class Builder extends HashMap<String, Object> implements Struct, Serializable {
 
     private static final long serialVersionUID = 3484789992424316230L;
@@ -39,7 +39,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public Builder() {
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         StringBuilder buffer = new StringBuilder();
         Set<Entry<String, Object>> keys = this.entrySet();
         Object value;
@@ -70,7 +71,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      * @param resource JSON string
      * @throws ApplicationException application exception
      */
-    public void parse(String resource) throws ApplicationException {
+    @Override
+	public void parse(String resource) throws ApplicationException {
         // 默认相信任何一个被传入的都是合法的字符串
         resource = resource.trim();
         if (!resource.startsWith("{") && !resource.endsWith("}")) {
@@ -102,7 +104,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         value = value.trim();
         if (value.startsWith(QUOTE)) {
             // 处理传入的实体对象外壳 "key":value,"key":"value",..."key":value 序列
-            int COLON_POSITION = value.indexOf(':'), start = COLON_POSITION + 1;
+            int COLON_POSITION = value.indexOf(':');
+			int start = COLON_POSITION + 1;
             String keyName = value.substring(1, COLON_POSITION - 1);
 
             logger.log(Level.FINE, "取键值:{}", keyName);
@@ -188,7 +191,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     private int seekPosition(String value) {
         char[] chars = value.toCharArray();
-        int i = 0, n = 0;
+        int i = 0;
+		int n = 0;
         int position = chars.length;
 
         while (i < position) {
@@ -213,7 +217,9 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     private int next(String value, char begin) {
         char[] chars = value.toCharArray();
-        int i = 0, n = 0, position = chars.length;
+        int i = 0;
+		int n = 0;
+		int position = chars.length;
 
         while (i < position) {
             char c = chars[i];
@@ -231,7 +237,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         return position;
     }
 
-    public Row toData() {
+    @Override
+	public Row toData() {
         Row row = new Row();
         Field field = new Field();
         Set<Entry<String, Object>> keySet = this.entrySet();

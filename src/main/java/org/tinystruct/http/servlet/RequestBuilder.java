@@ -72,7 +72,8 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
         return manager.getSession(id);
     }
 
-    public Session getSession(String id, boolean generated) {
+    @Override
+	public Session getSession(String id, boolean generated) {
         if (manager.getSession(id) == null && generated) {
             manager.setSession(id, new MemorySession(id));
         }

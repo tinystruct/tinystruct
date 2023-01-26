@@ -406,7 +406,8 @@ public class Element implements Cloneable {
         return "\r\n" + space;
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         if (this.elementType == ElementType.TEXT) {
             return this.name;
         }
@@ -416,7 +417,8 @@ public class Element implements Cloneable {
         if (!valid)
             return "Invalid Tag Name";
 
-        StringBuffer buffer = new StringBuffer(), nodes = new StringBuffer();
+        StringBuffer buffer = new StringBuffer();
+		StringBuffer nodes = new StringBuffer();
         buffer.append(this.getSpace());
         buffer.append("<");
         buffer.append(this.name);
@@ -463,7 +465,7 @@ public class Element implements Cloneable {
 
     public static void printNode(Element node, String indent) {
         String data = node.getData();
-        if ((data == null) || data.equals("")) {
+        if ((data == null) || "".equals(data)) {
             System.out.println(indent + node.getName());
         } else {
             System.out.println(indent + node.getName() + " = '" + data + "'");
@@ -471,18 +473,13 @@ public class Element implements Cloneable {
         // print attributes
         List<Attribute> attributes = node.getAttributes();
 
-        Iterator<Attribute> iterator = attributes.iterator();
-
-        while (iterator.hasNext()) {
-            Attribute attribute = iterator.next();
+        for (Attribute attribute : attributes) {
             System.out.println(indent + attribute.name + ":" + attribute.value);
         }
 
         List<Element> subs = node.getChildNodes();
-        for (Iterator<Element> it = subs.iterator(); it.hasNext(); ) {
-            printNode(it.next(), indent + "    ");
-            // for (i = 0; i < subs.size(); i++) {
-            // printNode((XmlElement) subs.get(i), indent + " ");
+        for (Element sub : subs) {
+            printNode(sub, indent + "    ");
         }
     }
 
@@ -498,9 +495,8 @@ public class Element implements Cloneable {
                 clone.attributes = new Vector<Attribute>();
                 List<Attribute> attribs = this.attributes;
                 Attribute attribute;
-                Iterator<Attribute> it = attribs.iterator();
-                while (it.hasNext()) {
-                    attribute = it.next();
+                for (Attribute attrib : attribs) {
+                    attribute = attrib;
                     clone.setAttribute((Attribute) attribute.clone());
                 }
             }
@@ -513,9 +509,8 @@ public class Element implements Cloneable {
                 clone.childNodes = new Vector<Element>();
                 List<Element> childs = this.childNodes;
                 Element child;
-                Iterator<Element> it = childs.iterator();
-                while (it.hasNext()) {
-                    child = it.next();
+                for (Element element : childs) {
+                    child = element;
                     clone.addElement((Element) child.clone());
                 }
             }

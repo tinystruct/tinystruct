@@ -77,7 +77,7 @@ final class ConnectionManager implements Runnable {
         String dbPassword = config.get("database.password");
 
         String dbType = getConfiguredType().name().toLowerCase();
-        if (null != dbUrl && !dbType.equalsIgnoreCase("h2")) {
+        if (null != dbUrl && !"h2".equalsIgnoreCase(dbType)) {
             try {
                 URI dbUri;
                 if (dbUrl.startsWith("jdbc:" + dbType + "://")) {
@@ -209,7 +209,7 @@ final class ConnectionManager implements Runnable {
             }
         } else {
             try {
-                if (null == this.user || this.user.trim().length() == 0)
+                if (null == this.user || this.user.trim().isEmpty())
                     connection = DriverManager.getConnection(this.url);
                 else
                     connection = DriverManager.getConnection(this.url, this.user, this.password);
@@ -229,7 +229,8 @@ final class ConnectionManager implements Runnable {
         return this.connections.size();
     }
 
-    public void run() {
+    @Override
+	public void run() {
         this.clear();
     }
 

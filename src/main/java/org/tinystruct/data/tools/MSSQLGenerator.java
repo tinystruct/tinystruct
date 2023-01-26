@@ -42,15 +42,18 @@ public class MSSQLGenerator implements Generator {
         this.packageList = new String[]{};
     }
 
-    public void setFileName(String fileName) {
+    @Override
+	public void setFileName(String fileName) {
         this.fileName = fileName;
     }
 
-    public void setPackageName(String packageName) {
+    @Override
+	public void setPackageName(String packageName) {
         this.packageName = packageName;
     }
 
-    public void create(String className, String table) throws ApplicationException {
+    @Override
+	public void create(String className, String table) throws ApplicationException {
         StringBuilder java_resource = new StringBuilder();
         StringBuilder java_member_declaration = new StringBuilder();
         StringBuilder java_method_declaration = new StringBuilder();
@@ -121,7 +124,7 @@ public class MSSQLGenerator implements Generator {
                 if (currentFields.get("name").value().equals("id")) {
                     increment = Integer.parseInt(currentFields.get("increment").value().toString()) == 1;
 
-                    if (propertyType.equalsIgnoreCase("String"))
+                    if ("String".equalsIgnoreCase(propertyType))
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
                     else
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
@@ -135,11 +138,11 @@ public class MSSQLGenerator implements Generator {
                     idElement.setAttribute("length", currentFields.get("length").value().toString());
                     idElement.setAttribute("type", currentFields.get("type").value().toString());
 
-                    if (propertyType.equalsIgnoreCase("String")) {
+                    if ("String".equalsIgnoreCase(propertyType)) {
                         java_method_declaration.append("\tpublic ").append(propertyType).append(" get").append(propertyNameOfMethod).append("()\r\n");
                         java_method_declaration.append("\t{\r\n");
                         java_method_declaration.append("\t\treturn String.valueOf(this.").append(propertyNameOfMethod).append(");\r\n");
-                    } else if (propertyType.equalsIgnoreCase("int")) {
+                    } else if ("int".equalsIgnoreCase(propertyType)) {
                         java_method_declaration.append("\tpublic Integer get").append(propertyNameOfMethod).append("()\r\n");
                         java_method_declaration.append("\t{\r\n");
                         java_method_declaration.append("\t\treturn Integer.parseInt(this.").append(propertyNameOfMethod).append(".toString());\r\n");
@@ -154,7 +157,7 @@ public class MSSQLGenerator implements Generator {
                     java_method_declaration.append("\t\tthis.").append(propertyName).append("=this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType, 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
                     java_method_declaration.append("\t}\r\n\r\n");
 
-                    if (propertyType.equalsIgnoreCase("String") || propertyType.equalsIgnoreCase("Date"))
+                    if ("String".equalsIgnoreCase(propertyType) || "Date".equalsIgnoreCase(propertyType))
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
                     else
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
@@ -250,7 +253,8 @@ public class MSSQLGenerator implements Generator {
         return table;
     }
 
-    public void importPackages(String packageNameList) {
+    @Override
+	public void importPackages(String packageNameList) {
 
         this.packageList = packageNameList.split(";");
     }

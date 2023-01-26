@@ -64,7 +64,8 @@ public final class ClassFileLoader extends ClassLoader {
         return null;
     }
 
-    public Class<?> findClass(String path, String simpleClassName) {
+    @Override
+	public Class<?> findClass(String path, String simpleClassName) {
         Configuration<String> config = new Settings("/application.properties");
         config.set("default.apps.path", path);
         return findClass(simpleClassName);

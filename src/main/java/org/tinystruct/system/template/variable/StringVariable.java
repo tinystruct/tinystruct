@@ -26,17 +26,20 @@ public class StringVariable implements Variable<String> {
         this.value = value;
     }
 
-    public String getName() {
+    @Override
+	public String getName() {
 
         return this.name;
     }
 
-    public String getValue() {
+    @Override
+	public String getValue() {
 
         return this.value;
     }
 
-    public DataType getType() {
+    @Override
+	public DataType getType() {
 
         return DataType.STRING;
     }

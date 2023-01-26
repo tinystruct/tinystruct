@@ -88,29 +88,32 @@ public class DefaultTemplate implements Template {
         NodeList children = node.getChildNodes();
         for (int i = 0; i < children.getLength(); ++i) {
             Node child = children.item(i);
-            if (child.getNodeType() == Node.TEXT_NODE) {
-                if (child.getTextContent().trim().length() == 0) {
-                    child.getParentNode().removeChild(child);
-                    i--;
-                }
-            }
+            boolean condition = child.getNodeType() == Node.TEXT_NODE && child.getTextContent().trim().isEmpty();
+			if (condition) {
+			    child.getParentNode().removeChild(child);
+			    i--;
+			}
             stripEmptyTextNode(child);
         }
     }
 
-    public String getName() {
+    @Override
+	public String getName() {
         return engine.NAME;
     }
 
-    public Variable<?> getVariable(String arg0) {
+    @Override
+	public Variable<?> getVariable(String arg0) {
         return this.variables.get(arg0);
     }
 
-    public Map<String, Variable<?>> getVariables() {
+    @Override
+	public Map<String, Variable<?>> getVariables() {
         return this.variables;
     }
 
-    public String parse() throws ApplicationException {
+    @Override
+	public String parse() throws ApplicationException {
         Configuration<String> config = app.getConfiguration();
         String value;
 
@@ -127,9 +130,7 @@ public class DefaultTemplate implements Template {
 
         if (this.view.trim().length() > 0) {
             Document doc;
-            try {
-                InputStream in = new ByteArrayInputStream(this.view.getBytes(StandardCharsets.UTF_8));
-
+            try (InputStream in = new ByteArrayInputStream(this.view.getBytes(StandardCharsets.UTF_8))) {
                 DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
                 dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); // Compliant  
                 dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, ""); // compliant
@@ -137,8 +138,6 @@ public class DefaultTemplate implements Template {
                 DocumentBuilder builder = dbf.newDocumentBuilder();
 
                 doc = builder.parse(in);
-                in.close();
-
                 stripEmptyTextNode(doc);
 
                 if (this.engine != null) {
@@ -245,7 +244,8 @@ public class DefaultTemplate implements Template {
         return this.view;
     }
 
-    public void setVariable(Variable<?> arg0) {
+    @Override
+	public void setVariable(Variable<?> arg0) {
         this.variables.put(arg0.getName(), arg0);
     }
 

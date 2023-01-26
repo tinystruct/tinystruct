@@ -29,7 +29,8 @@ public class RedisProxyServer extends ProxyServer implements Bootstrap {
 
     }
 
-    public void init() {
+    @Override
+	public void init() {
         this.setAction("start", "start");
 
         List<CommandOption> options = new ArrayList<CommandOption>();

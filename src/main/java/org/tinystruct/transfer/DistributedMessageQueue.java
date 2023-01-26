@@ -1,7 +1,6 @@
 package org.tinystruct.transfer;
 
 import org.tinystruct.AbstractApplication;
-import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.ApplicationManager;
@@ -58,18 +57,18 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @param message   message
      * @return message
      */
-    public final String put(final Object groupId, final String sessionId, final String message) {
-        if (groupId != null) {
-            if (message != null && !message.isEmpty()) {
-                final Builder builder = new Builder();
-                builder.put("user", "user_" + sessionId);
-                builder.put("time", System.nanoTime());
-                builder.put("message", filter(message));
-                builder.put("session_id", sessionId);
+    @Override
+	public final String put(final Object groupId, final String sessionId, final String message) {
+        boolean condition = groupId != null && message != null && !message.isEmpty();
+		if (condition) {
+		    final Builder builder = new Builder();
+		    builder.put("user", "user_" + sessionId);
+		    builder.put("time", System.nanoTime());
+		    builder.put("message", filter(message));
+		    builder.put("session_id", sessionId);
 
-                return this.save(groupId, builder);
-            }
-        }
+		    return this.save(groupId, builder);
+		}
 
         return "{}";
     }
@@ -121,7 +120,8 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @return message
      * @throws ApplicationException application exception
      */
-    public final String take(final String sessionId) throws ApplicationException {
+    @Override
+	public final String take(final String sessionId) throws ApplicationException {
         Builder message;
         Queue<Builder> messages = this.list.get(sessionId);
         // If there is a new message, then return it directly

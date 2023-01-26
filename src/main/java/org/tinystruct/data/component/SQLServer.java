@@ -29,7 +29,8 @@ public class SQLServer implements Repository {
     public SQLServer() {
     }
 
-    public boolean append(Field ready_fields, String table)
+    @Override
+	public boolean append(Field ready_fields, String table)
             throws ApplicationException {
         String SQL = "";
         StringBuilder keys = new StringBuilder();
@@ -49,7 +50,7 @@ public class SQLServer implements Repository {
                 continue;
             }
 
-            if (currentField.getType().getRealType().equalsIgnoreCase("int")
+            if ("int".equalsIgnoreCase(currentField.getType().getRealType())
                     || currentField.getType() == FieldType.TEXT
                     || currentField.getType() == FieldType.BIT
                     || currentField.getType() == FieldType.DATE
@@ -66,8 +67,8 @@ public class SQLServer implements Repository {
                 } else if (currentField.getType() == FieldType.BIT) {
                     // 对null未作处理，考虑后面要进行处理
                     if (currentField.value() != null)
-                        values.append(currentField.value().toString().equals(
-                                "true") ? 1 : 0).append(dot);
+                        values.append("true".equals(
+                                currentField.value().toString()) ? 1 : 0).append(dot);
                     else
                         values.append("0").append(dot);
                 } else
@@ -102,7 +103,8 @@ public class SQLServer implements Repository {
         }
     }
 
-    public boolean delete(Object Id, String table) throws ApplicationException {
+    @Override
+	public boolean delete(Object Id, String table) throws ApplicationException {
         boolean deleted = false;
         String SQL = "DELETE FROM [" + table + "] WHERE id=?";
 
@@ -118,13 +120,15 @@ public class SQLServer implements Repository {
         return deleted;
     }
 
-    public boolean update(Field ready_fields, String table)
+    @Override
+	public boolean update(Field ready_fields, String table)
             throws ApplicationException {
         StringBuilder parameters = new StringBuilder();
         StringBuilder values = new StringBuilder();
         StringBuilder expressions = new StringBuilder();
 
-        StringBuilder sql = new StringBuilder(), keys = new StringBuilder();
+        StringBuilder sql = new StringBuilder();
+		StringBuilder keys = new StringBuilder();
         final String dot = ",";
         String currentProperty;
         FieldInfo currentField;
@@ -142,7 +146,7 @@ public class SQLServer implements Repository {
                 continue;
             }
 
-            if (currentField.getType().getRealType().equalsIgnoreCase("int")
+            if ("int".equalsIgnoreCase(currentField.getType().getRealType())
                     || currentField.getType() == FieldType.TEXT
                     || currentField.getType() == FieldType.BIT
                     || currentField.getType() == FieldType.DATE
@@ -160,7 +164,7 @@ public class SQLServer implements Repository {
                     values.append("'").append(format.format(currentField.value())).append("'")
                             .append(dot);
                 } else if (currentField.getType() == FieldType.BIT)
-                    values.append(currentField.value().toString().equals("true") ? 1
+                    values.append("true".equals(currentField.value().toString()) ? 1
                             : 0).append(dot);
 
                 else
@@ -201,11 +205,13 @@ public class SQLServer implements Repository {
         }
     }
 
-    public Type getType() {
+    @Override
+	public Type getType() {
         return Type.SQLServer;
     }
 
-    public Table find(String SQL, Object[] parameters) throws ApplicationException {
+    @Override
+	public Table find(String SQL, Object[] parameters) throws ApplicationException {
 
         Table table = new Table();
         Row row;
@@ -250,7 +256,8 @@ public class SQLServer implements Repository {
         return table;
     }
 
-    public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
+    @Override
+	public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
 
         Row row = new Row();
         FieldInfo fieldInfo;

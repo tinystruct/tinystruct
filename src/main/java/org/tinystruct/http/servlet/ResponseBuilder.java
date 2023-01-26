@@ -30,7 +30,8 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
         this.response.setContentType(contentType);
     }
 
-    public void addHeader(String header, Object value) {
+    @Override
+	public void addHeader(String header, Object value) {
         this.response.addHeader(header, value.toString());
     }
 

@@ -56,7 +56,8 @@ public class URLRequest {
     public byte[] send(HttpRequestBuilder request) throws ApplicationException, URISyntaxException {
         try {
             return send(request, new Callback<ByteArrayOutputStream>() {
-                public byte[] process(ByteArrayOutputStream out) throws ApplicationException {
+                @Override
+				public byte[] process(ByteArrayOutputStream out) throws ApplicationException {
                     return out.toByteArray();
                 }
             });

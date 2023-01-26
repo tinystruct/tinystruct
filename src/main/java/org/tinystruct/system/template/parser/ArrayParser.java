@@ -34,7 +34,8 @@ public class ArrayParser<T> implements Parser {
         this.doc = doc;
     }
 
-    public void parse(Template template) throws ApplicationException {
+    @Override
+	public void parse(Template template) throws ApplicationException {
 
         String elementId = this.variable.getName();
 

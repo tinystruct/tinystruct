@@ -30,7 +30,8 @@ public class HttpProxyServer extends ProxyServer implements Bootstrap {
     public HttpProxyServer() {
     }
 
-    public void init() {
+    @Override
+	public void init() {
         this.setAction("start", "start");
         List<CommandOption> options = new ArrayList<CommandOption>();
         options.add(new CommandOption("server-port", "", "Server port"));

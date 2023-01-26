@@ -34,19 +34,23 @@ public final class ApplicationContext implements Context {
     public ApplicationContext() {
     }
 
-    public String getId() {
+    @Override
+	public String getId() {
         return id;
     }
 
-    public void setId(String id) {
+    @Override
+	public void setId(String id) {
         this.id = id;
     }
 
-    public void setAttribute(String name, Object value) {
+    @Override
+	public void setAttribute(String name, Object value) {
         threadLocal.get().put(name, value);
     }
 
-    public Object getAttribute(String name) {
+    @Override
+	public Object getAttribute(String name) {
         if (threadLocal.get().containsKey(name)) {
             return threadLocal.get().get(name);
         }
@@ -54,11 +58,13 @@ public final class ApplicationContext implements Context {
         return null;
     }
 
-    public void removeAttribute(String name) {
+    @Override
+	public void removeAttribute(String name) {
         threadLocal.get().remove(name);
     }
 
-    public String[] getAttributeNames() {
+    @Override
+	public String[] getAttributeNames() {
         return threadLocal.get().keySet().toArray(new String[]{});
     }
 }

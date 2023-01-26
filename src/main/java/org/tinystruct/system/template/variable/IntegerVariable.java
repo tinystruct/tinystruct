@@ -25,15 +25,18 @@ public class IntegerVariable implements Variable<Integer> {
         this.value = value;
     }
 
-    public String getName() {
+    @Override
+	public String getName() {
         return this.name;
     }
 
-    public Integer getValue() {
+    @Override
+	public Integer getValue() {
         return this.value;
     }
 
-    public DataType getType() {
+    @Override
+	public DataType getType() {
         return DataType.INTEGER;
     }
 

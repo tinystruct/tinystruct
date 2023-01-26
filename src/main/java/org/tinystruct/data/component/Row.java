@@ -16,7 +16,6 @@
 package org.tinystruct.data.component;
 
 import java.util.Iterator;
-import java.util.Vector;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Row extends CopyOnWriteArrayList<Field> {
@@ -33,7 +32,8 @@ public class Row extends CopyOnWriteArrayList<Field> {
         return this.get(0).get(fieldName);
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         StringBuilder to = new StringBuilder();
 
         Iterator<Field> iterator = this.iterator();

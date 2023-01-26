@@ -41,7 +41,7 @@ public class Settings implements Configuration<String> {
         this.overwrite = true;
     }
 
-    public Settings(String file) throws ApplicationRuntimeException {
+    public Settings(String file) {
         if (!file.equalsIgnoreCase(FILE)) {
             fileName = file;
         } else {
@@ -55,7 +55,8 @@ public class Settings implements Configuration<String> {
         return properties;
     }
 
-    public String get(String property) {
+    @Override
+	public String get(String property) {
         String value = properties.getProperty(property);
 
         if (value != null && value.startsWith("$_")) {
@@ -74,15 +75,18 @@ public class Settings implements Configuration<String> {
         return "";
     }
 
-    public void set(String key, String value) {
+    @Override
+	public void set(String key, String value) {
         properties.put(key, value);
     }
 
-    public void remove(String key) {
+    @Override
+	public void remove(String key) {
         properties.remove(key);
     }
 
-    public Set<String> propertyNames() {
+    @Override
+	public Set<String> propertyNames() {
         HashSet<String> sets = new HashSet<String>();
         for (Object o : this.getProperties().keySet()) {
             sets.add(o.toString());
@@ -108,7 +112,8 @@ public class Settings implements Configuration<String> {
         return properties.isEmpty();
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         return properties.toString();
     }
 
@@ -120,7 +125,7 @@ public class Settings implements Configuration<String> {
         static {
             try (InputStream in = SingletonHolder.class.getResourceAsStream(fileName)) {
                 properties.load(in);
-                if (properties.getProperty("logging.override") != null && properties.getProperty("logging.override").equalsIgnoreCase("true")) {
+                if (properties.getProperty("logging.override") != null && "true".equalsIgnoreCase(properties.getProperty("logging.override"))) {
                     logManager.readConfiguration(in);
                 }
             } catch (IOException e) {

@@ -79,7 +79,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
      *
      * @return templateRequired boolean
      */
-    public boolean isTemplateRequired() {
+    @Override
+	public boolean isTemplateRequired() {
         return templateRequired;
     }
 
@@ -92,7 +93,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
         this.templateRequired = templateRequired;
     }
 
-    public void init(Context context) {
+    @Override
+	public void init(Context context) {
         this.context = context;
         String language;
         if (this.context.getAttribute(LANGUAGE) != null) {
@@ -115,7 +117,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
         }
     }
 
-    public Application getInstance(String contextId) {
+    @Override
+	public Application getInstance(String contextId) {
         return CONTAINER.get(contextId + this.getVariable(LANGUAGE).getValue() + File.separatorChar + this.getName());
     }
 
@@ -127,7 +130,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
             this.setLink(path);
     }
 
-    public void setAction(String path, String function) {
+    @Override
+	public void setAction(String path, String function) {
         this.actions.set(this, path, function);
 
         // Exclude the command start with '-'
@@ -151,17 +155,20 @@ public abstract class AbstractApplication implements Application, Cloneable {
         this.output = buffer;
     }
 
-    public String setTemplate(Template template) throws ApplicationException {
+    @Override
+	public String setTemplate(Template template) throws ApplicationException {
         // When the template has not been disabled or the locale does not
         // compared.
         return template.parse();
     }
 
-    public Configuration<String> getConfiguration() {
+    @Override
+	public Configuration<String> getConfiguration() {
         return this.config;
     }
 
-    public void setConfiguration(Configuration<String> config) {
+    @Override
+	public void setConfiguration(Configuration<String> config) {
         config.set(CLSID, this.name);
         config.set(DEFAULT_LANGUAGE, "zh_CN");
         config.set(LANGUAGE, config.get(DEFAULT_LANGUAGE));
@@ -181,15 +188,18 @@ public abstract class AbstractApplication implements Application, Cloneable {
             this.commandLines.get("--help").setDescription("Help command");
     }
 
-    public String getName() {
+    @Override
+	public String getName() {
         return this.name;
     }
 
-    public Object invoke(String path) throws ApplicationException {
+    @Override
+	public Object invoke(String path) throws ApplicationException {
         return this.invoke(path, null);
     }
 
-    public Object invoke(String path, Object[] parameters)
+    @Override
+	public Object invoke(String path, Object[] parameters)
             throws ApplicationException {
         String method = null;
         if (context != null && context.getAttribute(METHOD) != null) {
@@ -208,7 +218,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
         return action.execute(parameters);
     }
 
-    public Context getContext() {
+    @Override
+	public Context getContext() {
         return this.context;
     }
 
@@ -348,7 +359,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
         throw new ApplicationRuntimeException("The template " + templatePath + " could not be found and the output has not been set.");
     }
 
-    public CommandLine setCommandLine(CommandLine command) {
+    @Override
+	public CommandLine setCommandLine(CommandLine command) {
         return this.commandLines.put(command.getCommand(), command);
     }
 
@@ -381,7 +393,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
         return builder.toString();
     }
 
-    public Map<String, CommandLine> getCommandLines() {
+    @Override
+	public Map<String, CommandLine> getCommandLines() {
         return this.commandLines;
     }
 }

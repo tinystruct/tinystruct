@@ -62,7 +62,8 @@ public class URLResourceLoader extends TextFileLoader {
             }
     }
 
-    public StringBuilder getContent() throws ApplicationException {
+    @Override
+	public StringBuilder getContent() throws ApplicationException {
         StringBuilder buffer;
         try {
             buffer = super.getContent();

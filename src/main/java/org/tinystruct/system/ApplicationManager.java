@@ -63,7 +63,7 @@ public final class ApplicationManager {
                 String[] apps = settings.get("default.import.applications").split(";");
                 int i = 0;
                 while (i < apps.length) {
-                    if (!apps[i].equals("")) {
+                    if (!"".equals(apps[i])) {
                         try {
                             Application app = (Application) Class.forName(apps[i]).getDeclaredConstructor().newInstance();
                             ApplicationManager.install(app);
@@ -196,7 +196,7 @@ public final class ApplicationManager {
     }
 
     public static Object call(final String path, final Context context) throws ApplicationException {
-        if (path == null || path.trim().length() == 0) {
+        if (path == null || path.trim().isEmpty()) {
             throw new ApplicationException(
                     "Invalid: empty path");
         }

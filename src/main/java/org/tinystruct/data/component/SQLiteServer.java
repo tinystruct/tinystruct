@@ -32,7 +32,8 @@ public class SQLiteServer implements Repository {
     public SQLiteServer() {
     }
 
-    public boolean append(Field ready_fields, String table)
+    @Override
+	public boolean append(Field ready_fields, String table)
             throws ApplicationException {
         boolean inserted = false;
         String dot = ",", currentProperty;
@@ -76,8 +77,8 @@ public class SQLiteServer implements Repository {
                     continue;
                 }
 
-                if (currentField.getType().getRealType()
-                        .equalsIgnoreCase("int")) {
+                if ("int"
+                        .equalsIgnoreCase(currentField.getType().getRealType())) {
                     ps.setInt(i++, currentField.intValue());
                 } else if (currentField.getType() == FieldType.TEXT) {
                     ps.setString(i++, currentField.stringValue());
@@ -103,7 +104,8 @@ public class SQLiteServer implements Repository {
         return inserted;
     }
 
-    public boolean update(Field ready_fields, String table)
+    @Override
+	public boolean update(Field ready_fields, String table)
             throws ApplicationException {
         String dot = ",", currentProperty;
         StringBuilder expressions = new StringBuilder();
@@ -117,7 +119,7 @@ public class SQLiteServer implements Repository {
                 .hasMoreElements(); ) {
             currentProperty = _field.nextElement();
             currentField = ready_fields.get(currentProperty);
-            if (currentField.getName().equalsIgnoreCase("Id")) {
+            if ("Id".equalsIgnoreCase(currentField.getName())) {
                 Id = currentField.value();
 
                 continue;
@@ -142,8 +144,8 @@ public class SQLiteServer implements Repository {
                 currentField = ready_fields.get(iterator.next());
 
                 // System.out.println("["+currentField.getType()+"]"+i+":"+currentField.value());
-                if (currentField.getType().getRealType()
-                        .equalsIgnoreCase("int")) {
+                if ("int"
+                        .equalsIgnoreCase(currentField.getType().getRealType())) {
                     ps.setInt(i++, currentField.intValue());
                 } else if (currentField.getType() == FieldType.TEXT) {
                     ps.setString(i++, currentField.stringValue());
@@ -172,7 +174,8 @@ public class SQLiteServer implements Repository {
         return edited;
     }
 
-    public boolean delete(Object Id, String table) throws ApplicationException {
+    @Override
+	public boolean delete(Object Id, String table) throws ApplicationException {
         boolean deleted = false;
         String SQL = "DELETE FROM " + table + " WHERE id=?";
 
@@ -188,11 +191,13 @@ public class SQLiteServer implements Repository {
         return deleted;
     }
 
-    public Type getType() {
+    @Override
+	public Type getType() {
         return Type.SQLite;
     }
 
-    public Table find(String SQL, Object[] parameters)
+    @Override
+	public Table find(String SQL, Object[] parameters)
             throws ApplicationException {
         Table table = new Table();
         Row row;
@@ -238,7 +243,8 @@ public class SQLiteServer implements Repository {
 
     }
 
-    public Row findOne(String SQL, Object[] parameters)
+    @Override
+	public Row findOne(String SQL, Object[] parameters)
             throws ApplicationException {
         Row row = new Row();
         FieldInfo fieldInfo;
@@ -278,7 +284,6 @@ public class SQLiteServer implements Repository {
         }
 
         return row;
-
     }
 
 }

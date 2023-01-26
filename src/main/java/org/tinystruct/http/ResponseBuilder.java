@@ -1,11 +1,11 @@
 package org.tinystruct.http;
 
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
+
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
     private final Headers headers = new ResponseHeaders(this);
@@ -26,7 +26,8 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
         this.headers.add(Header.CONTENT_TYPE.set(contentType));
     }
 
-    public void addHeader(String header, Object value) {
+    @Override
+	public void addHeader(String header, Object value) {
         if(!this.response.headers().contains(header) || !this.response.headers().get(header).equalsIgnoreCase(value.toString())) {
             if (value instanceof Integer) {
                 this.response.headers().addInt(header, (Integer) value);

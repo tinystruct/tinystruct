@@ -18,7 +18,6 @@ package org.tinystruct.dom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Vector;
 
 @Deprecated
 public class HTMLElement extends Element {
@@ -58,7 +57,7 @@ public class HTMLElement extends Element {
                     + "]----------------------------");
 
             // 排除特殊的Element对象
-            if (element.getName().equalsIgnoreCase("meta")) {
+            if ("meta".equalsIgnoreCase(element.getName())) {
                 continue;
             }
 
@@ -194,7 +193,7 @@ public class HTMLElement extends Element {
             System.out.println(this.brother_element_position + "->[" + accept
                     + "]" + currentElement.getName());
             // 排除特殊标记
-            if (currentElement.getName().equalsIgnoreCase("meta")) {
+            if ("meta".equalsIgnoreCase(currentElement.getName())) {
                 continue;
             }
 
@@ -319,7 +318,7 @@ public class HTMLElement extends Element {
             // 统计遍历次数，即当前的元素索引
 
             // 排除元素
-            if (currentElement.getName().equalsIgnoreCase("meta")) {
+            if ("meta".equalsIgnoreCase(currentElement.getName())) {
                 continue;
             }
 

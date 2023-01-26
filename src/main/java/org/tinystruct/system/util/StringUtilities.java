@@ -15,9 +15,9 @@
  *******************************************************************************/
 package org.tinystruct.system.util;
 
-import org.tinystruct.http.Cookie;
-
 import java.util.Iterator;
+
+import org.tinystruct.http.Cookie;
 
 public class StringUtilities implements java.io.Serializable {
 
@@ -113,7 +113,7 @@ public class StringUtilities implements java.io.Serializable {
     }
 
     public static String leave(String string, int length) {
-        if (string.trim().length() == 0)
+        if (string.trim().isEmpty())
             return "";
         if (string.length() <= length)
             return string;
@@ -397,7 +397,7 @@ public class StringUtilities implements java.io.Serializable {
     }
 
     public boolean isNull() {
-        return raw.trim().length() == 0;
+        return raw.trim().isEmpty();
     }
 
     public boolean isNaN() {

@@ -60,7 +60,8 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         System.out.println("Initialize servlet config and starting...");
     }
 
-    public void init(FilterConfig config) throws ServletException {
+    @Override
+	public void init(FilterConfig config) throws ServletException {
         this.path = config.getServletContext().getRealPath("");
 
         try {
@@ -176,7 +177,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                     String defaultErrorPage = this.settings.get("default.error.page");
 
                     Reforward forward = new Reforward(_request, _response);
-                    forward.setDefault(defaultErrorPage.trim().length() == 0 ? "/?q=error" : "/?q=" + defaultErrorPage);
+                    forward.setDefault(defaultErrorPage.trim().isEmpty() ? "/?q=error" : "/?q=" + defaultErrorPage);
                     forward.forward();
                 }
             } catch (ApplicationException e1) {
@@ -185,12 +186,13 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         }
     }
 
-    public void start() throws ApplicationException {
+    @Override
+	public void start() throws ApplicationException {
         this.settings = new Settings();
         if (this.settings.get("default.file.encoding") != null)
             this.charsetName = (this.settings.get("default.file.encoding"));
 
-        if (this.charsetName == null || this.charsetName.trim().length() == 0)
+        if (this.charsetName == null || this.charsetName.trim().isEmpty())
             this.charsetName = System.getProperty("file.encoding");
         else
             System.setProperty("file.encoding", charsetName);
@@ -212,7 +214,8 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         return new BufferedWriter(new OutputStreamWriter(out, Charset.defaultCharset()));
     }
 
-    public void stop() {
+    @Override
+	public void stop() {
         System.out.println("Stopping...");
     }
 
@@ -241,7 +244,8 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             this.service(req, resp);
     }
 
-    public void destroy() {
+    @Override
+	public void destroy() {
         this.stop();
     }
 

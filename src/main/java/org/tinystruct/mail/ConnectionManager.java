@@ -40,7 +40,8 @@ public final class ConnectionManager implements Runnable {
         return SingletonHolder.manager;
     }
 
-    public void run() {
+    @Override
+	public void run() {
 
         Connection current;
         synchronized (ConnectionManager.class) {

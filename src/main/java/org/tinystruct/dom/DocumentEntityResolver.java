@@ -42,7 +42,8 @@ public class DocumentEntityResolver implements EntityResolver {
      * @return The InputSource for the DTD
      * @throws org.xml.sax.SAXException If anything goes wrong
      */
-    public InputSource resolveEntity(String publicId, String systemId)
+    @Override
+	public InputSource resolveEntity(String publicId, String systemId)
             throws SAXException {
         InputSource source = null;
 

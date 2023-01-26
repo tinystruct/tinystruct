@@ -40,7 +40,8 @@ public class TimeIterator implements ScheduleIterator {
         this.calendar.set(Calendar.MILLISECOND, 0);
     }
 
-    public ScheduleIterator next() {
+    @Override
+	public ScheduleIterator next() {
         if (this.seconds == 86400) {
             this.calendar.add(Calendar.DATE, 1);
         } else {
@@ -51,11 +52,13 @@ public class TimeIterator implements ScheduleIterator {
         return this;
     }
 
-    public void setInterval(int seconds) {
+    @Override
+	public void setInterval(int seconds) {
         this.seconds = seconds;
     }
 
-    public Date getTime() {
+    @Override
+	public Date getTime() {
         return this.calendar.getTime();
     }
 

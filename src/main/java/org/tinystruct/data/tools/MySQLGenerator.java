@@ -43,15 +43,18 @@ public class MySQLGenerator implements Generator {
         this.packageList = new String[]{};
     }
 
-    public void setFileName(String fileName) {
+    @Override
+	public void setFileName(String fileName) {
         this.fileName = fileName;
     }
 
-    public void setPackageName(String packageName) {
+    @Override
+	public void setPackageName(String packageName) {
         this.packageName = packageName;
     }
 
-    public void create(String className, String table) throws ApplicationException {
+    @Override
+	public void create(String className, String table) throws ApplicationException {
         StringBuilder java_resource = new StringBuilder();
         StringBuilder java_member_declaration = new StringBuilder();
         StringBuilder java_method_declaration = new StringBuilder();
@@ -132,7 +135,7 @@ public class MySQLGenerator implements Generator {
                 if (currentFields.get("COLUMN_NAME").value().equals("id")) {
                     increment = currentFields.get("EXTRA").stringValue().indexOf("auto_increment") != -1;
 
-                    if (propertyType.equalsIgnoreCase("String"))
+                    if ("String".equalsIgnoreCase(propertyType))
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
                     else
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
@@ -146,11 +149,11 @@ public class MySQLGenerator implements Generator {
                     idElement.setAttribute("length", props.length > 1 ? props[1].split("\\)")[0] : "0");
                     idElement.setAttribute("type", props[0]);
 
-                    if (propertyType.equalsIgnoreCase("String")) {
+                    if ("String".equalsIgnoreCase(propertyType)) {
                         java_method_declaration.append("\tpublic ").append(propertyType).append(" get").append(propertyNameOfMethod).append("()\r\n");
                         java_method_declaration.append("\t{\r\n");
                         java_method_declaration.append("\t\treturn String.valueOf(this.").append(propertyNameOfMethod).append(");\r\n");
-                    } else if (propertyType.equalsIgnoreCase("int")) {
+                    } else if ("int".equalsIgnoreCase(propertyType)) {
                         java_method_declaration.append("\tpublic Integer get").append(propertyNameOfMethod).append("()\r\n");
                         java_method_declaration.append("\t{\r\n");
                         java_method_declaration.append("\t\treturn Integer.parseInt(this.").append(propertyNameOfMethod).append(".toString());\r\n");
@@ -165,7 +168,7 @@ public class MySQLGenerator implements Generator {
                     java_method_declaration.append("\t\tthis.").append(propertyName).append(" = this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType, 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
                     java_method_declaration.append("\t}\r\n\r\n");
 
-                    if (propertyType.equalsIgnoreCase("String") || propertyType.equalsIgnoreCase("Date"))
+                    if ("String".equalsIgnoreCase(propertyType) || "Date".equalsIgnoreCase(propertyType))
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
                     else
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
@@ -229,7 +232,8 @@ public class MySQLGenerator implements Generator {
             Operator.createStatement(false);
             Operator.query(SQL);
             int cols = Operator.getResultSet().getMetaData().getColumnCount();
-            String[] fieldName = new String[cols], fieldValue = new String[cols];
+            String[] fieldName = new String[cols];
+			String[] fieldValue = new String[cols];
 
             for (int i = 0; i < cols; i++) {
                 fieldName[i] = Operator.getResultSet().getMetaData().getColumnName(i + 1);
@@ -260,7 +264,8 @@ public class MySQLGenerator implements Generator {
         return table;
     }
 
-    public void importPackages(String packageNameList) {
+    @Override
+	public void importPackages(String packageNameList) {
         this.packageList = packageNameList.split(";");
     }
 }

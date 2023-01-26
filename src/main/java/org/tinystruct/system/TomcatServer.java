@@ -43,7 +43,8 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
     public TomcatServer() {
     }
 
-    public void init() {
+    @Override
+	public void init() {
         this.setAction("start", "start");
 
         List<CommandOption> options = new ArrayList<CommandOption>();
@@ -64,7 +65,8 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
         this.setTemplateRequired(false);
     }
 
-    public void start() throws ApplicationException {
+    @Override
+	public void start() throws ApplicationException {
         if (started) return;
 
         if (this.context.getAttribute("--http.proxyHost") != null && this.context.getAttribute("--http.proxyPort") != null) {
@@ -177,7 +179,8 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
         return "This request is forbidden!";
     }
 
-    public String version() {
+    @Override
+	public String version() {
         return "";
     }
 

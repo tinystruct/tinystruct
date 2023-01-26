@@ -16,7 +16,6 @@
 package org.tinystruct.data.component;
 
 import java.util.Iterator;
-import java.util.Vector;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Table extends CopyOnWriteArrayList<Row> {
@@ -42,7 +41,8 @@ public class Table extends CopyOnWriteArrayList<Row> {
         this.add(row);
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         StringBuilder to = new StringBuilder();
 
         Iterator<Row> iterator = this.iterator();

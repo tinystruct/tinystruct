@@ -23,17 +23,20 @@ public class Array<T> implements ElementExpression<Variable<T[]>> {
 
     private String id = null;
 
-    public String parse(String expression, Variable<T[]> variable)
+    @Override
+	public String parse(String expression, Variable<T[]> variable)
             throws ApplicationException {
 
         return null;
     }
 
-    public void setId(String id) {
+    @Override
+	public void setId(String id) {
         this.id = id;
     }
 
-    public Element parse(Document doc, Variable<T[]> variable)
+    @Override
+	public Element parse(Document doc, Variable<T[]> variable)
             throws ApplicationException {
 
         if (this.id == null)

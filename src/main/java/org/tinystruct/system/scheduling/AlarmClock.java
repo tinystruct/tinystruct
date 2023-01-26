@@ -32,7 +32,8 @@ public class AlarmClock {
             private final Object lock = new Object();
             private boolean status = false;
 
-            public void start() {
+            @Override
+			public void start() {
                 synchronized (lock) {
                     System.out.println("\r\nStart: " + dateFormat.format(new Date()));
 
@@ -64,11 +65,6 @@ public class AlarmClock {
             }
 
         }, iterator);
-    }
-
-    public static void main(String[] args) {
-        AlarmClock alarmClock = new AlarmClock();
-        alarmClock.start();
     }
 }
 

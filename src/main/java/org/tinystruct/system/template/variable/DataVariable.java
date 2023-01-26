@@ -29,16 +29,19 @@ public class DataVariable implements Variable<Data> {
 		this.value = value;
 	}
 
+	@Override
 	public String getName() {
 		
 		return this.name;
 	}
 
+	@Override
 	public Data getValue() {
 		
 		return this.value;
 	}
 
+	@Override
 	public DataType getType() {
 		
 		return DataType.OBJECT;

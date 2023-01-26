@@ -66,12 +66,12 @@ public class SMTPConnection implements Connection {
                 port = this.config.get("mail.smtp.port"),
                 auth = this.config.get("mail.smtp.auth"),
                 from = this.config.get("mail.smtp.from");
-        props.setProperty("mail.smtp.from", from.length() == 0 ? this.username : from);
-        props.setProperty("mail.smtp.host", host.length() == 0 ? "localhost" : host); // eg. smtp.gmail.com
-        props.setProperty("mail.smtp.port", port.length() == 0 ? "25" : port); // eg. // 443
-        props.setProperty("mail.smtp.auth", auth.length() == 0 ? "false" : auth); // "true" or "false"
+        props.setProperty("mail.smtp.from", from.isEmpty() ? this.username : from);
+        props.setProperty("mail.smtp.host", host.isEmpty() ? "localhost" : host); // eg. smtp.gmail.com
+        props.setProperty("mail.smtp.port", port.isEmpty() ? "25" : port); // eg. // 443
+        props.setProperty("mail.smtp.auth", auth.isEmpty() ? "false" : auth); // "true" or "false"
 
-        if (auth.equalsIgnoreCase("true")) {
+        if ("true".equalsIgnoreCase(auth)) {
             javax.mail.Authenticator authenticator = new javax.mail.Authenticator() {
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {
@@ -110,21 +110,24 @@ public class SMTPConnection implements Connection {
     /* (non-Javadoc)
      * @see org.mover.system.mail.Connection#getSession()
      */
-    public Session getSession() {
+    @Override
+	public Session getSession() {
         return this.session;
     }
 
     /* (non-Javadoc)
      * @see org.mover.system.mail.Connection#Available()
      */
-    public boolean available() {
+    @Override
+	public boolean available() {
         return this.transport.isConnected();
     }
 
     /* (non-Javadoc)
      * @see org.mover.system.mail.Connection#close()
      */
-    public void close() throws MessagingException {
+    @Override
+	public void close() throws MessagingException {
         if (this.available())
             this.transport.close();
     }
@@ -142,11 +145,13 @@ public class SMTPConnection implements Connection {
     /* (non-Javadoc)
      * @see org.mover.system.mail.Connection#getId()
      */
-    public String getId() {
+    @Override
+	public String getId() {
         return id;
     }
 
-    public PROTOCOL getProtocol() {
+    @Override
+	public PROTOCOL getProtocol() {
         return PROTOCOL.SMTP;
     }
 }

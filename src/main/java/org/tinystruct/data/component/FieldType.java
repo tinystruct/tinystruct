@@ -299,7 +299,8 @@ public final class FieldType {
         return this.typeName;
     }
 
-    public boolean equals(Object o) {
+    @Override
+	public boolean equals(Object o) {
         if (o instanceof FieldType) {
             FieldType t = (FieldType) o;
 
@@ -311,11 +312,13 @@ public final class FieldType {
         return false;
     }
 
-    public int hashCode() {
+    @Override
+	public int hashCode() {
         return super.hashCode();
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         return this.typeName;
     }
 

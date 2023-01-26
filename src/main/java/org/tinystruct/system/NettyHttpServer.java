@@ -60,7 +60,8 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
         }
     }
 
-    public void init() {
+    @Override
+	public void init() {
         this.setAction("start", "start");
 
         List<CommandOption> options = new ArrayList<CommandOption>();
@@ -113,7 +114,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                 sslCtx = null;
             }
 
-            final int maxContentLength = this.config.get("default.http.max_content_length").equalsIgnoreCase("") ? MAX_CONTENT_LENGTH : Integer.parseInt(this.config.get("default.http.max_content_length"));
+            final int maxContentLength = "".equalsIgnoreCase(this.config.get("default.http.max_content_length")) ? MAX_CONTENT_LENGTH : Integer.parseInt(this.config.get("default.http.max_content_length"));
             ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup)
                     .channel(Epoll.isAvailable() ? EpollServerSocketChannel.class :
                             NioServerSocketChannel.class)

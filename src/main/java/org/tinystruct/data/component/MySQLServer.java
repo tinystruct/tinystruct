@@ -32,7 +32,8 @@ public class MySQLServer implements Repository {
     public MySQLServer() {
     }
 
-    public boolean append(Field ready_fields, String table) throws ApplicationException {
+    @Override
+	public boolean append(Field ready_fields, String table) throws ApplicationException {
         boolean inserted = false;
         String dot = ",", currentProperty;
         StringBuilder expressions = new StringBuilder(), values = new StringBuilder();
@@ -73,7 +74,7 @@ public class MySQLServer implements Repository {
                     continue;
                 }
 
-                if (currentField.getType().getRealType().equalsIgnoreCase("int")) {
+                if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
                     ps.setInt(i++, currentField.intValue());
                 } else if (currentField.getType() == FieldType.TEXT) {
                     ps.setString(i++, currentField.stringValue());
@@ -96,7 +97,8 @@ public class MySQLServer implements Repository {
         return inserted;
     }
 
-    public boolean update(Field ready_fields, String table) throws ApplicationException {
+    @Override
+	public boolean update(Field ready_fields, String table) throws ApplicationException {
         String dot = ",", currentProperty;
         StringBuilder expressions = new StringBuilder();
         FieldInfo currentField;
@@ -157,7 +159,8 @@ public class MySQLServer implements Repository {
         return edited;
     }
 
-    public boolean delete(Object Id, String table) throws ApplicationException {
+    @Override
+	public boolean delete(Object Id, String table) throws ApplicationException {
         boolean deleted = false;
         String SQL = "DELETE FROM " + table + " WHERE id=?";
 
@@ -173,11 +176,13 @@ public class MySQLServer implements Repository {
         return deleted;
     }
 
-    public Type getType() {
+    @Override
+	public Type getType() {
         return Type.MySQL;
     }
 
-    public Table find(String SQL, Object[] parameters) throws ApplicationException {
+    @Override
+	public Table find(String SQL, Object[] parameters) throws ApplicationException {
 
         Table table = new Table();
         Row row;
@@ -220,7 +225,8 @@ public class MySQLServer implements Repository {
         return table;
     }
 
-    public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
+    @Override
+	public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
 
         Row row = new Row();
         FieldInfo fieldInfo;

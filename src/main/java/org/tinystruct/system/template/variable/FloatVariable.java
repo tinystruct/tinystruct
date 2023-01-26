@@ -26,17 +26,20 @@ public class FloatVariable implements Variable<Float> {
         this.value = value;
     }
 
-    public String getName() {
+    @Override
+	public String getName() {
 
         return this.name;
     }
 
-    public Float getValue() {
+    @Override
+	public Float getValue() {
 
         return this.value;
     }
 
-    public DataType getType() {
+    @Override
+	public DataType getType() {
 
         return DataType.FLOAT;
     }

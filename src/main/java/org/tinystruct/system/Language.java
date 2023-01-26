@@ -20,8 +20,8 @@ public enum Language {
 
     public static boolean support(String lang) {
         Language[] codes = Language.values();
-        for (int i = 0; i < codes.length; i++) {
-            if (codes[i].toString().equalsIgnoreCase(lang)) return true;
+        for (Language code : codes) {
+            if (code.toString().equalsIgnoreCase(lang)) return true;
         }
 
         return false;

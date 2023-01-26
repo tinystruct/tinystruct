@@ -78,7 +78,8 @@ public class Condition implements Serializable {
         return this;
     }
 
-    public String toString() {
+    @Override
+	public String toString() {
         return this.SQL.toString();
     }
 

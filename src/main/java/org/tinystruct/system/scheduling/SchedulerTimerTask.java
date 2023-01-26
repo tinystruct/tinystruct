@@ -29,7 +29,8 @@ public class SchedulerTimerTask extends TimerTask {
         this.iterator = iterator;
     }
 
-    public void run() {
+    @Override
+	public void run() {
         this.schedulerTask.start();
 
         if (this.schedulerTask.next())

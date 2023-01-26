@@ -26,17 +26,20 @@ public class ArrayVariable<T> implements Variable<T[]> {
         this.value = value;
     }
 
-    public String getName() {
+    @Override
+	public String getName() {
 
         return this.name;
     }
 
-    public T[] getValue() {
+    @Override
+	public T[] getValue() {
 
         return this.value;
     }
 
-    public DataType getType() {
+    @Override
+	public DataType getType() {
 
         return DataType.ARRAY;
     }
