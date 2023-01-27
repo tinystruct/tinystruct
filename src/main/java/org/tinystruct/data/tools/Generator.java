@@ -19,7 +19,7 @@ import org.tinystruct.ApplicationException;
 
 
 public interface Generator {
-    void setFileName(String fileName);
+    void setPath(String path);
 
     void setPackageName(String packageName);
 
