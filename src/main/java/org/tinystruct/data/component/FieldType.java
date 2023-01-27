@@ -110,6 +110,15 @@ public final class FieldType {
      */
     private final static int _VARCHAR = Types.VARCHAR;
     public final static FieldType VARCHAR = new FieldType("VARCHAR", _VARCHAR, "String");
+
+    /**
+     * <P>The constant in the Java programming language, sometimes referred
+     * to as a type code, that identifies the generic SQL type
+     * <code>VARCHAR</code>.
+     */
+    private final static int _CHARACTER = Types.VARCHAR;
+    public final static FieldType CHARACTER = new FieldType("CHARACTER VARYING", _CHARACTER, "String");
+
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
