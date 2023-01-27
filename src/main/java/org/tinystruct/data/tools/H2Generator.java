@@ -105,11 +105,9 @@ public class H2Generator extends MySQLGenerator {
             Iterator<Field> fields = currentRow.iterator();
             Field currentFields;
 
-            System.out.println(currentRow);
             while (fields.hasNext()) {
                 currentFields = fields.next();
 
-                System.out.println(currentFields);
                 propertyName = StringUtilities.setCharToUpper(currentFields.get("COLUMN_NAME").value().toString().toLowerCase(Locale.ROOT), '_');
                 propertyName = StringUtilities.remove(propertyName, '_');
 

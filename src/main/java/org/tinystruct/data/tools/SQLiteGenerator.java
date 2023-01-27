@@ -119,11 +119,9 @@ public class SQLiteGenerator implements Generator {
             Iterator<Field> fields = currentRow.iterator();
             Field currentFields;
 
-            System.out.println(currentRow);
             while (fields.hasNext()) {
                 currentFields = fields.next();
 
-                System.out.println(currentFields);
                 propertyName = StringUtilities.setCharToUpper(currentFields.get("name").value().toString(), '_');
                 propertyName = StringUtilities.remove(propertyName,'_');
 
