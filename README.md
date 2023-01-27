@@ -13,7 +13,7 @@ Installation and Getting Started
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>0.9.1</version>
+  <version>0.9.2</version>
   <classifier>jar-with-dependencies</classifier>
 </dependency>
 ```
@@ -67,30 +67,33 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  0.9.1
+  /  /  /) (/ _)  /  /  (/ (  /  0.9.2
            /
 ```
 ```tcsh
 $ bin/dispatcher --help
 Usage: bin/dispatcher COMMAND [OPTIONS]
 Commands: 
-        download        Download a resource from other servers
-        exec            To execute native command(s)
-        install         Install a package
-        say             Output words
-        set             Set system property
-        sql-query       SQL query needs to be executed.
-        update          Update for latest version
+        download                Download a resource from other servers
+        exec                    To execute native command(s)
+        generate                POJO object generator
+        install                 Install a package
+        say                     Output words
+        set                     Set system property
+        sql-execute             Executes the given SQL statement, which may be an INSERT, UPDATE, or DELETE statement or an SQL statement that returns nothing, such as an SQL DDL statement.
+        sql-query               Executes the given SQL statement, which returns a single ResultSet object.
+        update                  Update for latest version
 
 Options: 
-        --help          Help command
-        --import        Import application
-        --logo          Print logo
-        --settings      Print settings
-        --version       Print version
+        --allow-remote-access   Allow to be accessed remotely
+        --help                  Help command
+        --host                  Host name / IP
+        --import                Import application
+        --logo                  Print logo
+        --settings              Print settings
+        --version               Print version
 
-Run 'bin/dispatcher COMMAND --help' for more information on a command.
-```
+Run 'bin/dispatcher COMMAND --help' for more information on a command.```
 ```tcsh
 $ bin/dispatcher say/"Praise to the Lord"
 Praise to the Lord
