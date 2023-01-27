@@ -27,25 +27,29 @@ import org.tinystruct.system.util.StringUtilities;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.sql.ResultSet;
 import java.util.Iterator;
 import java.util.logging.Logger;
 
 public class MySQLGenerator implements Generator {
     private final static Logger logger = Logger.getLogger(MSSQLGenerator.class.getName());
-    private String fileName;
+    private String path;
     private String packageName;
     private String[] packageList;
 
     public MySQLGenerator() {
-        this.fileName = "src/main/java/org/tinystruct/customer/object/";
+        this.path = "src/main/java/org/tinystruct/custom/object";
         this.packageList = new String[]{};
     }
 
     @Override
-	public void setFileName(String fileName) {
-        this.fileName = fileName;
+	public void setPath(String path) {
+        this.path = path;
     }
 
     @Override
@@ -63,10 +67,10 @@ public class MySQLGenerator implements Generator {
 
         String spliter = "";
 
-        if (this.fileName.endsWith("/"))
-            this.fileName = this.fileName + className;
+        if (this.path.endsWith("/"))
+            this.path = this.path + className;
         else
-            this.fileName = this.fileName + File.separator + className;
+            this.path = this.path + File.separator + className;
 
         if (this.packageName != null) {
             java_resource.append("package ").append(this.packageName).append(";\r\n");
@@ -132,7 +136,7 @@ public class MySQLGenerator implements Generator {
 
                 if (java_method_tostring.length() > 0) spliter = ",";
 
-                if (currentFields.get("COLUMN_NAME").value().equals("id")) {
+                if (currentFields.get("COLUMN_NAME").value().toString().equalsIgnoreCase("id")) {
                     increment = currentFields.get("EXTRA").stringValue().indexOf("auto_increment") != -1;
 
                     if ("String".equalsIgnoreCase(propertyType))
@@ -191,8 +195,22 @@ public class MySQLGenerator implements Generator {
             }
         }
 
+        Path java_src_path = Paths.get(this.path);
+        Path java_resource_path = Paths.get(this.path.replace("main" + File.separator + "java", "main" + File.separator + "resources") + ".map.xml");
+        try {
+            Path parent = java_src_path.getParent();
+            if (parent != null)
+                Files.createDirectories(parent);
+
+            parent = java_resource_path.getParent();
+            if (parent != null)
+                Files.createDirectories(parent);
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e.getCause());
+        }
+
         Document document = new Document(rootElement);
-        try (FileOutputStream out = new FileOutputStream(this.fileName.replace("main" + File.separator + "java", "main" + File.separator + "resources") + ".map.xml")) {
+        try (FileOutputStream out = new FileOutputStream(this.path.replace("main" + File.separator + "java", "main" + File.separator + "resources") + ".map.xml")) {
             document.save(out);
         } catch (IOException IO) {
             logger.severe(IO.getMessage());
@@ -217,7 +235,7 @@ public class MySQLGenerator implements Generator {
         java_resource.append("\t}\r\n\r\n");
         java_resource.append("}");
 
-        FileGenerator generator = new FileGenerator(this.fileName + ".java", java_resource);
+        FileGenerator generator = new FileGenerator(this.path + ".java", java_resource);
         generator.save();
     }
 
@@ -228,23 +246,23 @@ public class MySQLGenerator implements Generator {
         FieldInfo field;
         Field fields;
 
-        try (DatabaseOperator Operator = new DatabaseOperator()) {
-            Operator.createStatement(false);
-            Operator.query(SQL);
-            int cols = Operator.getResultSet().getMetaData().getColumnCount();
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.createStatement(false);
+            ResultSet set = operator.query(SQL);
+            int cols = set.getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
 			String[] fieldValue = new String[cols];
 
             for (int i = 0; i < cols; i++) {
-                fieldName[i] = Operator.getResultSet().getMetaData().getColumnName(i + 1);
+                fieldName[i] = set.getMetaData().getColumnName(i + 1);
             }
 
             Object v_field;
-            while (Operator.getResultSet().next()) {
+            while (set.next()) {
                 row = new Row();
                 fields = new Field();
                 for (int i = 0; i < fieldName.length; i++) {
-                    v_field = Operator.getResultSet().getObject(i + 1);
+                    v_field = set.getObject(i + 1);
                     fieldValue[i] = (v_field == null ? "" : v_field.toString());
 
                     field = new FieldInfo();
