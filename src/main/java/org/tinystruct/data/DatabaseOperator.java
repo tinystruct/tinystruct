@@ -26,13 +26,12 @@ import java.util.logging.Logger;
 public class DatabaseOperator implements Closeable {
     private static final Logger logger = Logger.getLogger(DatabaseOperator.class.getName());
     private static final String SQL_STATE_COMMUNICATION_LINK_FAILURE = "08S01";
-
+    private final ConnectionManager manager;
     private Connection connection;
     private Statement statement;
     private PreparedStatement preparedstatement;
     private ResultSet resultSet;
     private int effect = 0;
-    private final ConnectionManager manager;
     private String preparedSQL;
     private Object[] parameters;
 
@@ -148,13 +147,15 @@ public class DatabaseOperator implements Closeable {
         }
     }
 
-    public void query(String SQL) throws ApplicationException {
+    public ResultSet query(String SQL) throws ApplicationException {
         try {
             if (this.resultSet != null)
                 this.resultSet.close();
             this.resultSet = this.statement.executeQuery(SQL);
 
             logger.log(Level.INFO, SQL);
+
+            return this.resultSet;
         } catch (SQLException e) {
             if (e.getSQLState().equals(SQL_STATE_COMMUNICATION_LINK_FAILURE)) {
                 try {
@@ -166,7 +167,7 @@ public class DatabaseOperator implements Closeable {
                 }
                 if (this.manager != null) this.manager.clear();
                 this.createStatement(false);
-                this.query(SQL);
+                return this.query(SQL);
             } else {
                 logger.severe("SQLState(" + e.getSQLState()
                         + ") vendor code(" + e.getErrorCode() + ")");
@@ -178,6 +179,7 @@ public class DatabaseOperator implements Closeable {
     public int update(String SQL) throws ApplicationException {
         try {
             this.effect = this.statement.executeUpdate(SQL);
+            this.resultSet = this.statement.getResultSet();
             logger.log(Level.INFO, SQL);
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
@@ -192,6 +194,7 @@ public class DatabaseOperator implements Closeable {
     public boolean execute(String SQL) throws ApplicationException {
         try {
             boolean succeed = this.statement.execute(SQL);
+            this.resultSet = this.statement.getResultSet();
             logger.log(Level.INFO, SQL);
             return succeed;
         } catch (SQLException e) {
@@ -200,7 +203,7 @@ public class DatabaseOperator implements Closeable {
     }
 
     @Override
-	public void close() {
+    public void close() {
         try {
             if (this.resultSet != null) {
                 this.resultSet.close();
