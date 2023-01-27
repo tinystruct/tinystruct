@@ -19,6 +19,8 @@ import com.sun.jna.Platform;
 import org.tinystruct.*;
 import org.tinystruct.application.Context;
 import org.tinystruct.data.DatabaseOperator;
+import org.tinystruct.data.Repository;
+import org.tinystruct.data.tools.*;
 import org.tinystruct.system.cli.CommandArgument;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.cli.CommandOption;
@@ -40,6 +42,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.logging.Level;
@@ -338,22 +342,70 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         }
     }
 
-    public void executeQuery() throws ApplicationException {
-        if (this.context.getAttribute("--query") == null) {
-            throw new ApplicationException("Invalid Query.");
+    public void executeUpdate() throws ApplicationException {
+        if (this.context.getAttribute("--sql") == null) {
+            throw new ApplicationException("Invalid SQL Statement.");
         }
 
-        String query = this.context.getAttribute("--query").toString();
+        String query = this.context.getAttribute("--sql").toString();
         try (DatabaseOperator operator = new DatabaseOperator()) {
             operator.createStatement(false);
-            operator.execute(query);
+            if (operator.update(query) > 0) {
+                System.out.println("Done!");
+            }
         } catch (ApplicationException e) {
             System.err.println(e.getCause().getMessage());
         }
     }
 
+    public void executeQuery() throws ApplicationException {
+        if (this.context.getAttribute("--sql") == null) {
+            throw new ApplicationException("Invalid SQL Statement.");
+        }
+
+        String query = this.context.getAttribute("--sql").toString();
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.createStatement(false);
+            ResultSet set = operator.query(query);
+            int columnCount = set.getMetaData().getColumnCount();
+            String[] columns = new String[columnCount];
+            int[] maxItems = new int[columnCount];
+
+            if (columnCount > 0) {
+                for (int i = 0; i < columnCount; i++) {
+                    columns[i] = set.getMetaData().getColumnName(i + 1);
+                    maxItems[i] = columns[i].length();
+                }
+            }
+
+            List<String[]> list = new ArrayList<>();
+            list.add(columns);
+            while (set.next()) {
+                String[] data = new String[columnCount];
+                for (int i = 0; i < columns.length; i++) {
+                    Object field = set.getObject(i + 1);
+                    String fieldValue = (field == null ? "" : field.toString());
+                    data[i] = fieldValue;
+                    if (fieldValue.length() > maxItems[i]) maxItems[i] = fieldValue.length();
+                }
+                list.add(data);
+            }
+
+            list.forEach(item -> {
+                for (int i = 0; i < columns.length; i++) {
+                    System.out.print("|" + StringUtilities.rightPadding(item[i], maxItems[i], ' '));
+                }
+                System.out.println("|");
+            });
+        } catch (ApplicationException e) {
+            System.err.println(e.getCause().getMessage());
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
-	public void init() {
+    public void init() {
         this.setAction("install", "install");
         List<CommandOption> options = new ArrayList<CommandOption>();
         options.add(new CommandOption("app", "", "Packages to be installed"));
@@ -390,6 +442,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         arguments.add(argument);
         this.commandLines.get("say").setArguments(arguments).setDescription("Output words");
 
+        this.setAction("generate", "generate");
+        this.commandLines.get("generate").setDescription("POJO object generator");
+
         this.setAction("--import", "");
         this.commandLines.get("--import").setDescription("Import application");
 
@@ -408,11 +463,17 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         this.setAction("--version", "version");
         this.commandLines.get("--version").setDescription("Print version");
 
-        this.setAction("sql-query", "executeQuery");
+        this.setAction("sql-execute", "executeUpdate");
         List<CommandOption> sqlOpts = new ArrayList<>();
-        opt = new CommandOption("query", "", "Query needs to be executed");
+        opt = new CommandOption("sql", "", "an SQL Data Manipulation Language (DML) statement, such as INSERT, UPDATE or DELETE; or an SQL statement that returns nothing, such as a DDL statement.");
         sqlOpts.add(opt);
-        this.commandLines.get("sql-query").setOptions(sqlOpts).setDescription("SQL query needs to be executed.");
+        this.commandLines.get("sql-execute").setOptions(sqlOpts).setDescription("Executes the given SQL statement, which may be an INSERT, UPDATE, or DELETE statement or an SQL statement that returns nothing, such as an SQL DDL statement.");
+
+        this.setAction("sql-query", "executeQuery");
+        sqlOpts = new ArrayList<>();
+        opt = new CommandOption("sql", "", "an SQL statement to be sent to the database, typically a static SQL SELECT statement");
+        sqlOpts.add(opt);
+        this.commandLines.get("sql-query").setOptions(sqlOpts).setDescription("Executes the given SQL statement, which returns a single ResultSet object.");
 
         this.setTemplateRequired(false);
     }
@@ -453,6 +514,75 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         return settings;
     }
 
+    public void generate() throws ApplicationException {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("To follow up the below steps to generate code for your project. CTRL+C to exit.");
+
+        System.out.print("Please provide table name(s) to generate POJO code and use the delimiter `;` for multiple items:");
+        String tableNames = scanner.nextLine();
+        while (tableNames.isBlank()) {
+            System.out.print("Please provide table name(s) to generate POJO code and use the delimiter `;` for multiple items:");
+            tableNames = scanner.nextLine();
+        }
+
+        System.out.print("Please specify the base path to place the Java code files. [src/main/java/custom/objects]:");
+        String basePath = scanner.nextLine();
+
+        System.out.print("Please specify the packages to be imported in code and use delimiter `;` for multiple items. [java.time.LocalDateTime]:");
+        String imports = scanner.nextLine();
+
+        scanner.close();
+
+        String driver = this.config.get("driver");
+        if (driver.trim().isEmpty())
+            throw new ApplicationRuntimeException("Database Connection Driver has not been set in application.properties!");
+
+        int index = -1, length = Repository.Type.values().length;
+        for (int i = 0; i < length; i++) {
+            if (driver.contains(Repository.Type.values()[i].name().toLowerCase())) {
+                index = i;
+                break;
+            }
+        }
+
+        Generator generator;
+        switch (index) {
+            case 1:
+                generator = new MSSQLGenerator();
+                break;
+            case 2:
+                generator = new SQLiteGenerator();
+                break;
+            case 3:
+                generator = new H2Generator();
+                break;
+            default:
+                generator = new MySQLGenerator();
+                break;
+        }
+
+        try {
+            String packageName;
+
+            basePath = basePath.isBlank() ? "src/main/java/custom/objects" : basePath;
+            generator.setPath(basePath);
+
+            packageName = basePath.replace("src/main/java/", "").replace("/", ".");
+            generator.setPackageName(packageName);
+
+            generator.importPackages(imports.isBlank() ? "java.time.LocalDateTime" : imports);
+
+            String[] list = tableNames.split(";");
+            for (String className : list) {
+                generator.create(className, className);
+                System.out.printf("File(s) for %s has been generated. \r\n", className);
+            }
+        } catch (ApplicationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
     public String logo() {
         return "\n"
                 + "  _/  '         _ _/  _     _ _/   \n"
@@ -471,7 +601,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     @Override
-	public String version() {
+    public String version() {
         return String.format("Dispatcher (cli) (built on %sinystruct-%s) %nCopyright (c) 2013-%s James M. ZHOU", this.color("t", FORE_COLOR.blue), ApplicationManager.VERSION, LocalDate.now().getYear());
     }
 
