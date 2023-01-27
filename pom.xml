@@ -212,7 +212,7 @@
         <netty.version>4.1.85.Final</netty.version>
         <mysql.connector.version>8.0.31</mysql.connector.version>
         <graalvm.version>22.2.0</graalvm.version>
-        <native.maven.plugin.version>0.9.29</native.maven.plugin.version>
+        <native.maven.plugin.version>0.9.19</native.maven.plugin.version>
     </properties>
     <build>
         <plugins>
