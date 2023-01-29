@@ -417,6 +417,7 @@ public enum ResponseStatus {
 
     /**
      * Returns the code of this {@link ResponseStatus}.
+     * @return the code of this {@link ResponseStatus}
      */
     public int code() {
         return this.statusCode;

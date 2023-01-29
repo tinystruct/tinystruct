@@ -269,8 +269,9 @@ public class Document extends DefaultHandler {
     }
 
     /**
-     * Writer interface
-     **/
+     * Save the contents of this Element
+     * @param out the output stream
+     */
     public void save(OutputStream out) throws IOException {
         BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(out,
                 StandardCharsets.UTF_8));

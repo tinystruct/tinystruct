@@ -66,7 +66,7 @@ public class Attachment implements FileEntity {
     /**
      * Set the Content-Transfer-Encoding type from String as 7bit, 8bit or binary
      *
-     * @param contentTransferEncoding
+     * @param contentTransferEncoding Content-Transfer-Encoding
      */
     @Override
     public void setContentTransferEncoding(String contentTransferEncoding) {

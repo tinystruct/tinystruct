@@ -14,6 +14,7 @@ public interface FileEntity {
 
     /**
      * Set the original filename
+     * @param filename File name
      */
     void setFilename(String filename);
 
@@ -40,6 +41,7 @@ public interface FileEntity {
 
     /**
      * Set the Content-Transfer-Encoding type from String as 7bit, 8bit or binary
+     * @param contentTransferEncoding Content transfer encoding
      */
     void setContentTransferEncoding(String contentTransferEncoding);
 

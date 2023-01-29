@@ -9,6 +9,8 @@ public interface Request<T> extends Protocol {
 
     /**
      * Returns the headers of this message.
+     *
+     * @return the headers of this message
      */
     Headers headers();
 
@@ -22,8 +24,8 @@ public interface Request<T> extends Protocol {
     /**
      * Set the {@link Method} of this {@link Request}.
      *
-     * @param method
-     * @return
+     * @param method method
+     * @return this {@link Request}
      */
     Request setMethod(Method method);
 
@@ -37,7 +39,8 @@ public interface Request<T> extends Protocol {
     /**
      * Set the requested URI (or alternatively, path)
      *
-     * @return
+     * @param uri the URI being requested
+     * @return this request
      */
     Request setUri(String uri);
 
@@ -50,6 +53,7 @@ public interface Request<T> extends Protocol {
     /**
      * Return the attachments if there are.
      *
+     * @throws ApplicationException if there are exceptions for attachments
      * @return list of {@link FileEntity}
      */
     List<FileEntity> getAttachments() throws ApplicationException;

@@ -253,22 +253,6 @@ public class StringUtilities implements java.io.Serializable {
         return null;
     }
 
-    /**
-     * Please use String.join(delimitor, Iterator)
-     * @param separator
-     * @param iterator
-     * @return
-     */
-    @Deprecated
-    public static String implode(String separator, Iterable<String> iterator) {
-        Iterator<String> iter = iterator.iterator();
-        StringBuilder value = new StringBuilder(iter.hasNext() ? iter.next() : "");
-        while (iter.hasNext())
-            value.append(separator).append(iter.next());
-
-        return value.toString();
-    }
-
     public static String escape(String raw) {
         int len = raw.length();
         int bufLen = len * 2;

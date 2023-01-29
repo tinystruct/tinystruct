@@ -263,6 +263,8 @@ public final class Resources {
      * @return An instance of the class
      * @throws InstantiationException If the class cannot be instantiaed
      * @throws IllegalAccessException If the class is not public, or other access problems arise
+     * @throws NoSuchMethodException If the method cannot be found
+     * @throws InvocationTargetException If the target exception is thrown
      */
     public static Object instantiate(Class<?> clazz)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {

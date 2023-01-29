@@ -12,11 +12,15 @@ public interface Response<T> extends Protocol {
 
     /**
      * Set the status of this {@link Response}.
+     *
+     * @param status The new status of this {@link Response}
+     * @return This {@link Response}
      */
     Response<T> setStatus(ResponseStatus status);
 
     /**
      * Returns the headers of this message.
+     * @return The headers of this message
      */
     Headers headers();
 

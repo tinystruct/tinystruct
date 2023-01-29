@@ -16,6 +16,7 @@ public class HttpRequestBuilder {
 
     /**
      * Returns the protocol version of this {@link Protocol}
+     * @return the protocol version
      */
     public Version version() {
         return this.version;
@@ -24,7 +25,8 @@ public class HttpRequestBuilder {
     /**
      * Set the protocol version of this {@link Protocol}
      *
-     * @param version
+     * @param version version of this protocol
+     * @return this builder
      */
     public HttpRequestBuilder setVersion(Version version) {
         this.version = version;
@@ -33,6 +35,7 @@ public class HttpRequestBuilder {
 
     /**
      * Returns the headers of this message.
+     * @return the headers of this message
      */
     public Headers headers() {
         return this.headers;
@@ -55,8 +58,8 @@ public class HttpRequestBuilder {
     /**
      * Set the {@link Method} of this {@link Request}.
      *
-     * @param method
-     * @return
+     * @param method method of this request
+     * @return this builder
      */
     public HttpRequestBuilder setMethod(Method method) {
         this.method = method;
@@ -75,8 +78,8 @@ public class HttpRequestBuilder {
     /**
      * Set the request URI (or alternatively, path)
      *
-     * @param uri
-     * @return
+     * @param uri URI
+     * @return this builder
      */
     public HttpRequestBuilder setUri(String uri) {
         this.uri = uri;
