@@ -56,11 +56,12 @@ public class Settings implements Configuration<String> {
     }
 
     @Override
-	public String get(String property) {
+    public String get(String property) {
         String value = properties.getProperty(property);
 
         if (value != null && value.startsWith("$_")) {
-            return System.getenv(value.substring(2).toUpperCase());
+            String name = value.substring(2).toUpperCase();
+            return System.getenv(name) != null ? System.getenv(name) : "";
         }
 
         try {
@@ -76,17 +77,17 @@ public class Settings implements Configuration<String> {
     }
 
     @Override
-	public void set(String key, String value) {
+    public void set(String key, String value) {
         properties.put(key, value);
     }
 
     @Override
-	public void remove(String key) {
+    public void remove(String key) {
         properties.remove(key);
     }
 
     @Override
-	public Set<String> propertyNames() {
+    public Set<String> propertyNames() {
         HashSet<String> sets = new HashSet<String>();
         for (Object o : this.getProperties().keySet()) {
             sets.add(o.toString());
@@ -113,7 +114,7 @@ public class Settings implements Configuration<String> {
     }
 
     @Override
-	public String toString() {
+    public String toString() {
         return properties.toString();
     }
 
