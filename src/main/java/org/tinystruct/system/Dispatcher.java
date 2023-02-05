@@ -29,8 +29,11 @@ import org.tinystruct.system.util.StringUtilities;
 import org.tinystruct.system.util.URLResourceLoader;
 import org.tinystruct.transfer.http.ReadableByteChannelWrapper;
 
+import java.awt.*;
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
@@ -46,6 +49,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -442,6 +446,11 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         arguments.add(argument);
         this.commandLines.get("say").setArguments(arguments).setDescription("Output words");
 
+        this.setAction("open", "open");
+        List<CommandOption> openOpts = new ArrayList<>();
+        openOpts.add(new CommandOption("url", "", "URL resource to be downloaded"));
+        this.commandLines.get("open").setOptions(openOpts).setDescription("Start a default browser to open the specific URL");
+
         this.setAction("generate", "generate");
         this.commandLines.get("generate").setDescription("POJO object generator");
 
@@ -512,6 +521,38 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             settings.append(name).append(":").append(this.config.get(name)).append("\n");
         }
         return settings;
+    }
+
+    public void open() throws ApplicationException {
+        if (this.context.getAttribute("--url") == null) {
+            throw new ApplicationException("Invalid URL.");
+        }
+
+        final String url = this.context.getAttribute("--url").toString();
+        new Thread(new Runnable() {
+            /**
+             * When an object implementing interface <code>Runnable</code> is used
+             * to create a thread, starting the thread causes the object's
+             * <code>run</code> method to be called in that separately executing
+             * thread.
+             * <p>
+             * The general contract of the method <code>run</code> is that it may
+             * take any action whatsoever.
+             *
+             * @see Thread#run()
+             */
+            @Override
+            public void run() {
+                if(Desktop.isDesktopSupported()){
+                    Desktop desktop = Desktop.getDesktop();
+                    try {
+                        desktop.browse(new URI(url));
+                    } catch (IOException | URISyntaxException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
     }
 
     public void generate() throws ApplicationException {
