@@ -137,6 +137,10 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
             ChannelFuture future = bootstrap.bind(port).sync();
             logger.info("Netty server (" + port + ") startup in " + (System.currentTimeMillis() - start) + " ms");
 
+            // Open the default browser
+            this.context.setAttribute("--url", "http://localhost:" + this.port);
+            ApplicationManager.call("open", this.context);
+
             // Wait until the server socket is closed.
             future.channel().closeFuture().sync();
         } catch (Exception e) {
