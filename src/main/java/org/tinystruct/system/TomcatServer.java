@@ -44,7 +44,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
     }
 
     @Override
-	public void init() {
+    public void init() {
         this.setAction("start", "start");
 
         List<CommandOption> options = new ArrayList<CommandOption>();
@@ -66,7 +66,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
     }
 
     @Override
-	public void start() throws ApplicationException {
+    public void start() throws ApplicationException {
         if (started) return;
 
         if (this.context.getAttribute("--http.proxyHost") != null && this.context.getAttribute("--http.proxyPort") != null) {
@@ -122,6 +122,10 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             tomcat.start();
             this.started = true;
             logger.info("Server startup in " + (System.currentTimeMillis() - start) + " ms");
+
+            // Open the default browser
+            this.context.setAttribute("--url", "http://localhost:" + webPort);
+            ApplicationManager.call("open", this.context);
 
             tomcat.getServer().await();
         } catch (LifecycleException e) {
@@ -180,7 +184,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
     }
 
     @Override
-	public String version() {
+    public String version() {
         return "";
     }
 
