@@ -18,7 +18,6 @@ package org.tinystruct;
 import org.tinystruct.application.Context;
 
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Implementation of {@link Context} for application.
@@ -29,28 +28,30 @@ import java.util.Map;
 public final class ApplicationContext implements Context {
 
     private static final ThreadLocal<HashMap<String, Object>> threadLocal = ThreadLocal.withInitial(HashMap::new);
-    private String id = "";
 
     public ApplicationContext() {
     }
 
     @Override
-	public String getId() {
-        return id;
+    public String getId() {
+        if (null != getAttribute("Id"))
+            return getAttribute("Id").toString();
+
+        return "";
     }
 
     @Override
-	public void setId(String id) {
-        this.id = id;
+    public void setId(String Id) {
+        this.setAttribute("Id", Id);
     }
 
     @Override
-	public void setAttribute(String name, Object value) {
+    public void setAttribute(String name, Object value) {
         threadLocal.get().put(name, value);
     }
 
     @Override
-	public Object getAttribute(String name) {
+    public Object getAttribute(String name) {
         if (threadLocal.get().containsKey(name)) {
             return threadLocal.get().get(name);
         }
@@ -59,12 +60,12 @@ public final class ApplicationContext implements Context {
     }
 
     @Override
-	public void removeAttribute(String name) {
+    public void removeAttribute(String name) {
         threadLocal.get().remove(name);
     }
 
     @Override
-	public String[] getAttributeNames() {
+    public String[] getAttributeNames() {
         return threadLocal.get().keySet().toArray(new String[]{});
     }
 }
