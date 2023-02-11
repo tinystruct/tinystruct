@@ -25,11 +25,12 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
     private Version version;
     private Method method;
     private String uri;
+    private String sessionId;
 
     public RequestBuilder(FullHttpRequest request) {
         super(request);
 
-        this.uri = this.request.uri();
+        this.uri = request.uri();
 
         ByteBuf content = request.content();
         content.readableBytes();
@@ -109,8 +110,10 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
                     this.attachments = list;
                     break;
 
-                case "text/plain": break;
-                case "application/json": break;
+                case "text/plain":
+                    break;
+                case "application/json":
+                    break;
                 case "application/x-www-form-urlencoded":
                 default:
                     parseQuery(content.toString(CharsetUtil.UTF_8), false);
@@ -164,24 +167,27 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
 
     @Override
     public Session getSession() {
-        String sessionId = null;
-        String cookieValue = this.request.headers().get(Header.COOKIE.name());
-        if (cookieValue != null) {
-            String[] cookies = cookieValue.split(";");
-            for (String cookie1 : cookies) {
-                String[] _cookie = cookie1.split("=");
-                if (_cookie[0].trim().equalsIgnoreCase("jsessionid")) {
-                    sessionId = _cookie[1];
-                    break;
+        if (sessionId != null) {
+            return getSession(sessionId, true);
+        } else {
+            String cookieValue = this.request.headers().get(Header.COOKIE.name());
+            if (cookieValue != null) {
+                String[] cookies = cookieValue.split(";");
+                for (String cookie1 : cookies) {
+                    String[] _cookie = cookie1.split("=");
+                    if (_cookie[0].trim().equalsIgnoreCase("jsessionid")) {
+                        sessionId = _cookie[1];
+                        break;
+                    }
                 }
+            }
+
+            if (sessionId == null) {
+                sessionId = new StandardSessionIdGenerator().generateSessionId();
             }
         }
 
-        if (sessionId != null) {
-            return getSession(sessionId, true);
-        }
-
-        return getSession(new StandardSessionIdGenerator().generateSessionId(), true);
+        return getSession(sessionId, true);
     }
 
     @Override
