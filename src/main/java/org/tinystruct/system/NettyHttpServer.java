@@ -126,7 +126,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                                 p.addLast(sslCtx.newHandler(ch.alloc()));
                             }
                             p.addLast(new LoggingHandler(LogLevel.INFO));
-                            p.addLast(new HttpServerCodec(), new HttpObjectAggregator(maxContentLength), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration(), new ApplicationContext()));
+                            p.addLast(new HttpServerCodec(), new HttpObjectAggregator(maxContentLength), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration()));
                         }
                     }).option(ChannelOption.SO_BACKLOG, 1024)
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
