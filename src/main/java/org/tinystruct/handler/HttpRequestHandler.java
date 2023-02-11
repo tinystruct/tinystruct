@@ -2,10 +2,11 @@ package org.tinystruct.handler;
 
 import io.jsonwebtoken.*;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
-import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import io.netty.util.CharsetUtil;
@@ -19,9 +20,6 @@ import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Language;
 import org.tinystruct.system.util.StringUtilities;
-
-import java.util.Collections;
-import java.util.Set;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
 import static org.tinystruct.Application.LANGUAGE;
@@ -41,27 +39,19 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     }
 
     private final Configuration<String> configuration;
-    private Context context;
-    private Request<FullHttpRequest> request;
 
     public HttpRequestHandler(Configuration<String> configuration) {
         this.configuration = configuration;
     }
 
-    public HttpRequestHandler(Configuration<String> configuration, Context context) {
-        this(configuration);
-        this.context = context;
-    }
-
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) {
-        if (this.context == null)
-            this.context = new ApplicationContext();
         // Decide whether to close the connection or not.
         boolean keepAlive = HttpUtil.isKeepAlive(msg);
 
-        this.request = new RequestBuilder(msg);
-        this.context.setId(request.getSession().getId());
+        Request<FullHttpRequest> request = new RequestBuilder(msg);
+        Context context = new ApplicationContext();
+        context.setId(request.getSession().getId());
         this.service(ctx, request, context, keepAlive);
     }
 
@@ -93,10 +83,10 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
         HttpResponseStatus status = HttpResponseStatus.OK;
         ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
+        String host = request.headers().get(Header.HOST).toString();
         try {
             context.setAttribute(HTTP_REQUEST, request);
             context.setAttribute(HTTP_RESPONSE, response);
-            context.setAttribute(HTTP_HOST, request.headers().get(Header.HOST));
 
             String lang = request.getParameter("lang"), language = "";
             if (lang != null && lang.trim().length() > 0) {
@@ -117,10 +107,10 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             String hostName;
             if ((hostName = this.configuration.get("default.hostname")) != null) {
                 if (hostName.length() <= 3) {
-                    hostName = request.headers().get(Header.HOST).toString();
+                    hostName = host;
                 }
             } else {
-                hostName = request.headers().get(Header.HOST).toString();
+                hostName = host;
             }
 
             String ssl_enabled, http_protocol = "http://";
@@ -175,17 +165,27 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         FullHttpResponse replacement = response.get().replace(resp);
         response = new ResponseBuilder(replacement);
         Headers responseHeaders = response.headers();
-        Cookie cookie = new CookieImpl(JSESSIONID);
-        cookie.setValue(request.getSession().getId());
 
-        String host = request.headers().get(Header.HOST).toString();
-        if (host.contains(":"))
-            cookie.setDomain(host.substring(0, host.indexOf(":")));
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(1800);
+        boolean sessionCookieExists = false;
+        for (Cookie cookie : request.cookies()) {
+            if (cookie.name().equals(JSESSIONID)) {
+                sessionCookieExists = true;
+                break;
+            }
+        }
 
-        responseHeaders.add(Header.SET_COOKIE.set(cookie));
+        if (!sessionCookieExists) {
+            Cookie cookie = new CookieImpl(JSESSIONID);
+            if (host.contains(":"))
+                cookie.setDomain(host.substring(0, host.indexOf(":")));
+            cookie.setValue(context.getId());
+            cookie.setHttpOnly(true);
+            cookie.setPath("/");
+            cookie.setMaxAge(-1);
+
+            responseHeaders.add(Header.SET_COOKIE.set(cookie));
+        }
+
         if (!responseHeaders.contains(Header.CONTENT_TYPE))
             responseHeaders.add(Header.CONTENT_TYPE.set("text/html; charset=UTF-8"));
         responseHeaders.add(Header.CONTENT_LENGTH.setInt(resp.readableBytes()));
@@ -203,44 +203,4 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         ctx.flush();
     }
 
-    private void writeResponse(Channel channel, String content, boolean forceClose, HttpMessage msg) {
-        // Convert the response content to a ChannelBuffer.
-        ByteBuf buf = copiedBuffer(content, CharsetUtil.UTF_8);
-
-        // Decide whether to close the connection or not.
-        boolean keepAlive = HttpUtil.isKeepAlive(msg) && !forceClose;
-
-        // Build the response object.
-        FullHttpResponse _response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf);
-        Response<HttpResponse> response = new ResponseBuilder(_response);
-        ResponseHeaders responseHeaders = new ResponseHeaders(response);
-        responseHeaders.add(Header.CONTENT_TYPE.set("text/plain; charset=UTF-8"));
-        responseHeaders.add(Header.CONTENT_LENGTH.setInt(buf.readableBytes()));
-
-        if (!keepAlive) {
-            responseHeaders.add(Header.CONNECTION.set(Header.StandardValue.CLOSE));
-        } else if (request.version() == Version.HTTP1_0) {
-            responseHeaders.add(Header.CONNECTION.set(Header.StandardValue.KEEP_ALIVE));
-        }
-
-        Set<io.netty.handler.codec.http.cookie.Cookie> cookies;
-        Object value = request.headers().get(Header.COOKIE);
-        if (value == null) {
-            cookies = Collections.emptySet();
-        } else {
-            cookies = ServerCookieDecoder.STRICT.decode(value.toString());
-        }
-        if (!cookies.isEmpty()) {
-            // Reset the cookies if necessary.
-            for (io.netty.handler.codec.http.cookie.Cookie cookie : cookies) {
-                responseHeaders.add(Header.SET_COOKIE.set(ServerCookieEncoder.STRICT.encode(cookie)));
-            }
-        }
-        // Write the response.
-        ChannelFuture future = channel.writeAndFlush(response.get());
-        // Close the connection after the write operation is done if necessary.
-        if (!keepAlive) {
-            future.addListener(ChannelFutureListener.CLOSE);
-        }
-    }
 }
