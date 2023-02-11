@@ -12,8 +12,6 @@ public class MemorySession implements Session {
     public MemorySession(String sessionId) {
         this.sessionId = sessionId;
         this.expiry = System.currentTimeMillis() + 1800000L;
-
-        SessionManager.getInstance().setSession(sessionId, this);
     }
 
     @Override
