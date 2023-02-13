@@ -48,8 +48,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -543,7 +543,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
              */
             @Override
             public void run() {
-                if(Desktop.isDesktopSupported()){
+                if (Desktop.isDesktopSupported()) {
                     Desktop desktop = Desktop.getDesktop();
                     try {
                         desktop.browse(new URI(url));
