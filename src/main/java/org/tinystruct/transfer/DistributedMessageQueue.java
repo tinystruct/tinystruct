@@ -13,13 +13,13 @@ import java.util.concurrent.*;
 
 public class DistributedMessageQueue extends AbstractApplication implements MessageQueue<String> {
 
-    private static final long TIMEOUT = 100;
     protected static final int DEFAULT_MESSAGE_POOL_SIZE = 10;
+    private static final long TIMEOUT = 100;
     protected final Map<String, BlockingQueue<Builder>> groups = Maps.GROUPS;
     protected final Map<String, Queue<Builder>> list = Maps.LIST;
     protected final Map<String, List<String>> sessions = Maps.SESSIONS;
-    private ExecutorService service;
     private final Lock lock = Watcher.getInstance().acquire();
+    private ExecutorService service;
 
     @Override
     public void init() {
@@ -58,17 +58,17 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @return message
      */
     @Override
-	public final String put(final Object groupId, final String sessionId, final String message) {
+    public final String put(final Object groupId, final String sessionId, final String message) {
         boolean condition = groupId != null && message != null && !message.isEmpty();
-		if (condition) {
-		    final Builder builder = new Builder();
-		    builder.put("user", "user_" + sessionId);
-		    builder.put("time", System.nanoTime());
-		    builder.put("message", filter(message));
-		    builder.put("session_id", sessionId);
+        if (condition) {
+            final Builder builder = new Builder();
+            builder.put("user", "user_" + sessionId);
+            builder.put("time", System.nanoTime());
+            builder.put("message", filter(message));
+            builder.put("session_id", sessionId);
 
-		    return this.save(groupId, builder);
-		}
+            return this.save(groupId, builder);
+        }
 
         return "{}";
     }
@@ -82,6 +82,19 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @return builder
      */
     public final String save(final Object groupId, final Builder builder) {
+        return this.save(groupId, builder, null);
+    }
+
+    /**
+     * Save message and create a thread for copying it to message list of each
+     * session.
+     *
+     * @param groupId  group id
+     * @param builder  message
+     * @param listener listener
+     * @return builder
+     */
+    public final String save(final Object groupId, final Builder builder, Runnable listener) {
         if ((this.groups.get(groupId)) == null) {
             this.groups.put(groupId.toString(), new ArrayBlockingQueue<Builder>(DEFAULT_MESSAGE_POOL_SIZE));
         }
@@ -97,6 +110,9 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                     if ((message = messages.poll()) == null)
                         return;
                     copy(groupId, message);
+
+                    if (listener != null)
+                        getService().execute(listener);
                 }
             });
 
@@ -121,7 +137,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @throws ApplicationException application exception
      */
     @Override
-	public final String take(final String sessionId) throws ApplicationException {
+    public final String take(final String sessionId) throws ApplicationException {
         Builder message;
         Queue<Builder> messages = this.list.get(sessionId);
         // If there is a new message, then return it directly
@@ -144,7 +160,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * Copy message to the list of each session.
      *
      * @param groupId group Id
-     * @param builder
+     * @param builder message
      */
     private void copy(final Object groupId, final Builder builder) {
         final List<String> _sessions;
@@ -197,13 +213,14 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @throws ApplicationException application exception
      */
     public boolean testing(final int n) throws ApplicationException {
-        this.sessions.put("[M001]", List.of("{A}","{B}"));
+        this.sessions.put("[M001]", List.of("{A}", "{B}"));
         this.groups.put("[M001]", new ArrayBlockingQueue<Builder>(DEFAULT_MESSAGE_POOL_SIZE));
         this.list.put("{A}", new ArrayDeque<Builder>());
         this.list.put("{B}", new ArrayDeque<Builder>());
 
         this.getService().execute(new Runnable() {
             int i = 0;
+
             @Override
             public void run() {
                 while (i++ < n)
