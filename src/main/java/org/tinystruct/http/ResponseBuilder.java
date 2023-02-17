@@ -77,7 +77,7 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
         ResponseHeaders responseHeaders = new ResponseHeaders(this);
         responseHeaders.add(Header.CONTENT_LENGTH.setInt(0));
         responseHeaders.add(Header.LOCATION.set(url));
-        this.response.setStatus(HttpResponseStatus.valueOf(307));
+        this.setStatus(ResponseStatus.TEMPORARY_REDIRECT);
     }
 
 }
