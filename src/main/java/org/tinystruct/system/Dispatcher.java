@@ -260,20 +260,27 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     public String update() {
+
         System.out.print("Checking...");
         try {
-            URLResourceLoader loader = new URLResourceLoader(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/maven-metadata.xml"));
-            StringBuilder content = loader.getContent();
-            String latestVersion = content.substring(content.indexOf("<latest>") + 8, content.indexOf("</latest>"));
-            if (latestVersion.equalsIgnoreCase(ApplicationManager.VERSION))
-                return "\r" + this.color("You are already using the latest available Dispatcher version " + ApplicationManager.VERSION + ".", FORE_COLOR.green);
-            System.out.print("\rGot a new version " + latestVersion + "...");
-            System.out.print("\rDownloading...");
-            this.download(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + latestVersion
-                    + "/tinystruct-" + latestVersion + "-jar-with-dependencies.jar"), "lib/tinystruct-" + latestVersion + "-jar-with-dependencies.jar");
-            System.out.println("\nDownloaded (" + this.color(latestVersion, FORE_COLOR.green) + ").");
-            System.out.print("\rUpdating..");
-            ApplicationManager.generateDispatcherCommand(latestVersion, true);
+            boolean git = new File(".git").exists();
+            if (git) {
+                this.context.setAttribute("--shell-command", "git pull origin master");
+                this.exec();
+            } else {
+                URLResourceLoader loader = new URLResourceLoader(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/maven-metadata.xml"));
+                StringBuilder content = loader.getContent();
+                String latestVersion = content.substring(content.indexOf("<latest>") + 8, content.indexOf("</latest>"));
+                if (latestVersion.equalsIgnoreCase(ApplicationManager.VERSION))
+                    return "\r" + this.color("You are already using the latest available Dispatcher version " + ApplicationManager.VERSION + ".", FORE_COLOR.green);
+                System.out.print("\rGot a new version " + latestVersion + "...");
+                System.out.print("\rDownloading...");
+                this.download(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + latestVersion
+                        + "/tinystruct-" + latestVersion + "-jar-with-dependencies.jar"), "lib/tinystruct-" + latestVersion + "-jar-with-dependencies.jar");
+                System.out.println("\nDownloaded (" + this.color(latestVersion, FORE_COLOR.green) + ").");
+                System.out.print("\rUpdating..");
+                ApplicationManager.generateDispatcherCommand(latestVersion, true);
+            }
         } catch (ApplicationException | MalformedURLException e) {
             return e.getMessage();
         }
