@@ -106,7 +106,7 @@ public class CommandLine implements Comparable<CommandLine>{
             }
         }
 
-        return help + "\n";
+        return help.toString();
     }
 
     public String getCommand() {
