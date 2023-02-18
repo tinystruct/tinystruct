@@ -260,8 +260,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     public String update() {
-
         System.out.print("Checking...");
+        System.out.println("\rThe current project is based on tinystruct-" + this.color(ApplicationManager.VERSION, FORE_COLOR.green));
         try {
             boolean git = new File(".git").exists();
             if (git) {
@@ -280,6 +280,12 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 System.out.println("\nDownloaded (" + this.color(latestVersion, FORE_COLOR.green) + ").");
                 System.out.print("\rUpdating..");
                 ApplicationManager.generateDispatcherCommand(latestVersion, true);
+                boolean maven = new File("pom.xml").exists();
+                if (maven) {
+                    this.context.setAttribute("--shell-command", "./mvnw versions:use-dep-version -Dincludes=org.tinystruct:tinystruct -DdepVersion=" + latestVersion + " -DforceVersion=true");
+                    this.context.setAttribute("--output", false);
+                    this.exec();
+                }
             }
         } catch (ApplicationException | MalformedURLException e) {
             return e.getMessage();
@@ -332,22 +338,29 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             throw new ApplicationException("Invalid shell command");
         }
 
+        boolean output = true;
+        if (this.context.getAttribute("--output") != null) {
+            output = Boolean.parseBoolean(this.context.getAttribute("--output").toString());
+        }
+
         String cmd = this.context.getAttribute("--shell-command").toString();
         try {
             String line;
             Process p = Runtime.getRuntime().exec(cmd);
-            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream(), Charset.defaultCharset()));
-            while ((line = input.readLine()) != null) {
-                System.out.println(line);
-            }
-            input.close();
+            if (output) {
+                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream(), Charset.defaultCharset()));
+                while ((line = input.readLine()) != null) {
+                    System.out.println(line);
+                }
+                input.close();
 
-            BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream(), Charset.defaultCharset()));
-            while ((line = error.readLine()) != null) {
-                System.out.println(line);
+                BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream(), Charset.defaultCharset()));
+                while ((line = error.readLine()) != null) {
+                    System.out.println(line);
+                }
+                error.close();
             }
-            error.close();
-            p.destroy();
+            p.onExit().get().destroy();
         } catch (Exception err) {
             throw new ApplicationException(err.getMessage(), err);
         }
@@ -444,6 +457,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         this.setAction("exec", "exec");
         List<CommandOption> execOpts = new ArrayList<>();
         opt = new CommandOption("shell-command", "", "Commands needs to be executed");
+        execOpts.add(opt);
+        opt = new CommandOption("output", "", "Specify a boolean value to determine output of the command");
         execOpts.add(opt);
         this.commandLines.get("exec").setOptions(execOpts).setDescription("To execute native command(s)");
 
