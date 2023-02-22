@@ -20,15 +20,16 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.http.*;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+import static org.tinystruct.http.Constants.JSESSIONID;
+
 public class Reforward {
+    private final Response response;
     private String fromURL = "";
     private String currentURL = "";
-    private final Response response;
 
     public Reforward(Request request, Response response) throws ApplicationException {
 
@@ -48,13 +49,30 @@ public class Reforward {
         } else {
             this.fromURL = "/";
         }
+
+        // Add the current cookies to response header to avoid missing them
+        Cookie[] cookies = request.cookies();
+        ResponseHeaders responseHeaders = new ResponseHeaders(response);
+        for (Cookie cookie : cookies) {
+            responseHeaders.add(Header.SET_COOKIE.set(cookie));
+        }
+
+        String host = request.headers().get(Header.HOST).toString();
+        Cookie cookie = new CookieImpl(JSESSIONID);
+        if (host.contains(":"))
+            cookie.setDomain(host.substring(0, host.indexOf(":")));
+        cookie.setValue(request.getSession().getId());
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(-1);
+
+        responseHeaders.add(Header.SET_COOKIE.set(cookie));
     }
 
     public void setDefault(String url) throws ApplicationException {
         if (url.indexOf("%3A") != -1) {
             this.fromURL = URLDecoder.decode(url, StandardCharsets.UTF_8);
-        }
-        else this.fromURL = url;
+        } else this.fromURL = url;
     }
 
     public void match(String action, String fromURL) {
