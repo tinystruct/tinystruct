@@ -49,6 +49,9 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
         int i = _cookies.size();
         this.cookies = new Cookie[i];
         for (io.netty.handler.codec.http.cookie.Cookie _cookie : _cookies) {
+            if (_cookie.name().equalsIgnoreCase("jsessionid")) {
+                this.sessionId = _cookie.value();
+            }
             Cookie cookie = new CookieImpl(_cookie.name());
             cookie.setValue(_cookie.value());
             cookie.setDomain(_cookie.domain());
@@ -169,24 +172,9 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
     public Session getSession() {
         if (sessionId != null) {
             return getSession(sessionId, true);
-        } else {
-            String cookieValue = this.request.headers().get(Header.COOKIE.name());
-            if (cookieValue != null) {
-                String[] cookies = cookieValue.split(";");
-                for (String cookie1 : cookies) {
-                    String[] _cookie = cookie1.split("=");
-                    if (_cookie[0].trim().equalsIgnoreCase("jsessionid")) {
-                        sessionId = _cookie[1];
-                        break;
-                    }
-                }
-            }
-
-            if (sessionId == null) {
-                sessionId = new StandardSessionIdGenerator().generateSessionId();
-            }
         }
 
+        sessionId = new StandardSessionIdGenerator().generateSessionId();
         return getSession(sessionId, true);
     }
 
