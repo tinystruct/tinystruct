@@ -164,8 +164,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
         FullHttpResponse replacement = response.get().replace(resp);
         response = new ResponseBuilder(replacement);
-        Headers responseHeaders = response.headers();
-
+        ResponseHeaders responseHeaders = new ResponseHeaders(response);
         boolean sessionCookieExists = false;
         for (Cookie cookie : request.cookies()) {
             if (cookie.name().equals(JSESSIONID)) {
