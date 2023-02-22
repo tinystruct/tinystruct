@@ -13,7 +13,7 @@ Installation and Getting Started
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>0.9.6</version>
+  <version>0.9.7</version>
   <classifier>jar-with-dependencies</classifier>
 </dependency>
 ```
@@ -67,7 +67,7 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  0.9.6
+  /  /  /) (/ _)  /  /  (/ (  /  0.9.7
            /
 ```
 ```tcsh
@@ -78,6 +78,7 @@ Commands:
         exec                    To execute native command(s)
         generate                POJO object generator
         install                 Install a package
+        open                    Start a default browser to open the specific URL
         say                     Output words
         set                     Set system property
         sql-execute             Executes the given SQL statement, which may be an INSERT, UPDATE, or DELETE statement or an SQL statement that returns nothing, such as an SQL DDL statement.
