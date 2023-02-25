@@ -15,19 +15,20 @@
  *******************************************************************************/
 package org.tinystruct.data.component;
 
+import org.tinystruct.ApplicationException;
+import org.tinystruct.system.util.StringUtilities;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
-import org.tinystruct.ApplicationException;
-import org.tinystruct.system.util.StringUtilities;
 
 public class Builder extends HashMap<String, Object> implements Struct, Serializable {
 
@@ -40,7 +41,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     @Override
-	public String toString() {
+    public String toString() {
         StringBuilder buffer = new StringBuilder();
         Set<Entry<String, Object>> keys = this.entrySet();
         Object value;
@@ -72,7 +73,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      * @throws ApplicationException application exception
      */
     @Override
-	public void parse(String resource) throws ApplicationException {
+    public void parse(String resource) throws ApplicationException {
         // 默认相信任何一个被传入的都是合法的字符串
         resource = resource.trim();
         if (!resource.startsWith("{") && !resource.endsWith("}")) {
@@ -105,7 +106,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         if (value.startsWith(QUOTE)) {
             // 处理传入的实体对象外壳 "key":value,"key":"value",..."key":value 序列
             int COLON_POSITION = value.indexOf(':');
-			int start = COLON_POSITION + 1;
+            int start = COLON_POSITION + 1;
             String keyName = value.substring(1, COLON_POSITION - 1);
 
             logger.log(Level.FINE, "取键值:{}", keyName);
@@ -146,16 +147,16 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             } else if ($value.indexOf('[') == 0) {
                 Builders builders = new Builders();
                 logger.log(Level.FINE, $value);
-                builders.parse($value);
-
+                String remainings = builders.parse($value);
                 keyValue = builders;
+                if (!Objects.equals(remainings, ""))
+                    this.parseValue(remainings);
             } else {
                 if ($value.indexOf(',') != -1) {
                     String _value = $value.substring(0, $value.indexOf(','));
                     if (_value.length() > 0) {
                         keyValue = getValue(_value);
-                    }
-                    else {
+                    } else {
                         keyValue = _value;
                     }
 
@@ -164,8 +165,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                 } else {
                     if ($value.length() > 0) {
                         keyValue = getValue($value);
-                    }
-                    else {
+                    } else {
                         keyValue = $value;
                     }
                 }
@@ -178,7 +178,11 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     private Object getValue(String value) {
         Object keyValue;
         if (Pattern.compile("^-?\\d+$").matcher(value).find()) {
-            keyValue = Integer.parseInt(value);
+            try {
+                keyValue = Integer.parseInt(value);
+            } catch (Exception e) {
+                keyValue = Long.valueOf(value);
+            }
         } else if (Pattern.compile("^-?\\d+(\\.\\d+)$").matcher(value).find()) {
             keyValue = Double.parseDouble(value);
         } else if (Pattern.compile("^(true|false)$").matcher(value.toLowerCase(Locale.ROOT)).find()) {
@@ -192,7 +196,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     private int seekPosition(String value) {
         char[] chars = value.toCharArray();
         int i = 0;
-		int n = 0;
+        int n = 0;
         int position = chars.length;
 
         while (i < position) {
@@ -218,8 +222,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     private int next(String value, char begin) {
         char[] chars = value.toCharArray();
         int i = 0;
-		int n = 0;
-		int position = chars.length;
+        int n = 0;
+        int position = chars.length;
 
         while (i < position) {
             char c = chars[i];
@@ -238,7 +242,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     @Override
-	public Row toData() {
+    public Row toData() {
         Row row = new Row();
         Field field = new Field();
         Set<Entry<String, Object>> keySet = this.entrySet();
