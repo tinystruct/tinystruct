@@ -23,8 +23,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -57,7 +61,7 @@ public class URLRequest {
         try {
             return send(request, new Callback<ByteArrayOutputStream>() {
                 @Override
-				public byte[] process(ByteArrayOutputStream out) throws ApplicationException {
+                public byte[] process(ByteArrayOutputStream out) throws ApplicationException {
                     return out.toByteArray();
                 }
             });
@@ -134,6 +138,59 @@ public class URLRequest {
         }
     }
 
+    public byte[] send0(HttpRequestBuilder request) throws ApplicationException {
+        return send0(request, new Callback<HttpResponse<byte[]>>() {
+            @Override
+            public byte[] process(HttpResponse<byte[]> data) throws ApplicationException {
+                return data.body();
+            }
+        });
+    }
+
+    public byte[] send0(HttpRequestBuilder request, Callback<HttpResponse<byte[]>> callback) throws ApplicationException {
+
+        HttpRequest.Builder builder = HttpRequest.newBuilder();
+        try {
+            builder.uri(this.url.toURI());
+        } catch (URISyntaxException e) {
+            throw new ApplicationException(e.getMessage(), e.getCause());
+        }
+
+        // Set headers
+        if (request.headers() != null) {
+            request.headers().values().forEach(h -> builder.setHeader(h.name(), h.value().toString()));
+        }
+
+        if (request.requestBody() != null) {
+            builder.method(request.method().name(), HttpRequest.BodyPublishers.ofByteArray(request.requestBody().getBytes(StandardCharsets.UTF_8)));
+        }
+
+        HttpClient.Builder httpClientBuilder = HttpClient.newBuilder();
+        if (request.version() != null) {
+            switch (request.version()) {
+                case HTTP2_0:
+                    httpClientBuilder.version(HttpClient.Version.HTTP_2); break;
+                case HTTP1_1:
+                case HTTP1_0:
+                    httpClientBuilder.version(HttpClient.Version.HTTP_1_1); break;
+                default: break;
+            }
+        }
+
+        if (this.proxy != null) {
+            httpClientBuilder.proxy(new ProxySelector());
+        }
+
+        try {
+            HttpResponse<byte[]> response = httpClientBuilder.build().send(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
+            return callback.process(response);
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e.getCause());
+        } catch (InterruptedException e) {
+            throw new ApplicationException(e.getMessage(), e.getCause());
+        }
+    }
+
     private String buildQuery(Map<String, Object> parameters) {
         Set<Map.Entry<String, Object>> keySet = parameters.entrySet();
         Iterator<Map.Entry<String, Object>> iterator = keySet.iterator();
@@ -153,4 +210,51 @@ public class URLRequest {
         return buffer.toString();
     }
 
+    class ProxySelector extends java.net.ProxySelector {
+
+        /**
+         * Selects all the applicable proxies based on the protocol to
+         * access the resource with and a destination address to access
+         * the resource at.
+         * The format of the URI is defined as follow:
+         * <UL>
+         * <LI>http URI for http connections</LI>
+         * <LI>https URI for https connections
+         * <LI>{@code socket://host:port}<br>
+         * for tcp client sockets connections</LI>
+         * </UL>
+         *
+         * @param uri The URI that a connection is required to
+         * @return a List of Proxies. Each element in the
+         * the List is of type
+         * {@link Proxy Proxy};
+         * when no proxy is available, the list will
+         * contain one element of type
+         * {@link Proxy Proxy}
+         * that represents a direct connection.
+         * @throws IllegalArgumentException if the argument is null
+         */
+        @Override
+        public List<Proxy> select(URI uri) {
+            return List.of(proxy);
+        }
+
+        /**
+         * Called to indicate that a connection could not be established
+         * to a proxy/socks server. An implementation of this method can
+         * temporarily remove the proxies or reorder the sequence of
+         * proxies returned by {@link #select(URI)}, using the address
+         * and the IOException caught when trying to connect.
+         *
+         * @param uri The URI that the proxy at sa failed to serve.
+         * @param sa  The socket address of the proxy/SOCKS server
+         * @param ioe The I/O exception thrown when the connect failed.
+         * @throws IllegalArgumentException if either argument is null
+         */
+        @Override
+        public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
+        }
+    }
+
 }
+
