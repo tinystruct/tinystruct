@@ -277,8 +277,6 @@ public class StringUtilities implements java.io.Serializable {
 
             switch (c) {
                 case ' ':
-                    if (x == 0)
-                        buffer.append('\\');
                     buffer.append(' ');
                     break;
                 case '\t':
