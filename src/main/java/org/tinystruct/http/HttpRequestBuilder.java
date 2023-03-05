@@ -1,21 +1,32 @@
 package org.tinystruct.http;
 
 import org.tinystruct.ApplicationException;
+import org.tinystruct.data.Attachment;
+import org.tinystruct.transfer.http.upload.ContentDisposition;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class HttpRequestBuilder {
     private final Map<String, Object> parameters = new HashMap<>();
+    private Attachments attachments;
+
     private Version version;
     private Headers headers;
     private Method method = Method.GET;
     private String uri;
     private String requestBody;
+    private ContentDisposition[] formData;
 
     /**
      * Returns the protocol version of this {@link Protocol}
+     *
      * @return the protocol version
      */
     public Version version() {
@@ -35,6 +46,7 @@ public class HttpRequestBuilder {
 
     /**
      * Returns the headers of this message.
+     *
      * @return the headers of this message
      */
     public Headers headers() {
@@ -95,8 +107,41 @@ public class HttpRequestBuilder {
         return this;
     }
 
-    public HttpRequestBuilder attach(File[] files) throws ApplicationException {
+    /**
+     * It's more efficient to use this method instead of {@link #attach(String, File[])}
+     * to forward the content to the destination.
+     *
+     * @param formData form data
+     * @return this builder
+     */
+    public HttpRequestBuilder setFormData(ContentDisposition[] formData) {
+        this.formData = formData;
         return this;
+    }
+
+    public ContentDisposition[] getFormData() {
+        return this.formData;
+    }
+
+    public HttpRequestBuilder attach(String parameter, File[] files) throws ApplicationException {
+        List<Attachment> list = new ArrayList<Attachment>();
+        for (File file : files) {
+            Attachment attachment = new Attachment();
+            attachment.setFilename(file.getName());
+            try {
+                attachment.setContent(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
+            } catch (IOException e) {
+                throw new ApplicationException("Could not read file: " + file.getAbsolutePath());
+            }
+
+            list.add(attachment);
+        }
+        this.attachments = new Attachments(parameter, list);
+        return this;
+    }
+
+    public Attachments getAttachments() {
+        return this.attachments;
     }
 
     public String requestBody() {
@@ -106,5 +151,23 @@ public class HttpRequestBuilder {
     public HttpRequestBuilder setRequestBody(String requestBody) {
         this.requestBody = requestBody;
         return this;
+    }
+
+    static class Attachments {
+        private final String parameterName;
+        private final List<Attachment> list;
+
+        Attachments(String parameterName, List<Attachment> attachments) {
+            this.parameterName = parameterName;
+            this.list = attachments;
+        }
+
+        public String getParameterName() {
+            return parameterName;
+        }
+
+        public List<Attachment> list() {
+            return list;
+        }
     }
 }
