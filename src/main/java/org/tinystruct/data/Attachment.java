@@ -80,7 +80,7 @@ public class Attachment implements FileEntity {
      */
     @Override
     public long length() {
-        return 0;
+        return this.content.length;
     }
 
     /**
