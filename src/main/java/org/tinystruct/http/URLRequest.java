@@ -17,6 +17,7 @@ package org.tinystruct.http;
  *******************************************************************************/
 
 import org.tinystruct.ApplicationException;
+import org.tinystruct.transfer.http.upload.ContentDisposition;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,17 +27,17 @@ import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import static org.tinystruct.transfer.http.upload.ContentDisposition.LINE;
 
 public class URLRequest {
 
+    private final Method method = Method.GET;
     private URL url;
     private Map<String, String> headers;
-    private Method method = Method.GET;
     private Proxy proxy = null;
     private HttpURLConnection connection;
 
@@ -73,16 +74,21 @@ public class URLRequest {
     public byte[] send(HttpRequestBuilder request, Callback<ByteArrayOutputStream> callback)
             throws ApplicationException, IOException {
         try {
-            String parameters;
+            String boundary = null;
             URL url;
-            if (request.parameters().size() > 0) {
-                parameters = this.buildQuery(request.parameters());
-                if (this.url.toString().contains("?"))
-                    url = new URL(this.url + "&" + parameters);
-                else
-                    url = new URL(this.url + "?" + parameters);
-            } else {
+            if (request.headers().get(Header.CONTENT_TYPE).toString().equalsIgnoreCase("multipart/form-data")) {
+                boundary = String.valueOf(UUID.randomUUID());
                 url = this.url;
+            } else {
+                if (request.parameters().size() > 0) {
+                    String parameters = this.buildQuery(request.parameters());
+                    if (this.url.toString().contains("?"))
+                        url = new URL(this.url + "&" + parameters);
+                    else
+                        url = new URL(this.url + "?" + parameters);
+                } else {
+                    url = this.url;
+                }
             }
 
             // Autodetect proxy for http connection
@@ -108,21 +114,67 @@ public class URLRequest {
 
             this.connection.setRequestMethod(request.method().name());
 
-            if (request.requestBody() != null) {
+            if (request.requestBody() != null || boundary != null) {
                 this.connection.setDoOutput(true);
-                try (OutputStream wr = connection.getOutputStream()) {
+
+                if (boundary != null) {
+                    this.connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+                }
+
+                try (OutputStream writer = connection.getOutputStream()) {
+                    if (boundary != null) {
+                        if (request.parameters().size() > 0) {
+                            String finalBoundary = boundary;
+                            request.parameters().forEach((name, value) -> {
+                                ContentDisposition contentDisposition = new ContentDisposition(name, null, "text/plain", value.toString().getBytes(StandardCharsets.UTF_8));
+                                try {
+                                    writer.write(("--" + finalBoundary + LINE).getBytes(StandardCharsets.UTF_8));
+                                    writer.write(contentDisposition.getTransferBytes());
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            });
+                            writer.flush();
+                        }
+
+                        if (request.getFormData() != null && request.getFormData().length > 0) {
+                            ContentDisposition[] formData = request.getFormData();
+                            for (ContentDisposition formDatum : formData) {
+                                writer.write(("--" + boundary + LINE).getBytes(StandardCharsets.UTF_8));
+                                writer.write(formDatum.getTransferBytes());
+                                writer.flush();
+                            }
+                        } else if (request.getAttachments() != null) {
+                            HttpRequestBuilder.Attachments attachments = request.getAttachments();
+                            String fileBoundary = boundary;
+                            attachments.list().forEach(attachment -> {
+                                try {
+                                    ContentDisposition contentDisposition = new ContentDisposition(attachments.getParameterName(), attachment.getFilename(), "binary", attachment.get());
+                                    writer.write(("--" + fileBoundary + LINE).getBytes(StandardCharsets.UTF_8));
+                                    writer.write(contentDisposition.getTransferBytes());
+                                    writer.flush();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            });
+                        }
+
+                        writer.write(("--" + boundary + "--" + LINE).getBytes(StandardCharsets.UTF_8));
+                    }
+
                     // Send request
-                    wr.write(request.requestBody().getBytes(StandardCharsets.UTF_8));
-                    wr.flush();
+                    if (request.requestBody() != null) {
+                        writer.write(request.requestBody().getBytes(StandardCharsets.UTF_8));
+                    }
+                    writer.flush();
                 } catch (IOException e) {
                     throw new ApplicationException(e.toString(), e);
                 }
             }
+            connection.connect();
         } catch (IOException e) {
             throw new ApplicationException(e.toString(), e);
         }
-
-        connection.connect();
 
         try (final InputStream in = connection.getResponseCode() == HttpURLConnection.HTTP_OK ? connection.getInputStream() : connection.getErrorStream(); final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             byte[] bytes = new byte[1024];
@@ -169,11 +221,14 @@ public class URLRequest {
         if (request.version() != null) {
             switch (request.version()) {
                 case HTTP2_0:
-                    httpClientBuilder.version(HttpClient.Version.HTTP_2); break;
+                    httpClientBuilder.version(HttpClient.Version.HTTP_2);
+                    break;
                 case HTTP1_1:
                 case HTTP1_0:
-                    httpClientBuilder.version(HttpClient.Version.HTTP_1_1); break;
-                default: break;
+                    httpClientBuilder.version(HttpClient.Version.HTTP_1_1);
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -204,7 +259,7 @@ public class URLRequest {
             } else
                 buffer.append("&");
 
-            buffer.append(entry.getKey()).append("=").append(entry.getValue());
+            buffer.append(entry.getKey()).append("=").append(URLEncoder.encode(entry.getValue().toString(), Charset.defaultCharset()));
         }
 
         return buffer.toString();
