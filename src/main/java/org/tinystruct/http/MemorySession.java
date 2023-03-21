@@ -7,7 +7,7 @@ public class MemorySession implements Session {
 
     private final Map<String, Object> storage = new ConcurrentHashMap<>();
     private final String sessionId;
-    private final long expiry;
+    private long expiry;
 
     public MemorySession(String sessionId) {
         this.sessionId = sessionId;
@@ -26,6 +26,7 @@ public class MemorySession implements Session {
 
     @Override
     public Object getAttribute(String key) {
+        this.expiry = System.currentTimeMillis() + 1800000L;
         return storage.get(key);
     }
 
