@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>0.9.9</version>
+    <version>1.0.0</version>
     <name>tinystruct framework</name>
     <description>A simple framework for Java development. Simple is hard, Complex is easy. Better thinking, better
         design.
@@ -227,8 +227,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.10.1</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
                 </configuration>
             </plugin>
             <plugin>
