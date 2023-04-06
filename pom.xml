@@ -190,6 +190,12 @@
             <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
             <version>1.2.5</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.brotli/dec -->
+        <dependency>
+            <groupId>org.brotli</groupId>
+            <artifactId>dec</artifactId>
+            <version>0.1.2</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/org.graalvm.nativeimage/native-image-maven-plugin -->
         <dependency>
             <groupId>org.graalvm.buildtools</groupId>
@@ -211,8 +217,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>11</java.version>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <slf4j.version>2.0.5</slf4j.version>
         <h2.version>2.1.214</h2.version>
         <netty.version>4.1.85.Final</netty.version>
@@ -227,8 +233,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.10.1</version>
                 <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
+                    <source>11</source>
+                    <target>11</target>
                 </configuration>
             </plugin>
             <plugin>
