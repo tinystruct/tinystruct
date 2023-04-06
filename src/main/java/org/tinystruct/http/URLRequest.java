@@ -16,6 +16,7 @@ package org.tinystruct.http;
  * limitations under the License.
  *******************************************************************************/
 
+import org.brotli.dec.BrotliInputStream;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
@@ -30,6 +31,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.zip.DeflaterInputStream;
+import java.util.zip.GZIPInputStream;
 
 import static org.tinystruct.transfer.http.upload.ContentDisposition.LINE;
 
@@ -76,7 +79,7 @@ public class URLRequest {
         try {
             String boundary = null;
             URL url;
-            if (request.headers().get(Header.CONTENT_TYPE).toString().equalsIgnoreCase("multipart/form-data")) {
+            if (request.headers() != null && request.headers().get(Header.CONTENT_TYPE) != null && request.headers().get(Header.CONTENT_TYPE).toString().equalsIgnoreCase("multipart/form-data")) {
                 boundary = String.valueOf(UUID.randomUUID());
                 url = this.url;
             } else {
@@ -177,6 +180,33 @@ public class URLRequest {
         }
 
         try (final InputStream in = connection.getResponseCode() == HttpURLConnection.HTTP_OK ? connection.getInputStream() : connection.getErrorStream(); final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            String contentEncoding;
+            if ((contentEncoding = connection.getContentEncoding()) != null) {
+                byte[] bytes = new byte[1024];
+                int len;
+                switch (contentEncoding) {
+                    case "gzip":
+                        GZIPInputStream gzip = new GZIPInputStream(in);
+                        while ((len = gzip.read(bytes)) != -1) {
+                            out.write(bytes, 0, len);
+                        }
+                        return callback.process(out);
+                    case "deflate":
+                        DeflaterInputStream deflater = new DeflaterInputStream(in);
+                        while ((len = deflater.read(bytes)) != -1) {
+                            out.write(bytes, 0, len);
+                        }
+                        return callback.process(out);
+                    case "br":
+                        BrotliInputStream br = new BrotliInputStream(in);
+                        while ((len = br.read(bytes)) != -1) {
+                            out.write(bytes, 0, len);
+                        }
+                        return callback.process(out);
+                    default:
+                        break;
+                }
+            }
             byte[] bytes = new byte[1024];
             int len;
             while ((len = in.read(bytes)) != -1) {
