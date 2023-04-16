@@ -209,7 +209,7 @@ public class URLRequest {
             }
             byte[] bytes = new byte[1024];
             int len;
-            while ((len = in.read(bytes)) != -1) {
+            while (in != null && (len = in.read(bytes)) != -1) {
                 out.write(bytes, 0, len);
             }
             return callback.process(out);
