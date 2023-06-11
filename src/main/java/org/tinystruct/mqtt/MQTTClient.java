@@ -1,4 +1,4 @@
-package org.tinystruct.data.tools;
+package org.tinystruct.mqtt;
 
 import org.eclipse.paho.client.mqttv3.*;
 import org.tinystruct.system.Configuration;
@@ -43,11 +43,6 @@ public class MQTTClient implements MessageQueue<String> {
         } catch (MqttException e) {
             logger.severe(e.getMessage());
         }
-    }
-
-    @Override
-    public void send(String message) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -98,7 +93,6 @@ public class MQTTClient implements MessageQueue<String> {
         }
     }
 
-    @Override
     public void close() {
         try {
             publisher.close();
