@@ -5,13 +5,12 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.tinystruct.AbstractApplication;
-import org.tinystruct.ApplicationException;
 
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-public class KafkaClient extends AbstractApplication implements MessageQueue<ProducerRecord> {
+public class KafkaClient extends AbstractApplication {
 
     private final KafkaProducer<String,String> producer;
 
@@ -25,7 +24,6 @@ public class KafkaClient extends AbstractApplication implements MessageQueue<Pro
         producer = new KafkaProducer<String, String>(properties);
     }
 
-    @Override
     public void send(ProducerRecord record) {
 //        ProducerRecord<String, String> record = new ProducerRecord<>("quickstart-events", null, "Kafka");
         Future<RecordMetadata> future = producer.send(record);
@@ -42,11 +40,6 @@ public class KafkaClient extends AbstractApplication implements MessageQueue<Pro
     }
 
     @Override
-    public void close() {
-
-    }
-
-    @Override
     public void init() {
         this.setAction("send", "send");
     }
@@ -56,10 +49,4 @@ public class KafkaClient extends AbstractApplication implements MessageQueue<Pro
         return null;
     }
 
-    public static void main(String[] args) throws ApplicationException {
-/*        ApplicationManager.init();
-        ApplicationManager.install(new KafkaClient());
-        ApplicationManager.call("send", null);*/
-        System.out.println(StringSerializer.class.getName());
-    }
 }
