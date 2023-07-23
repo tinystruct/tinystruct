@@ -108,7 +108,7 @@ public final class Actions {
         return this.getAction(path);
     }
 
-    private void initializePatterns(Application app, String path, String methodName) {
+    private synchronized void initializePatterns(Application app, String path, String methodName) {
         Class<?> clazz = app.getClass();
         Method[] functions = getMethods(methodName, clazz);
 
