@@ -20,7 +20,6 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
 import org.tinystruct.application.SharedVariables;
 import org.tinystruct.application.Template;
-import org.tinystruct.application.Variables;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.template.variable.DataType;
 import org.tinystruct.system.template.variable.Variable;
@@ -46,9 +45,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import static org.tinystruct.Application.DEFAULT_LANGUAGE;
-import static org.tinystruct.Application.LANGUAGE;
 
 public class DefaultTemplate implements Template {
 
@@ -97,10 +93,10 @@ public class DefaultTemplate implements Template {
         for (int i = 0; i < children.getLength(); ++i) {
             Node child = children.item(i);
             boolean condition = child.getNodeType() == Node.TEXT_NODE && child.getTextContent().trim().isEmpty();
-            if (condition) {
-                child.getParentNode().removeChild(child);
-                i--;
-            }
+			if (condition) {
+			    child.getParentNode().removeChild(child);
+			    i--;
+			}
             stripEmptyTextNode(child);
         }
     }
@@ -253,7 +249,8 @@ public class DefaultTemplate implements Template {
     }
 
     @Override
-    public void setVariable(Variable<?> arg0) {
+	public void setVariable(Variable<?> arg0) {
+        this.variables.put(arg0.getName(), arg0);
     }
 
     private static final class SingletonHolder {
