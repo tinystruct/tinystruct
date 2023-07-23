@@ -50,8 +50,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     protected final Map<String, CommandLine> commandLines;
     private final Actions actions = Actions.getInstance();
     private final String name;
-    private final Variables variables;
-    private final Map<String, Variable<?>> shared;
+
     /**
      * Context of application
      */
@@ -63,15 +62,14 @@ public abstract class AbstractApplication implements Application, Cloneable {
     protected Configuration<String> config;
     private String output;
     private boolean templateRequired = true;
+    private Locale locale;
 
     /**
      * Abstract application constructor.
      */
     public AbstractApplication() {
         this.name = getClass().getName();
-        this.shared = Variables.getInstance();
-        this.variables = new Variables();
-        this.commandLines = new HashMap<String, CommandLine>();
+        this.commandLines = new HashMap<>();
     }
 
     /**
@@ -80,7 +78,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * @return templateRequired boolean
      */
     @Override
-	public boolean isTemplateRequired() {
+    public boolean isTemplateRequired() {
         return templateRequired;
     }
 
@@ -94,7 +92,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     @Override
-	public void init(Context context) {
+    public void init(Context context) {
         this.context = context;
         String language;
         if (this.context.getAttribute(LANGUAGE) != null) {
@@ -103,23 +101,32 @@ public abstract class AbstractApplication implements Application, Cloneable {
             language = config.get(DEFAULT_LANGUAGE);
         }
 
-        try {
-            String key = context.getId() + language + File.separatorChar + this.getName();
+        String key = context.getId() + language + File.separatorChar + this.getName();
+        synchronized (CONTAINER) {
             if (!CONTAINER.containsKey(key)) {
-                synchronized (AbstractApplication.class) {
-                    AbstractApplication clone = (AbstractApplication) this.clone();
+                try {
+                    Application clone = (Application) this.clone();
                     clone.setLocale(language);
                     CONTAINER.put(key, clone);
+                } catch (CloneNotSupportedException e) {
+                    throw new ApplicationRuntimeException(e.toString(), e.getCause());
                 }
+            } else {
+                CONTAINER.get(key).setLocale(language);
             }
-        } catch (CloneNotSupportedException e) {
-            throw new ApplicationRuntimeException(e.toString(), e.getCause());
         }
     }
 
     @Override
-	public Application getInstance(String contextId) {
-        return CONTAINER.get(contextId + this.getVariable(LANGUAGE).getValue() + File.separatorChar + this.getName());
+    public Application getInstance(String contextId) {
+        String language;
+        if (this.context.getAttribute(LANGUAGE) != null) {
+            language = this.context.getAttribute(LANGUAGE).toString();
+        } else {
+            language = config.get(DEFAULT_LANGUAGE);
+        }
+
+        return CONTAINER.get(contextId + language + File.separatorChar + this.getName());
     }
 
     public void setAction(String path, Action action) {
@@ -131,7 +138,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     @Override
-	public void setAction(String path, String function) {
+    public void setAction(String path, String function) {
         this.actions.set(this, path, function);
 
         // Exclude the command start with '-'
@@ -156,19 +163,19 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     @Override
-	public String setTemplate(Template template) throws ApplicationException {
+    public String setTemplate(Template template) throws ApplicationException {
         // When the template has not been disabled or the locale does not
         // compared.
         return template.parse();
     }
 
     @Override
-	public Configuration<String> getConfiguration() {
+    public Configuration<String> getConfiguration() {
         return this.config;
     }
 
     @Override
-	public void setConfiguration(Configuration<String> config) {
+    public void setConfiguration(Configuration<String> config) {
         config.set(CLSID, this.name);
         config.set(DEFAULT_LANGUAGE, "zh_CN");
         config.set(LANGUAGE, config.get(DEFAULT_LANGUAGE));
@@ -189,17 +196,17 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     @Override
-	public String getName() {
+    public String getName() {
         return this.name;
     }
 
     @Override
-	public Object invoke(String path) throws ApplicationException {
+    public Object invoke(String path) throws ApplicationException {
         return this.invoke(path, null);
     }
 
     @Override
-	public Object invoke(String path, Object[] parameters)
+    public Object invoke(String path, Object[] parameters)
             throws ApplicationException {
         String method = null;
         if (context != null && context.getAttribute(METHOD) != null) {
@@ -219,12 +226,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     @Override
-	public Context getContext() {
+    public Context getContext() {
         return this.context;
-    }
-
-    public void setVariable(Variable<?> variable, boolean force) {
-        this.variables.setVariable(variable, force);
     }
 
     public void setVariable(String name, String value) {
@@ -237,33 +240,39 @@ public abstract class AbstractApplication implements Application, Cloneable {
         this.setVariable(variable, force);
     }
 
+    public void setVariable(Variable<?> variable, boolean force) {
+        Variables.getInstance(getLocale().toString()).setVariable(variable, force);
+    }
+
     public Variable<?> getVariable(String variable) {
-        return this.variables.getVariable(variable);
+        return Variables.getInstance(getLocale().toString()).getVariable(variable);
     }
 
     public void setSharedVariable(String name, String value) {
-        this.variables.setSharedVariable(new StringVariable(name, value), true);
+        SharedVariables.getInstance().setVariable(new StringVariable(name, value), true);
+    }
+
+    public String setText(String fieldName, Locale locale) {
+        String text = this.getProperty(fieldName, locale);
+        Variables.getInstance(locale.toString()).setVariable(new StringVariable(fieldName, text), false);
+        return text;
     }
 
     public String setText(String fieldName) {
         String text = this.getProperty(fieldName);
-        String key = "[%" + fieldName + "%]";
-        this.shared.put(key, new StringVariable(key, text));
+        Variables.getInstance(locale.toString()).setVariable(new StringVariable(fieldName, text), false);
         return text;
     }
 
     public String setText(String fieldName, Object... args) {
         String text = String.format(this.getProperty(fieldName), args);
-        String key = "[%" + fieldName + "%]";
-        this.shared.put(key, new StringVariable(key, text));
+        Variables.getInstance(locale.toString()).setVariable(new StringVariable(fieldName, text), true);
         return text;
     }
 
-    private void setLink(String name) {
-        String key = "[%LINK:" + name + "%]";
-        if (!this.shared.containsKey(key)) {
-            this.shared.put(key, new StringVariable(key, name));
-        }
+    private void setLink(String linkName) {
+        String name = "LINK:" + linkName;
+        this.setSharedVariable(name, linkName);
     }
 
     /**
@@ -273,14 +282,15 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * @return link string
      */
     public String getLink(String variable) {
-        String linkName = "[%LINK:" + variable + "%]";
-        if (this.shared.get(linkName) != null) {
+        String linkName = "LINK:" + variable;
+        SharedVariables sharedVariables = SharedVariables.getInstance();
+        if (sharedVariables.getVariable(linkName) != null) {
             String baseUrl;
             if (this.getContext() != null && this.getContext().getAttribute("HTTP_HOST") != null)
                 baseUrl = this.getContext().getAttribute("HTTP_HOST").toString();
             else
                 baseUrl = this.config.get(DEFAULT_BASE_URL);
-            return baseUrl + this.shared.get(linkName).getValue();
+            return baseUrl + sharedVariables.getVariable(linkName).getValue();
         }
         return "#";
     }
@@ -306,16 +316,18 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     public Locale getLocale() {
-        return (Locale) this.getVariable("locale").getValue();
+        return this.locale;
     }
 
-    private void setLocale(String locale) {
+    public void setLocale(String locale) {
         String[] local = locale.split("_");
         Locale _locale = new Locale(local[0], local[1]);
         this.setLocale(_locale);
     }
 
     public void setLocale(Locale locale) {
+        this.locale = locale;
+
         this.setVariable(LANGUAGE_CODE, locale.getLanguage());
         this.setVariable(LANGUAGE, locale.toString());
         this.setVariable(new ObjectVariable("locale", locale), true);
@@ -341,14 +353,14 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         if (null != in) {
             try {
-                return this.setTemplate(new DefaultTemplate(this, in, this.variables.getVariables()));
+                return this.setTemplate(new DefaultTemplate(this, in, Variables.getInstance(locale.toString()).getVariables()));
             } catch (ApplicationException e) {
                 throw new ApplicationRuntimeException(e.getMessage(), e);
             }
         } else {
             if (this.output != null && this.output.trim().length() > 0) {
                 try {
-                    String output = this.setTemplate(new PlainText(this, this.output, this.variables.getVariables()));
+                    String output = this.setTemplate(new PlainText(this, this.output, Variables.getInstance(locale.toString()).getVariables()));
                     return output.replace("[%", "").replace("%]", "");
                 } catch (ApplicationException e) {
                     throw new ApplicationRuntimeException(e.getMessage(), e);
@@ -360,7 +372,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     @Override
-	public CommandLine setCommandLine(CommandLine command) {
+    public CommandLine setCommandLine(CommandLine command) {
         return this.commandLines.put(command.getCommand(), command);
     }
 
@@ -394,7 +406,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     @Override
-	public Map<String, CommandLine> getCommandLines() {
+    public Map<String, CommandLine> getCommandLines() {
         return this.commandLines;
     }
 }
