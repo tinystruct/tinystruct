@@ -21,41 +21,36 @@ import org.tinystruct.system.template.variable.DataType;
 import org.tinystruct.system.template.variable.StringVariable;
 import org.tinystruct.system.template.variable.Variable;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class Variables {
-    private final Map<String, Variable<?>> variableMap = new HashMap<>();
+public class Variables {
+    private final static String PREFIX_VARIABLE_NAME = "{%";
+    private final static String SUFFIX_VARIABLE_NAME = "%}";
+    protected final ConcurrentHashMap<String, Variable<?>> variableMap = new ConcurrentHashMap<>();
+    private final static ConcurrentHashMap<String, Variables> group = new ConcurrentHashMap<>();
 
-    public Variables() {
+    private Variables() {
     }
 
-    public static ConcurrentHashMap<String, Variable<?>> getInstance() {
-        return SingletonHolder.variables;
+    public static Variables getInstance(String group) {
+        if (!Variables.group.containsKey(group)) {
+            Variables.group.put(group, new Variables());
+        }
+        return Variables.group.get(group); // Return the singleton instance
     }
 
     public void setVariable(Variable<?> variable, boolean force) {
-        saveVariable(variable, force, false);
+        String variableName = PREFIX_VARIABLE_NAME + variable.getName() + SUFFIX_VARIABLE_NAME;
+
+        saveVariable(variableName, variable, force);
     }
 
-    public void setSharedVariable(Variable<?> variable, boolean force) {
-        saveVariable(variable, force, true);
-    }
+    protected void saveVariable(String variableName, Variable<?> variable, boolean force) {
 
-    private void saveVariable(Variable<?> variable, boolean force, boolean shared) {
-        String variableName = "{%" + variable.getName() + "%}";
-        Map<String, Variable<?>> map;
-        if (!shared) {
-            map = this.getVariables();
-        }
-        else {
-            map = getInstance();
-        }
-
-        if (force || !map.containsKey(variableName)) {
+        if (force || !variableMap.containsKey(variableName)) {
             if (variable.getType() == DataType.OBJECT) {
                 Builder builder = new Builder();
                 try {
@@ -65,28 +60,25 @@ public final class Variables {
                     Map.Entry<String, Object> entry;
                     while (list.hasNext()) {
                         entry = list.next();
-                        map.put("{%" + variable.getName() + "."
-                                + entry.getKey() + "%}", new StringVariable("{%"
-                                + variable.getName() + "." + entry.getKey() + "%}",
+                        variableMap.put(PREFIX_VARIABLE_NAME + variable.getName() + "."
+                                + entry.getKey() + SUFFIX_VARIABLE_NAME, new StringVariable(PREFIX_VARIABLE_NAME
+                                + variable.getName() + "." + entry.getKey() + SUFFIX_VARIABLE_NAME,
                                 entry.getValue().toString()));
                     }
                 } catch (ApplicationException e) {
                     e.printStackTrace();
                 }
             }
-            map.put(variableName, variable);
+            variableMap.put(variableName, variable);
         }
     }
 
     public Variable<?> getVariable(String variable) {
-        return getVariables().get("{%" + variable + "%}");
+        return variableMap.get(PREFIX_VARIABLE_NAME + variable + SUFFIX_VARIABLE_NAME);
     }
 
     public Map<String, Variable<?>> getVariables() {
         return variableMap;
     }
 
-    private static final class SingletonHolder {
-        static final ConcurrentHashMap<String, Variable<?>> variables = new ConcurrentHashMap<String, Variable<?>>(16);
-    }
 }
