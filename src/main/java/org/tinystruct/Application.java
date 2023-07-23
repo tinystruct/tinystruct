@@ -82,6 +82,13 @@ public interface Application {
     void init(Context context);
 
     /**
+     * Set Locale for the application.
+     *
+     * @param language
+     */
+    void setLocale(String language);
+
+    /**
      * Set a template for the current application.
      *
      * @param template {@link Template}
