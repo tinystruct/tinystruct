@@ -1,8 +1,8 @@
-package org.tinystruct.data.tools;
+package org.tinystruct.mqtt;
 
 import org.junit.jupiter.api.Test;
-import org.tinystruct.mqtt.MQTTClient;
-import org.tinystruct.mqtt.MessageListener;
+import org.tinystruct.system.Callback;
+import org.tinystruct.system.Event;
 import org.tinystruct.system.Settings;
 
 class MQTTClientTest {
@@ -20,9 +20,32 @@ class MQTTClientTest {
     void subscribe() {
         client.subscribe("test", new MessageListener() {
             @Override
-            public void onMessage(String topic, Object message) {
-                System.out.println(message);
+            public void on(Event event, Callback callback) {
+                callback.process();
+            }
+
+            @Override
+            public void onMessage(final String topic, Object message) {
+                this.on(new Event() {
+                }, new MessageCallback(message) {
+                    @Override
+                    public void process() {
+                        if(topic.equalsIgnoreCase("test")) {
+                            System.out.println("OK:" + message);
+                        }
+                    }
+                });
             }
         });
+    }
+
+    class MessageCallback implements Callback {
+        Object message;
+        public MessageCallback(Object message) {
+            this.message = message;
+        }
+
+        public void process() {
+        }
     }
 }
