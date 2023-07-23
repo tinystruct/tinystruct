@@ -18,8 +18,8 @@ package org.tinystruct.system.template;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
+import org.tinystruct.application.SharedVariables;
 import org.tinystruct.application.Template;
-import org.tinystruct.application.Variables;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.template.variable.DataType;
 import org.tinystruct.system.template.variable.Variable;
@@ -42,39 +42,41 @@ public class PlainText implements Template {
     public PlainText(Application app, InputStream in) {
         this.app = app;
         this.in = in;
-        this.variables = Variables.getInstance();
+        this.variables = SharedVariables.getInstance().getVariables();
     }
 
     public PlainText(Application app, final String text) {
         this.app = app;
         this.text = text;
-        this.variables = Variables.getInstance();
+        this.variables = SharedVariables.getInstance().getVariables();
     }
 
     public PlainText(Application app, final String text, Map<String, Variable<?>> variables) {
         this(app, text);
-        this.variables = new HashMap<>();
-        this.variables.putAll(Variables.getInstance());
-        this.variables.putAll(variables);
+        Map<String, Variable<?>> tmp = new HashMap<>();
+        tmp.putAll(this.variables);
+        tmp.putAll(variables);
+
+        this.variables = tmp;
     }
 
     @Override
-	public String getName() {
-        return "Textplain";
+    public String getName() {
+        return "PLAIN_TEXT";
     }
 
     @Override
-	public Variable<?> getVariable(String arg0) {
+    public Variable<?> getVariable(String arg0) {
         return this.variables.get(arg0);
     }
 
     @Override
-	public Map<String, Variable<?>> getVariables() {
+    public Map<String, Variable<?>> getVariables() {
         return this.variables;
     }
 
     @Override
-	public String parse() throws ApplicationException {
+    public String parse() throws ApplicationException {
 
         Configuration<String> config = app.getConfiguration();
         String value;

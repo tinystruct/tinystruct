@@ -18,6 +18,7 @@ package org.tinystruct.system.template;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
+import org.tinystruct.application.SharedVariables;
 import org.tinystruct.application.Template;
 import org.tinystruct.application.Variables;
 import org.tinystruct.system.Configuration;
@@ -46,6 +47,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import static org.tinystruct.Application.DEFAULT_LANGUAGE;
+import static org.tinystruct.Application.LANGUAGE;
+
 public class DefaultTemplate implements Template {
 
     // create a script engine manager
@@ -63,14 +67,17 @@ public class DefaultTemplate implements Template {
         if (null != this.engine)
             this.engine.put("self", this.app);
         this.in = in;
-        this.variables = Variables.getInstance();
+
+        this.variables = SharedVariables.getInstance().getVariables();
     }
 
     public DefaultTemplate(Application app, InputStream in, Map<String, Variable<?>> variables) {
         this(app, in);
-        this.variables = new HashMap<>();
-        this.variables.putAll(Variables.getInstance());
-        this.variables.putAll(variables);
+        Map<String, Variable<?>> tmp = new HashMap<>();
+        tmp.putAll(this.variables);
+        tmp.putAll(variables);
+
+        this.variables = tmp;
     }
 
     public DefaultTemplate(Application app, String view) {
@@ -81,7 +88,8 @@ public class DefaultTemplate implements Template {
             this.engine.put("self", this.app);
             this.engine.put("self.toString", "Please don't execute like this.");
         }
-        this.variables = Variables.getInstance();
+
+        this.variables = SharedVariables.getInstance().getVariables();
     }
 
     private static void stripEmptyTextNode(Node node) {
@@ -89,31 +97,31 @@ public class DefaultTemplate implements Template {
         for (int i = 0; i < children.getLength(); ++i) {
             Node child = children.item(i);
             boolean condition = child.getNodeType() == Node.TEXT_NODE && child.getTextContent().trim().isEmpty();
-			if (condition) {
-			    child.getParentNode().removeChild(child);
-			    i--;
-			}
+            if (condition) {
+                child.getParentNode().removeChild(child);
+                i--;
+            }
             stripEmptyTextNode(child);
         }
     }
 
     @Override
-	public String getName() {
+    public String getName() {
         return engine.NAME;
     }
 
     @Override
-	public Variable<?> getVariable(String arg0) {
+    public Variable<?> getVariable(String arg0) {
         return this.variables.get(arg0);
     }
 
     @Override
-	public Map<String, Variable<?>> getVariables() {
+    public Map<String, Variable<?>> getVariables() {
         return this.variables;
     }
 
     @Override
-	public String parse() throws ApplicationException {
+    public String parse() throws ApplicationException {
         Configuration<String> config = app.getConfiguration();
         String value;
 
@@ -245,8 +253,7 @@ public class DefaultTemplate implements Template {
     }
 
     @Override
-	public void setVariable(Variable<?> arg0) {
-        this.variables.put(arg0.getName(), arg0);
+    public void setVariable(Variable<?> arg0) {
     }
 
     private static final class SingletonHolder {
