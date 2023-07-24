@@ -3,8 +3,10 @@ package org.tinystruct.http;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
@@ -15,8 +17,11 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
     public ResponseBuilder(FullHttpResponse response) {
         super(response);
 
-        for (Map.Entry<String, String> map: response.headers()) {
-            this.headers.add(Header.value0f(map.getKey()).set(map.getValue()));
+        HttpHeaders headers = response.headers();
+        Object[] names = headers.names().toArray();
+        for (Object o : names) {
+            String name = o.toString();
+            this.headers.add(Header.value0f(name).set(headers.get(name)));
         }
 
         this.status = ResponseStatus.valueOf(response.status().code());
