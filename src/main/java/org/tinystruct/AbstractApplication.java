@@ -339,11 +339,13 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         InputStream in = null;
         String simpleName = this.getName().substring(this.getName().lastIndexOf('.') + 1);
-        Locale locale = this.getLocale();
         String templatePath = "UNKNOWN";
-        if (locale != Locale.CHINA) {
-            templatePath = "themes" + File.separatorChar + simpleName + "_" + locale.toString() + ".view";
-            in = AbstractApplication.class.getClassLoader().getResourceAsStream(templatePath);
+        Locale locale = this.getLocale();
+        if (locale != null) {
+            if (locale != Locale.CHINA) {
+                templatePath = "themes" + File.separatorChar + simpleName + "_" + locale + ".view";
+                in = AbstractApplication.class.getClassLoader().getResourceAsStream(templatePath);
+            }
         }
 
         if (null == in) {
