@@ -119,6 +119,9 @@ public class DefaultTemplate implements Template {
     @Override
     public String parse() throws ApplicationException {
         Configuration<String> config = app.getConfiguration();
+        if(config == null) {
+            throw new ApplicationException("The configuration for the app has not been set.");
+        }
         String value;
 
         if (this.view == null) {
