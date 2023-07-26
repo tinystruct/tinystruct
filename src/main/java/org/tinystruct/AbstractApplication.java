@@ -366,7 +366,12 @@ public abstract class AbstractApplication implements Application, Cloneable {
         } else {
             if (this.output != null && this.output.trim().length() > 0) {
                 try {
-                    String output = this.setTemplate(new PlainText(this, this.output, Variables.getInstance(locale.toString()).getVariables()));
+                    String output;
+                    if (locale != null)
+                        output = this.setTemplate(new PlainText(this, this.output, Variables.getInstance(locale.toString()).getVariables()));
+                    else
+                        output = this.setTemplate(new PlainText(this, this.output));
+
                     return output.replace("[%", "").replace("%]", "");
                 } catch (ApplicationException e) {
                     throw new ApplicationRuntimeException(e.getMessage(), e);
