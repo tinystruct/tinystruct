@@ -355,7 +355,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         if (null != in) {
             try {
-                return this.setTemplate(new DefaultTemplate(this, in, Variables.getInstance(locale.toString()).getVariables()));
+                if (locale != null)
+                    return this.setTemplate(new DefaultTemplate(this, in, Variables.getInstance(locale.toString()).getVariables()));
+                else
+                    return this.setTemplate(new DefaultTemplate(this, in));
+
             } catch (ApplicationException e) {
                 throw new ApplicationRuntimeException(e.getMessage(), e);
             }
