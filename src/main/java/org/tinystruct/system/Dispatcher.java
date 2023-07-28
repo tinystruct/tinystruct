@@ -31,6 +31,7 @@ import org.tinystruct.transfer.http.ReadableByteChannelWrapper;
 
 import java.awt.*;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -221,23 +222,23 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
     @Override
     public void install(Configuration<String> config, List<String> list) throws RemoteException {
-        if (list != null && list.size() > 0) {
-            // Load the default import.
-            // Merge the packages from list.
-            // Update the imports.
-            String defaults;
-            if (!"".equals((defaults = config.get("default.import.applications"))))
-                defaults += ";";
-
-            config.set("default.import.applications", defaults + String.join(";", list));
-        }
-
-        try {
-            // Initialize the application manager with the configuration.
-            ApplicationManager.init(config);
-        } catch (ApplicationException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
-        }
+        // Initialize the application manager with the configuration.
+        list.forEach(appName -> {
+            try {
+                Application app = (Application) Class.forName(appName).getDeclaredConstructor().newInstance();
+                ApplicationManager.install(app, config);
+            } catch (InstantiationException e) {
+                logger.log(Level.SEVERE, e.getMessage(), e);
+            } catch (IllegalAccessException e) {
+                logger.log(Level.SEVERE, e.getMessage(), e);
+            } catch (InvocationTargetException e) {
+                logger.log(Level.SEVERE, e.getMessage(), e);
+            } catch (NoSuchMethodException e) {
+                logger.log(Level.SEVERE, e.getMessage(), e);
+            } catch (ClassNotFoundException e) {
+                logger.log(Level.SEVERE, e.getMessage(), e);
+            }
+        });
     }
 
     /**
