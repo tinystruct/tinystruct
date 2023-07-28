@@ -61,7 +61,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     }
 
     @Override
-	public void init(FilterConfig config) throws ServletException {
+    public void init(FilterConfig config) throws ServletException {
         this.path = config.getServletContext().getRealPath("");
 
         try {
@@ -187,10 +187,10 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     }
 
     @Override
-	public void start() throws ApplicationException {
+    public void start() throws ApplicationException {
         this.settings = new Settings();
         if (this.settings.get("default.file.encoding") != null)
-            this.charsetName = (this.settings.get("default.file.encoding"));
+            this.charsetName = this.settings.get("default.file.encoding");
 
         if (this.charsetName == null || this.charsetName.trim().isEmpty())
             this.charsetName = System.getProperty("file.encoding");
@@ -200,8 +200,6 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         this.settings.set("language", "zh_CN");
         if (this.settings.get("system.directory") == null)
             this.settings.set("system.directory", this.path);
-
-        ApplicationManager.init(this.settings);
     }
 
     /**
@@ -215,7 +213,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     }
 
     @Override
-	public void stop() {
+    public void stop() {
         System.out.println("Stopping...");
     }
 
@@ -245,7 +243,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     }
 
     @Override
-	public void destroy() {
+    public void destroy() {
         this.stop();
     }
 
