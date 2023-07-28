@@ -40,6 +40,7 @@ import org.tinystruct.system.cli.CommandOption;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class NettyHttpServer extends AbstractApplication implements Bootstrap {
@@ -100,6 +101,25 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                 System.setProperty("https.proxyHost", this.context.getAttribute("--https.proxyHost").toString());
                 System.setProperty("https.proxyPort", this.context.getAttribute("--https.proxyPort").toString());
             }
+        }
+
+        String charsetName = null;
+        Settings settings = new Settings();
+        if (settings.get("default.file.encoding") != null)
+            charsetName = settings.get("default.file.encoding");
+
+        if (charsetName != null && !charsetName.trim().isEmpty())
+            System.setProperty("file.encoding", charsetName);
+
+        settings.set("language", "zh_CN");
+        if (settings.get("system.directory") == null)
+            settings.set("system.directory", System.getProperty("user.dir"));
+
+        try {
+            // Initialize the application manager with the configuration.
+            ApplicationManager.init(settings);
+        } catch (ApplicationException e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         System.out.println(ApplicationManager.call("--logo", this.context));

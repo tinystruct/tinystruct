@@ -34,6 +34,7 @@ import org.tinystruct.system.cli.CommandOption;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class TomcatServer extends AbstractApplication implements Bootstrap {
@@ -68,6 +69,25 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
     @Override
     public void start() throws ApplicationException {
         if (started) return;
+
+        String charsetName = null;
+        Settings settings = new Settings();
+        if (settings.get("default.file.encoding") != null)
+            charsetName = settings.get("default.file.encoding");
+
+        if (charsetName != null && !charsetName.trim().isEmpty())
+            System.setProperty("file.encoding", charsetName);
+
+        settings.set("language", "zh_CN");
+        if (settings.get("system.directory") == null)
+            settings.set("system.directory", System.getProperty("user.dir"));
+
+        try {
+            // Initialize the application manager with the configuration.
+            ApplicationManager.init(settings);
+        } catch (ApplicationException e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
+        }
 
         if (this.context.getAttribute("--http.proxyHost") != null && this.context.getAttribute("--http.proxyPort") != null) {
             System.setProperty("http.proxyHost", this.context.getAttribute("--http.proxyHost").toString());
