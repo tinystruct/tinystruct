@@ -85,9 +85,6 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
         String host = request.headers().get(Header.HOST).toString();
         try {
-            context.setAttribute(HTTP_REQUEST, request);
-            context.setAttribute(HTTP_RESPONSE, response);
-
             String lang = request.getParameter("lang"), language = "";
             if (lang != null && lang.trim().length() > 0) {
                 String name = lang.replace('-', '_');
@@ -123,6 +120,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
             context.setAttribute(HTTP_HOST, http_protocol + hostName + url_prefix);
             context.setAttribute(METHOD, request.method());
+            context.setAttribute(HTTP_REQUEST, request);
+            context.setAttribute(HTTP_RESPONSE, response);
 
             String query = request.query();
             if (query != null && query.length() > 1) {
@@ -161,6 +160,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         } catch (Exception e) {
             resp = copiedBuffer(e.getMessage(), CharsetUtil.UTF_8);
         }
+        response.setStatus(ResponseStatus.valueOf(status.code()));
 
         FullHttpResponse replacement = response.get().replace(resp);
         response = new ResponseBuilder(replacement);
