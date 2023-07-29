@@ -108,8 +108,6 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
             return;
         }
 
-        // Decide whether to close the connection or not.
-        final boolean keepAlive = HttpUtil.isKeepAlive(request);
         final String uri = request.uri();
         final String path = sanitizeUri(uri);
         if (path == null) {
@@ -139,11 +137,6 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
                     response.headers().set(HttpHeaderNames.CONTENT_TYPE, "image/x-icon");
                     response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, buf.readableBytes());
 
-                    if (!keepAlive) {
-                        response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-                    } else if (request.protocolVersion().equals(HttpVersion.HTTP_1_0)) {
-                        response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-                    }
                     sendAndCleanupConnection(ctx, response);
                     return;
                 } catch (Exception e) {
@@ -179,6 +172,9 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
                 return;
             }
         }
+
+        // Decide whether to close the connection or not.
+        final boolean keepAlive = HttpUtil.isKeepAlive(request);
 
         // Write the content.
         ChannelFuture sendFileFuture;
