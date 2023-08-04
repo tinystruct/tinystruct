@@ -103,6 +103,8 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
             }
         }
 
+        System.out.println(ApplicationManager.call("--logo", null));
+
         String charsetName = null;
         Settings settings = new Settings();
         if (settings.get("default.file.encoding") != null)
@@ -122,7 +124,6 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
-        System.out.println(ApplicationManager.call("--logo", this.context));
         long start = System.currentTimeMillis();
         try {
             // Configure SSL.

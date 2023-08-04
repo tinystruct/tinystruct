@@ -89,29 +89,30 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
-        if (this.context.getAttribute("--http.proxyHost") != null && this.context.getAttribute("--http.proxyPort") != null) {
-            System.setProperty("http.proxyHost", this.context.getAttribute("--http.proxyHost").toString());
-            System.setProperty("http.proxyPort", this.context.getAttribute("--http.proxyPort").toString());
+        // The port that we should run on can be set into an environment variable
+        // Look for that variable and default to 8080 if it isn't there.
+        int webPort = 8080;
+        if (this.context != null) {
+            if (this.context.getAttribute("--http.proxyHost") != null && this.context.getAttribute("--http.proxyPort") != null) {
+                System.setProperty("http.proxyHost", this.context.getAttribute("--http.proxyHost").toString());
+                System.setProperty("http.proxyPort", this.context.getAttribute("--http.proxyPort").toString());
+            }
+
+            if (this.context.getAttribute("--https.proxyHost") != null && this.context.getAttribute("--https.proxyPort") != null) {
+                System.setProperty("https.proxyHost", this.context.getAttribute("--https.proxyHost").toString());
+                System.setProperty("https.proxyPort", this.context.getAttribute("--https.proxyPort").toString());
+            }
+
+            if (this.context.getAttribute("--server-port") != null) {
+                webPort = Integer.parseInt(this.context.getAttribute("--server-port").toString());
+            }
         }
 
-        if (this.context.getAttribute("--https.proxyHost") != null && this.context.getAttribute("--https.proxyPort") != null) {
-            System.setProperty("https.proxyHost", this.context.getAttribute("--https.proxyHost").toString());
-            System.setProperty("https.proxyPort", this.context.getAttribute("--https.proxyPort").toString());
-        }
-
-        System.out.println(ApplicationManager.call("--logo", this.context));
+        System.out.println(ApplicationManager.call("--logo", null));
 
         final long start = System.currentTimeMillis();
         final String webappDirLocation = ".";
         final Tomcat tomcat = new Tomcat();
-        // The port that we should run on can be set into an environment variable
-        // Look for that variable and default to 8080 if it isn't there.
-        int webPort;
-        if (this.context.getAttribute("--server-port") != null) {
-            webPort = Integer.parseInt(this.context.getAttribute("--server-port").toString());
-        } else {
-            webPort = 8080;
-        }
 
         tomcat.setPort(webPort);
         tomcat.setAddDefaultWebXmlToWebapp(false);
