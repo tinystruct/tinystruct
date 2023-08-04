@@ -222,23 +222,25 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
     @Override
     public void install(Configuration<String> config, List<String> list) throws RemoteException {
-        // Initialize the application manager with the configuration.
-        list.forEach(appName -> {
-            try {
-                Application app = (Application) Class.forName(appName).getDeclaredConstructor().newInstance();
-                ApplicationManager.install(app, config);
-            } catch (InstantiationException e) {
-                logger.log(Level.SEVERE, e.getMessage(), e);
-            } catch (IllegalAccessException e) {
-                logger.log(Level.SEVERE, e.getMessage(), e);
-            } catch (InvocationTargetException e) {
-                logger.log(Level.SEVERE, e.getMessage(), e);
-            } catch (NoSuchMethodException e) {
-                logger.log(Level.SEVERE, e.getMessage(), e);
-            } catch (ClassNotFoundException e) {
-                logger.log(Level.SEVERE, e.getMessage(), e);
-            }
-        });
+        if (list != null && list.size() > 0) {
+            // Initialize the application manager with the configuration.
+            list.forEach(appName -> {
+                try {
+                    Application app = (Application) Class.forName(appName).getDeclaredConstructor().newInstance();
+                    ApplicationManager.install(app, config);
+                } catch (InstantiationException e) {
+                    logger.log(Level.SEVERE, e.getMessage(), e);
+                } catch (IllegalAccessException e) {
+                    logger.log(Level.SEVERE, e.getMessage(), e);
+                } catch (InvocationTargetException e) {
+                    logger.log(Level.SEVERE, e.getMessage(), e);
+                } catch (NoSuchMethodException e) {
+                    logger.log(Level.SEVERE, e.getMessage(), e);
+                } catch (ClassNotFoundException e) {
+                    logger.log(Level.SEVERE, e.getMessage(), e);
+                }
+            });
+        }
     }
 
     /**
