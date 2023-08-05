@@ -40,7 +40,7 @@ public class KeyPairGenerator extends AbstractApplication {
             java.security.KeyPairGenerator keyPairGenerator = java.security.KeyPairGenerator.getInstance("RSA");
             SecureRandom secureRandom = new SecureRandom(password.getBytes());
 
-            keyPairGenerator.initialize(1024, secureRandom);
+            keyPairGenerator.initialize(2048, secureRandom);
             KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
             byte[] privateKey = keyPair.getPrivate().getEncoded();
