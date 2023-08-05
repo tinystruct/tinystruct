@@ -254,8 +254,16 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
             return null;
         }
 
+        // Not allow too long string.
+        if (uri.length() > 255) {
+            throw new IllegalArgumentException("Input too long");
+        }
+
         // Convert file separators.
         uri = uri.replace('/', File.separatorChar);
+
+        // Remove insecure string in uri.
+        uri = uri.replaceAll("\\.\\.", "");
 
         // Simplistic dumb security check.
         // You will have to do something serious in the production environment.

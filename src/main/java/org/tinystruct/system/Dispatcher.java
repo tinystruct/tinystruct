@@ -302,6 +302,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 destination = uri.toString().replaceAll("http://|https://|/", "+");
             }
 
+            // Remove insecure string in the destination
+            destination = destination.replaceAll("\\.\\.", "");
+
             String path = new File("").getAbsolutePath() + File.separatorChar + destination;
             Path dest = Paths.get(path);
             try {
