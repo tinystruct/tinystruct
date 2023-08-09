@@ -23,6 +23,9 @@ import java.sql.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Database utility tool.
+ */
 public class DatabaseOperator implements Closeable {
     private static final Logger logger = Logger.getLogger(DatabaseOperator.class.getName());
     private static final String SQL_STATE_COMMUNICATION_LINK_FAILURE = "08S01";
