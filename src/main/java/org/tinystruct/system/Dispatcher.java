@@ -379,7 +379,6 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
         String query = this.context.getAttribute("--sql").toString();
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            operator.createStatement(false);
             if (operator.update(query) > 0) {
                 System.out.println("Done!");
             }
@@ -393,10 +392,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             throw new ApplicationException("Invalid SQL Statement.");
         }
 
-        String query = this.context.getAttribute("--sql").toString();
+        String sql = this.context.getAttribute("--sql").toString();
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            operator.createStatement(false);
-            ResultSet set = operator.query(query);
+            ResultSet set = operator.query(sql);
             int columnCount = set.getMetaData().getColumnCount();
             String[] columns = new String[columnCount];
             int[] maxItems = new int[columnCount];
