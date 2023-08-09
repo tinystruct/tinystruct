@@ -93,7 +93,7 @@ public class SQLiteServer implements Repository {
                 }
             }
 
-            if (operator.update() > 0) {
+            if (ps.execute()) {
                 inserted = true;
             }
         } catch (SQLException e) {
@@ -163,7 +163,7 @@ public class SQLiteServer implements Repository {
 
             // System.out.println(i+":"+Id);
             ps.setObject(i, Id);
-            if (operator.update() > 0) {
+            if (ps.execute()) {
                 edited = true;
             }
         } catch (SQLException e) {
@@ -182,7 +182,7 @@ public class SQLiteServer implements Repository {
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
             ps.setObject(1, Id);
-            if (operator.update() > 0)
+            if (ps.execute())
                 deleted = true;
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
@@ -206,9 +206,8 @@ public class SQLiteServer implements Repository {
 
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            operator.preparedStatement(SQL, parameters);
-            operator.query();
-            int cols = operator.getResultSet().getMetaData().getColumnCount();
+            PreparedStatement preparedStatement = operator.preparedStatement(SQL, parameters);
+            int cols = operator.executeQuery(preparedStatement).getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
             Object[] fieldValue = new Object[cols];
 
@@ -252,9 +251,8 @@ public class SQLiteServer implements Repository {
 
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            operator.preparedStatement(SQL, parameters);
-            operator.query();
-            int cols = operator.getResultSet().getMetaData().getColumnCount();
+            PreparedStatement preparedStatement = operator.preparedStatement(SQL, parameters);
+            int cols = operator.executeQuery(preparedStatement).getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
             Object[] fieldValue = new Object[cols];
 

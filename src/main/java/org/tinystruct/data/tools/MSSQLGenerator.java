@@ -238,7 +238,6 @@ public class MSSQLGenerator implements Generator {
         Field fields;
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            operator.createStatement(false);
             ResultSet set = operator.query(SQL);
             int cols = set.getMetaData().getColumnCount();
             String[] fieldName = new String[cols], fieldValue = new String[cols];

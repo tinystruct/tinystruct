@@ -1,234 +1,180 @@
-/*******************************************************************************
- * Copyright  (c) 2013, 2023 James Mover Zhou
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *******************************************************************************/
 package org.tinystruct.data;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
 
 import java.io.Closeable;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Database utility tool.
- */
 public class DatabaseOperator implements Closeable {
     private static final Logger logger = Logger.getLogger(DatabaseOperator.class.getName());
     private static final String SQL_STATE_COMMUNICATION_LINK_FAILURE = "08S01";
     private final ConnectionManager manager;
     private Connection connection;
-    private Statement statement;
-    private PreparedStatement preparedstatement;
+    private PreparedStatement preparedStatement;
     private ResultSet resultSet;
     private int effect = 0;
-    private String preparedSQL;
-    private Object[] parameters;
 
     public DatabaseOperator() throws ApplicationException {
-        this.manager = ConnectionManager.getInstance();
-        this.connection = this.manager.getConnection();
+        manager = ConnectionManager.getInstance();
+        connection = manager.getConnection();
     }
 
     public DatabaseOperator(String database) throws ApplicationException {
         this();
-        if (this.connection != null)
-            this.setCatalog(database);
+        if (connection != null) {
+            setCatalog(database);
+        }
     }
 
     public DatabaseOperator(Connection connection) {
-        this.manager = null;
+        manager = null;
         this.connection = connection;
     }
 
-    public void setCatalog(String Database) throws ApplicationException {
+    public void setCatalog(String database) throws ApplicationException {
         try {
-            this.connection.setCatalog(Database);
+            connection.setCatalog(database);
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
     }
 
-    public PreparedStatement preparedStatement(String SQL, Object[] parameters)
+    public PreparedStatement preparedStatement(String sql, Object[] parameters)
             throws ApplicationException {
-        if (SQL == null)
-            throw new ApplicationException("preparedSQL is NULL");
+        if (sql == null) {
+            throw new ApplicationException("SQL statement is NULL");
+        }
 
-        this.preparedSQL = SQL;
-        this.parameters = parameters;
         try {
-            this.preparedstatement = this.connection.prepareStatement(this.preparedSQL);
+            preparedStatement = connection.prepareStatement(sql);
 
-            int n = 0;
-            while (n < this.parameters.length) {
-                try {
-                    this.preparedstatement.setObject(n + 1, parameters[n]);
-                } catch (SQLException e) {
-                    throw new ApplicationException(e.getMessage(), e);
-                }
-
-                n++;
+            for (int n = 0; n < parameters.length; n++) {
+                preparedStatement.setObject(n + 1, parameters[n]);
             }
 
-            return this.preparedstatement;
+            return preparedStatement;
         } catch (SQLException ex) {
             throw new ApplicationException(ex.getMessage(), ex);
         }
     }
 
-    public void query() throws ApplicationException {
-        try {
-            if (this.resultSet != null)
-                this.resultSet.close();
-            this.resultSet = this.preparedstatement.executeQuery();
-            logger.log(Level.INFO, this.preparedSQL);
-        } catch (SQLException e) {
-            if (e.getSQLState().equals(SQL_STATE_COMMUNICATION_LINK_FAILURE)) {
-                try {
-                    if (this.resultSet != null)
-                        this.resultSet.close();
-                } catch (SQLException ex) {
-                    logger.severe("ResultSet Close Error:"
-                            + ex.getMessage());
-                }
-                if (this.manager != null) this.manager.clear();
-                this.preparedStatement(this.preparedSQL, this.parameters);
-                this.query();
-            } else {
-                logger.severe("SQLState(" + e.getSQLState()
-                        + ") vendor code(" + e.getErrorCode() + ")");
-                throw new ApplicationException(e.getMessage(), e);
-            }
-
-        }
-    }
-
-    public int update() throws ApplicationException {
-        try {
-            this.effect = this.preparedstatement.executeUpdate();
-            logger.log(Level.INFO, this.preparedSQL);
-            return this.effect;
-        } catch (SQLException e) {
-            throw new ApplicationException(e.getMessage(), e);
-        }
-    }
-
-    public boolean execute() throws ApplicationException {
-        try {
-            return this.preparedstatement.execute();
-        } catch (SQLException e) {
-            throw new ApplicationException(e.getMessage(), e);
-        }
-    }
-
-    public void createStatement(boolean scrollable) throws ApplicationException {
-        if (this.connection == null)
-            this.connection = this.manager.getConnection();
-
-        try {
-            if (!scrollable)
-                this.statement = this.connection.createStatement();
-            else
-                this.statement = this.connection.createStatement(
-                        ResultSet.TYPE_SCROLL_INSENSITIVE,
-                        ResultSet.CONCUR_READ_ONLY);
-        } catch (SQLException e) {
-            throw new ApplicationException(e.getMessage(), e);
-        }
-    }
-
-    public ResultSet query(String SQL) throws ApplicationException {
-        try {
-            if (this.resultSet != null)
-                this.resultSet.close();
-            this.resultSet = this.statement.executeQuery(SQL);
-
-            logger.log(Level.INFO, SQL);
-
-            return this.resultSet;
-        } catch (SQLException e) {
-            if (e.getSQLState().equals(SQL_STATE_COMMUNICATION_LINK_FAILURE)) {
-                try {
-                    if (this.resultSet != null)
-                        this.resultSet.close();
-                } catch (SQLException e1) {
-                    logger.severe("ResultSet Close Error:"
-                            + e1.getMessage());
-                }
-                if (this.manager != null) this.manager.clear();
-                this.createStatement(false);
-                return this.query(SQL);
-            } else {
-                logger.severe("SQLState(" + e.getSQLState()
-                        + ") vendor code(" + e.getErrorCode() + ")");
+    public ResultSet executeQuery(PreparedStatement statement) throws ApplicationException {
+        if (resultSet != null) {
+            try {
+                resultSet.close();
+            } catch (SQLException e) {
                 throw new ApplicationException(e.getMessage(), e);
             }
         }
+
+        try {
+            resultSet = statement.executeQuery();
+            statement.close();
+            logger.log(Level.INFO, statement.toString());
+        } catch (SQLException e) {
+            handleSQLException(e);
+        }
+
+        return resultSet;
     }
 
-    public int update(String SQL) throws ApplicationException {
+    public int executeUpdate(PreparedStatement statement) throws ApplicationException {
         try {
-            this.effect = this.statement.executeUpdate(SQL);
-            this.resultSet = this.statement.getResultSet();
-            logger.log(Level.INFO, SQL);
+            effect = statement.executeUpdate();
+            statement.close();
+            logger.log(Level.INFO, statement.toString());
+            return effect;
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
-        return this.effect;
+    }
+
+    public boolean execute(PreparedStatement statement) throws ApplicationException {
+        try {
+            boolean execute = statement.execute();
+            statement.close();
+            return execute;
+        } catch (SQLException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        }
+    }
+
+    public PreparedStatement createPreparedStatement(String sql, boolean scrollable) throws ApplicationException {
+        if (connection == null) {
+            connection = manager.getConnection();
+        }
+
+        try {
+            int resultSetType = scrollable ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY;
+            int resultSetConcurrency = ResultSet.CONCUR_READ_ONLY;
+
+            return connection.prepareStatement(sql, resultSetType, resultSetConcurrency);
+        } catch (SQLException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        }
+    }
+
+    public ResultSet query(String sql) throws ApplicationException {
+        preparedStatement = createPreparedStatement(sql, false);
+        return executeQuery(preparedStatement);
+    }
+
+    public int update(String sql) throws ApplicationException {
+        preparedStatement = createPreparedStatement(sql, false);
+        return executeUpdate(preparedStatement);
+    }
+
+    public boolean execute(String sql) throws ApplicationException {
+        preparedStatement = createPreparedStatement(sql, false);
+        return execute(preparedStatement);
     }
 
     public ResultSet getResultSet() {
-        return this.resultSet;
-    }
-
-    public boolean execute(String SQL) throws ApplicationException {
-        try {
-            boolean succeed = this.statement.execute(SQL);
-            this.resultSet = this.statement.getResultSet();
-            logger.log(Level.INFO, SQL);
-            return succeed;
-        } catch (SQLException e) {
-            throw new ApplicationException(e.getMessage(), e);
-        }
+        return resultSet;
     }
 
     @Override
     public void close() {
         try {
-            if (this.resultSet != null) {
-                this.resultSet.close();
-                this.resultSet = null;
+            if (resultSet != null) {
+                resultSet.close();
             }
 
-            if (this.statement != null) {
-                this.statement.close();
-                this.statement = null;
-            }
-
-            if (this.preparedstatement != null) {
-                this.preparedstatement.close();
-                this.preparedstatement = null;
+            if (preparedStatement != null) {
+                preparedStatement.close();
             }
         } catch (SQLException e) {
             throw new ApplicationRuntimeException(e.getMessage(), e);
         } finally {
-            if (this.manager != null && this.connection != null) {
-                this.manager.flush(this.connection);
+            if (manager != null && connection != null) {
+                manager.flush(connection);
             }
         }
     }
 
+    private void handleSQLException(SQLException e) throws ApplicationException {
+        if (e.getSQLState().equals(SQL_STATE_COMMUNICATION_LINK_FAILURE)) {
+            try {
+                if (resultSet != null) {
+                    resultSet.close();
+                }
+            } catch (SQLException ex) {
+                logger.severe("ResultSet Close Error: " + ex.getMessage());
+            }
+            if (manager != null) {
+                manager.clear();
+            }
+            PreparedStatement ps = createPreparedStatement(preparedStatement.toString(), false); // Re-prepare the statement
+            executeQuery(ps);
+        } else {
+            logger.severe("SQLState(" + e.getSQLState() + ") vendor code(" + e.getErrorCode() + ")");
+            throw new ApplicationException(e.getMessage(), e);
+        }
+    }
 }
