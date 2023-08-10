@@ -75,7 +75,6 @@ public class DatabaseOperator implements Closeable {
 
         try {
             resultSet = statement.executeQuery();
-            statement.close();
             logger.log(Level.INFO, statement.toString());
         } catch (SQLException e) {
             handleSQLException(e);
