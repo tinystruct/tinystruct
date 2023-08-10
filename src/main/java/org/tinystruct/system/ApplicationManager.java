@@ -219,6 +219,7 @@ public final class ApplicationManager {
         }
 
         if (context != null) {
+            context.setAttribute("REQUEST_PATH", path);
             action.setContext(context);
         }
 
