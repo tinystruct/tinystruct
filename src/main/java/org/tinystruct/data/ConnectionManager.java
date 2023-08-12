@@ -16,6 +16,7 @@
 package org.tinystruct.data;
 
 import org.tinystruct.ApplicationException;
+import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.Repository.Type;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
@@ -58,17 +59,17 @@ final class ConnectionManager implements Runnable {
             Driver driver = (Driver) Class.forName(driverName).getDeclaredConstructor().newInstance();
             DriverManager.registerDriver(driver);
         } catch (InstantiationException e) {
-            throw new RuntimeException(e.getMessage(), e);
+            throw new ApplicationRuntimeException(e.getMessage(), e);
         } catch (IllegalAccessException e) {
-            throw new RuntimeException(e.getMessage(), e);
+            throw new ApplicationRuntimeException(e.getMessage(), e);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e.getMessage(), e);
+            throw new ApplicationRuntimeException(e.getMessage(), e);
         } catch (SQLException e) {
-            throw new RuntimeException(e.getMessage(), e);
+            throw new ApplicationRuntimeException(e.getMessage(), e);
         } catch (InvocationTargetException e) {
-            e.printStackTrace();
+            throw new ApplicationRuntimeException(e.getMessage(), e);
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
+            throw new ApplicationRuntimeException(e.getMessage(), e);
         }
 
         this.database = config.get("database");
