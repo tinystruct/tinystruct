@@ -198,7 +198,7 @@ public final class ApplicationManager {
     public static Object call(final String path, final Context context) throws ApplicationException {
         if (path == null || path.trim().isEmpty()) {
             throw new ApplicationException(
-                    "Invalid: empty path");
+                    "Invalid: empty path", 400);
         }
 
         String method = null;
@@ -215,7 +215,7 @@ public final class ApplicationManager {
         Action action = actions.getAction(path, method);
         if (action == null) {
             throw new ApplicationException(
-                    "Access error [" + path + "]: Application has not been installed, or it has been uninstalled already.");
+                    "Access error [" + path + "]: Application has not been installed, or it has been uninstalled already.", 404);
         }
 
         if (context != null) {
