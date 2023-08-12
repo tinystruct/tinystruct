@@ -11,6 +11,7 @@ import io.netty.handler.codec.http.multipart.DiskAttribute;
 import io.netty.handler.codec.http.multipart.DiskFileUpload;
 import io.netty.util.CharsetUtil;
 import org.tinystruct.ApplicationContext;
+import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
 import org.tinystruct.http.Cookie;
 import org.tinystruct.http.Header;
@@ -140,14 +141,14 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             } else {
                 message = ApplicationManager.call(this.configuration.get("default.home.page"), context);
             }
-        } catch (Exception e) {
+        } catch (ApplicationException e) {
             StackTraceElement[] trace = e.getStackTrace();
             message = e.getMessage();
             if (trace.length > 0 && null != e.getCause()) {
                 message = e.getCause().toString();
             }
 
-            status = HttpResponseStatus.NOT_FOUND;
+            status = HttpResponseStatus.valueOf(e.getStatus());
         }
 
         ByteBuf resp;
