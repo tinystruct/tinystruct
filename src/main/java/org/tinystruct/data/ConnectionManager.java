@@ -15,64 +15,64 @@
  *******************************************************************************/
 package org.tinystruct.data;
 
+import com.mysql.cj.jdbc.ConnectionImpl;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
-import org.tinystruct.data.Repository.Type;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
 
-import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
-import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Manages database connections and provides thread-safe access to them.
+ */
 final class ConnectionManager implements Runnable {
 
     private final static Logger logger = Logger.getLogger(ConnectionManager.class.getName());
     private final ConcurrentLinkedQueue<Connection> connections;
     private final String driverName;
-    private final String url;
-    private final String user;
-    private final String password;
-    private final int max;
+    private String url;
+    private String user;
+    private String password;
+    private int maxConnections;
 
     private String database;
-    private boolean pending;
+    private volatile boolean pending;
 
-    /**
-     * Connection Manager Constructor.
-     */
     private ConnectionManager() {
-
-        this.connections = new ConcurrentLinkedQueue<Connection>();
-
+        this.connections = new ConcurrentLinkedQueue<>();
         Configuration<String> config = new Settings();
         this.driverName = config.get("driver");
+        loadDatabaseDriver();
+        loadDatabaseConfig(config);
+        this.maxConnections = config.get("database.connections.max").trim().length() > 0 ? Integer.parseInt(config.get(
+                "database.connections.max")) : 0;
+        this.pending = false;
+    }
+
+    public static ConnectionManager getInstance() {
+        return SingletonHolder.manager;
+    }
+
+    private void loadDatabaseDriver() {
         try {
-            assert this.driverName != null;
-            Driver driver = (Driver) Class.forName(driverName).getDeclaredConstructor().newInstance();
-            DriverManager.registerDriver(driver);
-        } catch (InstantiationException e) {
-            throw new ApplicationRuntimeException(e.getMessage(), e);
-        } catch (IllegalAccessException e) {
-            throw new ApplicationRuntimeException(e.getMessage(), e);
-        } catch (ClassNotFoundException e) {
-            throw new ApplicationRuntimeException(e.getMessage(), e);
-        } catch (SQLException e) {
-            throw new ApplicationRuntimeException(e.getMessage(), e);
-        } catch (InvocationTargetException e) {
-            throw new ApplicationRuntimeException(e.getMessage(), e);
-        } catch (NoSuchMethodException e) {
+            assert driverName != null && !driverName.isEmpty();
+            Class.forName(driverName).getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
             throw new ApplicationRuntimeException(e.getMessage(), e);
         }
+    }
 
-        this.database = config.get("database");
+    private void loadDatabaseConfig(Configuration<String> config) {
+        // Load and process database configuration here
+        this.database = config.get("database").trim();
         String dbUrl = config.get("database.url");
         String dbUser = config.get("database.user");
         String dbPassword = config.get("database.password");
@@ -123,20 +123,13 @@ final class ConnectionManager implements Runnable {
         this.url = dbUrl;
         this.user = dbUser;
         this.password = dbPassword;
-        this.max = config.get("database.connections.max").trim().length() > 0 ? Integer.parseInt(config.get(
-                "database.connections.max")) : 0;
-        this.pending = false;
     }
 
-    public static ConnectionManager getInstance() {
-        return SingletonHolder.manager;
-    }
+    private Repository.Type getConfiguredType() {
 
-    public Type getConfiguredType() {
-
-        int index = -1, length = Type.values().length;
+        int index = -1, length = Repository.Type.values().length;
         for (int i = 0; i < length; i++) {
-            if (this.driverName.contains(Type.values()[i].name().toLowerCase())) {
+            if (this.driverName.contains(Repository.Type.values()[i].name().toLowerCase())) {
                 index = i;
                 break;
             }
@@ -144,21 +137,21 @@ final class ConnectionManager implements Runnable {
 
         switch (index) {
             case 0:
-                return Type.MySQL;
+                return Repository.Type.MySQL;
             case 1:
-                return Type.SQLServer;
+                return Repository.Type.SQLServer;
             case 2:
-                return Type.SQLite;
+                return Repository.Type.SQLite;
             case 3:
-                return Type.H2;
+                return Repository.Type.H2;
             default:
                 break;
         }
-        return Type.MySQL;
+        return Repository.Type.MySQL;
     }
 
     public String getDatabase() {
-        return this.database;
+        return database;
     }
 
     public void setDatabase(String database) {
@@ -166,20 +159,17 @@ final class ConnectionManager implements Runnable {
     }
 
     /**
-     * When the connection is idle,then push it into connection pool.
+     * Adds a connection to the queue for reuse.
      *
-     * @param connection a connection
+     * @param connection The connection to be added.
      */
-    public void flush(Connection connection)// 从外面获取连接并放入连接向量中
-    {
-        this.connections.add(connection);
-        if (this.connections.size() > this.max) {
-            synchronized (ConnectionManager.class) {
-                if (this.connections.size() > this.max && !this.pending) {
-                    this.pending = true;
-                    logger.severe("the current connection size("
-                            + this.connections.size()
-                            + ") is out of the max number.");
+    public void flush(Connection connection) {
+        connections.add(connection);
+        if (connections.size() > maxConnections) {
+            synchronized (connections) {
+                if (connections.size() > maxConnections && !pending) {
+                    pending = true;
+                    logger.severe("The current connection size (" + connections.size() + ") is out of the max number.");
                     Thread thread = new Thread(this);
                     thread.start();
                 }
@@ -188,69 +178,81 @@ final class ConnectionManager implements Runnable {
     }
 
     /**
-     * Get connection,then remove it from collection.
+     * Gets a connection from the queue if available, or creates a new one.
      *
-     * @return a available connection
-     * @throws ApplicationException application exception
+     * @return A connection object.
+     * @throws ApplicationException If there is an error creating a new connection.
      */
     public Connection getConnection() throws ApplicationException// 从里面获取可用连接并返回到外部
     {
         Connection connection;
-        if (!this.connections.isEmpty()) {
-            connection = this.connections.poll();// 从连接向量中提取第一个空闲的连接。由于是提取，所以要把它从连接向量中删除
+        if (!connections.isEmpty()) {
+            connection = connections.poll();
             try {
-                if (connection.isClosed())// 对提取出来的连接进行判断，如果关闭了，那么提取下一个连接，否则直接获取一个新的连接
-                {
-                    logger.severe("发现了无效连接，系统已把它删除掉了！");
-                    connection = this.getConnection();
+                if (connection.isClosed()) {
+                    logger.severe("Found an invalid connection, removing it.");
+                    connection = getConnection();
                 }
             } catch (SQLException ex) {
-                logger.log(Level.WARNING, "获取连接出错！信息：" + ex.getMessage(), ex);
-                connection = this.getConnection();
+                handleSQLException("Error while checking connection status.", ex);
+                connection = getConnection();
             }
         } else {
-            try {
-                if (null == this.user || this.user.trim().isEmpty())
-                    connection = DriverManager.getConnection(this.url);
-                else
-                    connection = DriverManager.getConnection(this.url, this.user, this.password);
-
-                logger.log(Level.INFO, "System default database: " + connection.getCatalog());
-
-                if (this.database.trim().length() > 0)
-                    connection.setCatalog(this.database);
-            } catch (SQLException ex) {
-                throw new ApplicationException(ex.getMessage(), ex);
-            }
+            connection = createNewConnection();
         }
         return connection;
     }
 
+    private Connection createNewConnection() throws ApplicationException {
+        try {
+            Connection connection = user == null || user.trim().isEmpty()
+                    ? DriverManager.getConnection(url)
+                    : DriverManager.getConnection(url, user, password);
+            logger.log(Level.INFO, "System default database: " + connection.getCatalog());
+
+            if (this.database.length() > 0 && !connection.getCatalog().equalsIgnoreCase(this.database))
+                connection.setCatalog(this.database);
+
+            return connection;
+        } catch (SQLException ex) {
+            throw new ApplicationException("Error while creating a new connection.", ex);
+        }
+    }
+
     public int size() {
-        return this.connections.size();
+        return connections.size();
     }
 
     @Override
-	public void run() {
-        this.clear();
+    public void run() {
+        clear();
     }
 
+    /**
+     * Clears excess connections from the queue, maintaining the maximum allowed connections.
+     */
     public void clear() {
-        synchronized (ConnectionManager.class) {
+        synchronized (connections) {
             Connection current;
-            if (!this.connections.isEmpty()) {
-                while (this.connections.size() > this.max && (current = this.connections.poll()) != null) {
-                    try {
-                        if (!current.isClosed())
-                            current.close();
-                    } catch (SQLException ex) {
-                        logger.log(Level.WARNING, "关闭连接出错！信息：" + ex.getMessage(), ex);
+            while (connections.size() > maxConnections && (current = connections.poll()) != null) {
+                try {
+                    if (!current.isClosed()) {
+                        current.close();
                     }
+                } catch (SQLException ex) {
+                    handleSQLException("Error while closing connection.", ex);
                 }
             }
-
-            this.pending = false;
+            pending = false;
         }
+    }
+
+    private void handleSQLException(String message, SQLException ex) {
+        logger.log(Level.WARNING, message + " Message: " + ex.getMessage(), ex);
+    }
+
+    private enum DatabaseType {
+        MYSQL, SQLSERVER, SQLITE, H2
     }
 
     private static final class SingletonHolder {
