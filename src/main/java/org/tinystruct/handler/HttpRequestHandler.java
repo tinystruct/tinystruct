@@ -22,6 +22,8 @@ import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Language;
 import org.tinystruct.system.util.StringUtilities;
 
+import java.util.Objects;
+
 import static io.netty.buffer.Unpooled.copiedBuffer;
 import static org.tinystruct.Application.LANGUAGE;
 import static org.tinystruct.Application.METHOD;
@@ -148,7 +150,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                 message = e.getCause().toString();
             }
 
-            status = HttpResponseStatus.valueOf(e.getStatus());
+            response.setStatus(Objects.requireNonNull(ResponseStatus.valueOf(e.getStatus())));
         }
 
         ByteBuf resp;
@@ -161,7 +163,6 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         } catch (Exception e) {
             resp = copiedBuffer(e.getMessage(), CharsetUtil.UTF_8);
         }
-        response.setStatus(ResponseStatus.valueOf(status.code()));
 
         FullHttpResponse replacement = response.get().replace(resp);
         response = new ResponseBuilder(replacement);
