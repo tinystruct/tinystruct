@@ -26,7 +26,7 @@ public final class SharedVariables {
 
     private void saveVariable(String variableName, Variable<?> variable, boolean force) {
         if (force || !variableMap.containsKey(variableName)) {
-            variableMap.put(variableName, variable);
+            variableMap.putIfAbsent(variableName, variable);
         }
     }
 
