@@ -37,7 +37,7 @@ public class Variables {
 
     public static Variables getInstance(String group) {
         if (!Variables.group.containsKey(group)) {
-            Variables.group.put(group, new Variables());
+            Variables.group.putIfAbsent(group, new Variables());
         }
         return Variables.group.get(group); // Return the singleton instance
     }
@@ -60,7 +60,7 @@ public class Variables {
                     Map.Entry<String, Object> entry;
                     while (list.hasNext()) {
                         entry = list.next();
-                        variableMap.put(PREFIX_VARIABLE_NAME + variable.getName() + "."
+                        variableMap.putIfAbsent(PREFIX_VARIABLE_NAME + variable.getName() + "."
                                 + entry.getKey() + SUFFIX_VARIABLE_NAME, new StringVariable(PREFIX_VARIABLE_NAME
                                 + variable.getName() + "." + entry.getKey() + SUFFIX_VARIABLE_NAME,
                                 entry.getValue().toString()));
@@ -69,7 +69,7 @@ public class Variables {
                     e.printStackTrace();
                 }
             }
-            variableMap.put(variableName, variable);
+            variableMap.putIfAbsent(variableName, variable);
         }
     }
 
