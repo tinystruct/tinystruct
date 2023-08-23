@@ -166,7 +166,7 @@ final class ConnectionManager implements Runnable {
     public void flush(Connection connection) {
         connections.add(connection);
         if (connections.size() > maxConnections) {
-            synchronized (connections) {
+            synchronized (ConnectionManager.class) {
                 if (connections.size() > maxConnections && !pending) {
                     pending = true;
                     logger.severe("The current connection size (" + connections.size() + ") is out of the max number.");
@@ -232,7 +232,7 @@ final class ConnectionManager implements Runnable {
      * Clears excess connections from the queue, maintaining the maximum allowed connections.
      */
     public void clear() {
-        synchronized (connections) {
+        synchronized (ConnectionManager.class) {
             Connection current;
             while (connections.size() > maxConnections && (current = connections.poll()) != null) {
                 try {
