@@ -115,7 +115,7 @@ public final class Watcher implements Runnable {
 									    // No need to check if the lock exists.
 									    if(!this.locks.containsKey(lockId)) {
 									        // Add a new lock with id.
-									        this.locks.put(lockId, new DistributedLock(id));
+									        this.locks.putIfAbsent(lockId, new DistributedLock(id));
 									        if ((listener = this.listeners.get(lockId)) != null)
 									            listener.onCreate(lockId);
 									    }
