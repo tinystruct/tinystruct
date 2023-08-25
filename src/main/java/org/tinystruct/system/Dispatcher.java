@@ -642,7 +642,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             String[] list = tableNames.split(";");
             for (String className : list) {
                 generator.create(className, className);
-                System.out.printf("File(s) for %s has been generated. \r\n", className);
+                System.out.printf("File(s) for %s has been generated. %n", className);
             }
         } catch (ApplicationException e) {
             // TODO Auto-generated catch block
