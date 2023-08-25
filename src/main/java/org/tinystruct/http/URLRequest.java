@@ -39,7 +39,6 @@ import static org.tinystruct.transfer.http.upload.ContentDisposition.LINE;
 public class URLRequest {
 
     private URL url;
-    private Map<String, String> headers;
     private Proxy proxy = null;
     private HttpURLConnection connection;
 
