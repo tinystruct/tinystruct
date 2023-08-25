@@ -94,7 +94,8 @@ Options:
         --settings              Print settings
         --version               Print version
 
-Run 'bin/dispatcher COMMAND --help' for more information on a command.```
+Run 'bin/dispatcher COMMAND --help' for more information on a command.
+```
 ```tcsh
 $ bin/dispatcher say/"Praise to the Lord"
 Praise to the Lord
