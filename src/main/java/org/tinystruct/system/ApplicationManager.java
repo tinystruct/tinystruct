@@ -34,7 +34,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ApplicationManager {
-    public static final String VERSION = "1.1.0";
+    public static final String VERSION = "1.1.1";
     private static final ConcurrentHashMap<String, Application> applications = new ConcurrentHashMap<String, Application>();
     private static final Actions actions = Actions.getInstance();
     private static final boolean WINDOWS = Platform.isWindows();
