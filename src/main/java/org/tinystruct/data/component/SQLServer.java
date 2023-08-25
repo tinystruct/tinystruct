@@ -32,7 +32,6 @@ public class SQLServer implements Repository {
     @Override
 	public boolean append(Field ready_fields, String table)
             throws ApplicationException {
-        String SQL = "";
         StringBuilder keys = new StringBuilder();
         StringBuilder dataKeys = new StringBuilder();
         StringBuilder values = new StringBuilder();
@@ -88,14 +87,14 @@ public class SQLServer implements Repository {
         parameters = new StringBuilder(parameters.substring(0, parameters.length() - 1));
 
         table = table.replaceAll("\\[", "").replaceAll("\\]", "");
-        SQL = "if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].["
+        String SQL = "if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].["
                 + table
-                + "_APPEND]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)";
-        SQL += "BEGIN exec('CREATE PROCEDURE [dbo].[" + table + "_APPEND] "
+                + "_APPEND]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)"
+                + "BEGIN exec('CREATE PROCEDURE [dbo].[" + table + "_APPEND] "
                 + parameters + " AS INSERT INTO [" + table + "](" + dataKeys
-                + ") VALUES(" + keys + ")')";
-        SQL += " {call " + table + "_APPEND(" + values + ")} END";
-        SQL += " else {call " + table + "_APPEND(" + values + ")}";
+                + ") VALUES(" + keys + ")')"
+                + " {call " + table + "_APPEND(" + values + ")} END"
+                + " else {call " + table + "_APPEND(" + values + ")}";
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
             return operator.update(SQL) > 0;
