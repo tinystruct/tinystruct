@@ -32,16 +32,18 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    service.shutdown();
-                    while (true) {
-                        try {
-                            System.out.println("Waiting for the service to terminate...");
-                            if (service.awaitTermination(5, TimeUnit.SECONDS)) {
-                                System.out.println("Service will be terminated soon.");
-                                break;
+                    if(service!=null) {
+                        service.shutdown();
+                        while (true) {
+                            try {
+                                System.out.println("Waiting for the service to terminate...");
+                                if (service.awaitTermination(5, TimeUnit.SECONDS)) {
+                                    System.out.println("Service will be terminated soon.");
+                                    break;
+                                }
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
                             }
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
                         }
                     }
                 }
