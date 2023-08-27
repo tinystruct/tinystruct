@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
+import org.slf4j.LoggerFactory;
+import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationRuntimeException;
 
 import java.io.*;
@@ -22,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.Set;
 import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 public class Settings implements Configuration<String> {
     private static final long serialVersionUID = 8348657988449703373L;
@@ -107,13 +110,18 @@ public class Settings implements Configuration<String> {
         public static final SingletonHolder INSTANCE = new SingletonHolder();
         private static final Properties properties = new Properties();
         private static final LogManager logManager = LogManager.getLogManager();
+        private static final Logger logger = Logger.getLogger(Settings.class.getName());
 
         static {
             try (InputStream in = SingletonHolder.class.getResourceAsStream(fileName)) {
-                properties.load(in);
-                String loggingOverride = properties.getProperty("logging.override");
-                if (loggingOverride != null && loggingOverride.equalsIgnoreCase("true")) {
-                    logManager.readConfiguration(in);
+                if(null != in) {
+                    properties.load(in);
+                    String loggingOverride = properties.getProperty("logging.override");
+                    if (loggingOverride != null && loggingOverride.equalsIgnoreCase("true")) {
+                        logManager.readConfiguration(in);
+                    }
+                } else {
+                    logger.warning("No settings loaded.");
                 }
             } catch (IOException e) {
                 throw new ApplicationRuntimeException(e.getMessage(), e);
