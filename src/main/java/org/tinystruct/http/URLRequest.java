@@ -184,22 +184,28 @@ public class URLRequest {
                 int len;
                 switch (contentEncoding) {
                     case "gzip":
-                        GZIPInputStream gzip = new GZIPInputStream(in);
-                        while ((len = gzip.read(bytes)) != -1) {
-                            out.write(bytes, 0, len);
+                        try (GZIPInputStream gzip = new GZIPInputStream(in);) {
+                            while ((len = gzip.read(bytes)) != -1) {
+                                out.write(bytes, 0, len);
+                            }
                         }
+
                         return callback.process(out);
                     case "deflate":
-                        DeflaterInputStream deflater = new DeflaterInputStream(in);
-                        while ((len = deflater.read(bytes)) != -1) {
-                            out.write(bytes, 0, len);
+                        try (DeflaterInputStream deflater = new DeflaterInputStream(in);) {
+                            while ((len = deflater.read(bytes)) != -1) {
+                                out.write(bytes, 0, len);
+                            }
                         }
+
                         return callback.process(out);
                     case "br":
-                        BrotliInputStream br = new BrotliInputStream(in);
-                        while ((len = br.read(bytes)) != -1) {
-                            out.write(bytes, 0, len);
+                        try (BrotliInputStream br = new BrotliInputStream(in);) {
+                            while ((len = br.read(bytes)) != -1) {
+                                out.write(bytes, 0, len);
+                            }
                         }
+
                         return callback.process(out);
                     default:
                         break;
