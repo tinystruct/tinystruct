@@ -19,35 +19,24 @@ import org.tinystruct.ApplicationRuntimeException;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.logging.LogManager;
 
-/**
- * Get properties in the configuration file.
- *
- * @author Mover
- */
 public class Settings implements Configuration<String> {
     private static final long serialVersionUID = 8348657988449703373L;
-    private static final String FILE = "/application.properties";
+    private static final String DEFAULT_FILE = "/application.properties";
     private static String fileName;
     private final Properties properties;
     private boolean overwrite = false;
 
     public Settings() {
-        this(FILE);
+        this(DEFAULT_FILE);
         this.overwrite = true;
     }
 
     public Settings(String file) {
-        if (!file.equalsIgnoreCase(FILE)) {
-            fileName = file;
-        } else {
-            fileName = FILE;
-        }
-
+        fileName = file.equalsIgnoreCase(DEFAULT_FILE) ? DEFAULT_FILE : file;
         properties = SingletonHolder.INSTANCE.getProperties();
     }
 
@@ -60,8 +49,8 @@ public class Settings implements Configuration<String> {
         String value = properties.getProperty(property);
 
         if (value != null && value.startsWith("$_")) {
-            String name = value.substring(2).toUpperCase();
-            return System.getenv(name) != null ? System.getenv(name) : "";
+            String envVariableName = value.substring(2).toUpperCase();
+            return System.getenv(envVariableName) != null ? System.getenv(envVariableName) : "";
         }
 
         try {
@@ -70,7 +59,7 @@ public class Settings implements Configuration<String> {
                 return new String(bytes, StandardCharsets.UTF_8).trim();
             }
         } catch (Exception ignored) {
-
+            // Ignored intentionally
         }
 
         return "";
@@ -88,22 +77,18 @@ public class Settings implements Configuration<String> {
 
     @Override
     public Set<String> propertyNames() {
-        HashSet<String> sets = new HashSet<String>();
-        for (Object o : this.getProperties().keySet()) {
-            sets.add(o.toString());
-        }
-        return sets;
+        return properties.stringPropertyNames();
     }
 
     public void update() {
-        if (!this.overwrite) return;
+        if (!overwrite) {
+            return;
+        }
 
         String comments = "Tinystruct Configuration";
-        try (OutputStream out = new FileOutputStream(System.getProperty("user.dir")
-                + File.separatorChar + fileName)) {
+        String filePath = System.getProperty("user.dir") + File.separator + fileName;
+        try (OutputStream out = new FileOutputStream(filePath)) {
             properties.store(out, comments);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -126,7 +111,8 @@ public class Settings implements Configuration<String> {
         static {
             try (InputStream in = SingletonHolder.class.getResourceAsStream(fileName)) {
                 properties.load(in);
-                if (properties.getProperty("logging.override") != null && "true".equalsIgnoreCase(properties.getProperty("logging.override"))) {
+                String loggingOverride = properties.getProperty("logging.override");
+                if (loggingOverride != null && loggingOverride.equalsIgnoreCase("true")) {
                     logManager.readConfiguration(in);
                 }
             } catch (IOException e) {
