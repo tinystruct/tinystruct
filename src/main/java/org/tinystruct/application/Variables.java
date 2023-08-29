@@ -21,25 +21,20 @@ import org.tinystruct.system.template.variable.DataType;
 import org.tinystruct.system.template.variable.StringVariable;
 import org.tinystruct.system.template.variable.Variable;
 
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Variables {
     private final static String PREFIX_VARIABLE_NAME = "{%";
     private final static String SUFFIX_VARIABLE_NAME = "%}";
-    protected final ConcurrentHashMap<String, Variable<?>> variableMap = new ConcurrentHashMap<>();
     private final static ConcurrentHashMap<String, Variables> group = new ConcurrentHashMap<>();
+    protected final ConcurrentHashMap<String, Variable<?>> variableMap = new ConcurrentHashMap<>();
 
     private Variables() {
     }
 
     public static Variables getInstance(String group) {
-        if (!Variables.group.containsKey(group)) {
-            Variables.group.put(group, new Variables());
-        }
-        return Variables.group.get(group); // Return the singleton instance
+        return Variables.group.computeIfAbsent(group, k -> new Variables());
     }
 
     public void setVariable(Variable<?> variable, boolean force) {
@@ -49,27 +44,29 @@ public class Variables {
     }
 
     protected void saveVariable(String variableName, Variable<?> variable, boolean force) {
-
-        if (force || !variableMap.containsKey(variableName)) {
-            if (variable.getType() == DataType.OBJECT) {
-                Builder builder = new Builder();
-                try {
-                    builder.parse(variable.getValue().toString());
-                    Set<Map.Entry<String, Object>> elements = builder.entrySet();
-                    Iterator<Map.Entry<String, Object>> list = elements.iterator();
-                    Map.Entry<String, Object> entry;
-                    while (list.hasNext()) {
-                        entry = list.next();
-                        variableMap.put(PREFIX_VARIABLE_NAME + variable.getName() + "."
-                                + entry.getKey() + SUFFIX_VARIABLE_NAME, new StringVariable(PREFIX_VARIABLE_NAME
-                                + variable.getName() + "." + entry.getKey() + SUFFIX_VARIABLE_NAME,
-                                entry.getValue().toString()));
-                    }
-                } catch (ApplicationException e) {
-                    e.printStackTrace();
+        variableMap.compute(variableName, (key, existingVariable) -> {
+            if (existingVariable == null || force) {
+                if (variable.getType() == DataType.OBJECT) {
+                    processObjectVariable(variableName, variable);
                 }
+                return variable;
             }
-            variableMap.put(variableName, variable);
+            return existingVariable;
+        });
+    }
+
+    private void processObjectVariable(String variableName, Variable<?> variable) {
+        Builder builder = new Builder();
+        try {
+            builder.parse(variable.getValue().toString());
+            for (Map.Entry<String, Object> entry : builder.entrySet()) {
+                String newVariableName = PREFIX_VARIABLE_NAME + variable.getName() + "."
+                        + entry.getKey() + SUFFIX_VARIABLE_NAME;
+                String value = entry.getValue().toString();
+                variableMap.put(newVariableName, new StringVariable(newVariableName, value));
+            }
+        } catch (ApplicationException e) {
+            e.printStackTrace();
         }
     }
 
