@@ -92,7 +92,11 @@ public class CommandLine implements Comparable<CommandLine>{
 
             help.append("Arguments: \n");
             for (CommandArgument<String, Object> argument : arguments) {
-                help.append("\t").append(StringUtilities.rightPadding(argument.getKey(), max, ' ')).append("\t").append(argument.getDescription().equals("") ? "Not specified" : argument.getDescription()).append("\n");
+                help.append("\t")
+                    .append(StringUtilities.rightPadding(argument.getKey(), max, ' '))
+                    .append("\t")
+                    .append(argument.getDescription().isEmpty() ? "Not specified" : argument.getDescription())
+                    .append("\n");
             }
         }
 
