@@ -9,8 +9,13 @@ public class ResponseHeaders extends Headers {
 
     @Override
     public boolean add(Header header) {
-        this.response.addHeader(header.name(), header.value() != null ? header.value().toString() : "");
+        String value = "";
+        if(header.value() != null) {
+            value =  header.value().toString();
+            value = value.replaceAll("[\r\n]", "");
+        }
 
+        this.response.addHeader(header.name(), value);
         return super.add(header);
     }
 }
