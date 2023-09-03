@@ -15,8 +15,6 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
-import org.slf4j.LoggerFactory;
-import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationRuntimeException;
 
 import java.io.*;
@@ -114,7 +112,7 @@ public class Settings implements Configuration<String> {
 
         static {
             try (InputStream in = SingletonHolder.class.getResourceAsStream(fileName)) {
-                if(null != in) {
+                if (null != in) {
                     properties.load(in);
                     String loggingOverride = properties.getProperty("logging.override");
                     if (loggingOverride != null && loggingOverride.equalsIgnoreCase("true")) {
