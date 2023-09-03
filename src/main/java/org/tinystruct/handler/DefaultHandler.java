@@ -232,6 +232,10 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             if (uri.indexOf('/') != -1)
                 uri = uri.substring(0, uri.indexOf("/"));
 
+            uri = uri.replace("%2e", ".");
+            uri = uri.replace("%2f", "/");
+            uri = uri.replace("%5c", "/");
+
             File resource = new File(uri);
             if (resource.exists()) {
                 chain.doFilter(request, response);
