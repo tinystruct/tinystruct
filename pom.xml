@@ -138,7 +138,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>3.4.0</version>
+            <version>3.5.1</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -360,7 +360,7 @@
                                 --initialize-at-run-time=io.netty.util.AbstractReferenceCounted
                                 --initialize-at-run-time=io.netty.channel.epoll.Epoll,io.netty.channel.epoll.EpollEventLoop,io.netty.channel.epoll.Native
                                 --report-unsupported-elements-at-runtime
-                                -H:+StaticExecutableWithDynamicLibC &#45;&#45;native-image-info &#45;&#45;verbose
+                                -H:+StaticExecutableWithDynamicLibC --native-image-info --verbose
                             </buildArgs>
                             <imageName>dispatcher-native</imageName>
                             <mainClass>org.tinystruct.system.Dispatcher</mainClass>
