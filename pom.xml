@@ -149,7 +149,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.2.0</version>
+            <version>5.4.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
         <dependency>
@@ -360,7 +360,7 @@
                                 --initialize-at-run-time=io.netty.util.AbstractReferenceCounted
                                 --initialize-at-run-time=io.netty.channel.epoll.Epoll,io.netty.channel.epoll.EpollEventLoop,io.netty.channel.epoll.Native
                                 --report-unsupported-elements-at-runtime
-                                -H:+StaticExecutableWithDynamicLibC &#45;&#45;native-image-info &#45;&#45;verbose
+                                -H:+StaticExecutableWithDynamicLibC --native-image-info --verbose
                             </buildArgs>
                             <imageName>dispatcher-native</imageName>
                             <mainClass>org.tinystruct.system.Dispatcher</mainClass>
