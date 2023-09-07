@@ -227,7 +227,7 @@
         <netty.version>4.1.94.Final</netty.version>
         <mysql.connector.version>8.0.33</mysql.connector.version>
         <graalvm.version>22.3.3</graalvm.version>
-        <native.maven.plugin.version>0.9.24</native.maven.plugin.version>
+        <native.maven.plugin.version>0.9.26</native.maven.plugin.version>
     </properties>
     <build>
         <plugins>
@@ -360,7 +360,7 @@
                                 --initialize-at-run-time=io.netty.util.AbstractReferenceCounted
                                 --initialize-at-run-time=io.netty.channel.epoll.Epoll,io.netty.channel.epoll.EpollEventLoop,io.netty.channel.epoll.Native
                                 --report-unsupported-elements-at-runtime
-                                -H:+StaticExecutableWithDynamicLibC &#45;&#45;native-image-info &#45;&#45;verbose
+                                -H:+StaticExecutableWithDynamicLibC --native-image-info --verbose
                             </buildArgs>
                             <imageName>dispatcher-native</imageName>
                             <mainClass>org.tinystruct.system.Dispatcher</mainClass>
