@@ -205,6 +205,16 @@
             <artifactId>native-maven-plugin</artifactId>
             <version>${native.maven.plugin.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>${jmh.version}</version>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -228,6 +238,7 @@
         <mysql.connector.version>8.0.33</mysql.connector.version>
         <graalvm.version>22.3.3</graalvm.version>
         <native.maven.plugin.version>0.9.24</native.maven.plugin.version>
+        <jmh.version>1.35</jmh.version>
     </properties>
     <build>
         <plugins>
@@ -238,6 +249,13 @@
                 <configuration>
                     <source>11</source>
                     <target>11</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.openjdk.jmh</groupId>
+                            <artifactId>jmh-generator-annprocess</artifactId>
+                            <version>${jmh.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
