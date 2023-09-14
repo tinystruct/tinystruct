@@ -67,7 +67,7 @@
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
-            <version>6.2.3.RELEASE</version>
+            <version>6.2.5.RELEASE</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
         <dependency>
@@ -105,14 +105,14 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-tcnative</artifactId>
-            <version>2.0.59.Final</version>
+            <version>2.0.61.Final</version>
             <classifier>linux-x86_64</classifier>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.netty.incubator</groupId>
             <artifactId>netty-incubator-transport-native-io_uring</artifactId>
-            <version>0.0.19.Final</version>
+            <version>0.0.21.Final</version>
             <classifier>linux-x86_64</classifier>
             <optional>true</optional>
         </dependency>
@@ -138,7 +138,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>3.4.0</version>
+            <version>3.5.1</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -149,7 +149,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.2.0</version>
+            <version>5.4.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
         <dependency>
@@ -237,8 +237,8 @@
         <netty.version>4.1.94.Final</netty.version>
         <mysql.connector.version>8.0.33</mysql.connector.version>
         <graalvm.version>22.3.3</graalvm.version>
-        <native.maven.plugin.version>0.9.24</native.maven.plugin.version>
         <jmh.version>1.35</jmh.version>
+        <native.maven.plugin.version>0.9.26</native.maven.plugin.version>
     </properties>
     <build>
         <plugins>
@@ -378,7 +378,7 @@
                                 --initialize-at-run-time=io.netty.util.AbstractReferenceCounted
                                 --initialize-at-run-time=io.netty.channel.epoll.Epoll,io.netty.channel.epoll.EpollEventLoop,io.netty.channel.epoll.Native
                                 --report-unsupported-elements-at-runtime
-                                -H:+StaticExecutableWithDynamicLibC &#45;&#45;native-image-info &#45;&#45;verbose
+                                -H:+StaticExecutableWithDynamicLibC --native-image-info --verbose
                             </buildArgs>
                             <imageName>dispatcher-native</imageName>
                             <mainClass>org.tinystruct.system.Dispatcher</mainClass>
