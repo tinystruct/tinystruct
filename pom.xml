@@ -233,7 +233,7 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <slf4j.version>2.0.7</slf4j.version>
-        <h2.version>2.2.220</h2.version>
+        <h2.version>2.2.222</h2.version>
         <netty.version>4.1.94.Final</netty.version>
         <mysql.connector.version>8.1.0</mysql.connector.version>
         <graalvm.version>22.3.3</graalvm.version>
