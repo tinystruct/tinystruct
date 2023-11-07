@@ -20,7 +20,7 @@ import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.application.Action;
-import org.tinystruct.application.Actions;
+import org.tinystruct.application.ActionRegistry;
 import org.tinystruct.application.Context;
 import org.tinystruct.system.cli.CommandLine;
 
@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ApplicationManager {
     public static final String VERSION = "1.1.1";
     private static final ConcurrentHashMap<String, Application> applications = new ConcurrentHashMap<String, Application>();
-    private static final Actions actions = Actions.getInstance();
+    private static final ActionRegistry ROUTE_REGISTRY = ActionRegistry.getInstance();
     private static final boolean WINDOWS = Platform.isWindows();
     private static Configuration<String> settings;
     private static volatile boolean initialized = false;
@@ -171,8 +171,8 @@ public final class ApplicationManager {
     public static boolean uninstall(Application application) {
         applications.remove(application.getName());
 
-        Actions actions = Actions.getInstance();
-        Object[] list = actions.list().toArray();
+        ActionRegistry actionRegistry = ActionRegistry.getInstance();
+        Object[] list = actionRegistry.list().toArray();
 
         Action action;
         int i = 0;
@@ -180,7 +180,7 @@ public final class ApplicationManager {
             action = (Action) list[i++];
 
             if (action.getApplicationName().equalsIgnoreCase(application.getName())) {
-                return actions.remove(action.getPathRule());
+                return actionRegistry.remove(action.getPathRule());
             }
         }
 
@@ -208,11 +208,11 @@ public final class ApplicationManager {
 
         if (context != null && context.getAttribute("--help") != null) {
             CommandLine command;
-            if ((command = actions.getCommand(path)) != null)
+            if ((command = ROUTE_REGISTRY.getCommand(path)) != null)
                 return command;
         }
 
-        Action action = actions.getAction(path, method);
+        Action action = ROUTE_REGISTRY.getAction(path, method);
         if (action == null) {
             throw new ApplicationException(
                     "Access error [" + path + "]: Application has not been installed, or it has been uninstalled already.", 404);

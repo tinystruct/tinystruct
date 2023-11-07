@@ -30,16 +30,16 @@ import java.util.regex.Matcher;
 
 import static org.tinystruct.application.Action.MAX_ARGUMENTS;
 
-public final class Actions {
+public final class ActionRegistry {
 
     private static final Map<String, Action> map = new ConcurrentHashMap<String, Action>(16);
     private static final Map<String, CommandLine> commands = new ConcurrentHashMap<String, CommandLine>(16);
 
-    private Actions() {
+    private ActionRegistry() {
     }
 
-    public static Actions getInstance() {
-        return SingletonHolder.actions;
+    public static ActionRegistry getInstance() {
+        return SingletonHolder.ROUTE_REGISTRY;
     }
 
     public void set(final Application app, final String path, final String methodName) {
@@ -200,6 +200,6 @@ public final class Actions {
     }
 
     private static final class SingletonHolder {
-        static final Actions actions = new Actions();
+        static final ActionRegistry ROUTE_REGISTRY = new ActionRegistry();
     }
 }

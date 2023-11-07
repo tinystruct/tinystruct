@@ -48,7 +48,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     private static final Container CONTAINER = Container.getInstance();
 
     protected final Map<String, CommandLine> commandLines;
-    private final Actions actions = Actions.getInstance();
+    private final ActionRegistry actionRegistry = ActionRegistry.getInstance();
     private final String name;
 
     /**
@@ -130,7 +130,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     public void setAction(String path, Action action) {
-        this.actions.set(action);
+        this.actionRegistry.set(action);
 
         // Exclude the command start with '-'
         if (path.indexOf("-") != 0)
@@ -139,7 +139,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
     @Override
     public void setAction(String path, String function) {
-        this.actions.set(this, path, function);
+        this.actionRegistry.set(this, path, function);
 
         // Exclude the command start with '-'
         if (path.indexOf("-") != 0)
@@ -147,7 +147,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     public void setAction(String path, String function, String method) {
-        this.actions.set(this, path, function, method);
+        this.actionRegistry.set(this, path, function, method);
 
         // Exclude the command start with '-'
         if (path.indexOf("-") != 0)
@@ -213,7 +213,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
             method = context.getAttribute(METHOD).toString();
         }
 
-        Action action = this.actions.getAction(path, method);
+        Action action = this.actionRegistry.getAction(path, method);
         if (action == null)
             throw new ApplicationException("Action " + path
                     + " path does not registered.");
