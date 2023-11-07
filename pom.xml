@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>10.1.7</version>
+            <version>10.1.13</version>
             <scope>provided</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
@@ -233,11 +233,11 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <slf4j.version>2.0.7</slf4j.version>
-        <h2.version>2.2.220</h2.version>
+        <h2.version>2.2.222</h2.version>
         <netty.version>4.1.94.Final</netty.version>
         <mysql.connector.version>8.1.0</mysql.connector.version>
         <graalvm.version>22.3.3</graalvm.version>
-        <jmh.version>1.35</jmh.version>
+        <jmh.version>1.37</jmh.version>
         <native.maven.plugin.version>0.9.26</native.maven.plugin.version>
     </properties>
     <build>
