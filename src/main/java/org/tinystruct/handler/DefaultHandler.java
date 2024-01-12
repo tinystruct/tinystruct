@@ -27,11 +27,11 @@ import org.tinystruct.http.servlet.ResponseBuilder;
 import org.tinystruct.system.*;
 import org.tinystruct.system.util.StringUtilities;
 
-import javax.servlet.*;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;

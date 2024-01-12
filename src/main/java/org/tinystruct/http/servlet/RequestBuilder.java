@@ -6,10 +6,10 @@ import org.tinystruct.data.FileEntity;
 import org.tinystruct.http.*;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -39,12 +39,12 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
         this.setUri(this.request.getRequestURI());
         this.setMethod(Method.valueOf(this.request.getMethod()));
 
-        javax.servlet.http.Cookie[] _cookies = this.request.getCookies();
+        jakarta.servlet.http.Cookie[] _cookies = this.request.getCookies();
         if (_cookies != null) {
             int i = _cookies.length;
 
             this.cookies = new Cookie[i];
-            for (javax.servlet.http.Cookie _cookie : _cookies) {
+            for (jakarta.servlet.http.Cookie _cookie : _cookies) {
                 Cookie cookie = new CookieImpl(_cookie.getName());
                 cookie.setValue(_cookie.getValue());
                 cookie.setDomain(_cookie.getDomain());

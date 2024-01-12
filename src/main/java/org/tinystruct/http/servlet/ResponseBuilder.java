@@ -2,8 +2,8 @@ package org.tinystruct.http.servlet;
 
 import org.tinystruct.http.*;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {

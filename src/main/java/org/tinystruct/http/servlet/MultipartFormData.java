@@ -19,8 +19,8 @@ import org.tinystruct.http.Header;
 import org.tinystruct.http.Request;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
