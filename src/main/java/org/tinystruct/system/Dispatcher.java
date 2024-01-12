@@ -520,7 +520,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                     (RemoteDispatcher) UnicastRemoteObject.exportObject(dispatcher, 0);
             Registry registry = LocateRegistry.createRegistry(1099);
             registry.bind(name, stub);
-            logger.info("You will be allowed to send your command to the machine with --host option.");
+            logger.warning("It will be allowed to send commands to the machine with --host option.");
         } catch (Exception e) {
             System.err.println(e.getCause().getMessage());
         }
