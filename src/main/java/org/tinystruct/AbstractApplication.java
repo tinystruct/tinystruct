@@ -585,6 +585,12 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     /**
+     * Implements runnable interface.
+     */
+    public void run() {
+    }
+
+    /**
      * Generates a help message for the command dispatcher.
      *
      * @return a String containing the help message
