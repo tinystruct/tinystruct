@@ -254,7 +254,7 @@ public class MultipartFormData {
      * Get the maximum amount of bytes read from a line at one time
      *
      * @return buffer size
-     * @see javax.servlet.ServletInputStream#readLine(byte[], int, int)
+     * @see jakarta.servlet.ServletInputStream#readLine(byte[], int, int)
      */
     public int getBufferSize() {
         return bufferSize;
@@ -264,7 +264,7 @@ public class MultipartFormData {
      * Set the maximum amount of bytes read from a line at one time
      *
      * @param bufferSize buffer size
-     * @see javax.servlet.ServletInputStream#readLine(byte[], int, int)
+     * @see jakarta.servlet.ServletInputStream#readLine(byte[], int, int)
      */
     public void setBufferSize(int bufferSize) {
         this.bufferSize = bufferSize;
