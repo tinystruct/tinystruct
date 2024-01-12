@@ -43,31 +43,49 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
     private static final Logger logger = Logger.getLogger(AbstractApplication.class.getName());
 
-    // Application instances container.
+    /**
+     * Application instances container.
+     */
     private static final Container CONTAINER = Container.getInstance();
 
-    // Collection of command line.
+    /**
+     * Collection of command line.
+     */
     protected final Map<String, CommandLine> commandLines;
 
-    // Registry for actions associated with the application
+    /**
+     * Registry for actions associated with the application
+     */
     private final ActionRegistry actionRegistry = ActionRegistry.getInstance();
 
-    // Class simple name
+    /**
+     * Class simple name
+     */
     private final String name;
 
-    // Context of application
+    /**
+     * Context of application
+     */
     protected Context context;
 
-    // Configuration
+    /**
+     * Configuration
+     */
     protected Configuration<String> config;
 
-    // Output string
+    /**
+     * Output string
+     */
     private String output;
 
-    // Template required by default
+    /**
+     * Template required by default
+     */
     private boolean templateRequired = true;
 
-    // Locale
+    /**
+     * Locale information
+     */
     private Locale locale;
 
     /**
