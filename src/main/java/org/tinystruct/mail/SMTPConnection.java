@@ -18,7 +18,7 @@ package org.tinystruct.mail;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.system.Configuration;
 
-import javax.mail.*;
+import jakarta.mail.*;
 import java.util.Properties;
 
 
@@ -72,7 +72,7 @@ public class SMTPConnection implements Connection {
         props.setProperty("mail.smtp.auth", auth.isEmpty() ? "false" : auth); // "true" or "false"
 
         if ("true".equalsIgnoreCase(auth)) {
-            javax.mail.Authenticator authenticator = new javax.mail.Authenticator() {
+            jakarta.mail.Authenticator authenticator = new jakarta.mail.Authenticator() {
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {
                     return new PasswordAuthentication(username, password);
@@ -123,9 +123,7 @@ public class SMTPConnection implements Connection {
         return this.transport.isConnected();
     }
 
-    /* (non-Javadoc)
-     * @see org.mover.system.mail.Connection#close()
-     */
+
     @Override
 	public void close() throws MessagingException {
         if (this.available())

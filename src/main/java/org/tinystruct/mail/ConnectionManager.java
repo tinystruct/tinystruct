@@ -20,7 +20,7 @@ import org.tinystruct.mail.Connection.PROTOCOL;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
 
-import javax.mail.MessagingException;
+import jakarta.mail.MessagingException;
 import java.util.Vector;
 
 public final class ConnectionManager implements Runnable {

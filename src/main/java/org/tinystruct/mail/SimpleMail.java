@@ -20,10 +20,10 @@ import org.tinystruct.mail.Connection.PROTOCOL;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
 
-import javax.activation.DataHandler;
-import javax.activation.FileDataSource;
-import javax.mail.*;
-import javax.mail.internet.*;
+import jakarta.activation.DataHandler;
+import jakarta.activation.FileDataSource;
+import jakarta.mail.*;
+import jakarta.mail.internet.*;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Date;

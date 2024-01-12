@@ -18,7 +18,7 @@ package org.tinystruct.mail;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.system.Configuration;
 
-import javax.mail.*;
+import jakarta.mail.*;
 import java.util.Properties;
 
 
@@ -76,7 +76,7 @@ public class POP3Connection implements Connection {
         props.setProperty("mail.pop3.auth", autho.isEmpty() ? "false" : autho); // "true" or "false"
 
         if ("true".equalsIgnoreCase(autho)) {
-            javax.mail.Authenticator auth = new javax.mail.Authenticator() {
+            jakarta.mail.Authenticator auth = new jakarta.mail.Authenticator() {
                 @Override
                 protected PasswordAuthentication getPasswordAuthentication() {
                     return new PasswordAuthentication(username, password);

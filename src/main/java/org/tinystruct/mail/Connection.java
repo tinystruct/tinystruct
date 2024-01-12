@@ -15,8 +15,8 @@
  *******************************************************************************/
 package org.tinystruct.mail;
 
-import javax.mail.MessagingException;
-import javax.mail.Session;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
 
 public interface Connection {
 
