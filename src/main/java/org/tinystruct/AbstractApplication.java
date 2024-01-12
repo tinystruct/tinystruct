@@ -42,26 +42,32 @@ import java.util.logging.Logger;
 public abstract class AbstractApplication implements Application, Cloneable {
 
     private static final Logger logger = Logger.getLogger(AbstractApplication.class.getName());
-    /**
-     * Application instances container.
-     */
+
+    // Application instances container.
     private static final Container CONTAINER = Container.getInstance();
 
+    // Collection of command line.
     protected final Map<String, CommandLine> commandLines;
+
+    // Registry for actions associated with the application
     private final ActionRegistry actionRegistry = ActionRegistry.getInstance();
+
+    // Class simple name
     private final String name;
 
-    /**
-     * Context of application
-     */
+    // Context of application
     protected Context context;
 
-    /**
-     * Configuration
-     */
+    // Configuration
     protected Configuration<String> config;
+
+    // Output string
     private String output;
+
+    // Template required by default
     private boolean templateRequired = true;
+
+    // Locale
     private Locale locale;
 
     /**
@@ -91,6 +97,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
         this.templateRequired = templateRequired;
     }
 
+    /**
+     * Initializes the application with the provided context.
+     *
+     * @param context The context to initialize the application.
+     */
     @Override
     public void init(Context context) {
         this.context = context;
@@ -101,22 +112,34 @@ public abstract class AbstractApplication implements Application, Cloneable {
             language = config.get(DEFAULT_LANGUAGE);
         }
 
+        // Unique key for the instance based on context, language, and name
         String key = context.getId() + language + File.separatorChar + this.getName();
+
+        // Synchronize to ensure thread safety when accessing the shared container
         synchronized (CONTAINER) {
             if (!CONTAINER.containsKey(key)) {
                 try {
+                    // Clone the current instance and set the locale
                     Application clone = (Application) this.clone();
                     clone.setLocale(language);
                     CONTAINER.put(key, clone);
                 } catch (CloneNotSupportedException e) {
+                    // Handle clone not supported exception
                     throw new ApplicationRuntimeException(e.toString(), e.getCause());
                 }
             } else {
+                // If the instance already exists in the container, update its locale
                 CONTAINER.get(key).setLocale(language);
             }
         }
     }
 
+    /**
+     * Creates and returns an instance of the application based on the context ID.
+     *
+     * @param contextId The context ID for which to retrieve the application instance.
+     * @return The application instance.
+     */
     @Override
     public Application getInstance(String contextId) {
         String language;
@@ -126,98 +149,168 @@ public abstract class AbstractApplication implements Application, Cloneable {
             language = config.get(DEFAULT_LANGUAGE);
         }
 
+        // Retrieve the instance from the container based on context, language, and name
         return CONTAINER.get(contextId + language + File.separatorChar + this.getName());
     }
 
+    /**
+     * Sets the action for the given path and associates it with the provided action object.
+     *
+     * @param path   The path for which to set the action.
+     * @param action The action object to be associated with the path.
+     */
     public void setAction(String path, Action action) {
+        // Set the action in the action registry
         this.actionRegistry.set(action);
 
-        // Exclude the command start with '-'
+        // Exclude the command starting with '-'
         if (path.indexOf("-") != 0)
             this.setLink(path);
     }
 
+    /**
+     * Sets the action for the given path and associates it with the provided function.
+     *
+     * @param path     The path for which to set the action.
+     * @param function The function to be associated with the path.
+     */
     @Override
     public void setAction(String path, String function) {
+        // Set the action in the action registry
         this.actionRegistry.set(this, path, function);
 
-        // Exclude the command start with '-'
+        // Exclude the command starting with '-'
         if (path.indexOf("-") != 0)
             this.setLink(path);
     }
 
+    /**
+     * Sets the action for the given path and associates it with the provided function and method.
+     *
+     * @param path     The path for which to set the action.
+     * @param function The function to be associated with the path.
+     * @param method   The method to be associated with the path.
+     */
     public void setAction(String path, String function, String method) {
+        // Set the action in the action registry
         this.actionRegistry.set(this, path, function, method);
 
-        // Exclude the command start with '-'
+        // Exclude the command starting with '-'
         if (path.indexOf("-") != 0)
             this.setLink(path);
     }
 
+    /**
+     * Gets the output text.
+     *
+     * @return The current output text.
+     */
     public String getOutputText() {
         return this.output;
     }
 
+    /**
+     * Sets the output text buffer.
+     *
+     * @param buffer The buffer to set as the output text.
+     */
     public void setOutputText(String buffer) {
         this.output = buffer;
     }
 
+    /**
+     * Sets the template for the class and returns the parsed result.
+     *
+     * @param template The template to be set.
+     * @return The parsed result of the template.
+     * @throws ApplicationException If there is an issue parsing the template.
+     */
     @Override
     public String setTemplate(Template template) throws ApplicationException {
-        // When the template has not been disabled or the locale does not
-        // compared.
+        // When the template has not been disabled or the locale does not compared.
         return template.parse();
     }
 
+    /**
+     * Gets the configuration for the class.
+     *
+     * @return The configuration for the class.
+     */
     @Override
     public Configuration<String> getConfiguration() {
         return this.config;
     }
 
+    /**
+     * Sets the configuration for the class.
+     *
+     * @param config The configuration to be set.
+     */
     @Override
     public void setConfiguration(Configuration<String> config) {
+        // Set specific configuration values
         config.set(CLSID, this.name);
         config.set(DEFAULT_LANGUAGE, "zh_CN");
         config.set(LANGUAGE, config.get(DEFAULT_LANGUAGE));
         config.set(CHARSET, "utf-8");
         config.set(DEFAULT_BASE_URL, "/?q=");
 
+        // Set locale and assign the configuration
         this.setLocale(config.get(DEFAULT_LANGUAGE));
-
         this.config = config;
 
-        // Only to be initialized once.
+        // Initialize only once
         this.init();
 
+        // Set a default action for "--help" and update its description
         this.setAction("--help", "help");
-
         if (this.commandLines.get("--help") != null)
             this.commandLines.get("--help").setDescription("Help command");
     }
 
+    /**
+     * Gets the name of the class.
+     *
+     * @return The name of the class.
+     */
     @Override
     public String getName() {
         return this.name;
     }
 
+    /**
+     * Invokes an action with the given path.
+     *
+     * @param path The path of the action to invoke.
+     * @return The result of invoking the action.
+     * @throws ApplicationException If there is an issue invoking the action.
+     */
     @Override
     public Object invoke(String path) throws ApplicationException {
         return this.invoke(path, null);
     }
 
+    /**
+     * Invokes an action with the given path and parameters.
+     *
+     * @param path       The path of the action to invoke.
+     * @param parameters The parameters to be passed to the action.
+     * @return The result of invoking the action.
+     * @throws ApplicationException If there is an issue invoking the action.
+     */
     @Override
-    public Object invoke(String path, Object[] parameters)
-            throws ApplicationException {
+    public Object invoke(String path, Object[] parameters) throws ApplicationException {
         String method = null;
         if (context != null && context.getAttribute(METHOD) != null) {
             method = context.getAttribute(METHOD).toString();
         }
 
+        // Get the action from the registry based on path and method
         Action action = this.actionRegistry.getAction(path, method);
         if (action == null)
-            throw new ApplicationException("Action " + path
-                    + " path does not registered.");
+            throw new ApplicationException("Action " + path + " path does not registered.");
 
+        // Execute the action with or without parameters
         if (parameters == null) {
             return action.execute();
         }
@@ -225,51 +318,112 @@ public abstract class AbstractApplication implements Application, Cloneable {
         return action.execute(parameters);
     }
 
+    /**
+     * Retrieves the context of the request.
+     *
+     * @return the context of the request
+     */
     @Override
     public Context getContext() {
         return this.context;
     }
 
+    /**
+     * Sets a variable with a given name and value.
+     *
+     * @param name  the name of the variable
+     * @param value the value of the variable
+     */
     public void setVariable(String name, String value) {
         this.setVariable(name, value, true);
     }
 
+    /**
+     * Sets a variable with a given name and value, optionally overwriting an existing variable.
+     *
+     * @param name  the name of the variable
+     * @param value the value of the variable
+     * @param force whether to overwrite an existing variable
+     */
     public void setVariable(String name, String value, boolean force) {
         if (value == null) value = "";
         StringVariable variable = new StringVariable(name, value);
         this.setVariable(variable, force);
     }
 
+    /**
+     * Sets a variable with a given name and value, optionally overwriting an existing variable.
+     *
+     * @param variable the variable to set
+     * @param force    whether to overwrite an existing variable
+     */
     public void setVariable(Variable<?> variable, boolean force) {
         Variables.getInstance(getLocale().toString()).setVariable(variable, force);
     }
 
+    /**
+     * Retrieves a variable with a given name.
+     *
+     * @param variable the name of the variable to retrieve
+     * @return the variable with the given name
+     */
     public Variable<?> getVariable(String variable) {
         return Variables.getInstance(getLocale().toString()).getVariable(variable);
     }
 
+    /**
+     * Sets a shared variable with a given name and value.
+     *
+     * @param name  the name of the shared variable
+     * @param value the value of the shared variable
+     */
     public void setSharedVariable(String name, String value) {
         SharedVariables.getInstance().setVariable(new StringVariable(name, value), true);
     }
 
+    /**
+     * Sets the text of a field with a given name and locale.
+     *
+     * @param fieldName the name of the field
+     * @param locale    the locale for which to retrieve the text
+     * @return the text of the field for the given locale
+     */
     public String setText(String fieldName, Locale locale) {
         String text = this.getProperty(fieldName, locale);
         Variables.getInstance(locale.toString()).setVariable(new StringVariable(fieldName, text), false);
         return text;
     }
 
+    /**
+     * Sets the text of a field with a given name.
+     *
+     * @param fieldName the name of the field
+     * @return the text of the field for the default locale
+     */
     public String setText(String fieldName) {
         String text = this.getProperty(fieldName);
         Variables.getInstance(locale.toString()).setVariable(new StringVariable(fieldName, text), false);
         return text;
     }
 
+    /**
+     * Sets the text of a field with a given name and arguments.
+     *
+     * @param fieldName the name of the field
+     * @param args      the arguments to use for formatting the text
+     * @return the text of the field for the default locale
+     */
     public String setText(String fieldName, Object... args) {
         String text = String.format(this.getProperty(fieldName), args);
         Variables.getInstance(locale.toString()).setVariable(new StringVariable(fieldName, text), true);
         return text;
     }
 
+    /**
+     * Sets a link with a given name.
+     *
+     * @param linkName the name of the link
+     */
     private void setLink(String linkName) {
         String name = "LINK:" + linkName;
         this.setSharedVariable(name, linkName);
@@ -305,26 +459,58 @@ public abstract class AbstractApplication implements Application, Cloneable {
         return this.config.get(propertyName);
     }
 
+    /**
+     * Retrieves the value of a property from a resource bundle file.
+     *
+     * @param propertyName the name of the property to retrieve
+     * @return the value of the property
+     */
     public String getProperty(String propertyName) {
+        // Get the resource bundle for the default locale
         Resource resource = Resource.getInstance(getLocale());
+        // Retrieve the value of the property from the resource bundle
         return resource.getLocaleString(propertyName);
     }
 
+    /**
+     * Retrieves the value of a property from a resource bundle file for a specified locale.
+     *
+     * @param propertyName the name of the property to retrieve
+     * @param locale       the locale for which to retrieve the property
+     * @return the value of the property for the specified locale
+     */
     public String getProperty(String propertyName, Locale locale) {
+        // Get the resource bundle for the specified locale
         Resource resource = Resource.getInstance(locale);
+        // Retrieve the value of the property from the resource bundle
         return resource.getLocaleString(propertyName);
     }
 
+    /**
+     * Get current locale setting.
+     *
+     * @return locale
+     */
     public Locale getLocale() {
         return this.locale;
     }
 
+    /**
+     * Sets the locale of the context.
+     *
+     * @param locale the locale to set
+     */
     public void setLocale(String locale) {
         String[] local = locale.split("_");
         Locale _locale = new Locale(local[0], local[1]);
         this.setLocale(_locale);
     }
 
+    /**
+     * Sets the locale of the context.
+     *
+     * @param locale the locale to set
+     */
     public void setLocale(Locale locale) {
         this.locale = locale;
 
@@ -333,6 +519,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
         this.setVariable(new ObjectVariable("locale", locale), true);
     }
 
+    /**
+     * Returns a string representation of the context.
+     *
+     * @return a string representation of the context
+     */
     @Override
     public String toString() {
         if (!this.templateRequired) return this.name + "@" + Integer.toHexString(hashCode());
@@ -382,24 +573,36 @@ public abstract class AbstractApplication implements Application, Cloneable {
         throw new ApplicationRuntimeException("The template " + templatePath + " could not be found and the output has not been set.");
     }
 
+    /**
+     * Sets the command line for the context.
+     *
+     * @param command the command line to set
+     * @return the previous command line for the context
+     */
     @Override
     public CommandLine setCommandLine(CommandLine command) {
         return this.commandLines.put(command.getCommand(), command);
     }
 
-    public void run() {
-    }
-
+    /**
+     * Generates a help message for the command dispatcher.
+     *
+     * @return a String containing the help message
+     */
     @Override
     public String help() {
+        // Create a StringBuilder to hold the help message
         StringBuilder builder = new StringBuilder("Usage: bin/dispatcher COMMAND [OPTIONS]\n");
 
+        // Create two StringBuilder objects to hold the commands and options
         StringBuilder commands = new StringBuilder("Commands: \n");
         StringBuilder options = new StringBuilder("Options: \n");
 
+        // Find the maximum length of the command names
         OptionalInt longSizeCommand = this.commandLines.keySet().stream().mapToInt(String::length).max();
         int max = longSizeCommand.orElse(0);
 
+        // Iterate over the command lines and add them to the appropriate StringBuilder
         this.commandLines.forEach((s, commandLine) -> {
             String command = commandLine.getCommand();
             String description = commandLine.getDescription();
@@ -410,12 +613,21 @@ public abstract class AbstractApplication implements Application, Cloneable {
             }
         });
 
+        // Add the commands and options to the StringBuilder
         builder.append(commands).append("\n");
         builder.append(options);
 
+        // Return the help message as a String
         return builder.toString();
     }
 
+    /**
+     * Retrieves the command line arguments and their corresponding
+     * CommandLine objects stored in a Map object.
+     *
+     * @return a Map object containing the command line arguments and their
+     * corresponding CommandLine objects
+     */
     @Override
     public Map<String, CommandLine> getCommandLines() {
         return this.commandLines;

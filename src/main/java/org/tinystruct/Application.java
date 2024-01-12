@@ -84,7 +84,7 @@ public interface Application {
     /**
      * Set Locale for the application.
      *
-     * @param language
+     * @param language language name.
      */
     void setLocale(String language);
 

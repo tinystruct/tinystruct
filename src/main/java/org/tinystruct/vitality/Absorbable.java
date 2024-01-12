@@ -25,13 +25,13 @@ public interface Absorbable<T> {
 
     /**
      * Return data list.
-     * @return
+     * @return list
      */
     List<T> get();
 
     /**
      * Set a data list.
-     * @param list
+     * @param list object list
      */
     void set(List<T> list);
 }
