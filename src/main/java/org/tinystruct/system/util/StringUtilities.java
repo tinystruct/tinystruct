@@ -15,8 +15,6 @@
  *******************************************************************************/
 package org.tinystruct.system.util;
 
-import java.util.Iterator;
-
 import org.tinystruct.http.Cookie;
 
 public class StringUtilities implements java.io.Serializable {
@@ -183,25 +181,6 @@ public class StringUtilities implements java.io.Serializable {
             }
         }
         return isValid;
-    }
-
-    public static boolean isValid(javax.servlet.http.HttpServletRequest request, String parameters) {
-        if (parameters != null) {
-            StringBuilder s2 = new StringBuilder();
-            for (int i = 0; i < parameters.length(); i++) {
-                if (parameters.charAt(i) == ',' || i == parameters.length() - 1) {
-                    if (i == parameters.length() - 1 && parameters.charAt(i) != ',')
-                        s2.append(parameters.charAt(i));
-                    if (request.getParameter(s2.toString()) == null || request.getParameter(s2.toString()).trim().length() <= 0)
-                        return false;
-
-                    s2 = new StringBuilder();
-                } else {
-                    s2.append(parameters.charAt(i));
-                }
-            }
-        }
-        return true;
     }
 
     public static String setCharToLower(String s, int index) {
