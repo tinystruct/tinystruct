@@ -116,6 +116,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
         tomcat.setPort(webPort);
         tomcat.setAddDefaultWebXmlToWebapp(false);
+        tomcat.getConnector();
 
         Host host = tomcat.getHost();
         host.setConfigClass(DefaultContextConfig.class.getName());
@@ -142,7 +143,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
             tomcat.start();
             this.started = true;
-            logger.info("Server startup in " + (System.currentTimeMillis() - start) + " ms");
+            logger.info("Tomcat server (" + webPort + ") startup in " + (System.currentTimeMillis() - start) + " ms");
 
             // Open the default browser
             this.context.setAttribute("--url", "http://localhost:" + webPort);
@@ -152,7 +153,6 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
         } catch (LifecycleException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
         }
-
     }
 
     private void initWebappDefaults(Context ctx) {
@@ -170,9 +170,6 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
         // MIME type mappings
         Tomcat.addDefaultMimeTypeMappings(ctx);
-
-        // Welcome files
-        ctx.addWelcomeFile("index.html");
     }
 
     @Override
