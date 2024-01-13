@@ -44,15 +44,14 @@ public class Variables {
     }
 
     protected void saveVariable(String variableName, Variable<?> variable, boolean force) {
-        variableMap.compute(variableName, (key, existingVariable) -> {
-            if (existingVariable == null || force) {
-                if (variable.getType() == DataType.OBJECT) {
-                    processObjectVariable(variableName, variable);
-                }
-                return variable;
+        // If the variable does not exist in the map, or force is true
+        if (force || !variableMap.containsKey(variableName)) {
+            if (variable.getType() == DataType.OBJECT) {
+                processObjectVariable(variableName, variable);
+            } else {
+                variableMap.put(variableName, variable);
             }
-            return existingVariable;
-        });
+        }
     }
 
     private void processObjectVariable(String variableName, Variable<?> variable) {
