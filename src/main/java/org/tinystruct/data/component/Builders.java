@@ -22,53 +22,76 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Builders class represents a collection of Builder objects, providing methods
+ * for parsing and managing a list of structured data.
+ */
 public class Builders extends ArrayList<Builder> implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private static final Logger logger = Logger.getLogger(Builders.class.getName());
 
+    /**
+     * Default constructor for Builders.
+     */
     public Builders() {
     }
 
+    /**
+     * Convert the Builders object to its string representation.
+     *
+     * @return String representation of the Builders.
+     */
     @Override
     public String toString() {
         StringBuilder buffer = new StringBuilder();
 
+        // Build a string representation of the list of Builder objects
         for (Object o : this) {
             buffer.append(o);
             buffer.append(',');
         }
 
-        if (buffer.length() > 0)
+        // Remove trailing comma if there are Builder objects in the list
+        if (buffer.length() > 0) {
             buffer.setLength(buffer.length() - 1);
+        }
 
         return "[" + buffer + "]";
     }
 
+    /**
+     * Parse the input string and populate the Builders object with Builder objects.
+     *
+     * @param value JSON string to parse.
+     * @return Remaining string after parsing.
+     * @throws ApplicationException If there is an issue parsing the data.
+     */
     public String parse(String value) throws ApplicationException {
         value = value.trim();
+
         if (value.indexOf("{") == 0) {
-            logger.log(Level.FINE, "分析实体：{}", value);
+            // Parse entity and add it to the list
+            logger.log(Level.FINE, "Parsing entity: {}", value);
             Builder builder = new Builder();
             builder.parse(value);
-
             this.add(builder);
 
             int p = builder.getClosedPosition();
-            boolean condition = p < value.length() && value.charAt(p) == ',';
-            if (condition) {
+            // Check if there are more entities in the string
+            if (p < value.length() && value.charAt(p) == ',') {
                 value = value.substring(p + 1);
                 return this.parse(value);
             }
         }
 
         if (value.indexOf('[') == 0) {
-            logger.log(Level.FINE, "分析体组：{}", value);
+            // Parse array and add its entities to the list
+            logger.log(Level.FINE, "Parsing array: {}", value);
             int end = this.seekPosition(value);
-
-            logger.log(Level.FINE, "结束位: {}" + end + " 长度:{}" + value.length());
             this.parse(value.substring(1, end - 1));
 
+            // Check if there are more entities in the string
             int len = value.length();
             if (end < len - 1) {
                 return this.parse(value.substring(end + 1));
@@ -76,12 +99,20 @@ public class Builders extends ArrayList<Builder> implements Serializable {
         }
 
         if (value.indexOf('"') == 0) {
+            // Return the string if it starts with a quote
             return value;
         }
 
+        // Return an empty string if no valid parsing is performed
         return "";
     }
 
+    /**
+     * Find the position of the closing bracket in the JSON array.
+     *
+     * @param value JSON array string.
+     * @return Closing position of the JSON array.
+     */
     private int seekPosition(String value) {
         char[] chars = value.toCharArray();
         int i = 0;
@@ -97,8 +128,10 @@ public class Builders extends ArrayList<Builder> implements Serializable {
                 n--;
             }
 
-            if (n == 0)
+            // If n becomes 0, it means the closing bracket is found
+            if (n == 0) {
                 position = i;
+            }
         }
 
         return position;
