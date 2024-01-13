@@ -26,15 +26,21 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 public class Builder extends HashMap<String, Object> implements Struct, Serializable {
 
     private static final long serialVersionUID = 3484789992424316230L;
-    private static final String QUOTE = "\"";
+
+    private static final char QUOTE = '"';
+    private static final char COMMA = ',';
+    private static final char LEFT_BRACE = '{';
+    private static final char RIGHT_BRACE = '}';
+    private static final char ESCAPE_CHAR = '\\';
+
     private static final Logger logger = Logger.getLogger(Builder.class.getName());
+
     private int closedPosition = 0;
 
     public Builder() {
@@ -42,52 +48,45 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     @Override
     public String toString() {
+        // Build a string representation of the data
         StringBuilder buffer = new StringBuilder();
         Set<Entry<String, Object>> keys = this.entrySet();
-        Object value;
-        String key;
+
         for (Entry<String, Object> entry : keys) {
-            value = entry.getValue();
-            key = entry.getKey();
-
-            if (value instanceof String || value instanceof StringBuffer || value instanceof StringBuilder)
-                buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
-            else
-                buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(value);
-
-            buffer.append(",");
+            buffer.append(QUOTE).append(entry.getKey()).append(QUOTE)
+                    .append(":").append(QUOTE)
+                    .append(StringUtilities.escape(entry.getValue().toString()))
+                    .append(QUOTE).append(COMMA);
         }
 
-        if (buffer.length() > 0)
+        if (buffer.length() > 0) {
             buffer.setLength(buffer.length() - 1);
+        }
 
-        return "{" + buffer + "}";
+        return LEFT_BRACE + buffer.toString() + RIGHT_BRACE;
     }
 
     /**
      * Parse the resource.
-     * Format:{"Name":"Mover","Birthday":"1982-03-20","Ability":{"Item1":"Music"
-     * ,"Item2","Java"}}
      *
      * @param resource JSON string
      * @throws ApplicationException application exception
      */
     @Override
     public void parse(String resource) throws ApplicationException {
-        // 默认相信任何一个被传入的都是合法的字符串
+        // Ensure the input string is a valid JSON format
         resource = resource.trim();
         if (!resource.startsWith("{") && !resource.endsWith("}")) {
             throw new ApplicationException("Invalid data format!");
         }
-        if (resource.startsWith("{")) {
-            logger.log(Level.FINE, "待处理:{}", resource);
-            // 查找关闭位置
-            this.closedPosition = this.seekPosition(resource);
-            // 获得传入的实体对象里{key:value,key:value,...key:value},{key:value,key:value,...key:value}序列
-            // 脱去传入的实体对象外壳 key:value,key:value,...key:value 序列
-            String values = resource.substring(1, closedPosition - 1);
-            logger.log(Level.FINE, "已脱壳:{}", values);
 
+        if (resource.startsWith("{")) {
+            // Find the closing position of the JSON structure
+            this.closedPosition = this.seekPosition(resource);
+            // Extract the key-value pairs sequence from the JSON structure
+            String values = resource.substring(1, closedPosition - 1);
+
+            // Parse the key-value pairs
             this.parseValue(values);
         }
     }
@@ -101,68 +100,60 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     private void parseValue(String value) throws ApplicationException {
-        logger.log(Level.FINE, "待分析:{}", value);
+        // Trim the input value
         value = value.trim();
-        if (value.startsWith(QUOTE)) {
-            // 处理传入的实体对象外壳 "key":value,"key":"value",..."key":value 序列
+
+        if (value.indexOf(QUOTE) == 0) {
+            // Handle key-value pair starting with a quoted key
             int COLON_POSITION = value.indexOf(':');
             int start = COLON_POSITION + 1;
             String keyName = value.substring(1, COLON_POSITION - 1);
 
-            logger.log(Level.FINE, "取键值:{}", keyName);
             String $value = value.substring(start).trim();
-            logger.log(Level.FINE, "分析值:{}", $value);
 
             Object keyValue;
-            if ($value.startsWith(QUOTE)) {
-                logger.log(Level.FINE, "提取值:{}", $value);
-
-                int $end = this.next($value, '"');
+            if ($value.indexOf(QUOTE) == 0) {
+                // Extract the value if it is enclosed in quotes
+                int $end = this.next($value, QUOTE);
                 keyValue = $value.substring(1, $end - 1).trim();
 
                 if ($end + 1 < $value.length()) {
-                    $value = $value.substring($end + ",".length());
-
+                    $value = $value.substring($end + 1); // COMMA length: 1
                     this.parseValue($value);
                 }
-            } else if ($value.indexOf('{') == 0) {
-                logger.log(Level.FINE, "遇实体:{}", $value);
+            } else if ($value.indexOf(LEFT_BRACE) == 0) {
+                // Handle nested JSON structure
                 int closedPosition = this.seekPosition($value);
-
-                // 获得传入的实体对象里{key:value,key:value,...key:value},{key:value,key:value,...key:value}序列
-                // 脱去传入的实体对象外壳 key:value,key:value,...key:value 序列
-
                 String _$value = $value.substring(0, closedPosition);
-
-                logger.log(Level.FINE, "分实体:{}", _$value);
                 Builder builder = new Builder();
                 builder.parse(_$value);
-
                 keyValue = builder;
                 if (closedPosition < $value.length()) {
-                    _$value = $value.substring(closedPosition + ",".length());
-                    logger.log(Level.FINE, "分实体:{}", _$value);
+                    _$value = $value.substring(closedPosition + 1); // COMMA length: 1
                     this.parseValue(_$value);
                 }
             } else if ($value.indexOf('[') == 0) {
+                // Handle array
                 Builders builders = new Builders();
-                logger.log(Level.FINE, $value);
                 String remainings = builders.parse($value);
                 keyValue = builders;
-                if (!Objects.equals(remainings, ""))
+                if (!Objects.equals(remainings, "")) {
                     this.parseValue(remainings);
+                }
             } else {
-                if ($value.indexOf(',') != -1) {
-                    String _value = $value.substring(0, $value.indexOf(','));
+                if ($value.indexOf(COMMA) != -1) {
+                    // Extract and parse a single value if there are more values in the sequence
+                    String _value = $value.substring(0, $value.indexOf(COMMA));
                     if (_value.length() > 0) {
                         keyValue = getValue(_value);
                     } else {
                         keyValue = _value;
                     }
 
-                    $value = $value.substring($value.indexOf(',') + 1);
+                    $value = $value.substring($value.indexOf(COMMA) + 1);
                     this.parseValue($value);
                 } else {
+                    // Parse the last value in the sequence
                     if ($value.length() > 0) {
                         keyValue = getValue($value);
                     } else {
@@ -171,11 +162,13 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                 }
             }
 
+            // Add the key-value pair to the map
             this.put(keyName, keyValue);
         }
     }
 
     private Object getValue(String value) {
+        // Determine the type of the value and parse it accordingly
         Object keyValue;
         if (Pattern.compile("^-?\\d+$").matcher(value).find()) {
             try {
@@ -194,6 +187,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     private int seekPosition(String value) {
+        // Find the closing position of the JSON structure
         char[] chars = value.toCharArray();
         int i = 0;
         int n = 0;
@@ -201,12 +195,12 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
         while (i < position) {
             char c = chars[i];
-            if (c == '{') {
-                if (i - 1 >= 0 && chars[i - 1] == '\\') {
+            if (c == LEFT_BRACE) {
+                if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
                 } else
                     n++;
-            } else if (c == '}') {
-                if (i - 1 >= 0 && chars[i - 1] == '\\') {
+            } else if (c == RIGHT_BRACE) {
+                if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
                 } else
                     n--;
             }
@@ -220,6 +214,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     private int next(String value, char begin) {
+        // Find the position of the next occurrence of a character in a string
         char[] chars = value.toCharArray();
         int i = 0;
         int n = 0;
@@ -228,7 +223,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         while (i < position) {
             char c = chars[i];
             if (c == begin) {
-                if (i - 1 >= 0 && chars[i - 1] == '\\') {
+                if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
                 } else
                     n++;
             }
@@ -243,6 +238,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     @Override
     public Row toData() {
+        // Convert the builder to a Row object
         Row row = new Row();
         Field field = new Field();
         Set<Entry<String, Object>> keySet = this.entrySet();
@@ -262,6 +258,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     public void saveAsFile(File file) throws ApplicationException {
+        // Save the string representation of the data to a file
         try (PrintWriter writer = new PrintWriter(file)) {
             writer.write(this.toString());
         } catch (FileNotFoundException e) {
@@ -271,7 +268,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     @Override
     public int size() {
+        // Get the size of the key set
         return this.keySet().size();
     }
-
 }
