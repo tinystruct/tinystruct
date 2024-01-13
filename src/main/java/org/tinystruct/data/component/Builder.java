@@ -29,6 +29,9 @@ import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+/**
+ * Builder class represents a key-value data structure, similar to a JSON object.
+ */
 public class Builder extends HashMap<String, Object> implements Struct, Serializable {
 
     private static final long serialVersionUID = 3484789992424316230L;
@@ -42,10 +45,17 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     private static final Logger logger = Logger.getLogger(Builder.class.getName());
 
     private int closedPosition = 0;
-
+    /**
+     * Default constructor for Builder.
+     */
     public Builder() {
     }
 
+    /**
+     * Convert the Builder object to its string representation.
+     *
+     * @return String representation of the Builder.
+     */
     @Override
     public String toString() {
         // Build a string representation of the data
@@ -59,6 +69,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     .append(QUOTE).append(COMMA);
         }
 
+        // Remove trailing comma if there are key-value pairs
         if (buffer.length() > 0) {
             buffer.setLength(buffer.length() - 1);
         }
@@ -67,10 +78,10 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     /**
-     * Parse the resource.
+     * Parse the resource string and populate the Builder object with key-value pairs.
      *
-     * @param resource JSON string
-     * @throws ApplicationException application exception
+     * @param resource JSON string to parse.
+     * @throws ApplicationException If the data format is invalid.
      */
     @Override
     public void parse(String resource) throws ApplicationException {
@@ -91,14 +102,30 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         }
     }
 
+    /**
+     * Get the position of the closing brace in the JSON structure.
+     *
+     * @return Position of the closing brace.
+     */
     public int getClosedPosition() {
         return closedPosition;
     }
 
+    /**
+     * Set the position of the closing brace in the JSON structure.
+     *
+     * @param closedPosition Position of the closing brace.
+     */
     public void setClosedPosition(int closedPosition) {
         this.closedPosition = closedPosition;
     }
 
+    /**
+     * Parse the key-value pairs from the input string and populate the Builder object.
+     *
+     * @param value Key-value pairs string.
+     * @throws ApplicationException If there is an issue parsing the data.
+     */
     private void parseValue(String value) throws ApplicationException {
         // Trim the input value
         value = value.trim();
@@ -167,6 +194,12 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         }
     }
 
+    /**
+     * Determine the type of the value and parse it accordingly.
+     *
+     * @param value String representation of the value.
+     * @return Parsed value.
+     */
     private Object getValue(String value) {
         // Determine the type of the value and parse it accordingly
         Object keyValue;
@@ -186,6 +219,12 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         return keyValue;
     }
 
+    /**
+     * Find the closing position of the JSON structure.
+     *
+     * @param value JSON structure string.
+     * @return Closing position of the JSON structure.
+     */
     private int seekPosition(String value) {
         // Find the closing position of the JSON structure
         char[] chars = value.toCharArray();
@@ -213,6 +252,13 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         return position;
     }
 
+    /**
+     * Find the position of the next occurrence of a character in a string.
+     *
+     * @param value String to search.
+     * @param begin Character to find.
+     * @return Position of the next occurrence of the character.
+     */
     private int next(String value, char begin) {
         // Find the position of the next occurrence of a character in a string
         char[] chars = value.toCharArray();
@@ -236,6 +282,11 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         return position;
     }
 
+    /**
+     * Convert the Builder object to a Row object.
+     *
+     * @return Row object representing the data in the Builder.
+     */
     @Override
     public Row toData() {
         // Convert the builder to a Row object
@@ -257,6 +308,12 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         return row;
     }
 
+    /**
+     * Save the string representation of the data to a file.
+     *
+     * @param file File to save the data.
+     * @throws ApplicationException If there is an issue saving the data.
+     */
     public void saveAsFile(File file) throws ApplicationException {
         // Save the string representation of the data to a file
         try (PrintWriter writer = new PrintWriter(file)) {
@@ -266,6 +323,11 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         }
     }
 
+    /**
+     * Get the size of the key set.
+     *
+     * @return Size of the key set.
+     */
     @Override
     public int size() {
         // Get the size of the key set
