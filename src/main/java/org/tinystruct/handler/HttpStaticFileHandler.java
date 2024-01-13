@@ -23,14 +23,15 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
-
 import jakarta.activation.MimetypesFileTypeMap;
+
 import java.io.*;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -90,8 +91,101 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
     public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
     public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
     public static final int HTTP_CACHE_SECONDS = 60;
-
+    private static final Pattern INSECURE_URI = Pattern.compile(".*[<>&\"].*");
+    private static final Pattern ALLOWED_FILE_NAME = Pattern.compile("[^-\\._]?[^<>&\\\"]*");
     private FullHttpRequest request;
+
+    private static String sanitizeUri(String uri) {
+        // Decode the path.
+        uri = URLDecoder.decode(uri, StandardCharsets.UTF_8);
+
+        if (uri.isEmpty() || uri.charAt(0) != '/') {
+            return null;
+        }
+
+        // Not allow too long string.
+        if (uri.length() > 255) {
+            throw new IllegalArgumentException("Input too long");
+        }
+
+        // Convert file separators.
+        uri = uri.replace('/', File.separatorChar);
+
+        // Remove insecure string in uri.
+        uri = uri.replaceAll("\\.\\.", "");
+
+        // Simplistic dumb security check.
+        // You will have to do something serious in the production environment.
+        if (uri.contains(File.separator + '.') ||
+                uri.contains('.' + File.separator) ||
+                uri.charAt(0) == '.' || uri.charAt(uri.length() - 1) == '.' ||
+                INSECURE_URI.matcher(uri).matches()) {
+            return null;
+        }
+
+        // Convert to absolute path.
+        return SystemPropertyUtil.get("user.dir") + File.separator + uri;
+    }
+
+    /**
+     * Sets the Date header for the HTTP response
+     *
+     * @param response HTTP response
+     */
+    private static void setDateHeader(FullHttpResponse response) {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
+        dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+
+        Calendar time = new GregorianCalendar();
+        response.headers().set(HttpHeaderNames.DATE, dateFormatter.format(time.getTime()));
+    }
+
+    /**
+     * Sets the Date and Cache headers for the HTTP Response
+     *
+     * @param response    HTTP response
+     * @param fileToCache file to extract content type
+     */
+    private static void setDateAndCacheHeaders(HttpResponse response, File fileToCache) {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
+        dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+
+        // Date header
+        Calendar time = new GregorianCalendar();
+        response.headers().set(HttpHeaderNames.DATE, dateFormatter.format(time.getTime()));
+
+        // Add cache headers
+        time.add(Calendar.SECOND, HTTP_CACHE_SECONDS);
+        response.headers().set(HttpHeaderNames.EXPIRES, dateFormatter.format(time.getTime()));
+        response.headers().set(HttpHeaderNames.CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
+        response.headers().set(
+                HttpHeaderNames.LAST_MODIFIED, dateFormatter.format(new Date(fileToCache.lastModified())));
+    }
+
+    /**
+     * Sets the content type header for the HTTP Response
+     *
+     * @param response HTTP response
+     * @param file     file to extract content type
+     */
+    private static void setContentTypeHeader(HttpResponse response, File file) {
+        String contentType = "application/octet-stream";
+        String type = null;
+        try {
+            MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap(HttpStaticFileHandler.class.getResourceAsStream("/META-INF/mime.types"));
+            type = mimeTypesMap.getContentType(file);
+        } catch (Exception e) {
+            // ignore
+        }
+
+        try {
+            if (type == null && (type = Files.probeContentType(file.toPath())) != null)
+                contentType = type;
+        } catch (IOException e) {
+            // ignore
+        }
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
+    }
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
@@ -244,42 +338,6 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
         }
     }
 
-    private static final Pattern INSECURE_URI = Pattern.compile(".*[<>&\"].*");
-
-    private static String sanitizeUri(String uri) {
-        // Decode the path.
-        uri = URLDecoder.decode(uri, StandardCharsets.UTF_8);
-
-        if (uri.isEmpty() || uri.charAt(0) != '/') {
-            return null;
-        }
-
-        // Not allow too long string.
-        if (uri.length() > 255) {
-            throw new IllegalArgumentException("Input too long");
-        }
-
-        // Convert file separators.
-        uri = uri.replace('/', File.separatorChar);
-
-        // Remove insecure string in uri.
-        uri = uri.replaceAll("\\.\\.", "");
-
-        // Simplistic dumb security check.
-        // You will have to do something serious in the production environment.
-        if (uri.contains(File.separator + '.') ||
-                uri.contains('.' + File.separator) ||
-                uri.charAt(0) == '.' || uri.charAt(uri.length() - 1) == '.' ||
-                INSECURE_URI.matcher(uri).matches()) {
-            return null;
-        }
-
-        // Convert to absolute path.
-        return SystemPropertyUtil.get("user.dir") + File.separator + uri;
-    }
-
-    private static final Pattern ALLOWED_FILE_NAME = Pattern.compile("[^-\\._]?[^<>&\\\"]*");
-
     private void sendRedirect(ChannelHandlerContext ctx, String newUri) {
         FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, FOUND, Unpooled.EMPTY_BUFFER);
         response.headers().set(HttpHeaderNames.LOCATION, newUri);
@@ -329,51 +387,5 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
             // Close the connection as soon as the response is sent.
             flushPromise.addListener(ChannelFutureListener.CLOSE);
         }
-    }
-
-    /**
-     * Sets the Date header for the HTTP response
-     *
-     * @param response HTTP response
-     */
-    private static void setDateHeader(FullHttpResponse response) {
-        SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
-        dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
-
-        Calendar time = new GregorianCalendar();
-        response.headers().set(HttpHeaderNames.DATE, dateFormatter.format(time.getTime()));
-    }
-
-    /**
-     * Sets the Date and Cache headers for the HTTP Response
-     *
-     * @param response    HTTP response
-     * @param fileToCache file to extract content type
-     */
-    private static void setDateAndCacheHeaders(HttpResponse response, File fileToCache) {
-        SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
-        dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
-
-        // Date header
-        Calendar time = new GregorianCalendar();
-        response.headers().set(HttpHeaderNames.DATE, dateFormatter.format(time.getTime()));
-
-        // Add cache headers
-        time.add(Calendar.SECOND, HTTP_CACHE_SECONDS);
-        response.headers().set(HttpHeaderNames.EXPIRES, dateFormatter.format(time.getTime()));
-        response.headers().set(HttpHeaderNames.CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
-        response.headers().set(
-                HttpHeaderNames.LAST_MODIFIED, dateFormatter.format(new Date(fileToCache.lastModified())));
-    }
-
-    /**
-     * Sets the content type header for the HTTP Response
-     *
-     * @param response HTTP response
-     * @param file     file to extract content type
-     */
-    private static void setContentTypeHeader(HttpResponse response, File file) {
-        MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap();
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, mimeTypesMap.getContentType(file.getPath()));
     }
 }
