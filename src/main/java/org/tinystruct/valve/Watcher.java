@@ -16,13 +16,19 @@ import org.tinystruct.ApplicationException;
 
 /**
  * Create a watcher to monitor the lock.
+ * <p>
+ * The Watcher class is responsible for monitoring and managing distributed locks.
+ * It reads and synchronizes locks with a lock file in the file system.
+ * Lock events trigger corresponding listeners.
+ * This class implements the Singleton pattern to ensure a single instance.
  *
  * @author James Zhou
  */
 public final class Watcher implements Runnable {
     private static final Logger logger = Logger.getLogger(Watcher.class.getName());
+
     /**
-     * Empty bytes.
+     * Empty bytes array.
      */
     private final static byte[] EMPTY_BYTES = new byte[36];
     /**
@@ -36,7 +42,7 @@ public final class Watcher implements Runnable {
     /**
      * Lock event listeners.
      */
-    private final ConcurrentHashMap<String, EventListener> listeners = new ConcurrentHashMap<String, EventListener>(8);
+    private final ConcurrentHashMap<String, EventListener> listeners = new ConcurrentHashMap<>(8);
     /**
      * Lock collection.
      */
@@ -46,24 +52,41 @@ public final class Watcher implements Runnable {
     private volatile boolean stopped = false;
 
     private Watcher() {
-        this.locks = new ConcurrentHashMap<String, Lock>(16);
+        this.locks = new ConcurrentHashMap<>(16);
         try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "r")) {
             this.interspace = new int[(int) (lockFile.length() / FIXED_LOCK_DATA_SIZE + 1)];
-        } catch (FileNotFoundException e) {
-            logger.warning(e.getMessage());
         } catch (IOException e) {
-            logger.severe(e.getMessage());
+            logger.warning(e.getMessage());
         }
     }
 
+    /**
+     * Get the instance of the Watcher using the Singleton pattern.
+     *
+     * @return The singleton instance of the Watcher.
+     */
     public static Watcher getInstance() {
         return SingletonHolder.manager;
     }
 
+    /**
+     * Wait for the specified lock ID.
+     *
+     * @param lockId The ID of the lock to wait for.
+     * @throws InterruptedException If the thread is interrupted while waiting.
+     */
     public void waitFor(String lockId) throws InterruptedException {
         this.listeners.get(lockId).waitFor();
     }
 
+    /**
+     * Wait for the specified lock ID with a timeout.
+     *
+     * @param lockId  The ID of the lock to wait for.
+     * @param timeout The maximum time to wait.
+     * @param unit    The time unit of the timeout argument.
+     * @throws InterruptedException If the thread is interrupted while waiting.
+     */
     public void waitFor(String lockId, long timeout, TimeUnit unit) throws InterruptedException {
         this.listeners.get(lockId).waitFor(timeout, unit);
     }
@@ -75,7 +98,6 @@ public final class Watcher implements Runnable {
     public void run() {
         this.started = true;
 
-        FileLock fileLock;
         while (!this.stopped) {
             synchronized (Watcher.class) {
                 try {
@@ -84,58 +106,50 @@ public final class Watcher implements Runnable {
                     logger.severe(e.getMessage());
                 }
                 // Synchronize the locks map with Lock file.
-                try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rwd")) {
-                    // If the length of the lockFile is bigger than the default length: 44.
-                    // then the size of the locks map would be easy to be calculated.
-                    // Lock the file.
-                    int size;
-                    if (lockFile.length() >= FIXED_LOCK_DATA_SIZE) {
-                        size = (int) lockFile.length() / FIXED_LOCK_DATA_SIZE;
-                        fileLock = lockFile.getChannel().tryLock();
+                synchronizeLocks();
+            }
+        }
+    }
 
-                        if (fileLock != null) {
-                            // If the size more than zero
-                            if (size > 0) {
-                                // Seek the file from 0 position.
-                                lockFile.seek(0);
+    /**
+     * Synchronize locks by reading the lock file and updating the locks map accordingly.
+     */
+    private void synchronizeLocks() {
+        FileLock fileLock;
+        try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rwd")) {
+            int size = (int) (lockFile.length() / FIXED_LOCK_DATA_SIZE);
+            fileLock = lockFile.getChannel().tryLock();
 
-                                String lockId;
-                                EventListener listener;
-                                // Assume all the locks are in use.
-                                // Read all locks into the map.
-                                for (int i = 0; i < size && lockFile.length() > 0; i++) { // Cautious!!!
-                                    byte[] id = EMPTY_BYTES;
-                                    boolean condition = lockFile.read(id) != -1 && lockFile.readLong() == 1L;
-									// Read lock status.
-									// If the lock is expired, then it should not be in the locks map.
-									// Only read the lock which status is active.
-									// Read lock id.
-                                    if (condition) {
-									    lockId = new String(id, StandardCharsets.UTF_8);
-									    // No need to check if the lock exists.
-									    if(!this.locks.containsKey(lockId)) {
-									        // Add a new lock with id.
-									        this.locks.putIfAbsent(lockId, new DistributedLock(id));
-									        if ((listener = this.listeners.get(lockId)) != null)
-									            listener.onCreate(lockId);
-									    }
-									}
-									// Otherwise, the lock should not be in the locks map.
-                                }
-                            }
+            if (fileLock != null) {
+                updateLocksFromFile(lockFile, size);
+                fileLock.release();
+                Watcher.class.notifyAll();
+            }
+        } catch (IOException e) {
+            this.stop();
+            logger.severe(e.getMessage());
+        }
+    }
 
-                            fileLock.release();
-                        }
-                        // Notify the other thread to work on.
-                        Watcher.class.notifyAll();
-                    } else {
-                        lockFile.setLength(0);
-                        Watcher.class.notifyAll();
-                    }
-                } catch (IOException e) {
-                    // If there is IO Exception, then the Watcher should stop to synchronize.
-                    this.stop();
-                    logger.severe(e.getMessage());
+    /**
+     * Update locks map based on the content of the lock file.
+     */
+    private void updateLocksFromFile(RandomAccessFile lockFile, int size) throws IOException {
+        if (size > 0) {
+            lockFile.seek(0);
+            String lockId;
+            EventListener listener;
+
+            for (int i = 0; i < size; i++) {
+                byte[] id = new byte[EMPTY_BYTES.length];
+                lockFile.read(id);
+
+                if (lockFile.readLong() == 1L) {
+                    lockId = new String(id, StandardCharsets.UTF_8);
+                    this.locks.computeIfAbsent(lockId, DistributedLock::new);
+
+                    if ((listener = this.listeners.get(lockId)) != null)
+                        listener.onCreate(lockId);
                 }
             }
         }
@@ -171,10 +185,7 @@ public final class Watcher implements Runnable {
         synchronized (Watcher.class) {
             String lockId = lock.id();
             if (!locks.containsKey(lockId)) {
-                try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rw")) {
-
-                    FileLock fileLock = lockFile.getChannel().tryLock();
-
+                try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rw"); FileLock fileLock = lockFile.getChannel().tryLock()) {
                     long length = lockFile.length();
                     if (null != fileLock) {
                         byte[] empty = EMPTY_BYTES;
@@ -262,43 +273,46 @@ public final class Watcher implements Runnable {
                     long length = lockFile.length();
                     if (length < FIXED_LOCK_DATA_SIZE)
                         return;
-                    FileLock fileLock = lockFile.getChannel().tryLock();
-                    if (null != fileLock) {
-                        byte[] empty = EMPTY_BYTES;
+                    try (FileLock fileLock = lockFile.getChannel().tryLock();) {
 
-                        int size = (int) (length / FIXED_LOCK_DATA_SIZE);
-                        this.interspace = new int[size];
 
-                        int availableLockSize = size;
-                        int position;
-                        for (int i = 0; i < size; i++) {
-                            position = i * FIXED_LOCK_DATA_SIZE;
-                            lockFile.seek(position);
-                            boolean condition = lockFile.read(empty) != -1 && Arrays.equals(lockId.getBytes(), empty);
-							if (condition) {
-							    lockFile.seek(position + EMPTY_BYTES.length); // The pointer should be resumed.
-							    lockFile.writeLong(0L);
-							    this.locks.remove(lockId);
-							    if (this.listeners.get(lockId) != null)
-							        this.listeners.get(lockId).onDelete(lockId);
+                        if (null != fileLock) {
+                            byte[] empty = EMPTY_BYTES;
 
-							    // If all locks are not available, then remove them all and set the lockFile to be empty.
-							    if (--availableLockSize == 0) {
-							        if (!this.locks.isEmpty())
-							            this.locks.clear();
+                            int size = (int) (length / FIXED_LOCK_DATA_SIZE);
+                            this.interspace = new int[size];
 
-							        lockFile.setLength(0);
-							    }
+                            int availableLockSize = size;
+                            int position;
+                            for (int i = 0; i < size; i++) {
+                                position = i * FIXED_LOCK_DATA_SIZE;
+                                lockFile.seek(position);
+                                boolean condition = lockFile.read(empty) != -1 && Arrays.equals(lockId.getBytes(), empty);
+                                if (condition) {
+                                    lockFile.seek(position + EMPTY_BYTES.length); // The pointer should be resumed.
+                                    lockFile.writeLong(0L);
+                                    this.locks.remove(lockId);
+                                    if (this.listeners.get(lockId) != null)
+                                        this.listeners.get(lockId).onDelete(lockId);
 
-							    break;
-							}
+                                    // If all locks are not available, then remove them all and set the lockFile to be empty.
+                                    if (--availableLockSize == 0) {
+                                        if (!this.locks.isEmpty())
+                                            this.locks.clear();
+
+                                        lockFile.setLength(0);
+                                    }
+
+                                    break;
+                                }
+                            }
+
+                            fileLock.release();
+                            // Notify the other thread to work on.
+                            Watcher.class.notify();
+                        } else {
+                            this.unregister(lock);
                         }
-
-                        fileLock.release();
-                        // Notify the other thread to work on.
-                        Watcher.class.notify();
-                    } else {
-                        this.unregister(lock);
                     }
                 } catch (IOException e) {
                     throw new ApplicationException(e.getMessage(), e.getCause());
@@ -355,7 +369,7 @@ public final class Watcher implements Runnable {
     }
 
     /**
-     * Single instance holder for {@link Watcher}
+     * Holder for the single instance of Watcher.
      */
     private static final class SingletonHolder {
         static final Watcher manager = new Watcher();
@@ -363,8 +377,6 @@ public final class Watcher implements Runnable {
 
     /**
      * EventListener implementation for Lock.
-     *
-     * @author James Zhou
      */
     static class LockEventListener implements EventListener {
         private static final Logger logger = Logger.getLogger(LockEventListener.class.getName());
@@ -391,7 +403,7 @@ public final class Watcher implements Runnable {
         @Override
         public void onDelete(String lockId) {
             if (lockId.equalsIgnoreCase(lock.id())) {
-                logger.log(Level.INFO,"Deleted " + lockId);
+                logger.log(Level.INFO, "Deleted " + lockId);
                 latch.countDown();
             }
         }
