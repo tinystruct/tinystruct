@@ -10,6 +10,7 @@ import org.tinystruct.ApplicationException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -106,5 +107,47 @@ public class DistributedLockTests {
                 }
             }
         }
+    }
+
+    @Test
+    public void test3() throws InterruptedException, ApplicationException {
+        // Create a lock
+        Lock lock = Watcher.getInstance().acquire();
+
+        // Start a thread to acquire and release the lock
+        Thread thread = new Thread(() -> {
+            try {
+                lock.lock();
+                System.out.println("Thread " + Thread.currentThread().getId() + " acquired the lock.");
+                // Simulate some work
+                TimeUnit.SECONDS.sleep(2);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                lock.unlock();
+                System.out.println("Thread " + Thread.currentThread().getId() + " released the lock.");
+            }
+        });
+
+        // Start the thread
+        thread.start();
+
+        // Wait for a while
+        TimeUnit.SECONDS.sleep(1);
+
+        // Try to acquire the lock in the main thread
+        System.out.println("Main thread trying to acquire the lock.");
+        if (lock.tryLock(5, TimeUnit.SECONDS)) {
+            System.out.println("Main thread acquired the lock.");
+            // Simulate some work
+            TimeUnit.SECONDS.sleep(3);
+            lock.unlock();
+            System.out.println("Main thread released the lock.");
+        } else {
+            System.out.println("Main thread failed to acquire the lock within the timeout.");
+        }
+
+        // Wait for the thread to finish
+        thread.join();
     }
 }
