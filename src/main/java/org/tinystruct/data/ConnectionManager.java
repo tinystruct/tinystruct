@@ -15,7 +15,6 @@
  *******************************************************************************/
 package org.tinystruct.data;
 
-import com.mysql.cj.jdbc.ConnectionImpl;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.system.Configuration;
@@ -46,17 +45,23 @@ final class ConnectionManager implements Runnable {
     private String database;
     private volatile boolean pending;
 
+    // Private constructor to ensure singleton pattern
     private ConnectionManager() {
         this.connections = new ConcurrentLinkedQueue<>();
         Configuration<String> config = new Settings();
         this.driverName = config.get("driver");
         loadDatabaseDriver();
         loadDatabaseConfig(config);
-        this.maxConnections = config.get("database.connections.max").trim().length() > 0 ? Integer.parseInt(config.get(
-                "database.connections.max")) : 0;
+        this.maxConnections = config.get("database.connections.max").trim().length() > 0 ?
+                Integer.parseInt(config.get("database.connections.max")) : 0;
         this.pending = false;
     }
 
+    /**
+     * Get the singleton instance of ConnectionManager.
+     *
+     * @return The ConnectionManager instance.
+     */
     public static ConnectionManager getInstance() {
         return SingletonHolder.manager;
     }
@@ -126,7 +131,6 @@ final class ConnectionManager implements Runnable {
     }
 
     private Repository.Type getConfiguredType() {
-
         int index = -1, length = Repository.Type.values().length;
         for (int i = 0; i < length; i++) {
             if (this.driverName.contains(Repository.Type.values()[i].name().toLowerCase())) {
@@ -150,10 +154,20 @@ final class ConnectionManager implements Runnable {
         return Repository.Type.MySQL;
     }
 
+    /**
+     * Get the current database name.
+     *
+     * @return The database name.
+     */
     public String getDatabase() {
         return database;
     }
 
+    /**
+     * Set the database name.
+     *
+     * @param database The new database name.
+     */
     public void setDatabase(String database) {
         this.database = database;
     }
@@ -183,8 +197,7 @@ final class ConnectionManager implements Runnable {
      * @return A connection object.
      * @throws ApplicationException If there is an error creating a new connection.
      */
-    public Connection getConnection() throws ApplicationException// 从里面获取可用连接并返回到外部
-    {
+    public Connection getConnection() throws ApplicationException {
         Connection connection;
         if (!connections.isEmpty()) {
             connection = connections.poll();
@@ -200,14 +213,15 @@ final class ConnectionManager implements Runnable {
         } else {
             connection = createNewConnection();
         }
+
         return connection;
     }
 
     private Connection createNewConnection() throws ApplicationException {
         try {
-            Connection connection = user == null || user.trim().isEmpty()
-                    ? DriverManager.getConnection(url)
-                    : DriverManager.getConnection(url, user, password);
+            Connection connection = user == null || user.trim().isEmpty() ?
+                    DriverManager.getConnection(url) :
+                    DriverManager.getConnection(url, user, password);
             logger.log(Level.INFO, "System default database: " + connection.getCatalog());
 
             if (this.database.length() > 0 && !connection.getCatalog().equalsIgnoreCase(this.database))
@@ -219,6 +233,11 @@ final class ConnectionManager implements Runnable {
         }
     }
 
+    /**
+     * Get the size of the connection queue.
+     *
+     * @return The size of the connection queue.
+     */
     public int size() {
         return connections.size();
     }
