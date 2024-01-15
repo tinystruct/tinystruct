@@ -36,15 +36,19 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     private static final long serialVersionUID = 3484789992424316230L;
 
-    private static final char QUOTE = '"';
-    private static final char COMMA = ',';
-    private static final char LEFT_BRACE = '{';
-    private static final char RIGHT_BRACE = '}';
-    private static final char ESCAPE_CHAR = '\\';
+    public static final char QUOTE = '"';
+    public static final char COMMA = ',';
+    public static final char COLON = ':';
+    public static final char LEFT_BRACE = '{';
+    public static final char RIGHT_BRACE = '}';
+    public static final char LEFT_BRACKETS = '[';
+    public static final char RIGHT_BRACKETS = ']';
+    public static final char ESCAPE_CHAR = '\\';
 
     private static final Logger logger = Logger.getLogger(Builder.class.getName());
 
     private int closedPosition = 0;
+
     /**
      * Default constructor for Builder.
      */
@@ -68,9 +72,9 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             key = entry.getKey();
 
             if (value instanceof String || value instanceof StringBuffer || value instanceof StringBuilder)
-                buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
+                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
             else
-                buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(value);
+                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(value);
 
             buffer.append(COMMA);
         }
@@ -93,11 +97,11 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public void parse(String resource) throws ApplicationException {
         // Ensure the input string is a valid JSON format
         resource = resource.trim();
-        if (!resource.startsWith("{") && !resource.endsWith("}")) {
+        if (resource.charAt(0) != LEFT_BRACE && resource.charAt(resource.length()-1) != RIGHT_BRACE) {
             throw new ApplicationException("Invalid data format!");
         }
 
-        if (resource.startsWith("{")) {
+        if (resource.charAt(0) == LEFT_BRACE) {
             // Find the closing position of the JSON structure
             this.closedPosition = this.seekPosition(resource);
             // Extract the key-value pairs sequence from the JSON structure
@@ -136,25 +140,25 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         // Trim the input value
         value = value.trim();
 
-        if (value.indexOf(QUOTE) == 0) {
+        if (value.charAt(0) == QUOTE) {
             // Handle key-value pair starting with a quoted key
-            int COLON_POSITION = value.indexOf(':');
+            int COLON_POSITION = value.indexOf(COLON);
             int start = COLON_POSITION + 1;
             String keyName = value.substring(1, COLON_POSITION - 1);
 
             String $value = value.substring(start).trim();
 
             Object keyValue;
-            if ($value.indexOf(QUOTE) == 0) {
+            if ($value.charAt(0) == QUOTE) {
                 // Extract the value if it is enclosed in quotes
-                int $end = this.next($value, QUOTE);
+                int $end = this.next($value);
                 keyValue = $value.substring(1, $end - 1).trim();
 
                 if ($end + 1 < $value.length()) {
                     $value = $value.substring($end + 1); // COMMA length: 1
                     this.parseValue($value);
                 }
-            } else if ($value.indexOf(LEFT_BRACE) == 0) {
+            } else if ($value.charAt(0) == LEFT_BRACE) {
                 // Handle nested JSON structure
                 int closedPosition = this.seekPosition($value);
                 String _$value = $value.substring(0, closedPosition);
@@ -165,7 +169,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     _$value = $value.substring(closedPosition + 1); // COMMA length: 1
                     this.parseValue(_$value);
                 }
-            } else if ($value.indexOf('[') == 0) {
+            } else if ($value.charAt(0) == LEFT_BRACKETS) {
                 // Handle array
                 Builders builders = new Builders();
                 String remainings = builders.parse($value);
@@ -187,11 +191,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     this.parseValue($value);
                 } else {
                     // Parse the last value in the sequence
-                    if ($value.length() > 0) {
-                        keyValue = getValue($value);
-                    } else {
-                        keyValue = $value;
-                    }
+                    keyValue = getValue($value);
                 }
             }
 
@@ -262,10 +262,9 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      * Find the position of the next occurrence of a character in a string.
      *
      * @param value String to search.
-     * @param begin Character to find.
      * @return Position of the next occurrence of the character.
      */
-    private int next(String value, char begin) {
+    private int next(String value) {
         // Find the position of the next occurrence of a character in a string
         char[] chars = value.toCharArray();
         int i = 0;
@@ -274,7 +273,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
         while (i < position) {
             char c = chars[i];
-            if (c == begin) {
+            if (c == Builder.QUOTE) {
                 if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
                 } else
                     n++;

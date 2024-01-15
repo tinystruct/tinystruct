@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.tinystruct.data.component.Builder.*;
+
 /**
  * Builders class represents a collection of Builder objects, providing methods
  * for parsing and managing a list of structured data.
@@ -49,7 +51,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
         // Build a string representation of the list of Builder objects
         for (Object o : this) {
             buffer.append(o);
-            buffer.append(',');
+            buffer.append(COMMA);
         }
 
         // Remove trailing comma if there are Builder objects in the list
@@ -57,7 +59,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
             buffer.setLength(buffer.length() - 1);
         }
 
-        return "[" + buffer + "]";
+        return LEFT_BRACKETS + buffer.toString() + RIGHT_BRACKETS;
     }
 
     /**
@@ -70,7 +72,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
     public String parse(String value) throws ApplicationException {
         value = value.trim();
 
-        if (value.indexOf("{") == 0) {
+        if (value.charAt(0) == LEFT_BRACE) {
             // Parse entity and add it to the list
             logger.log(Level.FINE, "Parsing entity: {}", value);
             Builder builder = new Builder();
@@ -79,13 +81,13 @@ public class Builders extends ArrayList<Builder> implements Serializable {
 
             int p = builder.getClosedPosition();
             // Check if there are more entities in the string
-            if (p < value.length() && value.charAt(p) == ',') {
+            if (p < value.length() && value.charAt(p) == COMMA) {
                 value = value.substring(p + 1);
                 return this.parse(value);
             }
         }
 
-        if (value.indexOf('[') == 0) {
+        if (value.charAt(0) == LEFT_BRACKETS) {
             // Parse array and add its entities to the list
             logger.log(Level.FINE, "Parsing array: {}", value);
             int end = this.seekPosition(value);
@@ -98,7 +100,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
             }
         }
 
-        if (value.indexOf('"') == 0) {
+        if (value.charAt(0) == QUOTE) {
             // Return the string if it starts with a quote
             return value;
         }
@@ -122,9 +124,9 @@ public class Builders extends ArrayList<Builder> implements Serializable {
         while (i < position) {
             char c = chars[i++];
 
-            if (c == '[') {
+            if (c == LEFT_BRACKETS) {
                 n++;
-            } else if (c == ']') {
+            } else if (c == RIGHT_BRACKETS) {
                 n--;
             }
 
