@@ -1,6 +1,5 @@
 package org.tinystruct.valve;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileLock;
@@ -98,6 +97,7 @@ public final class Watcher implements Runnable {
     public void run() {
         this.started = true;
 
+        FileLock fileLock;
         while (!this.stopped) {
             synchronized (Watcher.class) {
                 try {
@@ -117,15 +117,27 @@ public final class Watcher implements Runnable {
     private void synchronizeLocks() {
         FileLock fileLock;
         try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rwd")) {
-            int size = (int) (lockFile.length() / FIXED_LOCK_DATA_SIZE);
-            fileLock = lockFile.getChannel().tryLock();
+            // If the length of the lockFile is bigger than the default length: 44.
+            // then the size of the locks map would be easy to be calculated.
+            // Lock the file.
+            int size;
+            if (lockFile.length() >= FIXED_LOCK_DATA_SIZE) {
+                size = (int) lockFile.length() / FIXED_LOCK_DATA_SIZE;
+                fileLock = lockFile.getChannel().tryLock();
 
-            if (fileLock != null) {
-                updateLocksFromFile(lockFile, size);
-                fileLock.release();
-                Watcher.class.notifyAll();
+                if (fileLock != null) {
+                    updateLocksFromFile(lockFile, size);
+
+                    fileLock.release();
+                }
+            } else {
+                lockFile.setLength(0);
             }
+
+            // Notify the other thread to work on.
+            Watcher.class.notifyAll();
         } catch (IOException e) {
+            // If there is IO Exception, then the Watcher should stop to synchronize.
             this.stop();
             logger.severe(e.getMessage());
         }
@@ -135,22 +147,33 @@ public final class Watcher implements Runnable {
      * Update locks map based on the content of the lock file.
      */
     private void updateLocksFromFile(RandomAccessFile lockFile, int size) throws IOException {
+        // If the size more than zero
         if (size > 0) {
+            // Seek the file from 0 position.
             lockFile.seek(0);
+
             String lockId;
             EventListener listener;
-
-            for (int i = 0; i < size; i++) {
-                byte[] id = new byte[EMPTY_BYTES.length];
-                lockFile.read(id);
-
-                if (lockFile.readLong() == 1L) {
+            // Assume all the locks are in use.
+            // Read all locks into the map.
+            for (int i = 0; i < size && lockFile.length() > 0; i++) { // Cautious!!!
+                byte[] id = EMPTY_BYTES;
+                boolean condition = lockFile.read(id) != -1 && lockFile.readLong() == 1L;
+                // Read lock status.
+                // If the lock is expired, then it should not be in the locks map.
+                // Only read the lock which status is active.
+                // Read lock id.
+                if (condition) {
                     lockId = new String(id, StandardCharsets.UTF_8);
-                    this.locks.computeIfAbsent(lockId, DistributedLock::new);
-
-                    if ((listener = this.listeners.get(lockId)) != null)
-                        listener.onCreate(lockId);
+                    // No need to check if the lock exists.
+                    if(!this.locks.containsKey(lockId)) {
+                        // Add a new lock with id.
+                        this.locks.putIfAbsent(lockId, new DistributedLock(id));
+                        if ((listener = this.listeners.get(lockId)) != null)
+                            listener.onCreate(lockId);
+                    }
                 }
+                // Otherwise, the lock should not be in the locks map.
             }
         }
     }
@@ -274,8 +297,6 @@ public final class Watcher implements Runnable {
                     if (length < FIXED_LOCK_DATA_SIZE)
                         return;
                     try (FileLock fileLock = lockFile.getChannel().tryLock();) {
-
-
                         if (null != fileLock) {
                             byte[] empty = EMPTY_BYTES;
 
