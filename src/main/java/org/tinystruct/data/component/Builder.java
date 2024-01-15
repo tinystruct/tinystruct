@@ -61,12 +61,18 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         // Build a string representation of the data
         StringBuilder buffer = new StringBuilder();
         Set<Entry<String, Object>> keys = this.entrySet();
-
+        Object value;
+        String key;
         for (Entry<String, Object> entry : keys) {
-            buffer.append(QUOTE).append(entry.getKey()).append(QUOTE)
-                    .append(":").append(QUOTE)
-                    .append(StringUtilities.escape(entry.getValue().toString()))
-                    .append(QUOTE).append(COMMA);
+            value = entry.getValue();
+            key = entry.getKey();
+
+            if (value instanceof String || value instanceof StringBuffer || value instanceof StringBuilder)
+                buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
+            else
+                buffer.append(QUOTE).append(key).append(QUOTE).append(":").append(value);
+
+            buffer.append(COMMA);
         }
 
         // Remove trailing comma if there are key-value pairs
