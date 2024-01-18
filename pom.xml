@@ -237,7 +237,7 @@
         <h2.version>2.2.222</h2.version>
         <netty.version>4.1.94.Final</netty.version>
         <mysql.connector.version>8.2.0</mysql.connector.version>
-        <graalvm.version>22.3.3</graalvm.version>
+        <graalvm.version>23.0.0</graalvm.version>
         <jmh.version>1.37</jmh.version>
         <native.maven.plugin.version>0.9.26</native.maven.plugin.version>
     </properties>
