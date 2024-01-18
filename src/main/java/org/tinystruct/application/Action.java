@@ -27,6 +27,9 @@ import java.util.Date;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+/**
+ * Action represents a method mapped to a specific URL pattern in an application.
+ */
 public class Action implements org.tinystruct.application.Method<Object> {
     public static final int MAX_ARGUMENTS = 10;
     private static final Logger logger = Logger.getLogger(Action.class.getName());
@@ -37,6 +40,14 @@ public class Action implements org.tinystruct.application.Method<Object> {
     private String pathRule;
     private Object[] args = new Object[]{};
 
+    /**
+     * Constructor for Action.
+     *
+     * @param id       The unique identifier for the action.
+     * @param app      The associated Application instance.
+     * @param pathRule The URL pattern associated with the action.
+     * @param method   The method to be executed.
+     */
     public Action(int id, Application app, String pathRule, Method method) {
         this.id = id;
         this.app = app;
@@ -45,26 +56,58 @@ public class Action implements org.tinystruct.application.Method<Object> {
         this.pattern = Pattern.compile(pathRule);
     }
 
+    /**
+     * Get the unique identifier for the action.
+     *
+     * @return The action's ID.
+     */
     public int getId() {
         return this.id;
     }
 
+    /**
+     * Get the name of the associated application.
+     *
+     * @return The application name.
+     */
     public String getApplicationName() {
         return this.app.getName();
     }
 
+    /**
+     * Set the context for the action.
+     *
+     * @param context The context to set.
+     */
     public void setContext(Context context) {
         this.app.init(context);
     }
 
+    /**
+     * Get the URL pattern associated with the action.
+     *
+     * @return The URL pattern.
+     */
     public String getPathRule() {
         return pathRule;
     }
 
+    /**
+     * Set the URL pattern associated with the action.
+     *
+     * @param path The URL pattern to set.
+     */
     public void setPathRule(String path) {
         this.pathRule = path;
     }
 
+    /**
+     * Execute the action with the provided arguments.
+     *
+     * @param args The arguments to use during execution.
+     * @return The result of the execution.
+     * @throws ApplicationException If there is an error during execution.
+     */
     @Override
     public Object execute(Object[] args) throws ApplicationException {
         if (method != null) {
@@ -107,6 +150,12 @@ public class Action implements org.tinystruct.application.Method<Object> {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Execute the action without providing specific arguments.
+     *
+     * @return The result of the execution.
+     * @throws ApplicationException If there is an error during execution.
+     */
     public Object execute() throws ApplicationException {
         if (app == null) {
             throw new ApplicationException("Undefined Application.");
@@ -119,6 +168,13 @@ public class Action implements org.tinystruct.application.Method<Object> {
         return this.execute(this.args);
     }
 
+    /**
+     * Get the arguments for the method based on the provided arguments and parameter types.
+     *
+     * @param args  The provided arguments.
+     * @param types The parameter types of the method.
+     * @return The formatted arguments.
+     */
     private Object[] getArguments(Object[] args, Class<?>[] types) {
         if (args.length > 0 && types.length > 0) {
             Object[] arguments = new Object[types.length];
@@ -159,10 +215,20 @@ public class Action implements org.tinystruct.application.Method<Object> {
         return args;
     }
 
+    /**
+     * Set the arguments for the action.
+     *
+     * @param args The arguments to set.
+     */
     public void setArguments(Object[] args) {
         this.args = args;
     }
 
+    /**
+     * Get the pattern associated with the action.
+     *
+     * @return The pattern.
+     */
     public Pattern getPattern() {
         return pattern;
     }

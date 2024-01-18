@@ -30,18 +30,36 @@ import java.util.regex.Matcher;
 
 import static org.tinystruct.application.Action.MAX_ARGUMENTS;
 
+/**
+ * ActionRegistry is responsible for managing and mapping actions/methods to their corresponding URL patterns.
+ */
 public final class ActionRegistry {
 
+    // Map to store URL patterns and their corresponding Action objects
     private static final Map<String, Action> map = new ConcurrentHashMap<String, Action>(16);
+    // Map to store URL patterns and their corresponding CommandLine objects
     private static final Map<String, CommandLine> commands = new ConcurrentHashMap<String, CommandLine>(16);
 
+    // Private constructor to enforce singleton pattern
     private ActionRegistry() {
     }
 
+    /**
+     * Get an instance of the ActionRegistry (Singleton pattern).
+     *
+     * @return ActionRegistry instance
+     */
     public static ActionRegistry getInstance() {
         return SingletonHolder.ROUTE_REGISTRY;
     }
 
+    /**
+     * Register a method with a specific URL pattern.
+     *
+     * @param app        The Application instance
+     * @param path       The URL pattern
+     * @param methodName The method name
+     */
     public void set(final Application app, final String path, final String methodName) {
         if (path == null)
             return;
@@ -49,14 +67,22 @@ public final class ActionRegistry {
         this.initializePatterns(app, path, methodName);
     }
 
+    /**
+     * Register a method with a specific URL pattern and method type (GET, POST, etc.).
+     *
+     * @param app        The Application instance
+     * @param path       The URL pattern
+     * @param methodName The method name
+     * @param method     The HTTP method type
+     */
     public void set(final Application app, final String path, final String methodName, final String method) {
         this.set(app, path, methodName);
     }
 
     /**
-     * New method registration.
+     * Register a new Action object.
      *
-     * @param action method mapped
+     * @param action The Action object to register
      */
     public void set(final Action action) {
         if (action == null)
@@ -65,6 +91,12 @@ public final class ActionRegistry {
         map.put(action.getPathRule(), action);
     }
 
+    /**
+     * Retrieve the Action object for a given URL pattern.
+     *
+     * @param path The URL pattern
+     * @return The corresponding Action object or null if not found
+     */
     public Action get(final String path) {
         Set<Map.Entry<String, Action>> set = map.entrySet();
         for (Map.Entry<String, Action> n : set) {
@@ -83,14 +115,31 @@ public final class ActionRegistry {
         return null;
     }
 
+    /**
+     * Remove an Action object for a given URL pattern.
+     *
+     * @param path The URL pattern
+     * @return True if the Action was removed, false otherwise
+     */
     public boolean remove(final String path) {
         return null != map.remove(path);
     }
 
+    /**
+     * Get a collection of all registered Action objects.
+     *
+     * @return Collection of Action objects
+     */
     public Collection<Action> list() {
         return map.values();
     }
 
+    /**
+     * Get the Action object for a given URL pattern (without trailing slash).
+     *
+     * @param path The URL pattern
+     * @return The corresponding Action object or null if not found
+     */
     public Action getAction(String path) {
         Action action;
         if (((action = this.get(path)) != null || (action = this.get(new StringUtilities(path).removeTrailingSlash())) != null)) {
@@ -100,14 +149,34 @@ public final class ActionRegistry {
         return null;
     }
 
+    /**
+     * Get the CommandLine object for a given URL pattern.
+     *
+     * @param path The URL pattern
+     * @return The corresponding CommandLine object or null if not found
+     */
     public CommandLine getCommand(String path) {
         return commands.get(path);
     }
 
+    /**
+     * Get the Action object for a given URL pattern and HTTP method type.
+     *
+     * @param path   The URL pattern
+     * @param method The HTTP method type
+     * @return The corresponding Action object or null if not found
+     */
     public Action getAction(String path, String method) {
         return this.getAction(path);
     }
 
+    /**
+     * Initialize URL patterns based on the registered methods in the Application class.
+     *
+     * @param app        The Application instance
+     * @param path       The URL pattern
+     * @param methodName The method name
+     */
     private synchronized void initializePatterns(Application app, String path, String methodName) {
         Class<?> clazz = app.getClass();
         Method[] functions = getMethods(methodName, clazz);
@@ -163,11 +232,11 @@ public final class ActionRegistry {
     }
 
     /**
-     * Get methods and make it cacheable
+     * Get methods and make it cacheable.
      *
-     * @param methodName method name
-     * @param clazz class
-     * @return array of methods
+     * @param methodName The method name
+     * @param clazz      The class
+     * @return Array of methods
      */
     private Method[] getMethods(String methodName, Class<?> clazz) {
         Cache instance = Cache.getInstance();
@@ -176,8 +245,7 @@ public final class ActionRegistry {
         String key = clazz.getName() + ":" + methodName;
         if ((functions = (Method[]) instance.get(key)) != null) {
             return functions;
-        }
-        else {
+        } else {
             functions = new Method[MAX_ARGUMENTS];
             int n = 0;
             try {
@@ -191,14 +259,14 @@ public final class ActionRegistry {
                 functions = Arrays.copyOf(functions, n);
                 instance.set(key, functions);
             } catch (SecurityException e) {
-                throw new ApplicationRuntimeException("[" + methodName + "]"
-                        + e.getMessage(), e);
+                throw new ApplicationRuntimeException("[" + methodName + "]" + e.getMessage(), e);
             }
         }
 
         return functions;
     }
 
+    // Inner class to hold the singleton instance of ActionRegistry
     private static final class SingletonHolder {
         static final ActionRegistry ROUTE_REGISTRY = new ActionRegistry();
     }
