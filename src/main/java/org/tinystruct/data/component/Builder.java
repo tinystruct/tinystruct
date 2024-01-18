@@ -140,58 +140,59 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         // Trim the input value
         value = value.trim();
 
-        if (value.charAt(0) == QUOTE) {
+        if (value.length() > 0 && value.charAt(0) == QUOTE) {
             // Handle key-value pair starting with a quoted key
             int COLON_POSITION = value.indexOf(COLON);
             int start = COLON_POSITION + 1;
             String keyName = value.substring(1, COLON_POSITION - 1);
 
             String $value = value.substring(start).trim();
+            Object keyValue = null;
+            if($value.length()>0) {
+                if ($value.charAt(0) == QUOTE) {
+                    // Extract the value if it is enclosed in quotes
+                    int $end = this.next($value);
+                    keyValue = $value.substring(1, $end - 1).trim();
 
-            Object keyValue;
-            if ($value.charAt(0) == QUOTE) {
-                // Extract the value if it is enclosed in quotes
-                int $end = this.next($value);
-                keyValue = $value.substring(1, $end - 1).trim();
-
-                if ($end + 1 < $value.length()) {
-                    $value = $value.substring($end + 1); // COMMA length: 1
-                    this.parseValue($value);
-                }
-            } else if ($value.charAt(0) == LEFT_BRACE) {
-                // Handle nested JSON structure
-                int closedPosition = this.seekPosition($value);
-                String _$value = $value.substring(0, closedPosition);
-                Builder builder = new Builder();
-                builder.parse(_$value);
-                keyValue = builder;
-                if (closedPosition < $value.length()) {
-                    _$value = $value.substring(closedPosition + 1); // COMMA length: 1
-                    this.parseValue(_$value);
-                }
-            } else if ($value.charAt(0) == LEFT_BRACKETS) {
-                // Handle array
-                Builders builders = new Builders();
-                String remainings = builders.parse($value);
-                keyValue = builders;
-                if (!Objects.equals(remainings, "")) {
-                    this.parseValue(remainings);
-                }
-            } else {
-                if ($value.indexOf(COMMA) != -1) {
-                    // Extract and parse a single value if there are more values in the sequence
-                    String _value = $value.substring(0, $value.indexOf(COMMA));
-                    if (_value.length() > 0) {
-                        keyValue = getValue(_value);
-                    } else {
-                        keyValue = _value;
+                    if ($end + 1 < $value.length()) {
+                        $value = $value.substring($end + 1); // COMMA length: 1
+                        this.parseValue($value);
                     }
-
-                    $value = $value.substring($value.indexOf(COMMA) + 1);
-                    this.parseValue($value);
+                } else if ($value.charAt(0) == LEFT_BRACE) {
+                    // Handle nested JSON structure
+                    int closedPosition = this.seekPosition($value);
+                    String _$value = $value.substring(0, closedPosition);
+                    Builder builder = new Builder();
+                    builder.parse(_$value);
+                    keyValue = builder;
+                    if (closedPosition < $value.length()) {
+                        _$value = $value.substring(closedPosition + 1); // COMMA length: 1
+                        this.parseValue(_$value);
+                    }
+                } else if ($value.charAt(0) == LEFT_BRACKETS) {
+                    // Handle array
+                    Builders builders = new Builders();
+                    String remainings = builders.parse($value);
+                    keyValue = builders;
+                    if (!Objects.equals(remainings, "")) {
+                        this.parseValue(remainings);
+                    }
                 } else {
-                    // Parse the last value in the sequence
-                    keyValue = getValue($value);
+                    if ($value.indexOf(COMMA) != -1) {
+                        // Extract and parse a single value if there are more values in the sequence
+                        String _value = $value.substring(0, $value.indexOf(COMMA));
+                        if (_value.length() > 0) {
+                            keyValue = getValue(_value);
+                        } else {
+                            keyValue = _value;
+                        }
+
+                        $value = $value.substring($value.indexOf(COMMA) + 1);
+                        this.parseValue($value);
+                    } else {
+                        // Parse the last value in the sequence
+                        keyValue = getValue($value);
+                    }
                 }
             }
 
