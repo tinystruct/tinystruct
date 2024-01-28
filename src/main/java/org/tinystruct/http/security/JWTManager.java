@@ -2,6 +2,7 @@ package org.tinystruct.http.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.impl.crypto.MacProvider;
+import io.jsonwebtoken.security.Keys;
 import org.tinystruct.data.component.Builder;
 
 import javax.crypto.SecretKey;
@@ -40,9 +41,9 @@ public class JWTManager {
         builder.forEach(jwts::claim);
 
         if (this.base64Key != null)
-            jwts.signWith(SIGNATURE_ALGORITHM, this.base64Key);
+            jwts.signWith(Keys.hmacShaKeyFor(base64Key), SIGNATURE_ALGORITHM);
         else
-            jwts.signWith(SIGNATURE_ALGORITHM, SECRET_KEY);
+            jwts.signWith(SECRET_KEY, SIGNATURE_ALGORITHM);
 
         return jwts.compact();
     }
@@ -56,22 +57,20 @@ public class JWTManager {
      * @throws ExpiredJwtException      expired exception
      * @throws UnsupportedJwtException  unsupported exception
      * @throws MalformedJwtException    malformed exception
-     * @throws SignatureException       signature exception
      * @throws IllegalArgumentException illegal arguments exception
      */
     public Jws<Claims> parseToken(final String compactToken)
             throws ExpiredJwtException,
             UnsupportedJwtException,
             MalformedJwtException,
-            SignatureException,
             IllegalArgumentException {
 
-        JwtParser parser = Jwts.parser();
+        JwtParserBuilder parser = Jwts.parserBuilder();
         if (this.base64Key != null)
             parser.setSigningKey(this.base64Key);
         else
             parser.setSigningKey(SECRET_KEY);
 
-        return parser.parseClaimsJws(compactToken);
+        return parser.build().parseClaimsJws(compactToken);
     }
 }

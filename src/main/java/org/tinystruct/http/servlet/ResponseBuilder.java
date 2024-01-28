@@ -1,12 +1,12 @@
 package org.tinystruct.http.servlet;
 
-import org.tinystruct.http.*;
-
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
+import org.tinystruct.http.*;
+
 import java.io.IOException;
 
-public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
+public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, ServletOutputStream> {
     private final Headers headers = new ResponseHeaders(this);
     private ServletOutputStream outputStream;
     private ResponseStatus status;
@@ -31,7 +31,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
     }
 
     @Override
-	public void addHeader(String header, Object value) {
+    public void addHeader(String header, Object value) {
         this.response.addHeader(header, value.toString());
     }
 
@@ -59,7 +59,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse> {
     }
 
     @Override
-    public Response setStatus(ResponseStatus status) {
+    public Response<HttpServletResponse, ServletOutputStream> setStatus(ResponseStatus status) {
         this.status = status;
         this.response.setStatus(status.code());
         return this;

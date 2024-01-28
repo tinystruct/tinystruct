@@ -5,7 +5,7 @@ import org.tinystruct.data.FileEntity;
 
 import java.util.List;
 
-public interface Request<T> extends Protocol {
+public interface Request<T, I> extends Protocol {
 
     /**
      * Returns the headers of this message.
@@ -27,7 +27,7 @@ public interface Request<T> extends Protocol {
      * @param method method
      * @return this {@link Request}
      */
-    Request setMethod(Method method);
+    Request<T, I> setMethod(Method method);
 
     /**
      * Returns the requested URI (or alternatively, path)
@@ -42,7 +42,7 @@ public interface Request<T> extends Protocol {
      * @param uri the URI being requested
      * @return this request
      */
-    Request setUri(String uri);
+    Request<T, I> setUri(String uri);
 
     Session getSession(String id, boolean generate);
 
@@ -53,8 +53,8 @@ public interface Request<T> extends Protocol {
     /**
      * Return the attachments if there are.
      *
-     * @throws ApplicationException if there are exceptions for attachments
      * @return list of {@link FileEntity}
+     * @throws ApplicationException if there are exceptions for attachments
      */
     List<FileEntity> getAttachments() throws ApplicationException;
 
@@ -62,5 +62,5 @@ public interface Request<T> extends Protocol {
 
     String query();
 
-    T stream();
+    I stream();
 }

@@ -2,7 +2,7 @@ package org.tinystruct.http;
 
 import java.io.IOException;
 
-public interface Response<T> extends Protocol {
+public interface Response<T, O> extends Protocol {
     /**
      * Returns the status of this {@link Response}.
      *
@@ -16,7 +16,7 @@ public interface Response<T> extends Protocol {
      * @param status The new status of this {@link Response}
      * @return This {@link Response}
      */
-    Response<T> setStatus(ResponseStatus status);
+    Response<T, O> setStatus(ResponseStatus status);
 
     /**
      * Returns the headers of this message.
@@ -28,5 +28,5 @@ public interface Response<T> extends Protocol {
 
     void sendRedirect(String url) throws IOException;
 
-    T get();
+    O get();
 }

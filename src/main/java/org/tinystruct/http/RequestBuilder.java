@@ -8,14 +8,16 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.util.CharsetUtil;
+import jakarta.annotation.Nullable;
 import org.apache.catalina.util.StandardSessionIdGenerator;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.FileEntity;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
-public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
+public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
     private final SessionManager manager = SessionManager.getInstance();
     private final Headers headers = new Headers();
     private final Cookie[] cookies;
@@ -184,7 +186,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
     }
 
     @Override
-    public Object stream() {
+    public Nullable stream() {
         return null;
     }
 
@@ -211,7 +213,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
     }
 
     @Override
-    public Request setMethod(Method method) {
+    public Request<FullHttpRequest, Object> setMethod(Method method) {
         this.method = method;
         return this;
     }
@@ -222,11 +224,10 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest> {
     }
 
     @Override
-    public Request setUri(String uri) {
+    public Request<FullHttpRequest, Object> setUri(String uri) {
         this.uri = uri;
         return this;
     }
-
     @Override
     public String getParameter(String name) {
         if (null != this.params.get(name) && this.params.get(name).size() > 0) {

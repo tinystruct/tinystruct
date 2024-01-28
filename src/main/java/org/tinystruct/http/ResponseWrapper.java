@@ -1,6 +1,6 @@
 package org.tinystruct.http;
 
-public abstract class ResponseWrapper<T> implements Response {
+public abstract class ResponseWrapper<T, O> implements Response<T, O> {
 
     protected final T response;
 

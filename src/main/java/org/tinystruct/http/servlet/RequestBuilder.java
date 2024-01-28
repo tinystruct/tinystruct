@@ -1,21 +1,21 @@
 package org.tinystruct.http.servlet;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.FileEntity;
 import org.tinystruct.http.*;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
-public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
+public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletInputStream> {
     private final SessionManager manager = SessionManager.getInstance();
     private final Headers headers = new Headers();
     private final Cookie[] cookies;
@@ -73,7 +73,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
     }
 
     @Override
-	public Session getSession(String id, boolean generated) {
+    public Session getSession(String id, boolean generated) {
         if (manager.getSession(id) == null && generated) {
             manager.setSession(id, new MemorySession(id));
         }
@@ -123,7 +123,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
     }
 
     @Override
-    public Request setMethod(Method method) {
+    public Request<HttpServletRequest, ServletInputStream> setMethod(Method method) {
         this.method = method;
         return this;
     }
@@ -134,7 +134,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest> {
     }
 
     @Override
-    public Request setUri(String uri) {
+    public Request<HttpServletRequest, ServletInputStream> setUri(String uri) {
         this.uri = uri;
         return this;
     }

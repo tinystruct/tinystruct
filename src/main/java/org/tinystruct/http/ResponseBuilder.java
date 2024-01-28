@@ -1,19 +1,15 @@
 package org.tinystruct.http;
 
-import java.io.IOException;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
-public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
+import java.io.IOException;
+
+public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpResponse> {
     private final Headers headers = new ResponseHeaders(this);
     private ResponseStatus status;
     private Version version;
-
     public ResponseBuilder(FullHttpResponse response) {
         super(response);
 
@@ -32,8 +28,8 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
     }
 
     @Override
-	public void addHeader(String header, Object value) {
-        if(!this.response.headers().contains(header) || !this.response.headers().get(header).equalsIgnoreCase(value.toString())) {
+    public void addHeader(String header, Object value) {
+        if (!this.response.headers().contains(header) || !this.response.headers().get(header).equalsIgnoreCase(value.toString())) {
             if (value instanceof Integer) {
                 this.response.headers().addInt(header, (Integer) value);
             } else
@@ -61,7 +57,7 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
     }
 
     @Override
-    public Response setStatus(ResponseStatus status) {
+    public Response<FullHttpResponse, FullHttpResponse> setStatus(ResponseStatus status) {
         this.status = status;
         this.response.setStatus(HttpResponseStatus.valueOf(status.code()));
         return this;
@@ -71,12 +67,10 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse> {
     public Headers headers() {
         return this.headers;
     }
-
     @Override
     public FullHttpResponse get() {
         return this.response;
     }
-
     @Override
     public void sendRedirect(String url) throws IOException {
         ResponseHeaders responseHeaders = new ResponseHeaders(this);

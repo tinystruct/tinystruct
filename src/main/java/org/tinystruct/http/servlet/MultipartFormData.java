@@ -15,14 +15,16 @@
  *******************************************************************************/
 package org.tinystruct.http.servlet;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
 import org.tinystruct.http.Header;
 import org.tinystruct.http.Request;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -50,7 +52,7 @@ public class MultipartFormData {
     /**
      * The request instance for this class
      */
-    protected final Request<ServletInputStream> request;
+    protected final Request<HttpServletRequest, ServletInputStream> request;
 
     /**
      * The input stream instance for this class
@@ -74,7 +76,7 @@ public class MultipartFormData {
      */
     protected int bufferSize = 4 * 1024;
 
-    public MultipartFormData(Request request) throws ServletException {
+    public MultipartFormData(Request<HttpServletRequest, ServletInputStream> request) throws ServletException {
         this.request = request;
 
         parseRequest();
