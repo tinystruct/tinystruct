@@ -65,6 +65,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
      *
      * @param args arguments
      */
+    @SuppressWarnings("unchecked")
     public static void main(String[] args) throws RemoteException {
         // Process the system.directory.
         Settings config = new Settings();
@@ -100,13 +101,13 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                         if (value.length() > 0 && !value.startsWith("--")) {
                             if (context.getAttribute(arg) != null) {
                                 List<String> list;
-                                if (context.getAttribute(arg) instanceof List) {
-                                    list = (List<String>) context.getAttribute(arg);
+                                Object attribute = context.getAttribute(arg);
+                                if (attribute instanceof List) {
+                                    list = (List<String>) attribute;
                                 } else {
                                     list = new ArrayList<>();
                                     list.add(Objects.requireNonNull(context.getAttribute(arg)).toString());
                                 }
-                                assert list != null;
                                 list.add(value);
                                 context.setAttribute(arg, list);
                             } else
