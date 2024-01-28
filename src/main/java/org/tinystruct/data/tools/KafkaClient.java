@@ -23,9 +23,7 @@ public class KafkaClient extends AbstractApplication {
 
         producer = new KafkaProducer<String, String>(properties);
     }
-
-    public void send(ProducerRecord record) {
-//        ProducerRecord<String, String> record = new ProducerRecord<>("quickstart-events", null, "Kafka");
+    public void send(ProducerRecord<String, String> record) {
         Future<RecordMetadata> future = producer.send(record);
         try {
             future.get();
