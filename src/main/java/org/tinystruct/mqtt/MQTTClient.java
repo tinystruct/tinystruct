@@ -46,7 +46,7 @@ public class MQTTClient implements MessageQueue<String> {
     }
 
     @Override
-    public void subscribe(String topic, MessageListener listener) {
+    public void subscribe(String topic, MessageListener<String> listener) {
         if (!this.publisher.isConnected()) {
             return;
         }
