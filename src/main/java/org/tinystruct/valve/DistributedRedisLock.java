@@ -1,8 +1,6 @@
 package org.tinystruct.valve;
 
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.RedisURI;
-import io.lettuce.core.ScriptOutputType;
+import io.lettuce.core.*;
 import io.lettuce.core.api.StatefulRedisConnection;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
@@ -74,8 +72,10 @@ public class DistributedRedisLock implements Lock {
                 .withDatabase(1)
                 .withTimeout(Duration.ofSeconds(60)).build();
 
-        if (settings.get("redis.password") != null)
-            this.uri.setPassword(settings.get("redis.password").toCharArray());
+        if (settings.get("redis.password") != null) {
+            RedisCredentialsProvider credentialsProvider = new StaticCredentialsProvider("redis", settings.get("redis.password").toCharArray());
+            this.uri.setCredentialsProvider(credentialsProvider);
+        }
 
         this.redisClient = RedisClient.create(this.uri).connect();
         this.id = UUID.randomUUID().toString();
