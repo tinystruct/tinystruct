@@ -52,13 +52,13 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         // Decide whether to close the connection or not.
         boolean keepAlive = HttpUtil.isKeepAlive(msg);
 
-        Request<FullHttpRequest> request = new RequestBuilder(msg);
+        Request<FullHttpRequest, Object> request = new RequestBuilder(msg);
         Context context = new ApplicationContext();
         context.setId(request.getSession().getId());
         this.service(ctx, request, context, keepAlive);
     }
 
-    private void service(final ChannelHandlerContext ctx, final Request request, final Context context, boolean keepAlive) {
+    private void service(final ChannelHandlerContext ctx, final Request<FullHttpRequest, Object> request, final Context context, boolean keepAlive) {
         Headers headers = request.headers();
         String auth, token;
         Object message;
@@ -73,7 +73,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             try {
                 Jws<Claims> claims = manager.parseToken(token);
                 context.setAttribute("CLAIMS", claims);
-            } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+            } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | IllegalArgumentException e) {
                 ByteBuf resp = copiedBuffer(e.getMessage(), CharsetUtil.UTF_8);
                 FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.UNAUTHORIZED, resp);
                 response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html");

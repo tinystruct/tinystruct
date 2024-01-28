@@ -85,8 +85,8 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         response.setDateHeader("Expires", 0);
 
         final Context context = new ApplicationContext();
-        Request _request = new RequestBuilder(request);
-        Response<ServletOutputStream> _response = new ResponseBuilder(response);
+        Request<HttpServletRequest, ServletInputStream> _request = new RequestBuilder(request);
+        Response<HttpServletResponse, ServletOutputStream> _response = new ResponseBuilder(response);
 
         context.setId(_request.getSession().getId());
         context.setAttribute(HTTP_REQUEST, _request);
