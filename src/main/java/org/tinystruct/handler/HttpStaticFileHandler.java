@@ -169,11 +169,11 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
      * @param file     file to extract content type
      */
     private static void setContentTypeHeader(HttpResponse response, File file) {
-        String contentType = "application/octet-stream";
-        String type = null;
+        String type = "application/octet-stream";
+        String contentType = null;
         try {
             MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap(HttpStaticFileHandler.class.getResourceAsStream("/META-INF/mime.types"));
-            type = mimeTypesMap.getContentType(file);
+            contentType = type = mimeTypesMap.getContentType(file);
         } catch (Exception e) {
             // ignore
         }
