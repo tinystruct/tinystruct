@@ -9,12 +9,10 @@ import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.multipart.*;
 import io.netty.util.CharsetUtil;
 import jakarta.annotation.Nullable;
-import org.apache.catalina.util.StandardSessionIdGenerator;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.FileEntity;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 
 public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
@@ -176,7 +174,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
             return getSession(sessionId, true);
         }
 
-        sessionId = new StandardSessionIdGenerator().generateSessionId();
+        sessionId = UUID.randomUUID().toString().replaceAll("-", "");
         return getSession(sessionId, true);
     }
 
@@ -228,6 +226,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
         this.uri = uri;
         return this;
     }
+
     @Override
     public String getParameter(String name) {
         if (null != this.params.get(name) && this.params.get(name).size() > 0) {
