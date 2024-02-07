@@ -182,7 +182,7 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
             if (type == null && (type = Files.probeContentType(file.toPath())) != null)
                 contentType = type;
         } catch (IOException e) {
-            // ignore
+            contentType = "application/octet-stream";
         }
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
     }
