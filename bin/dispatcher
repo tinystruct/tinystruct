@@ -3,26 +3,40 @@ ROOT="$(pwd)"
 VERSION="1.1.5"
 cd "$(dirname "$0")" || exit
 cd "../"
+# Navigate to the root directory
 cd "$ROOT" || exit
+
+# Java options initialization
 JAVA_OPTS=""
+
+# Arguments initialization
 args=""
-for arg
-do
- str=$(echo "$arg" | awk  '{ string=substr($0, 0, 2); print string; }' )
- if [ "$str" = "-D" -o "$str" = "-X" ]
- then
-     JAVA_OPTS=$JAVA_OPTS" "$arg
- else
-     args=$args" "$arg
- fi
+
+# Loop through each argument
+for arg; do
+    # Extract the first two characters of the argument
+    str=${arg:0:2}
+
+    # Check if it starts with '-D' or '-X'
+    if [ "$str" = "-D" ] || [ "$str" = "-X" ]; then
+        JAVA_OPTS="$JAVA_OPTS $arg"
+    else
+        args="$args $arg"
+    fi
 done
+
+# Check if the JAR file exists
 JAR_FILE="$ROOT/lib/tinystruct-$VERSION-jar-with-dependencies.jar"
-if [ ! -f "$JAR_FILE" ]; then
- JAR_FILE=""
-else
- JAR_FILE=$JAR_FILE":"
-fi
+[ -f "$JAR_FILE" ] && JAR_FILE="$JAR_FILE:"
+
+# Check if additional JAR files exist and add them to the classpath
+# shellcheck disable=SC2043
+for jar_file in "$ROOT"/lib/tinystruct-"$VERSION".jar; do
+    [ -f "$jar_file" ] && JAR_FILE="$JAR_FILE$jar_file:"
+done
+
+# Java execution
 java \
 $JAVA_OPTS \
 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \
--cp "$ROOT/target/classes:$JAR_FILE$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" -agentlib:native-image-agent=config-output-dir=$ROOT/bin/.metadata org.tinystruct.system.Dispatcher "$@"
+-cp "$ROOT/target/classes:$JAR_FILE$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$HOME/.m2/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"
