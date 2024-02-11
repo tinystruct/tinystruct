@@ -167,8 +167,13 @@ if [ -z "$M2_HOME" ] || [ "$M2_HOME" = "$(pwd)" ]; then
     M2_HOME="$HOME/.m2"
 fi
 
+# Add all JAR files under the lib folder to the classpath
+for jar_file in "$ROOT"/lib/*.jar; do
+    CLASSPATH="$CLASSPATH:$jar_file"
+done
+
 # Java execution
 $JAVACMD \
 $JAVA_OPTS \
 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \
--cp "$ROOT/target/classes:$JAR_FILE$ROOT/lib/*:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"
+-cp "$ROOT/target/classes:$JAR_FILE$CLASSPATH:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"
