@@ -32,9 +32,9 @@ if not exist "%JAVA_HOME%\bin\java.exe" (
 set "JAVA_CMD=%JAVA_HOME%\bin\java.exe"
 
 @REM Consolidate classpath entries, initialize ROOT and VERSION
-set "classpath=%ROOT%target\classes;%ROOT%lib\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%lib\*;%ROOT%WEB-INF\lib\*;%ROOT%WEB-INF\classes;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar"
 set "ROOT=%~dp0..\"
 set "VERSION=1.1.6"
+set "classpath=%ROOT%target\classes;%ROOT%lib\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%lib\*;%ROOT%WEB-INF\lib\*;%ROOT%WEB-INF\classes;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar"
 
 @REM Run Java application
 %JAVA_CMD% -cp "%classpath%" org.tinystruct.system.Dispatcher %*
