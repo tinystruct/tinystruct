@@ -14,7 +14,27 @@
 @rem limitations under the License.
 @rem ***************************************************************************
 @echo off
+
+@REM Check if JAVA_HOME is set and valid
+if "%JAVA_HOME%" == "" (
+    echo Error: JAVA_HOME not found in your environment. >&2
+    echo Please set the JAVA_HOME variable in your environment to match the location of your Java installation. >&2
+    exit /B 1
+)
+
+if not exist "%JAVA_HOME%\bin\java.exe" (
+    echo Error: JAVA_HOME is set to an invalid directory. >&2
+    echo JAVA_HOME = "%JAVA_HOME%" >&2
+    echo Please set the JAVA_HOME variable in your environment to match the location of your Java installation. >&2
+    exit /B 1
+)
+
+set "JAVA_CMD=%JAVA_HOME%\bin\java.exe"
+
+@REM Consolidate classpath entries, initialize ROOT and VERSION
+set "classpath=%ROOT%target\classes;%ROOT%lib\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%lib\*;%ROOT%WEB-INF\lib\*;%ROOT%WEB-INF\classes;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar"
 set "ROOT=%~dp0..\"
 set "VERSION=1.1.6"
-set "classpath=%ROOT%target\classes;%ROOT%lib\*;%ROOT%WEB-INF\lib\*;%ROOT%WEB-INF\classes;%classpath%"
-@java -cp "%ROOT%target\classes;%ROOT%lib\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%lib\*;%ROOT%WEB-INF\lib\*;%ROOT%WEB-INF\classes;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher %*
+
+@REM Run Java application
+%JAVA_CMD% -cp "%classpath%" org.tinystruct.system.Dispatcher %*
