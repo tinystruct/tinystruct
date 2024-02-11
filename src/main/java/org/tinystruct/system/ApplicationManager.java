@@ -107,7 +107,7 @@ public final class ApplicationManager {
                     Files.createFile(path);
 
                 String cmd = null;
-                try (InputStream in = ApplicationManager.class.getResourceAsStream("dispatcher" + (Platform.isWindows() ? ".cmd" : ""))) {
+                try (InputStream in = ApplicationManager.class.getResourceAsStream("/dispatcher" + (Platform.isWindows() ? ".cmd" : ""))) {
                     if (null != in) {
                         TextFileLoader loader = new TextFileLoader(in);
                         cmd = loader.getContent().toString();
