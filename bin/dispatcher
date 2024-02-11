@@ -149,6 +149,24 @@ if [ -z "$JAVA_HOME" ] ; then
   echo "Warning: JAVA_HOME environment variable is not set."
 fi
 
+# For Cygwin, switch paths to Windows format before running java
+if $cygwin; then
+  [ -n "$M2_HOME" ] &&
+    M2_HOME=`cygpath --path --windows "$M2_HOME"`
+  [ -n "$JAVA_HOME" ] &&
+    JAVA_HOME=`cygpath --path --windows "$JAVA_HOME"`
+  [ -n "$CLASSPATH" ] &&
+    CLASSPATH=`cygpath --path --windows "$CLASSPATH"`
+  [ -n "$MAVEN_PROJECTBASEDIR" ] &&
+    MAVEN_PROJECTBASEDIR=`cygpath --path --windows "$MAVEN_PROJECTBASEDIR"`
+fi
+
+# Check if M2_HOME is not set or is equal to the current project path
+if [ -z "$M2_HOME" ] || [ "$M2_HOME" = "$(pwd)" ]; then
+    # Set M2_HOME to the .m2 folder under the user's home directory
+    M2_HOME="$HOME/.m2"
+fi
+
 # Java execution
 $JAVACMD \
 $JAVA_OPTS \
