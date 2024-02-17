@@ -110,6 +110,7 @@ public interface Application {
      * @param action     action name
      * @param methodName method name
      */
+    @Deprecated
     void setAction(String action, String methodName);
 
     /**
@@ -202,4 +203,6 @@ public interface Application {
      * @return help
      */
     String help();
+
+    void setLink(String path);
 }
