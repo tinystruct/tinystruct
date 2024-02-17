@@ -18,13 +18,14 @@ package org.tinystruct.application;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.component.Cache;
-import org.tinystruct.system.cli.CommandArgument;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.util.StringUtilities;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
@@ -181,19 +182,21 @@ public final class ActionRegistry {
         Class<?> clazz = app.getClass();
         Method[] functions = getMethods(methodName, clazz);
 
-        CommandLine cli = new CommandLine(app, path, "");
-        commands.put(path, cli);
+        CommandLine cli = app.getCommandLines().get(path);
+        if (cli != null)
+            commands.put(path, cli);
         String patternPrefix = "/?" + path;
         for (Method m : functions) {
             if (null != m) {
                 Class<?>[] types = m.getParameterTypes();
-                Parameter[] params = m.getParameters();
+//                Parameter[] params = m.getParameters();
                 String expression;
                 if (types.length > 0) {
                     StringBuilder patterns = new StringBuilder();
 
                     for (int i = 0; i < types.length; i++) {
-                        cli.addArgument(new CommandArgument<>(params[i].getName(), null, ""));
+//                        if (cli != null)
+//                            cli.addArgument(new CommandArgument<>(params[i].getName(), null, ""));
                         String pattern = "(";
                         if (types[i].isAssignableFrom(Integer.TYPE)) {
                             pattern += "-?\\d+";
@@ -228,7 +231,6 @@ public final class ActionRegistry {
             }
         }
 
-        app.setCommandLine(cli);
     }
 
     /**
