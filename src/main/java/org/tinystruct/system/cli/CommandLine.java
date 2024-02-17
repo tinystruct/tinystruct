@@ -3,9 +3,10 @@ package org.tinystruct.system.cli;
 import org.tinystruct.Application;
 import org.tinystruct.system.util.StringUtilities;
 
+import java.io.File;
 import java.util.*;
 
-public class CommandLine implements Comparable<CommandLine>{
+public class CommandLine implements Comparable<CommandLine> {
     private final String command;
     private String description;
     private final Application app;
@@ -44,8 +45,8 @@ public class CommandLine implements Comparable<CommandLine>{
         return example;
     }
 
-    public void setExample(Object value) {
-        this.example = String.format("bin/dispatcher %s/%s%n", this.command, value);
+    public void setExample(String value) {
+        this.example = value;
     }
 
     public List<CommandOption> getOptions() {
@@ -80,34 +81,35 @@ public class CommandLine implements Comparable<CommandLine>{
             placeholders.append("/{").append(argument.getKey()).append("}");
         }
 
-        StringBuilder help = new StringBuilder("Usage: bin/dispatcher " + command + placeholders + " [OPTIONS]\n");
+        StringBuilder help = new StringBuilder("Usage: bin" + File.pathSeparator + "dispatcher " + command + placeholders + " [OPTIONS]\n");
         help.append(this.description).append("\n");
-        if (this.example != null) {
-            help.append("Example: ").append(this.example).append("\n");
-        }
 
         if (arguments.size() > 0) {
-            OptionalInt longSizeCommand = this.arguments.stream().mapToInt(o->o.getKey().length()).max();
+            OptionalInt longSizeCommand = this.arguments.stream().mapToInt(o -> o.getKey().length()).max();
             int max = longSizeCommand.orElse(0);
 
             help.append("Arguments: \n");
             for (CommandArgument<String, Object> argument : arguments) {
                 help.append("\t")
-                    .append(StringUtilities.rightPadding(argument.getKey(), max, ' '))
-                    .append("\t")
-                    .append(argument.getDescription().isEmpty() ? "Not specified" : argument.getDescription())
-                    .append("\n");
+                        .append(StringUtilities.rightPadding(argument.getKey(), max, ' '))
+                        .append("\t")
+                        .append(argument.getDescription().isEmpty() ? "Not specified" : argument.getDescription())
+                        .append("\n");
             }
         }
 
         if (options.size() > 0) {
-            OptionalInt longSizeCommand = this.options.stream().mapToInt(o->o.getKey().length()).max();
+            OptionalInt longSizeCommand = this.options.stream().mapToInt(o -> o.getKey().length()).max();
             int max = longSizeCommand.orElse(0);
 
             help.append("Options: \n");
             for (CommandArgument<String, String> argument : options) {
                 help.append("\t").append(StringUtilities.rightPadding(argument.getKey(), max, ' ')).append("\t").append(argument.getDescription()).append("\n");
             }
+        }
+
+        if (this.example != null) {
+            help.append("Example(s): \n").append(this.example).append("\n");
         }
 
         return help.toString();
