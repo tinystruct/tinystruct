@@ -15,6 +15,8 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.HttpProxyHandler;
+import org.tinystruct.system.annotation.Action;
+import org.tinystruct.system.annotation.Argument;
 import org.tinystruct.system.cli.CommandOption;
 
 import java.util.ArrayList;
@@ -32,13 +34,6 @@ public class HttpProxyServer extends ProxyServer implements Bootstrap {
 
     @Override
 	public void init() {
-        this.setAction("start", "start");
-        List<CommandOption> options = new ArrayList<CommandOption>();
-        options.add(new CommandOption("server-port", "", "Server port"));
-        options.add(new CommandOption("remote-server-host", "", "Remote Server host"));
-        options.add(new CommandOption("remote-server-port", "", "Remote Server port"));
-        this.commandLines.get("start").setOptions(options);
-
         this.setTemplateRequired(false);
     }
 
@@ -47,6 +42,11 @@ public class HttpProxyServer extends ProxyServer implements Bootstrap {
         return null;
     }
 
+    @Action(value = "start", description = "Start a Tomcat server.", options = {
+            @Argument(key = "server-port", description = "Server port"),
+            @Argument(key = "remote-server-host", description = "Remote Server host"),
+            @Argument(key = "remote-server-port", description = "Remote Server port"),
+    }, example = "bin/dispatcher start --import org.tinystruct.system.RedisProxyServer --server-port 8080")
     @Override
     public void start() throws ApplicationException {
         if (this.context != null) {
