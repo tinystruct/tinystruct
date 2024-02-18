@@ -32,14 +32,12 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.tinystruct.AbstractApplication;
-import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.HttpRequestHandler;
 import org.tinystruct.handler.HttpStaticFileHandler;
-import org.tinystruct.system.cli.CommandOption;
+import org.tinystruct.system.annotation.Action;
+import org.tinystruct.system.annotation.Argument;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -63,20 +61,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
 
     @Override
 	public void init() {
-        this.setAction("start", "start");
 
-        List<CommandOption> options = new ArrayList<CommandOption>();
-        CommandOption option = new CommandOption("server-port", "", "Server port");
-        options.add(option);
-        option = new CommandOption("http.proxyHost", "127.0.0.1", "Proxy host for http");
-        options.add(option);
-        option = new CommandOption("http.proxyPort", "3128", "Proxy port for http");
-        options.add(option);
-        option = new CommandOption("https.proxyHost", "127.0.0.1", "Proxy host for https");
-        options.add(option);
-        option = new CommandOption("https.proxyPort", "3128", "Proxy port for https");
-        options.add(option);
-        this.commandLines.get("start").setOptions(options);
     }
 
     @Override
@@ -84,6 +69,13 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
         return null;
     }
 
+    @Action(value = "start", description = "Start up the netty-based http server.", options = {
+            @Argument(key = "server-port", description = "Server port"),
+            @Argument(key = "http.proxyHost", description = "Proxy host for http"),
+            @Argument(key = "http.proxyPort", description = "Proxy port for http"),
+            @Argument(key = "https.proxyHost", description = "Proxy host for https"),
+            @Argument(key = "https.proxyPort", description = "Proxy port for https")
+    }, example = "bin/dispatcher start --import org.tinystruct.system.NettyHttpServer --server-port 777")
     @Override
     public void start() throws ApplicationException {
 

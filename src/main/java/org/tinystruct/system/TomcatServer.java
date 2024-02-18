@@ -29,11 +29,10 @@ import org.tinystruct.handler.Reforward;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.Session;
-import org.tinystruct.system.cli.CommandOption;
+import org.tinystruct.system.annotation.Action;
+import org.tinystruct.system.annotation.Argument;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,26 +45,16 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
     @Override
     public void init() {
-        this.setAction("start", "start");
-
-        List<CommandOption> options = new ArrayList<CommandOption>();
-        CommandOption option = new CommandOption("server-port", "", "Server port");
-        options.add(option);
-        option = new CommandOption("http.proxyHost", "127.0.0.1", "Proxy host for http");
-        options.add(option);
-        option = new CommandOption("http.proxyPort", "3128", "Proxy port for http");
-        options.add(option);
-        option = new CommandOption("https.proxyHost", "127.0.0.1", "Proxy host for https");
-        options.add(option);
-        option = new CommandOption("https.proxyPort", "3128", "Proxy port for https");
-        options.add(option);
-
-        this.commandLines.get("start").setOptions(options).setDescription("Start a Tomcat server");
-
-        this.setAction("error", "exceptionCaught");
         this.setTemplateRequired(false);
     }
 
+    @Action(value = "start", description = "Start a Tomcat server.", options = {
+            @Argument(key = "server-port", description = "Server port"),
+            @Argument(key = "http.proxyHost", description = "Proxy host for http"),
+            @Argument(key = "http.proxyPort", description = "Proxy port for http"),
+            @Argument(key = "https.proxyHost", description = "Proxy host for https"),
+            @Argument(key = "https.proxyPort", description = "Proxy port for https")
+    }, example = "bin/dispatcher start --import org.tinystruct.system.TomcatServer --server-port 777")
     @Override
     public void start() throws ApplicationException {
         if (started) return;
@@ -176,6 +165,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
     public void stop() {
     }
 
+    @Action(value = "error", description = "Error page")
     public Object exceptionCaught() throws ApplicationException {
         Request request = (Request) this.context.getAttribute("HTTP_REQUEST");
         Response response = (Response) this.context.getAttribute("HTTP_RESPONSE");
