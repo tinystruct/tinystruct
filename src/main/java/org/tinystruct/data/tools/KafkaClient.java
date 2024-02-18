@@ -5,6 +5,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.tinystruct.AbstractApplication;
+import org.tinystruct.system.annotation.Action;
 
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -23,6 +24,8 @@ public class KafkaClient extends AbstractApplication {
 
         producer = new KafkaProducer<String, String>(properties);
     }
+
+    @Action("send")
     public void send(ProducerRecord<String, String> record) {
         Future<RecordMetadata> future = producer.send(record);
         try {
@@ -39,7 +42,6 @@ public class KafkaClient extends AbstractApplication {
 
     @Override
     public void init() {
-        this.setAction("send", "send");
     }
 
     @Override

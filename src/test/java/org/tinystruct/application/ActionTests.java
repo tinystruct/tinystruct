@@ -69,11 +69,10 @@ public class ActionTests {
     private static class testApp extends AbstractApplication {
         @Override
         public void init() {
-            this.setAction("hi", "hi");
-            this.setAction("set", "set");
             this.setTemplateRequired(false);
         }
 
+        @org.tinystruct.system.annotation.Action("hi")
         public String hi() {
             return "Hi.";
         }
@@ -86,6 +85,7 @@ public class ActionTests {
             return "Hi, " + name;
         }
 
+        @org.tinystruct.system.annotation.Action("set")
         public Date set(Date date) {
             return date;
         }

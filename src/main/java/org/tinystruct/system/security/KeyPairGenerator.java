@@ -1,6 +1,7 @@
 package org.tinystruct.system.security;
 
 import org.tinystruct.AbstractApplication;
+import org.tinystruct.system.annotation.Action;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -13,11 +14,11 @@ public class KeyPairGenerator extends AbstractApplication {
 
     @Override
     public void init() {
-        this.setAction("generateKeyPair", "getKeyPair");
         this.setTemplateRequired(false);
     }
 
     @SuppressWarnings("Since11")
+    @Action("generateKeyPair")
     public void getKeyPair() {
         String publicKeyFile = "/ca.pub", privateKeyFile = "/ca.pri";
         if (context.getAttribute("--public-key") != null) {
