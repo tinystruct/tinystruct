@@ -587,7 +587,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     @Override
     public String help() {
         // Create a StringBuilder to hold the help message
-        StringBuilder builder = new StringBuilder("Usage: bin" + File.pathSeparator + "dispatcher COMMAND [OPTIONS]\n");
+        StringBuilder builder = new StringBuilder("Usage: bin" + File.separator + "dispatcher COMMAND [OPTIONS]\n");
 
         // Create two StringBuilder objects to hold the commands and options
         StringBuilder commands = new StringBuilder("Commands: \n");

@@ -679,7 +679,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     @Action(value = "--help", description = "Print help information")
     @Override
     public String help() {
-        StringBuilder builder = new StringBuilder("Usage: bin" + File.pathSeparator + "dispatcher COMMAND [OPTIONS]\n");
+        StringBuilder builder = new StringBuilder("Usage: bin" + File.separator + "dispatcher COMMAND [OPTIONS]\n");
 
         StringBuilder commands = new StringBuilder("Commands: \n");
         StringBuilder options = new StringBuilder("Options: \n");
@@ -721,7 +721,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         if (length < examples.length())
             builder.append(examples);
 
-        builder.append("\nRun 'bin" + File.pathSeparator + "dispatcher COMMAND --help' for more information on a command.");
+        builder.append("\nRun 'bin" + File.separator + "dispatcher COMMAND --help' for more information on a command.");
         return builder.toString();
     }
 

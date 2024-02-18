@@ -81,7 +81,7 @@ public class CommandLine implements Comparable<CommandLine> {
             placeholders.append("/{").append(argument.getKey()).append("}");
         }
 
-        StringBuilder help = new StringBuilder("Usage: bin" + File.pathSeparator + "dispatcher " + command + placeholders + " [OPTIONS]\n");
+        StringBuilder help = new StringBuilder("Usage: bin" + File.separator + "dispatcher " + command + placeholders + " [OPTIONS]\n");
         help.append(this.description).append("\n");
 
         if (arguments.size() > 0) {
