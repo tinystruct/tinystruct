@@ -281,22 +281,14 @@ public class URLRequest {
     }
 
     private String buildQuery(Map<String, Object> parameters) {
-        Set<Map.Entry<String, Object>> keySet = parameters.entrySet();
-        Iterator<Map.Entry<String, Object>> iterator = keySet.iterator();
-        StringBuilder buffer = new StringBuilder();
-        Map.Entry<String, Object> entry;
-        boolean first = true;
-        while (iterator.hasNext()) {
-            entry = iterator.next();
-            if (first) {
-                first = false;
-            } else
-                buffer.append("&");
-
-            buffer.append(entry.getKey()).append("=").append(URLEncoder.encode(entry.getValue().toString(), Charset.defaultCharset()));
-        }
-
-        return buffer.toString();
+        StringBuilder queryBuilder = new StringBuilder();
+        parameters.forEach((key, value) -> {
+            if (queryBuilder.length() > 0) {
+                queryBuilder.append("&");
+            }
+            queryBuilder.append(key).append("=").append(URLEncoder.encode(value.toString(), StandardCharsets.UTF_8));
+        });
+        return queryBuilder.toString();
     }
 
     class ProxySelector extends java.net.ProxySelector {
