@@ -110,7 +110,7 @@ public interface Application {
      * @param action     action name
      * @param methodName method name
      */
-    @Deprecated
+    @Deprecated(since = "1.8.0")
     void setAction(String action, String methodName);
 
     /**
@@ -188,6 +188,7 @@ public interface Application {
      * @param command Command
      * @return commandline
      */
+    @Deprecated(since = "1.8.0", forRemoval = true)
     CommandLine setCommandLine(CommandLine command);
 
     /**
@@ -204,5 +205,10 @@ public interface Application {
      */
     String help();
 
-    void setLink(String path);
+    /**
+     * Sets a link with a given path.
+     *
+     * @param path the path of the link
+     */
+    void createLinkVariable(String path);
 }
