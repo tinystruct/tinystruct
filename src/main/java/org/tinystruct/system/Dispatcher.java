@@ -21,9 +21,9 @@ import org.tinystruct.application.Context;
 import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.data.Repository;
 import org.tinystruct.data.tools.*;
-import org.tinystruct.system.cli.CommandArgument;
+import org.tinystruct.system.annotation.Action;
+import org.tinystruct.system.annotation.Argument;
 import org.tinystruct.system.cli.CommandLine;
-import org.tinystruct.system.cli.CommandOption;
 import org.tinystruct.system.cli.Kernel32;
 import org.tinystruct.system.util.StringUtilities;
 import org.tinystruct.system.util.URLResourceLoader;
@@ -55,6 +55,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+@Action(value = "", description = "A command line tool for tinystruct framework",
+        options = {
+                @Argument(key = "import", description = "Import application"),
+                @Argument(key = "allow-remote-access", description = "Allow to be accessed remotely"),
+                @Argument(key = "host", description = "Host name / IP"),
+                @Argument(key = "logo", description = "Print logo"),
+                @Argument(key = "settings", description = "Print settings"),
+                @Argument(key = "version", description = "Print version"),
+                @Argument(key = "help", description = "Print help information")
+        })
 public class Dispatcher extends AbstractApplication implements RemoteDispatcher {
     public static final String OK = "OK!";
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
@@ -221,6 +231,28 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         return output;
     }
 
+    /**
+     * Install a package.
+     */
+    @Action(value = "install", description = "Install a package", options = {
+            @Argument(key = "app", description = "Packages to be installed")
+    })
+    public void install() {
+        String appName;
+        if ((appName = (String) this.context.getAttribute("--app")) == null)
+            throw new ApplicationRuntimeException("The app could not be found in the context.");
+
+        System.out.println("Installing...");
+
+        try {
+            this.install(getConfiguration(), List.of(appName));
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("Completed installation for " + appName + "!");
+    }
+
     @Override
     public void install(Configuration<String> config, List<String> list) throws RemoteException {
         if (list != null && list.size() > 0) {
@@ -245,24 +277,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     /**
-     * Install specific app
+     * Update for latest version.
      */
-    public void install() {
-        String appName;
-        if ((appName = (String) this.context.getAttribute("--app")) == null)
-            throw new ApplicationRuntimeException("The app could not be found in the context.");
-
-        System.out.println("Installing...");
-
-        try {
-            this.install(getConfiguration(), List.of(appName));
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-
-        System.out.println("Completed installation for " + appName + "!");
-    }
-
+    @Action(value = "update", description = "Update for latest version")
     public String update() {
         System.out.print("Checking...");
         System.out.println("\rThe current project is based on tinystruct-" + this.color(ApplicationManager.VERSION, FORE_COLOR.green));
@@ -298,6 +315,28 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         return "\rCompleted! \nRun 'bin/dispatcher --help' for more information.";
     }
 
+    /**
+     * Download a resource from other servers.
+     */
+    @Action(value = "download", description = "Download a resource from other servers", options = {
+            @Argument(key = "url", description = "URL resource to be downloaded"),
+            @Argument(key = "http.proxyHost", description = "Proxy host for http"),
+            @Argument(key = "http.proxyPort", description = "Proxy port for http"),
+            @Argument(key = "https.proxyHost", description = "Proxy host for https"),
+            @Argument(key = "https.proxyPort", description = "Proxy port for https")
+    })
+    public void download() throws ApplicationException {
+        if (this.context.getAttribute("--url") != null) {
+            URL uri;
+            try {
+                uri = new URL(this.context.getAttribute("--url").toString());
+                this.download(uri, uri.getFile());
+            } catch (MalformedURLException e) {
+                throw new ApplicationException(e.getMessage(), e.getCause());
+            }
+        }
+    }
+
     public void download(URL uri, String destination) throws ApplicationException {
         try (ReadableByteChannel rbc = new ReadableByteChannelWrapper(uri)) {
             if (destination.trim().length() <= 1) {
@@ -329,18 +368,13 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         }
     }
 
-    public void download() throws ApplicationException {
-        if (this.context.getAttribute("--url") != null) {
-            URL uri;
-            try {
-                uri = new URL(this.context.getAttribute("--url").toString());
-                this.download(uri, uri.getFile());
-            } catch (MalformedURLException e) {
-                throw new ApplicationException(e.getMessage(), e.getCause());
-            }
-        }
-    }
-
+    /**
+     * Execute native command(s).
+     */
+    @Action(value = "exec", description = "To execute native command(s)", options = {
+            @Argument(key = "shell-command", description = "Commands needs to be executed"),
+            @Argument(key = "output", description = "Specify a boolean value to determine output of the command")
+    })
     public void exec() throws ApplicationException {
         if (this.context.getAttribute("--shell-command") == null) {
             throw new ApplicationException("Invalid shell command");
@@ -374,6 +408,12 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         }
     }
 
+    /**
+     * Executes the given SQL statement.
+     */
+    @Action(value = "sql-execute", description = "Executes the given SQL statement", options = {
+            @Argument(key = "sql", description = "an SQL Data Manipulation Language (DML) statement, such as INSERT, UPDATE or DELETE; or an SQL statement that returns nothing, such as a DDL statement.")
+    })
     public void executeUpdate() throws ApplicationException {
         if (this.context.getAttribute("--sql") == null) {
             throw new ApplicationException("Invalid SQL Statement.");
@@ -389,6 +429,12 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         }
     }
 
+    /**
+     * Executes the given SQL query.
+     */
+    @Action(value = "sql-query", description = "Executes the given SQL statement", options = {
+            @Argument(key = "sql", description = "an SQL statement to be sent to the database, typically a static SQL SELECT statement")
+    })
     public void executeQuery() throws ApplicationException {
         if (this.context.getAttribute("--sql") == null) {
             throw new ApplicationException("Invalid SQL Statement.");
@@ -436,82 +482,6 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
     @Override
     public void init() {
-        this.setAction("install", "install");
-        List<CommandOption> options = new ArrayList<CommandOption>();
-        options.add(new CommandOption("app", "", "Packages to be installed"));
-        this.commandLines.get("install").setOptions(options).setDescription("Install a package");
-
-        this.setAction("update", "update");
-        this.commandLines.get("update").setDescription("Update for latest version");
-
-        this.setAction("download", "download");
-        List<CommandOption> opts = new ArrayList<>();
-        opts.add(new CommandOption("url", "", "URL resource to be downloaded"));
-        CommandOption opt = new CommandOption("http.proxyHost", "127.0.0.1", "Proxy host for http");
-        opts.add(opt);
-        opt = new CommandOption("http.proxyPort", "3128", "Proxy port for http");
-        opts.add(opt);
-        opt = new CommandOption("https.proxyHost", "127.0.0.1", "Proxy host for https");
-        opts.add(opt);
-        opt = new CommandOption("https.proxyPort", "3128", "Proxy port for https");
-        opts.add(opt);
-        this.commandLines.get("download").setOptions(opts).setDescription("Download a resource from other servers");
-
-        this.setAction("set", "setProperty");
-        this.commandLines.get("set").setDescription("Set system property");
-
-        this.setAction("exec", "exec");
-        List<CommandOption> execOpts = new ArrayList<>();
-        opt = new CommandOption("shell-command", "", "Commands needs to be executed");
-        execOpts.add(opt);
-        opt = new CommandOption("output", "", "Specify a boolean value to determine output of the command");
-        execOpts.add(opt);
-        this.commandLines.get("exec").setOptions(execOpts).setDescription("To execute native command(s)");
-
-        this.setAction("say", "say");
-        CommandArgument<String, Object> argument = new CommandArgument<>("words", "", "What you want to say");
-        Set<CommandArgument<String, Object>> arguments = new HashSet<>();
-        arguments.add(argument);
-        this.commandLines.get("say").setArguments(arguments).setDescription("Output words");
-
-        this.setAction("open", "open");
-        List<CommandOption> openOpts = new ArrayList<>();
-        openOpts.add(new CommandOption("url", "", "URL resource to be downloaded"));
-        this.commandLines.get("open").setOptions(openOpts).setDescription("Start a default browser to open the specific URL");
-
-        this.setAction("generate", "generate");
-        this.commandLines.get("generate").setDescription("POJO object generator");
-
-        this.setAction("--import", "");
-        this.commandLines.get("--import").setDescription("Import application");
-
-        this.setAction("--settings", "settings");
-        this.commandLines.get("--settings").setDescription("Print settings");
-
-        this.setAction("--logo", "logo");
-        this.commandLines.get("--logo").setDescription("Print logo");
-
-        this.setAction("--allow-remote-access", "");
-        this.commandLines.get("--allow-remote-access").setDescription("Allow to be accessed remotely");
-
-        this.setAction("--host", "");
-        this.commandLines.get("--host").setDescription("Host name / IP");
-
-        this.setAction("--version", "version");
-        this.commandLines.get("--version").setDescription("Print version");
-
-        this.setAction("sql-execute", "executeUpdate");
-        List<CommandOption> sqlOpts = new ArrayList<>();
-        opt = new CommandOption("sql", "", "an SQL Data Manipulation Language (DML) statement, such as INSERT, UPDATE or DELETE; or an SQL statement that returns nothing, such as a DDL statement.");
-        sqlOpts.add(opt);
-        this.commandLines.get("sql-execute").setOptions(sqlOpts).setDescription("Executes the given SQL statement, which may be an INSERT, UPDATE, or DELETE statement or an SQL statement that returns nothing, such as an SQL DDL statement.");
-
-        this.setAction("sql-query", "executeQuery");
-        sqlOpts = new ArrayList<>();
-        opt = new CommandOption("sql", "", "an SQL statement to be sent to the database, typically a static SQL SELECT statement");
-        sqlOpts.add(opt);
-        this.commandLines.get("sql-query").setOptions(sqlOpts).setDescription("Executes the given SQL statement, which returns a single ResultSet object.");
-
         this.setTemplateRequired(false);
     }
 
@@ -528,10 +498,20 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         }
     }
 
+    /**
+     * Output words.
+     */
+    @Action(value = "say", description = "Output words", arguments = {
+            @Argument(key = "words", description = "What you want to say")
+    })
     public String say(String words) {
         return words;
     }
 
+    /**
+     * Set system property.
+     */
+    @Action(value = "set", description = "Set system property")
     public String setProperty(String propertyName) {
         if (this.context.getAttribute(propertyName) == null)
             throw new ApplicationRuntimeException("The key " + propertyName + " could not be found in the context.");
@@ -541,6 +521,10 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         return propertyName + ":" + System.getProperty(propertyName);
     }
 
+    /**
+     * Print settings.
+     */
+    @Action(value = "--settings", description = "Print settings")
     public StringBuilder settings() {
         String[] names = this.config.propertyNames().toArray(new String[0]);
         Arrays.sort(names);
@@ -551,6 +535,12 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         return settings;
     }
 
+    /**
+     * Start a default browser to open the specific URL.
+     */
+    @Action(value = "open", description = "Start a default browser to open the specific URL", options = {
+            @Argument(key = "url", description = "URL resource to be downloaded")
+    })
     public void open() throws ApplicationException {
         if (this.context.getAttribute("--url") == null) {
             throw new ApplicationException("Invalid URL.");
@@ -583,6 +573,10 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         }).start();
     }
 
+    /**
+     * POJO object generator.
+     */
+    @Action(value = "generate", description = "POJO object generator")
     public void generate() throws ApplicationException {
         Scanner scanner = new Scanner(System.in);
         System.out.println("To follow up the below steps to generate code for your project. CTRL+C to exit.");
@@ -652,6 +646,10 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         }
     }
 
+    /**
+     * Print logo.
+     */
+    @Action(value = "--logo", description = "Print logo")
     public String logo() {
         return "\n"
                 + "  _/  '         _ _/  _     _ _/   \n"
@@ -669,18 +667,25 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         return "\u001b[" + color + "m" + s + "\u001b[0m";
     }
 
+    /**
+     * Print version.
+     */
+    @Action(value = "--version", description = "Print version")
     @Override
     public String version() {
         return String.format("Dispatcher (cli) (built on %sinystruct-%s) %nCopyright (c) 2013-%s James M. ZHOU", this.color("t", FORE_COLOR.blue), ApplicationManager.VERSION, LocalDate.now().getYear());
     }
 
+    @Action(value = "--help", description = "Print help information")
     @Override
     public String help() {
-        StringBuilder builder = new StringBuilder("Usage: bin/dispatcher COMMAND [OPTIONS]\n");
+        StringBuilder builder = new StringBuilder("Usage: bin" + File.pathSeparator + "dispatcher COMMAND [OPTIONS]\n");
 
         StringBuilder commands = new StringBuilder("Commands: \n");
         StringBuilder options = new StringBuilder("Options: \n");
-
+        StringBuilder examples = new StringBuilder("Example(s): \n");
+        int length = examples.length();
+        int optionsLength = options.length();
         Map<String, CommandLine> commandLines = new HashMap<>();
         Collection<Application> apps = ApplicationManager.list();
         apps.forEach(app -> commandLines.putAll(app.getCommandLines()));
@@ -688,21 +693,35 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         OptionalInt longSizeCommand = commandLines.keySet().stream().mapToInt(String::length).max();
         int max = longSizeCommand.orElse(0);
 
-        Stream<CommandLine> sorted = commandLines.values().stream().sorted();
+        Stream<CommandLine> sorted = this.commandLines.values().stream().sorted();
         sorted.forEach(commandLine -> {
             String command = commandLine.getCommand();
             String description = commandLine.getDescription();
+            String example = commandLine.getExample();
             if (command.startsWith("--")) {
-                options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+//                    options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+            } else if (command.equals("")) {
+                builder.append(description).append("\n");
+                commandLine.getOptions().forEach(option -> {
+                    options.append("\t").append(StringUtilities.rightPadding(option.getKey(), max, ' ')).append("\t").append(option.getDescription()).append("\n");
+                });
             } else {
                 commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+            }
+
+            if (example != null && !example.equals("")) {
+                examples.append(example).append("\n");
             }
         });
 
         builder.append(commands).append("\n");
-        builder.append(options);
+        if (optionsLength < options.length())
+            builder.append(options);
 
-        builder.append("\nRun 'bin/dispatcher COMMAND --help' for more information on a command.");
+        if (length < examples.length())
+            builder.append(examples);
+
+        builder.append("\nRun 'bin" + File.pathSeparator + "dispatcher COMMAND --help' for more information on a command.");
         return builder.toString();
     }
 
