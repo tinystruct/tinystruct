@@ -13,7 +13,7 @@ Installation and Getting Started
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.1.7</version>
+  <version>1.1.8</version>
   <classifier>jar-with-dependencies</classifier>
 </dependency>
 ```
@@ -26,14 +26,13 @@ package tinystruct.examples;
 
 import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.system.annotation.Action;
 
 public class example extends AbstractApplication {
 
     @Override
     public void init() {
         // TODO Auto-generated method stub
-        this.setAction("praise", "praise");
-        this.setAction("say", "say");
     }
 
     @Override
@@ -41,10 +40,12 @@ public class example extends AbstractApplication {
         return "1.0";
     }
 
+    @Action("praise")
     public String praise() {
         return "Praise to the Lord!";
     }
 
+    @Action("say")
     public String say() throws ApplicationException {
         if (null != this.context.getAttribute("--words"))
             return this.context.getAttribute("--words").toString();
@@ -52,6 +53,7 @@ public class example extends AbstractApplication {
         throw new ApplicationException("Could not find the parameter <i>words</i>.");
     }
 
+    @Action("say")
     public String say(String words) {
         return words;
     }
@@ -67,7 +69,7 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.1.7
+  /  /  /) (/ _)  /  /  (/ (  /  1.1.8
            /
 ```
 ```tcsh

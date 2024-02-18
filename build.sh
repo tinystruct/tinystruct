@@ -10,7 +10,7 @@ $GRAALVM_HOME/bin/native-image -H:ConfigurationFileDirectories=/Volumes/Untitled
 --initialize-at-run-time=io.netty.util.AbstractReferenceCounted \
 --trace-class-initialization=org.slf4j.LoggerFactory \
 --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED \
--cp ./target/tinystruct-1.1.7-jar-with-dependencies.jar \
+-cp ./target/tinystruct-1.1.8.jar \
 -H:Name=dispatcher-native \
 -H:Class=org.tinystruct.system.Dispatcher \
 -H:+ReportExceptionStackTraces \
