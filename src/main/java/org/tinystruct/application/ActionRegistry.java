@@ -1,22 +1,6 @@
-/*******************************************************************************
- * Copyright  (c) 2013, 2023 James Mover Zhou
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *******************************************************************************/
 package org.tinystruct.application;
 
 import org.tinystruct.Application;
-import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.component.Cache;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.util.StringUtilities;
@@ -24,22 +8,20 @@ import org.tinystruct.system.util.StringUtilities;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
-import static org.tinystruct.application.Action.MAX_ARGUMENTS;
-
 /**
- * ActionRegistry is responsible for managing and mapping actions/methods to their corresponding URL patterns.
+ * The ActionRegistry class is responsible for managing and mapping actions/methods to their corresponding URL patterns.
  */
 public final class ActionRegistry {
 
     // Map to store URL patterns and their corresponding Action objects
-    private static final Map<String, Action> map = new ConcurrentHashMap<String, Action>(16);
+    private static final Map<String, Action> map = new ConcurrentHashMap<>();
     // Map to store URL patterns and their corresponding CommandLine objects
-    private static final Map<String, CommandLine> commands = new ConcurrentHashMap<String, CommandLine>(16);
+    private static final Map<String, CommandLine> commands = new ConcurrentHashMap<>();
 
     // Private constructor to enforce singleton pattern
     private ActionRegistry() {
@@ -51,7 +33,7 @@ public final class ActionRegistry {
      * @return ActionRegistry instance
      */
     public static ActionRegistry getInstance() {
-        return SingletonHolder.ROUTE_REGISTRY;
+        return SingletonHolder.INSTANCE;
     }
 
     /**
@@ -62,10 +44,11 @@ public final class ActionRegistry {
      * @param methodName The method name
      */
     public void set(final Application app, final String path, final String methodName) {
-        if (path == null)
-            return;
+        if (path == null || methodName == null) {
+            throw new IllegalArgumentException("Path or methodName cannot be null.");
+        }
 
-        this.initializePatterns(app, path, methodName);
+        initializePatterns(app, path, methodName);
     }
 
     /**
@@ -86,8 +69,9 @@ public final class ActionRegistry {
      * @param action The Action object to register
      */
     public void set(final Action action) {
-        if (action == null)
-            return;
+        if (action == null || action.getPathRule() == null) {
+            throw new IllegalArgumentException("Action or pathRule cannot be null.");
+        }
 
         map.put(action.getPathRule(), action);
     }
@@ -99,9 +83,7 @@ public final class ActionRegistry {
      * @return The corresponding Action object or null if not found
      */
     public Action get(final String path) {
-        Set<Map.Entry<String, Action>> set = map.entrySet();
-        for (Map.Entry<String, Action> n : set) {
-            Action action = n.getValue();
+        for (Action action : map.values()) {
             Matcher matcher = action.getPattern().matcher(path);
             if (matcher.find()) {
                 Object[] args = new Object[matcher.groupCount()];
@@ -112,7 +94,6 @@ public final class ActionRegistry {
                 return action;
             }
         }
-
         return null;
     }
 
@@ -123,7 +104,7 @@ public final class ActionRegistry {
      * @return True if the Action was removed, false otherwise
      */
     public boolean remove(final String path) {
-        return null != map.remove(path);
+        return map.remove(path) != null;
     }
 
     /**
@@ -132,7 +113,7 @@ public final class ActionRegistry {
      * @return Collection of Action objects
      */
     public Collection<Action> list() {
-        return map.values();
+        return Collections.unmodifiableCollection(map.values());
     }
 
     /**
@@ -142,12 +123,11 @@ public final class ActionRegistry {
      * @return The corresponding Action object or null if not found
      */
     public Action getAction(String path) {
-        Action action;
-        if (((action = this.get(path)) != null || (action = this.get(new StringUtilities(path).removeTrailingSlash())) != null)) {
-            return action;
+        Action action = this.get(path);
+        if (action == null) {
+            action = this.get(new StringUtilities(path).removeTrailingSlash());
         }
-
-        return null;
+        return action;
     }
 
     /**
@@ -171,66 +151,59 @@ public final class ActionRegistry {
         return this.getAction(path);
     }
 
-    /**
-     * Initialize URL patterns based on the registered methods in the Application class.
-     *
-     * @param app        The Application instance
-     * @param path       The URL pattern
-     * @param methodName The method name
-     */
+    // Initialize URL patterns based on the registered methods in the Application class
     private synchronized void initializePatterns(Application app, String path, String methodName) {
         Class<?> clazz = app.getClass();
-        Method[] functions = getMethods(methodName, clazz);
+        Method[] methods = getMethods(methodName, clazz);
 
         CommandLine cli = app.getCommandLines().get(path);
-        if (cli != null)
+        if (cli != null) {
             commands.put(path, cli);
+        }
         String patternPrefix = "/?" + path;
-        for (Method m : functions) {
-            if (null != m) {
-                Class<?>[] types = m.getParameterTypes();
-//                Parameter[] params = m.getParameters();
-                String expression;
-                if (types.length > 0) {
-                    StringBuilder patterns = new StringBuilder();
-
-                    for (int i = 0; i < types.length; i++) {
-//                        if (cli != null)
-//                            cli.addArgument(new CommandArgument<>(params[i].getName(), null, ""));
-                        String pattern = "(";
-                        if (types[i].isAssignableFrom(Integer.TYPE)) {
-                            pattern += "-?\\d+";
-                        } else if (types[i].isAssignableFrom(Long.TYPE)) {
-                            pattern += "-?\\d+";
-                        } else if (types[i].isAssignableFrom(Float.TYPE)) {
-                            pattern += "-?\\d+(\\.\\d+)";
-                        } else if (types[i].isAssignableFrom(Double.TYPE)) {
-                            pattern += "-?\\d+(\\.\\d+)";
-                        } else if (types[i].isAssignableFrom(Short.TYPE)) {
-                            pattern += "-?\\d+";
-                        } else if (types[i].isAssignableFrom(Byte.TYPE)) {
-                            pattern += "\\d+";
-                        } else if (types[i].isAssignableFrom(Boolean.TYPE)) {
-                            pattern += "true|false";
-                        } else {
-                            pattern += ".*";
-                        }
-                        pattern += ")";
-
-                        if (patterns.length() != 0) {
-                            patterns.append("/");
-                        }
-                        patterns.append(pattern);
-                    }
-
-                    expression = patternPrefix + "/" + patterns + "$";
-                } else {
-                    expression = patternPrefix + "$";
-                }
+        for (Method m : methods) {
+            if (m != null) {
+                String expression = buildExpression(patternPrefix, m.getParameterTypes());
                 map.put(expression, new Action(map.size(), app, expression, m));
             }
         }
+    }
 
+    // Build URL expression patterns based on parameter types
+    private String buildExpression(String patternPrefix, Class<?>[] types) {
+        StringBuilder expression = new StringBuilder(patternPrefix);
+        if (types.length > 0) {
+            expression.append("/");
+            for (Class<?> type : types) {
+                expression.append(getPatternForType(type)).append("/");
+            }
+        }
+        expression.append("$");
+        return expression.toString();
+    }
+
+    // Get regex pattern for a given parameter type
+// Get regex pattern for a given parameter type
+    private String getPatternForType(Class<?> type) {
+        if (type.isAssignableFrom(Integer.TYPE) || type.isAssignableFrom(Integer.class)) {
+            return "-?\\d+";
+        } else if (type.isAssignableFrom(Long.TYPE) || type.isAssignableFrom(Long.class)) {
+            return "-?\\d+";
+        } else if (type.isAssignableFrom(Float.TYPE) || type.isAssignableFrom(Float.class)) {
+            return "-?\\d+(\\.\\d+)?";
+        } else if (type.isAssignableFrom(Double.TYPE) || type.isAssignableFrom(Double.class)) {
+            return "-?\\d+(\\.\\d+)?";
+        } else if (type.isAssignableFrom(Short.TYPE) || type.isAssignableFrom(Short.class)) {
+            return "-?\\d+";
+        } else if (type.isAssignableFrom(Byte.TYPE) || type.isAssignableFrom(Byte.class)) {
+            return "\\d+";
+        } else if (type.isAssignableFrom(Boolean.TYPE) || type.isAssignableFrom(Boolean.class)) {
+            return "true|false";
+        } else if (type.isAssignableFrom(Character.TYPE) || type.isAssignableFrom(Character.class)) {
+            return ".{1}";
+        } else {
+            return ".*";
+        }
     }
 
     /**
@@ -243,33 +216,19 @@ public final class ActionRegistry {
     private Method[] getMethods(String methodName, Class<?> clazz) {
         Cache instance = Cache.getInstance();
 
-        Method[] functions;
         String key = clazz.getName() + ":" + methodName;
-        if ((functions = (Method[]) instance.get(key)) != null) {
-            return functions;
-        } else {
-            functions = new Method[MAX_ARGUMENTS];
-            int n = 0;
-            try {
-                Method[] methods = clazz.getMethods();
-                for (Method value : methods) {
-                    if (value.getName().equals(methodName)) {
-                        functions[n++] = value;
-                    }
-                }
-
-                functions = Arrays.copyOf(functions, n);
-                instance.set(key, functions);
-            } catch (SecurityException e) {
-                throw new ApplicationRuntimeException("[" + methodName + "]" + e.getMessage(), e);
-            }
+        Method[] methods;
+        if ((methods = (Method[]) instance.get(key)) == null) {
+            methods = Arrays.stream(clazz.getMethods())
+                    .filter(m -> m.getName().equals(methodName))
+                    .toArray(Method[]::new);
+            instance.set(key, methods);
         }
-
-        return functions;
+        return methods;
     }
 
     // Inner class to hold the singleton instance of ActionRegistry
-    private static final class SingletonHolder {
-        static final ActionRegistry ROUTE_REGISTRY = new ActionRegistry();
+    private static class SingletonHolder {
+        private static final ActionRegistry INSTANCE = new ActionRegistry();
     }
 }
