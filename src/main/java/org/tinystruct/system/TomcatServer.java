@@ -36,6 +36,9 @@ import java.io.File;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.tinystruct.http.Constants.HTTP_REQUEST;
+import static org.tinystruct.http.Constants.HTTP_RESPONSE;
+
 public class TomcatServer extends AbstractApplication implements Bootstrap {
     private final Logger logger = Logger.getLogger(TomcatServer.class.getName());
     private boolean started = false;
@@ -167,8 +170,8 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
     @Action(value = "error", description = "Error page")
     public Object exceptionCaught() throws ApplicationException {
-        Request request = (Request) this.context.getAttribute("HTTP_REQUEST");
-        Response response = (Response) this.context.getAttribute("HTTP_RESPONSE");
+        Request request = (Request) this.context.getAttribute(HTTP_REQUEST);
+        Response response = (Response) this.context.getAttribute(HTTP_RESPONSE);
 
         Reforward reforward = new Reforward(request, response);
         this.setVariable("from", reforward.getFromURL());
