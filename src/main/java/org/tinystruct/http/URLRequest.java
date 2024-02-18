@@ -177,45 +177,33 @@ public class URLRequest {
             throw new ApplicationException(e.toString(), e);
         }
 
-        try (final InputStream in = connection.getResponseCode() == HttpURLConnection.HTTP_OK ? connection.getInputStream() : connection.getErrorStream(); final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            String contentEncoding;
-            if ((contentEncoding = connection.getContentEncoding()) != null) {
-                byte[] bytes = new byte[1024];
-                int len;
+        try (final InputStream in = connection.getResponseCode() == HttpURLConnection.HTTP_OK ? connection.getInputStream() : connection.getErrorStream();
+             final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            String contentEncoding = connection.getContentEncoding();
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            InputStream decodedStream = null;
+            if (contentEncoding != null) {
                 switch (contentEncoding) {
                     case "gzip":
-                        try (GZIPInputStream gzip = new GZIPInputStream(in);) {
-                            while ((len = gzip.read(bytes)) != -1) {
-                                out.write(bytes, 0, len);
-                            }
-                        }
-
-                        return callback.process(out);
+                        decodedStream = new GZIPInputStream(in);
+                        break;
                     case "deflate":
-                        try (DeflaterInputStream deflater = new DeflaterInputStream(in);) {
-                            while ((len = deflater.read(bytes)) != -1) {
-                                out.write(bytes, 0, len);
-                            }
-                        }
-
-                        return callback.process(out);
+                        decodedStream = new DeflaterInputStream(in);
+                        break;
                     case "br":
-                        try (BrotliInputStream br = new BrotliInputStream(in);) {
-                            while ((len = br.read(bytes)) != -1) {
-                                out.write(bytes, 0, len);
-                            }
-                        }
-
-                        return callback.process(out);
+                        decodedStream = new BrotliInputStream(in);
+                        break;
                     default:
                         break;
                 }
             }
-            byte[] bytes = new byte[1024];
-            int len;
-            while (in != null && (len = in.read(bytes)) != -1) {
-                out.write(bytes, 0, len);
+
+            InputStream inputToRead = (decodedStream != null) ? decodedStream : in;
+            while ((bytesRead = inputToRead.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
             }
+
             return callback.process(out);
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
