@@ -76,7 +76,7 @@ public class AnnotationProcessor {
 
                 // Exclude the command starting with '-'
                 if (path.indexOf("-") != 0)
-                    this.app.setLink(path);
+                    this.app.createLinkVariable(path);
             }
         }
 
