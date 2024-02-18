@@ -16,6 +16,7 @@
 package org.tinystruct;
 
 import org.tinystruct.application.*;
+import org.tinystruct.system.AnnotationProcessor;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Resource;
 import org.tinystruct.system.cli.CommandLine;
@@ -51,7 +52,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     /**
      * Collection of command line.
      */
-    protected final Map<String, CommandLine> commandLines;
+    protected Map<String, CommandLine> commandLines;
 
     /**
      * Registry for actions associated with the application
@@ -176,14 +177,16 @@ public abstract class AbstractApplication implements Application, Cloneable {
      *
      * @param path   The path for which to set the action.
      * @param action The action object to be associated with the path.
+     * @deprecated Use the {@link org.tinystruct.system.annotation.Action} annotation instead.
      */
+    @Deprecated
     public void setAction(String path, Action action) {
         // Set the action in the action registry
         this.actionRegistry.set(action);
 
         // Exclude the command starting with '-'
         if (path.indexOf("-") != 0)
-            this.setLink(path);
+            this.createLinkVariable(path);
     }
 
     /**
@@ -191,7 +194,9 @@ public abstract class AbstractApplication implements Application, Cloneable {
      *
      * @param path     The path for which to set the action.
      * @param function The function to be associated with the path.
+     * @deprecated Use the {@link org.tinystruct.system.annotation.Action} annotation instead.
      */
+    @Deprecated
     @Override
     public void setAction(String path, String function) {
         // Set the action in the action registry
@@ -199,41 +204,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         // Exclude the command starting with '-'
         if (path.indexOf("-") != 0)
-            this.setLink(path);
-    }
-
-    /**
-     * Sets the action for the given path and associates it with the provided function and method.
-     *
-     * @param path     The path for which to set the action.
-     * @param function The function to be associated with the path.
-     * @param method   The method to be associated with the path.
-     */
-    public void setAction(String path, String function, String method) {
-        // Set the action in the action registry
-        this.actionRegistry.set(this, path, function, method);
-
-        // Exclude the command starting with '-'
-        if (path.indexOf("-") != 0)
-            this.setLink(path);
-    }
-
-    /**
-     * Gets the output text.
-     *
-     * @return The current output text.
-     */
-    public String getOutputText() {
-        return this.output;
-    }
-
-    /**
-     * Sets the output text buffer.
-     *
-     * @param buffer The buffer to set as the output text.
-     */
-    public void setOutputText(String buffer) {
-        this.output = buffer;
+            this.createLinkVariable(path);
     }
 
     /**
@@ -280,10 +251,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
         // Initialize only once
         this.init();
 
-        // Set a default action for "--help" and update its description
-        this.setAction("--help", "help");
-        if (this.commandLines.get("--help") != null)
-            this.commandLines.get("--help").setDescription("Help command");
+        AnnotationProcessor annotationProcessor = new AnnotationProcessor(this);
+        annotationProcessor.processActionAnnotations();
     }
 
     /**
@@ -442,7 +411,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      *
      * @param linkName the name of the link
      */
-    private void setLink(String linkName) {
+    public void createLinkVariable(String linkName) {
         String name = "LINK:" + linkName;
         this.setSharedVariable(name, linkName);
     }
@@ -597,6 +566,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * @param command the command line to set
      * @return the previous command line for the context
      */
+    @Deprecated(since = "1.1.8", forRemoval = true)
     @Override
     public CommandLine setCommandLine(CommandLine command) {
         return this.commandLines.put(command.getCommand(), command);
@@ -613,14 +583,18 @@ public abstract class AbstractApplication implements Application, Cloneable {
      *
      * @return a String containing the help message
      */
+    @org.tinystruct.system.annotation.Action(value = "--help", description = "Print help information")
     @Override
     public String help() {
         // Create a StringBuilder to hold the help message
-        StringBuilder builder = new StringBuilder("Usage: bin/dispatcher COMMAND [OPTIONS]\n");
+        StringBuilder builder = new StringBuilder("Usage: bin" + File.pathSeparator + "dispatcher COMMAND [OPTIONS]\n");
 
         // Create two StringBuilder objects to hold the commands and options
         StringBuilder commands = new StringBuilder("Commands: \n");
         StringBuilder options = new StringBuilder("Options: \n");
+        StringBuilder examples = new StringBuilder("Example(s): \n");
+        int length = examples.length();
+        int optionsLength = options.length();
 
         // Find the maximum length of the command names
         OptionalInt longSizeCommand = this.commandLines.keySet().stream().mapToInt(String::length).max();
@@ -630,16 +604,28 @@ public abstract class AbstractApplication implements Application, Cloneable {
         this.commandLines.forEach((s, commandLine) -> {
             String command = commandLine.getCommand();
             String description = commandLine.getDescription();
+            String example = commandLine.getExample();
+
             if (command.startsWith("--")) {
                 options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+            } else if (command.equals("")) {
+                builder.append(description).append("\n");
             } else {
                 commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+            }
+
+            if (example != null && !example.equals("")) {
+                examples.append(example).append("\n");
             }
         });
 
         // Add the commands and options to the StringBuilder
         builder.append(commands).append("\n");
-        builder.append(options);
+        if (optionsLength < options.length())
+            builder.append(options);
+
+        if (length < examples.length())
+            builder.append(examples);
 
         // Return the help message as a String
         return builder.toString();
