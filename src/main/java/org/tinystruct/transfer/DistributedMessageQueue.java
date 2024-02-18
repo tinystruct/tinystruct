@@ -4,6 +4,7 @@ import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.ApplicationManager;
+import org.tinystruct.system.annotation.Action;
 import org.tinystruct.valve.Lock;
 import org.tinystruct.valve.Watcher;
 
@@ -23,16 +24,11 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
 
     @Override
     public void init() {
-        this.setAction("message/take", "take");
-        this.setAction("message/put", "put");
-        this.setAction("message/version", "version");
-        this.setAction("message/testing", "testing");
-
         if (this.service != null) {
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    if(service!=null) {
+                    if (service != null) {
                         service.shutdown();
                         while (true) {
                             try {
@@ -59,6 +55,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @param message   message
      * @return message
      */
+    @Action("message/put")
     @Override
     public final String put(final Object groupId, final String sessionId, final String message) {
         boolean condition = groupId != null && message != null && !message.isEmpty();
@@ -138,6 +135,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @return message
      * @throws ApplicationException application exception
      */
+    @Action("message/take")
     @Override
     public final String take(final String sessionId) throws ApplicationException {
         Builder message;
@@ -214,6 +212,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @return a boolean value
      * @throws ApplicationException application exception
      */
+    @Action("message/testing")
     public boolean testing(final int n) throws ApplicationException {
         this.sessions.put("[M001]", List.of("{A}", "{B}"));
         this.groups.put("[M001]", new ArrayBlockingQueue<Builder>(DEFAULT_MESSAGE_POOL_SIZE));
