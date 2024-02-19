@@ -295,7 +295,6 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                     + "/tinystruct-" + latestVersion + "-jar-with-dependencies.jar"), "lib/tinystruct-" + latestVersion + "-jar-with-dependencies.jar");
             System.out.println("\nDownloaded (" + this.color(latestVersion, FORE_COLOR.green) + ").");
             System.out.print("\rUpdating..");
-            ApplicationManager.generateDispatcherCommand(latestVersion, true);
 
             boolean git = new File(".git").exists();
             if (git) {
@@ -309,6 +308,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                     this.exec();
                 }
             }
+            ApplicationManager.generateDispatcherCommand(latestVersion, true);
+
         } catch (ApplicationException | MalformedURLException e) {
             return e.getMessage();
         }
