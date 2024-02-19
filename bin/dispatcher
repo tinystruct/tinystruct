@@ -15,7 +15,8 @@ args=""
 # Loop through each argument
 for arg; do
     # Extract the first two characters of the argument
-    str=${arg:0:2}
+    # str=${arg:0:2}
+    str=$(echo "$arg" | awk  '{ string=substr($0, 0, 2); print string; }' )
 
     # Check if it starts with '-D' or '-X'
     if [ "$str" = "-D" ] || [ "$str" = "-X" ]; then
@@ -176,4 +177,4 @@ done
 $JAVACMD \
 $JAVA_OPTS \
 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \
--cp "$ROOT/target/classes:$JAR_FILE$CLASSPATH:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" -agentlib:native-image-agent=config-output-dir=$ROOT/bin/.metadata org.tinystruct.system.Dispatcher "$@"
+-cp "$ROOT/target/classes:$JAR_FILE$CLASSPATH:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"
