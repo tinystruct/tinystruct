@@ -127,25 +127,19 @@ public class MySQLServer implements Repository {
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement preparedStatement = operator.preparedStatement(SQL, parameters);
             int cols = operator.executeQuery(preparedStatement).getMetaData().getColumnCount();
-            String[] fieldName = new String[cols];
-            Object[] fieldValue = new Object[cols];
-
-            for (int i = 0; i < cols; i++) {
-                fieldName[i] = operator.getResultSet().getMetaData().getColumnName(i + 1);
-            }
-
-            Object v_field;
+            String fieldName;
+            Object fieldValue;
             while (operator.getResultSet().next()) {
                 row = new Row();
                 fields = new Field();
-                for (int i = 0; i < fieldName.length; i++) {
-                    v_field = operator.getResultSet().getObject(i + 1);
+                for (int i = 0; i < cols; i++) {
+                    fieldValue = operator.getResultSet().getObject(i + 1);
+                    fieldName = operator.getResultSet().getMetaData().getColumnName(i + 1);
 
-                    fieldValue[i] = (v_field == null ? "" : v_field);
                     field = new FieldInfo();
-                    field.append("name", fieldName[i]);
-                    field.append("value", fieldValue[i]);
-                    field.append("type", field.typeOf(v_field).getTypeName());
+                    field.append("name", fieldName);
+                    field.append("value", fieldValue);
+                    field.append("type", field.typeOf(fieldValue).getTypeName());
 
                     fields.append(field.getName(), field);
                 }
@@ -177,23 +171,17 @@ public class MySQLServer implements Repository {
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement preparedStatement = operator.preparedStatement(SQL, parameters);
             int cols = operator.executeQuery(preparedStatement).getMetaData().getColumnCount();
-            String[] fieldName = new String[cols];
-            Object[] fieldValue = new Object[cols];
-
-            for (int i = 0; i < cols; i++) {
-                fieldName[i] = operator.getResultSet().getMetaData().getColumnName(i + 1);
-            }
-
-            Object v_field;
+            String fieldName;
+            Object fieldValue;
             if (operator.getResultSet().next()) {
-                for (int i = 0; i < fieldName.length; i++) {
-                    v_field = operator.getResultSet().getObject(i + 1);
+                for (int i = 0; i < cols; i++) {
+                    fieldValue = operator.getResultSet().getObject(i + 1);
+                    fieldName = operator.getResultSet().getMetaData().getColumnName(i + 1);
 
-                    fieldValue[i] = (v_field == null ? "" : v_field);
                     fieldInfo = new FieldInfo();
-                    fieldInfo.append("name", fieldName[i]);
-                    fieldInfo.append("value", fieldValue[i]);
-                    fieldInfo.append("type", fieldInfo.typeOf(v_field));
+                    fieldInfo.append("name", fieldName);
+                    fieldInfo.append("value", fieldValue);
+                    fieldInfo.append("type", fieldInfo.typeOf(fieldValue));
 
                     field.append(fieldInfo.getName(), fieldInfo);
                 }
