@@ -151,7 +151,13 @@ public final class ActionRegistry {
         return this.getAction(path);
     }
 
-    // Initialize URL patterns based on the registered methods in the Application class
+    /**
+     * Initialize URL patterns based on the registered methods in the Application class.
+     *
+     * @param app        The Application instance
+     * @param path       The URL pattern
+     * @param methodName The method name
+     */
     private synchronized void initializePatterns(Application app, String path, String methodName) {
         Class<?> clazz = app.getClass();
         Method[] methods = getMethods(methodName, clazz);
@@ -162,28 +168,30 @@ public final class ActionRegistry {
         }
         String patternPrefix = "/?" + path;
         for (Method m : methods) {
-            if (m != null) {
-                String expression = buildExpression(patternPrefix, m.getParameterTypes());
+            if (null != m) {
+                Class<?>[] types = m.getParameterTypes();
+                String expression;
+                if (types.length > 0) {
+                    StringBuilder patterns = new StringBuilder();
+
+                    for (Class<?> type : types) {
+                        String pattern = "(" + this.getPatternForType(type) + ")";
+
+                        if (patterns.length() != 0) {
+                            patterns.append("/");
+                        }
+                        patterns.append(pattern);
+                    }
+
+                    expression = patternPrefix + "/" + patterns + "$";
+                } else {
+                    expression = patternPrefix + "$";
+                }
                 map.put(expression, new Action(map.size(), app, expression, m));
             }
         }
     }
 
-    // Build URL expression patterns based on parameter types
-    private String buildExpression(String patternPrefix, Class<?>[] types) {
-        StringBuilder expression = new StringBuilder(patternPrefix);
-        if (types.length > 0) {
-            expression.append("/");
-            for (Class<?> type : types) {
-                expression.append(getPatternForType(type)).append("/");
-            }
-        }
-        expression.append("$");
-        return expression.toString();
-    }
-
-    // Get regex pattern for a given parameter type
-// Get regex pattern for a given parameter type
     private String getPatternForType(Class<?> type) {
         if (type.isAssignableFrom(Integer.TYPE) || type.isAssignableFrom(Integer.class)) {
             return "-?\\d+";
