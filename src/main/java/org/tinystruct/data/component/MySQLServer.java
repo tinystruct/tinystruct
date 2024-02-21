@@ -22,145 +22,67 @@ import org.tinystruct.data.Repository;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.List;
 
 public class MySQLServer implements Repository {
 
     public MySQLServer() {
     }
 
+    /**
+     * Append new records to the MySQL database table.
+     *
+     * @param ready_fields The fields ready for insertion.
+     * @param table        The table name.
+     * @return True if the record is successfully appended, otherwise false.
+     * @throws ApplicationException if there is an error appending the record.
+     */
     @Override
-	public boolean append(Field ready_fields, String table) throws ApplicationException {
-        boolean inserted = false;
-        String dot = ",", currentProperty;
-        StringBuilder expressions = new StringBuilder(), values = new StringBuilder();
-        FieldInfo currentField;
+    public boolean append(Field ready_fields, String table) throws ApplicationException {
+        String SQL = generateInsertSQL(ready_fields, table);
 
-        List<String> fieldNames = new ArrayList<String>();
-        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements(); ) {
-            currentProperty = _field.nextElement();
-
-            currentField = ready_fields.get(currentProperty);
-            if (currentField.autoIncrement()) {
-                continue;
-            }
-
-            fieldNames.add(currentProperty);
-
-            if (expressions.length() == 0)
-                expressions.append("`").append(currentField.getColumnName()).append("`");
-            else
-                expressions.append(dot).append("`").append(currentField.getColumnName()).append("`");
-
-            if (values.length() == 0)
-                values.append('?');
-            else
-                values.append(dot).append('?');
-        }
-
-        String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES(" + values + ")";
-
-        Iterator<String> iterator = fieldNames.iterator();
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
-            int i = 1;
-            while (iterator.hasNext()) {
-                currentField = ready_fields.get(iterator.next());
+            setParameters(ps, ready_fields);
 
-                if (currentField.autoIncrement()) {
-                    continue;
-                }
-
-                if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
-                    ps.setInt(i++, currentField.intValue());
-                } else if (currentField.getType() == FieldType.TEXT) {
-                    ps.setString(i++, currentField.stringValue());
-                } else if (currentField.getType() == FieldType.DATE || currentField.getType() == FieldType.DATETIME) {
-                    ps.setTimestamp(i++, new Timestamp(currentField.dateValue().getTime()));
-                } else if (currentField.getType() == FieldType.BIT) {
-                    ps.setBoolean(i++, currentField.booleanValue());
-                } else {
-                    ps.setObject(i++, currentField.value());
-                }
-            }
-
-            if (ps.execute()) {
-                inserted = true;
-            }
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            throw new ApplicationException(e.getMessage(), e);
+            throw new ApplicationException("Error appending record: " + e.getMessage(), e);
         }
-
-        return inserted;
     }
 
+    /**
+     * Update existing records in the MySQL database table.
+     *
+     * @param ready_fields The fields ready for update.
+     * @param table        The table name.
+     * @return True if the record is successfully updated, otherwise false.
+     * @throws ApplicationException if there is an error updating the record.
+     */
     @Override
-	public boolean update(Field ready_fields, String table) throws ApplicationException {
-        String dot = ",", currentProperty;
-        StringBuilder expressions = new StringBuilder();
-        FieldInfo currentField;
+    public boolean update(Field ready_fields, String table) throws ApplicationException {
+        String SQL = generateUpdateSQL(ready_fields, table);
 
-        Object Id = null;
-        boolean edited = false;
-        List<String> fieldNames = new ArrayList<String>();
-        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements(); ) {
-            currentProperty = _field.nextElement();
-            currentField = ready_fields.get(currentProperty);
-            if ("Id".equalsIgnoreCase(currentField.getName())) {
-                Id = currentField.value();
-
-                continue;
-            }
-
-            if (currentField.value() != null) {
-                fieldNames.add(currentProperty);
-
-                if (expressions.length() == 0)
-                    expressions.append("`").append(currentField.getColumnName()).append("`").append("=?");
-                else
-                    expressions.append(dot).append("`").append(currentField.getColumnName()).append("`").append("=?");
-            }
-        }
-
-        String SQL = "UPDATE " + table + " SET " + expressions + " WHERE id=?";
-        Iterator<String> iterator = fieldNames.iterator();
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
+            setParameters(ps, ready_fields);
+            ps.setObject(ready_fields.size() + 1, ready_fields.get("Id").value()); // Set Id parameter
 
-            int i = 1;
-            while (iterator.hasNext()) {
-                currentField = ready_fields.get(iterator.next());
-
-                if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
-                    ps.setInt(i++, currentField.intValue());
-                } else if (currentField.getType() == FieldType.TEXT) {
-                    ps.setString(i++, currentField.stringValue());
-                } else if (currentField.getType() == FieldType.DATE || currentField.getType() == FieldType.DATETIME) {
-                    ps.setTimestamp(i++, new Timestamp(currentField.dateValue().getTime()));
-                } else if (currentField.getType() == FieldType.BIT) {
-                    ps.setBoolean(i++, currentField.booleanValue());
-                } else {
-                    ps.setObject(i++, currentField.value());
-                }
-
-            }
-
-            ps.setObject(i, Id);
-            if (ps.execute()) {
-                edited = true;
-            }
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            throw new ApplicationException(e.getMessage(), e);
+            throw new ApplicationException("Error updating record: " + e.getMessage(), e);
         }
-
-        return edited;
     }
 
+    /**
+     * Delete records from the MySQL database table.
+     *
+     * @param Id    The identifier of the record to be deleted.
+     * @param table The table name.
+     * @return True if the record is successfully deleted, otherwise false.
+     * @throws ApplicationException if there is an error deleting the record.
+     */
     @Override
-	public boolean delete(Object Id, String table) throws ApplicationException {
+    public boolean delete(Object Id, String table) throws ApplicationException {
         boolean deleted = false;
         String SQL = "DELETE FROM " + table + " WHERE id=?";
 
@@ -176,13 +98,26 @@ public class MySQLServer implements Repository {
         return deleted;
     }
 
+    /**
+     * Get the type of the repository, which is MySQL in this case.
+     *
+     * @return The repository type.
+     */
     @Override
-	public Type getType() {
+    public Type getType() {
         return Type.MySQL;
     }
 
+    /**
+     * Retrieve records from the MySQL database table based on the provided SQL query.
+     *
+     * @param SQL        The SQL query to retrieve records.
+     * @param parameters The parameters to be used in the SQL query.
+     * @return A table containing the retrieved records.
+     * @throws ApplicationException if there is an error retrieving records.
+     */
     @Override
-	public Table find(String SQL, Object[] parameters) throws ApplicationException {
+    public Table find(String SQL, Object[] parameters) throws ApplicationException {
 
         Table table = new Table();
         Row row;
@@ -224,8 +159,16 @@ public class MySQLServer implements Repository {
         return table;
     }
 
+    /**
+     * Retrieve a single record from the MySQL database table based on the provided SQL query.
+     *
+     * @param SQL        The SQL query to retrieve the record.
+     * @param parameters The parameters to be used in the SQL query.
+     * @return A row containing the retrieved record.
+     * @throws ApplicationException if there is an error retrieving the record.
+     */
     @Override
-	public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
+    public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
 
         Row row = new Row();
         FieldInfo fieldInfo;
@@ -262,5 +205,58 @@ public class MySQLServer implements Repository {
         }
 
         return row;
+    }
+
+    private String generateInsertSQL(Field ready_fields, String table) {
+        StringBuilder columns = new StringBuilder();
+        StringBuilder values = new StringBuilder();
+
+        for (String fieldName : ready_fields.keySet()) {
+            if (!ready_fields.get(fieldName).autoIncrement()) {
+                if (columns.length() > 0) {
+                    columns.append(", ");
+                    values.append(", ");
+                }
+                columns.append("`").append(ready_fields.get(fieldName).getColumnName()).append("`");
+                values.append("?");
+            }
+        }
+
+        return "INSERT INTO " + table + " (" + columns + ") VALUES (" + values + ")";
+    }
+
+    private String generateUpdateSQL(Field ready_fields, String table) {
+        StringBuilder expressions = new StringBuilder();
+
+        for (String fieldName : ready_fields.keySet()) {
+            if (!fieldName.equalsIgnoreCase("Id")) {
+                if (expressions.length() > 0) {
+                    expressions.append(", ");
+                }
+                expressions.append("`").append(ready_fields.get(fieldName).getColumnName()).append("`").append("=?");
+            }
+        }
+
+        return "UPDATE " + table + " SET " + expressions + " WHERE id=?";
+    }
+
+    private void setParameters(PreparedStatement ps, Field ready_fields) throws SQLException {
+        int i = 1;
+        for (FieldInfo fieldInfo : ready_fields.values()) {
+            if (!fieldInfo.autoIncrement()) {
+                Object value = fieldInfo.value();
+                if ("int".equalsIgnoreCase(fieldInfo.getType().getRealType())) {
+                    ps.setInt(i++, fieldInfo.intValue());
+                } else if (fieldInfo.getType() == FieldType.TEXT) {
+                    ps.setString(i++, fieldInfo.stringValue());
+                } else if (fieldInfo.getType() == FieldType.DATE || fieldInfo.getType() == FieldType.DATETIME) {
+                    ps.setTimestamp(i++, new Timestamp(fieldInfo.dateValue().getTime()));
+                } else if (fieldInfo.getType() == FieldType.BIT) {
+                    ps.setBoolean(i++, fieldInfo.booleanValue());
+                } else {
+                    ps.setObject(i++, value);
+                }
+            }
+        }
     }
 }
