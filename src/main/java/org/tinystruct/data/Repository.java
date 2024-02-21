@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
+
 package org.tinystruct.data;
 
 import org.tinystruct.ApplicationException;
@@ -20,18 +21,70 @@ import org.tinystruct.data.component.Field;
 import org.tinystruct.data.component.Row;
 import org.tinystruct.data.component.Table;
 
+/**
+ * Interface for database repository.
+ */
 public interface Repository {
-    enum Type {MySQL, SQLServer, SQLite, H2}
 
+    /**
+     * Enum representing different types of database.
+     */
+    enum Type {MySQL, SQLServer, SQLite, Redis, H2}
+
+    /**
+     * Get the type of the repository.
+     *
+     * @return the type of the repository.
+     */
     Type getType();
 
+    /**
+     * Append a new record to the database.
+     *
+     * @param ready_fields the fields ready for insertion.
+     * @param table        the table to append the record to.
+     * @return true if the operation is successful, false otherwise.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
     boolean append(Field ready_fields, String table) throws ApplicationException;
 
+    /**
+     * Update an existing record in the database.
+     *
+     * @param ready_fields the fields ready for update.
+     * @param table        the table to update the record in.
+     * @return true if the operation is successful, false otherwise.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
     boolean update(Field ready_fields, String table) throws ApplicationException;
 
+    /**
+     * Delete a record from the database.
+     *
+     * @param Id    the identifier of the record to delete.
+     * @param table the table to delete the record from.
+     * @return true if the operation is successful, false otherwise.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
     boolean delete(Object Id, String table) throws ApplicationException;
 
+    /**
+     * Find records in the database based on the given SQL query and parameters.
+     *
+     * @param SQL        the SQL query.
+     * @param parameters the parameters for the query.
+     * @return a Table containing the query result.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
     Table find(String SQL, Object[] parameters) throws ApplicationException;
 
+    /**
+     * Find a single record in the database based on the given SQL query and parameters.
+     *
+     * @param SQL        the SQL query.
+     * @param parameters the parameters for the query.
+     * @return a Row containing the query result.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
     Row findOne(String SQL, Object[] parameters) throws ApplicationException;
 }
