@@ -82,6 +82,7 @@ public class DatabaseOperator implements Closeable {
 
         try {
             preparedStatement = connection.prepareStatement(sql);
+            if (parameters.length == 0) return preparedStatement;
 
             for (int n = 0; n < parameters.length; n++) {
                 preparedStatement.setObject(n + 1, parameters[n]);
