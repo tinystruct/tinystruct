@@ -20,6 +20,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
     private final Headers headers = new Headers();
     private final Cookie[] cookies;
     private final HashMap<String, List<String>> params = new HashMap<>();
+    private final boolean secure;
     private List<FileEntity> attachments;
     private String query;
     private Version version;
@@ -27,7 +28,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
     private String uri;
     private String sessionId;
 
-    public RequestBuilder(FullHttpRequest request) {
+    public RequestBuilder(FullHttpRequest request, boolean secure) {
         super(request);
 
         this.uri = request.uri();
@@ -132,6 +133,11 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
                 query = "";
             }
         }
+        this.secure = secure;
+    }
+
+    public RequestBuilder(FullHttpRequest request) {
+        this(request, false);
     }
 
     @Override
@@ -181,6 +187,11 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
     @Override
     public String query() {
         return this.query;
+    }
+
+    @Override
+    public boolean isSecure() {
+        return this.secure;
     }
 
     @Override

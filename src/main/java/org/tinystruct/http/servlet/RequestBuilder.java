@@ -20,11 +20,12 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     private final Headers headers = new Headers();
     private final Cookie[] cookies;
     private final Session memorySession;
+    private final boolean secure;
     private Version version;
     private Method method;
     private String uri;
 
-    public RequestBuilder(HttpServletRequest request) {
+    public RequestBuilder(HttpServletRequest request, boolean secure) {
         super(request);
 
         Enumeration<String> headerNames = this.request.getHeaderNames();
@@ -66,6 +67,12 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
             String s = attributeNames.nextElement();
             memorySession.setAttribute(s, session.getAttribute(s));
         }
+
+        this.secure = secure;
+    }
+
+    public RequestBuilder(HttpServletRequest request){
+        this(request, false);
     }
 
     public Session getSession(String id) {
@@ -89,6 +96,11 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     @Override
     public String query() {
         return this.request.getQueryString();
+    }
+
+    @Override
+    public boolean isSecure() {
+        return this.request.isSecure();
     }
 
     @Override
