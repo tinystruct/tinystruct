@@ -84,8 +84,16 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         response.setHeader("Cache-Control", "No-cache");
         response.setDateHeader("Expires", 0);
 
+        String ssl_enabled, http_protocol = "http://";
+        boolean ssl = false;
+        if ((ssl_enabled = this.settings.get("ssl.enabled")) != null) {
+            ssl = Boolean.parseBoolean(ssl_enabled);
+
+            if (ssl) http_protocol = "https://";
+        }
+
         final Context context = new ApplicationContext();
-        Request<HttpServletRequest, ServletInputStream> _request = new RequestBuilder(request);
+        Request<HttpServletRequest, ServletInputStream> _request = new RequestBuilder(request, ssl);
         Response<HttpServletResponse, ServletOutputStream> _response = new ResponseBuilder(response);
 
         context.setId(_request.getSession().getId());
@@ -117,14 +125,6 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             }
         } else {
             hostName = request.getServerName();
-        }
-
-        String ssl_enabled, http_protocol = "http://";
-        boolean ssl;
-        if ((ssl_enabled = this.settings.get("ssl.enabled")) != null) {
-            ssl = Boolean.parseBoolean(ssl_enabled);
-
-            if (ssl) http_protocol = "https://";
         }
 
         context.setAttribute(HTTP_PROTOCOL, http_protocol);

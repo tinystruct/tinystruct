@@ -51,8 +51,13 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) {
         // Decide whether to close the connection or not.
         boolean keepAlive = HttpUtil.isKeepAlive(msg);
+        boolean ssl = false;
+        String ssl_enabled;
+        if ((ssl_enabled = this.configuration.get("ssl.enabled")) != null) {
+            ssl = Boolean.parseBoolean(ssl_enabled);
+        }
 
-        Request<FullHttpRequest, Object> request = new RequestBuilder(msg);
+        Request<FullHttpRequest, Object> request = new RequestBuilder(msg, ssl);
         Context context = new ApplicationContext();
         context.setId(request.getSession().getId());
         this.service(ctx, request, context, keepAlive);
