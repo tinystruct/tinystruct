@@ -269,7 +269,7 @@ public class MySQLServer implements Repository {
     private void setParameters(PreparedStatement ps, FieldInfo[] values) throws SQLException {
         int i = 1;
         for (FieldInfo fieldInfo : values) {
-            if (!fieldInfo.autoIncrement()) {
+            if (fieldInfo != null && !fieldInfo.autoIncrement()) {
                 Object value = fieldInfo.value();
                 if ("int".equalsIgnoreCase(fieldInfo.getType().getRealType())) {
                     ps.setInt(i++, fieldInfo.intValue());
