@@ -1,7 +1,9 @@
-package org.tinystruct.http;
+package org.tinystruct.http.client;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachment;
+import org.tinystruct.data.Attachments;
+import org.tinystruct.http.*;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
 import java.io.File;
@@ -151,23 +153,5 @@ public class HttpRequestBuilder {
     public HttpRequestBuilder setRequestBody(String requestBody) {
         this.requestBody = requestBody;
         return this;
-    }
-
-    static class Attachments {
-        private final String parameterName;
-        private final List<Attachment> list;
-
-        Attachments(String parameterName, List<Attachment> attachments) {
-            this.parameterName = parameterName;
-            this.list = attachments;
-        }
-
-        public String getParameterName() {
-            return parameterName;
-        }
-
-        public List<Attachment> list() {
-            return list;
-        }
     }
 }
