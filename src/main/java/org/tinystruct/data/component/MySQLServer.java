@@ -22,6 +22,7 @@ import org.tinystruct.data.Repository;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Enumeration;
 
 public class MySQLServer implements Repository {
 
@@ -38,11 +39,25 @@ public class MySQLServer implements Repository {
      */
     @Override
     public boolean append(Field ready_fields, String table) throws ApplicationException {
-        String SQL = generateInsertSQL(ready_fields, table);
+        int cols = ready_fields.size();
 
+        String[] columns = new String[cols];
+        FieldInfo[] values = new FieldInfo[cols];
+        int i = 0;
+        Enumeration<String> keys = ready_fields.keys();
+        String key;
+        while (keys.hasMoreElements()) {
+            key = keys.nextElement();
+            if (!ready_fields.get(key).autoIncrement()) {
+                columns[i] = ready_fields.get(key).getColumnName();
+                values[i++] = ready_fields.get(key);
+            }
+        }
+
+        String SQL = generateInsertSQL(columns, table);
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
-            setParameters(ps, ready_fields);
+            setParameters(ps, values);
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -60,12 +75,25 @@ public class MySQLServer implements Repository {
      */
     @Override
     public boolean update(Field ready_fields, String table) throws ApplicationException {
-        String SQL = generateUpdateSQL(ready_fields, table);
+        int cols = ready_fields.size();
+
+        String key;
+        String[] columns = new String[cols];
+        FieldInfo[] values = new FieldInfo[cols];
+        int i = 0;
+        Enumeration<String> keys = ready_fields.keys();
+        while (keys.hasMoreElements()) {
+            key = keys.nextElement();
+            columns[i] = ready_fields.get(key).getColumnName();
+            values[i++] = ready_fields.get(key);
+        }
+
+        String SQL = generateUpdateSQL(columns, table);
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
-            setParameters(ps, ready_fields);
-            ps.setObject(ready_fields.size() + 1, ready_fields.get("Id").value()); // Set Id parameter
+            setParameters(ps, values);
+            ps.setObject(ready_fields.size(), ready_fields.get("Id").value()); // Set Id parameter
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -89,8 +117,7 @@ public class MySQLServer implements Repository {
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
             ps.setObject(1, Id);
-            if (ps.execute())
-                deleted = true;
+            if (ps.execute()) deleted = true;
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
@@ -195,42 +222,40 @@ public class MySQLServer implements Repository {
         return row;
     }
 
-    private String generateInsertSQL(Field ready_fields, String table) {
-        StringBuilder columns = new StringBuilder();
+    private String generateInsertSQL(String[] columns, String table) {
+        StringBuilder _columns = new StringBuilder();
         StringBuilder values = new StringBuilder();
 
-        for (String fieldName : ready_fields.keySet()) {
-            if (!ready_fields.get(fieldName).autoIncrement()) {
-                if (columns.length() > 0) {
-                    columns.append(", ");
-                    values.append(", ");
-                }
-                columns.append("`").append(ready_fields.get(fieldName).getColumnName()).append("`");
-                values.append("?");
+        for (String fieldName : columns) {
+            if (_columns.length() > 0) {
+                _columns.append(", ");
+                values.append(", ");
             }
+            _columns.append("`").append(fieldName).append("`");
+            values.append("?");
         }
 
-        return "INSERT INTO " + table + " (" + columns + ") VALUES (" + values + ")";
+        return "INSERT INTO " + table + " (" + _columns + ") VALUES (" + values + ")";
     }
 
-    private String generateUpdateSQL(Field ready_fields, String table) {
+    private String generateUpdateSQL(String[] columns, String table) {
         StringBuilder expressions = new StringBuilder();
 
-        for (String fieldName : ready_fields.keySet()) {
-            if (!fieldName.equalsIgnoreCase("Id")) {
+        for (String column : columns) {
+            if (!column.equalsIgnoreCase("Id")) {
                 if (expressions.length() > 0) {
                     expressions.append(", ");
                 }
-                expressions.append("`").append(ready_fields.get(fieldName).getColumnName()).append("`").append("=?");
+                expressions.append("`").append(column).append("`").append("=?");
             }
         }
 
         return "UPDATE " + table + " SET " + expressions + " WHERE id=?";
     }
 
-    private void setParameters(PreparedStatement ps, Field ready_fields) throws SQLException {
+    private void setParameters(PreparedStatement ps, FieldInfo[] values) throws SQLException {
         int i = 1;
-        for (FieldInfo fieldInfo : ready_fields.values()) {
+        for (FieldInfo fieldInfo : values) {
             if (!fieldInfo.autoIncrement()) {
                 Object value = fieldInfo.value();
                 if ("int".equalsIgnoreCase(fieldInfo.getType().getRealType())) {
