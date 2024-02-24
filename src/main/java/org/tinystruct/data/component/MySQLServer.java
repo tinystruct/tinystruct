@@ -26,6 +26,8 @@ import java.util.Enumeration;
 
 public class MySQLServer implements Repository {
 
+    public static final String COMMA = ",";
+
     public MySQLServer() {
     }
 
@@ -39,25 +41,38 @@ public class MySQLServer implements Repository {
      */
     @Override
     public boolean append(Field ready_fields, String table) throws ApplicationException {
-        int cols = ready_fields.size();
 
+        int i = 0, cols = ready_fields.size();
         String[] columns = new String[cols];
-        FieldInfo[] values = new FieldInfo[cols];
-        int i = 0;
-        Enumeration<String> keys = ready_fields.keys();
+        FieldInfo[] fields = new FieldInfo[cols];
+
         String key;
+        StringBuilder expressions = new StringBuilder(), values = new StringBuilder();
+        Enumeration<String> keys = ready_fields.keys();
         while (keys.hasMoreElements()) {
             key = keys.nextElement();
             if (!ready_fields.get(key).autoIncrement()) {
                 columns[i] = ready_fields.get(key).getColumnName();
-                values[i++] = ready_fields.get(key);
+                fields[i] = ready_fields.get(key);
+
+                if (expressions.length() == 0)
+                    expressions.append("`").append(columns[i]).append("`");
+                else
+                    expressions.append(COMMA).append("`").append(columns[i]).append("`");
+
+                if (values.length() == 0)
+                    values.append('?');
+                else
+                    values.append(COMMA).append('?');
+
+                i++;
             }
         }
 
-        String SQL = generateInsertSQL(columns, table);
+        String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES(" + values + ")";
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
-            setParameters(ps, values);
+            setParameters(ps, fields);
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -75,25 +90,38 @@ public class MySQLServer implements Repository {
      */
     @Override
     public boolean update(Field ready_fields, String table) throws ApplicationException {
-        int cols = ready_fields.size();
+        String key, id = "id";
+        Object Id = null;
+        StringBuilder expressions = new StringBuilder();
 
-        String key;
+        int i = 0, cols = ready_fields.size();
         String[] columns = new String[cols];
         FieldInfo[] values = new FieldInfo[cols];
-        int i = 0;
         Enumeration<String> keys = ready_fields.keys();
         while (keys.hasMoreElements()) {
             key = keys.nextElement();
+            if (key.equalsIgnoreCase("Id")) {
+                Id = ready_fields.get(key).value();
+                id = ready_fields.get(key).getColumnName();
+                continue;
+            }
+
             columns[i] = ready_fields.get(key).getColumnName();
-            values[i++] = ready_fields.get(key);
+            values[i] = ready_fields.get(key);
+
+            if (expressions.length() == 0)
+                expressions.append("`").append(columns[i]).append("`").append("=?");
+            else
+                expressions.append(COMMA).append("`").append(columns[i]).append("`").append("=?");
+
+            i++;
         }
 
-        String SQL = generateUpdateSQL(columns, table);
-
+        String SQL = "UPDATE " + table + " SET " + expressions + " WHERE " + id + "=?";
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
             setParameters(ps, values);
-            ps.setObject(ready_fields.size(), ready_fields.get("Id").value()); // Set Id parameter
+            ps.setObject(ready_fields.size(), Id); // Set Id parameter
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -236,21 +264,6 @@ public class MySQLServer implements Repository {
         }
 
         return "INSERT INTO " + table + " (" + _columns + ") VALUES (" + values + ")";
-    }
-
-    private String generateUpdateSQL(String[] columns, String table) {
-        StringBuilder expressions = new StringBuilder();
-
-        for (String column : columns) {
-            if (!column.equalsIgnoreCase("Id")) {
-                if (expressions.length() > 0) {
-                    expressions.append(", ");
-                }
-                expressions.append("`").append(column).append("`").append("=?");
-            }
-        }
-
-        return "UPDATE " + table + " SET " + expressions + " WHERE id=?";
     }
 
     private void setParameters(PreparedStatement ps, FieldInfo[] values) throws SQLException {
