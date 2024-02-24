@@ -62,5 +62,7 @@ public interface Request<T, I> extends Protocol {
 
     String query();
 
+    boolean isSecure();
+
     I stream();
 }
