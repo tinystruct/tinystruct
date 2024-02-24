@@ -15,7 +15,6 @@
  *******************************************************************************/
 package org.tinystruct.handler;
 
-
 import org.tinystruct.ApplicationException;
 import org.tinystruct.http.*;
 
@@ -29,23 +28,31 @@ import static org.tinystruct.http.Constants.JSESSIONID;
 public class Reforward {
     private final Response response;
     private String fromURL = "";
-    private String currentURL = "";
+    private final String currentURL;
 
+    /**
+     * Constructor for Reforward class.
+     *
+     * @param request  The HTTP request object.
+     * @param response The HTTP response object.
+     * @throws ApplicationException if an error occurs.
+     */
     public Reforward(Request request, Response response) throws ApplicationException {
-
         this.response = response;
 
-        if (request.query() != null)
+        // Construct the current URL
+        if (request.query() != null) {
             this.currentURL = request.uri() + '?' + request.query();
-        else {
+        } else {
             this.currentURL = request.uri();
         }
 
+        // Determine the 'from' URL based on the request
         Headers headers = request.headers();
         if (request.getParameter("from") != null && request.getParameter("from").trim().length() > 0) {
             this.setDefault(request.getParameter("from"));
-        } else if (headers.get(Header.REFERER) != null && headers.get(Header.REFERER).toString().startsWith("http://" + request.headers().get(Header.SERVER))) {
-            this.fromURL = headers.get(Header.REFERER).toString();
+        } else if (headers.get(Header.REFERER) != null && headers.get(Header.REFERER).toString().startsWith(request.isSecure() ? "https" : "http" + "://" + request.headers().get(Header.SERVER))) {
+            this.fromURL = request.isSecure() ? headers.get(Header.REFERER).toString().replaceAll("http://", "https://") : headers.get(Header.REFERER).toString();
         } else {
             this.fromURL = "/";
         }
@@ -57,6 +64,7 @@ public class Reforward {
             responseHeaders.add(Header.SET_COOKIE.set(cookie));
         }
 
+        // Set JSESSIONID cookie in response
         String host = request.headers().get(Header.HOST).toString();
         Cookie cookie = new CookieImpl(JSESSIONID);
         if (host.contains(":"))
@@ -69,18 +77,36 @@ public class Reforward {
         responseHeaders.add(Header.SET_COOKIE.set(cookie));
     }
 
+    /**
+     * Set the default 'from' URL.
+     *
+     * @param url The default 'from' URL.
+     * @throws ApplicationException if an error occurs.
+     */
     public void setDefault(String url) throws ApplicationException {
-        if (url.indexOf("%3A") != -1) {
+        if (url.contains("%3A")) {
             this.fromURL = URLDecoder.decode(url, StandardCharsets.UTF_8);
         } else this.fromURL = url;
     }
 
+    /**
+     * Match an action and set the 'from' URL accordingly.
+     *
+     * @param action  The action to match.
+     * @param fromURL The 'from' URL to set.
+     */
     public void match(String action, String fromURL) {
         if ("".equals(action)) {
             this.fromURL = fromURL;
         }
     }
 
+    /**
+     * Forward the response to the 'from' URL.
+     *
+     * @return The HTTP response object.
+     * @throws ApplicationException if an error occurs.
+     */
     public Response forward() throws ApplicationException {
         try {
             response.sendRedirect(this.fromURL);
@@ -91,11 +117,21 @@ public class Reforward {
         return response;
     }
 
-    public String getCurrentURL() throws ApplicationException {
+    /**
+     * Get the current URL encoded.
+     *
+     * @return The current URL encoded.
+     */
+    public String getCurrentURL() {
         return URLEncoder.encode(this.currentURL, StandardCharsets.UTF_8);
     }
 
-    public String getFromURL() throws ApplicationException {
+    /**
+     * Get the 'from' URL encoded.
+     *
+     * @return The 'from' URL encoded.
+     */
+    public String getFromURL() {
         return URLEncoder.encode(this.fromURL, StandardCharsets.UTF_8);
     }
 
