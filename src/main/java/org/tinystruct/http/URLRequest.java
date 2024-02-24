@@ -18,6 +18,8 @@ package org.tinystruct.http;
 
 import org.brotli.dec.BrotliInputStream;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.data.Attachments;
+import org.tinystruct.http.client.HttpRequestBuilder;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
 import java.io.ByteArrayOutputStream;
@@ -28,7 +30,6 @@ import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.DeflaterInputStream;
@@ -146,7 +147,7 @@ public class URLRequest {
                                 writer.flush();
                             }
                         } else if (request.getAttachments() != null) {
-                            HttpRequestBuilder.Attachments attachments = request.getAttachments();
+                            Attachments attachments = request.getAttachments();
                             String fileBoundary = boundary;
                             attachments.list().forEach(attachment -> {
                                 try {

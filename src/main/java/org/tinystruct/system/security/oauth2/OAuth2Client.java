@@ -3,6 +3,7 @@ package org.tinystruct.system.security.oauth2;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.*;
+import org.tinystruct.http.client.HttpRequestBuilder;
 import org.tinystruct.system.security.Authentication;
 import org.tinystruct.system.security.Credential;
 
@@ -11,7 +12,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 
 public class OAuth2Client implements Authentication {
