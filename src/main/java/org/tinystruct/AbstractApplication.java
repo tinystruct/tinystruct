@@ -503,6 +503,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         this.setVariable(LANGUAGE_CODE, locale.getLanguage());
         this.setVariable(LANGUAGE, locale.toString());
+        this.setVariable(LANGUAGE_TAG, locale.toLanguageTag());
         this.setVariable(new ObjectVariable("locale", locale), true);
     }
 
