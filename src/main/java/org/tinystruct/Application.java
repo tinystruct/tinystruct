@@ -40,6 +40,11 @@ public interface Application {
     String LANGUAGE = "LANGUAGE";
 
     /**
+     * Constant for language tag.
+     */
+    String LANGUAGE_TAG = "LANGUAGE_TAG";
+
+    /**
      * Constant for default base url.
      */
     String DEFAULT_BASE_URL = "default.base_url";
