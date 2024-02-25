@@ -150,6 +150,12 @@ public final class ApplicationManager {
      */
     public static void install(Application app, Configuration<String> config) {
         settings = config;
+        try {
+            init();
+        } catch (ApplicationException e) {
+            throw new ApplicationRuntimeException(e.getMessage(), e.getRootCause());
+        }
+
         install(app);
     }
 
