@@ -239,7 +239,7 @@
         <mysql.connector.version>8.2.0</mysql.connector.version>
         <graalvm.version>22.3.3</graalvm.version>
         <jmh.version>1.37</jmh.version>
-        <native.maven.plugin.version>0.9.26</native.maven.plugin.version>
+        <native.maven.plugin.version>0.10.1</native.maven.plugin.version>
     </properties>
     <build>
         <plugins>
