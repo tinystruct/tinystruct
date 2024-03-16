@@ -21,24 +21,20 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.Set;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 public class Settings implements Configuration<String> {
     private static final long serialVersionUID = 8348657988449703373L;
     private static final String DEFAULT_FILE = "/application.properties";
-    private static String fileName;
+    private static final String FILE_PATH = System.getProperty("user.dir") + File.separator + DEFAULT_FILE;
     private final Properties properties;
-    private boolean overwrite = false;
 
     public Settings() {
         this(DEFAULT_FILE);
-        this.overwrite = true;
     }
 
     public Settings(String file) {
-        fileName = file.equalsIgnoreCase(DEFAULT_FILE) ? DEFAULT_FILE : file;
-        properties = SingletonHolder.INSTANCE.getProperties();
+        this.properties = SingletonHolder.INSTANCE.getProperties(file);
     }
 
     public Properties getProperties() {
@@ -69,30 +65,18 @@ public class Settings implements Configuration<String> {
     @Override
     public void set(String key, String value) {
         properties.put(key, value);
+        saveProperties();
     }
 
     @Override
     public void remove(String key) {
         properties.remove(key);
+        saveProperties();
     }
 
     @Override
     public Set<String> propertyNames() {
         return properties.stringPropertyNames();
-    }
-
-    public void update() {
-        if (!overwrite) {
-            return;
-        }
-
-        String comments = "Tinystruct Configuration";
-        String filePath = System.getProperty("user.dir") + File.separator + fileName;
-        try (OutputStream out = new FileOutputStream(filePath)) {
-            properties.store(out, comments);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public boolean isEmpty() {
@@ -104,32 +88,28 @@ public class Settings implements Configuration<String> {
         return properties.toString();
     }
 
+    private void saveProperties() {
+        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(FILE_PATH))) {
+            properties.store(out, "Tinystruct Configuration");
+        } catch (IOException e) {
+            throw new ApplicationRuntimeException("Error saving properties: " + e.getMessage(), e);
+        }
+    }
+
     private static final class SingletonHolder {
         public static final SingletonHolder INSTANCE = new SingletonHolder();
-        private static final Properties properties = new Properties();
-        private static final LogManager logManager = LogManager.getLogManager();
-        private static final Logger logger = Logger.getLogger(Settings.class.getName());
+        private final Properties properties = new Properties();
 
-        static {
-            try (InputStream in = SingletonHolder.class.getResourceAsStream(fileName)) {
-                if (null != in) {
+        private Properties getProperties(String fileName) {
+            try (InputStream in = Settings.class.getResourceAsStream(fileName)) {
+                if (in != null) {
                     properties.load(in);
-                    String loggingOverride = properties.getProperty("logging.override");
-                    if (loggingOverride != null && loggingOverride.equalsIgnoreCase("true")) {
-                        logManager.readConfiguration(in);
-                    }
                 } else {
-                    logger.warning("No settings loaded.");
+                    Logger.getLogger(Settings.class.getName()).warning("No settings loaded.");
                 }
             } catch (IOException e) {
-                throw new ApplicationRuntimeException(e.getMessage(), e);
+                throw new ApplicationRuntimeException("Error loading properties: " + e.getMessage(), e);
             }
-        }
-
-        private SingletonHolder() {
-        }
-
-        public Properties getProperties() {
             return properties;
         }
     }
