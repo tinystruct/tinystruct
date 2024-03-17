@@ -79,6 +79,17 @@ public class Settings implements Configuration<String> {
         return properties.stringPropertyNames();
     }
 
+    @Override
+    public String getOrDefault(String key, String value) {
+        return this.get(key).equals("") ? value : this.get(key);
+    }
+
+    @Override
+    public void setIfAbsent(String key, String value) {
+        if (!properties.containsKey(key))
+            this.set(key, value);
+    }
+
     public boolean isEmpty() {
         return properties.isEmpty();
     }
