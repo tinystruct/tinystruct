@@ -29,4 +29,8 @@ public interface Configuration<T> extends Serializable {
     String toString();
 
     Set<String> propertyNames();
+
+    T getOrDefault(T s, T name);
+
+    void setIfAbsent(T s, T path);
 }
