@@ -35,7 +35,8 @@ public class Field extends ConcurrentHashMap<String, FieldInfo> {
         StringBuilder to = new StringBuilder();
         FieldInfo fieldInfo;
         String key;
-        for (Enumeration<String> f = this.keys(); f.hasMoreElements(); ) {
+        Enumeration<String> f = this.keys();
+        while (f.hasMoreElements()) {
             key = f.nextElement();
             fieldInfo = this.get(key);
 
