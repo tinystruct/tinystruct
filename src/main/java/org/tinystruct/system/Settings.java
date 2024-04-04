@@ -99,7 +99,7 @@ public class Settings implements Configuration<String> {
         return properties.toString();
     }
 
-    private void saveProperties() {
+    public void saveProperties() {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(FILE_PATH))) {
             properties.store(out, "Tinystruct Configuration");
         } catch (IOException e) {
