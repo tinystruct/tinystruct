@@ -32,6 +32,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -179,7 +180,9 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
 
         if (contentType == null) {
             try {
-                contentType = Files.probeContentType(file.toPath());
+                // Fix the issue as if the name include two dots, the content type will be retrieved incorrectly.
+                String name = file.getName().replaceAll("\\.min\\.", ".");
+                contentType = Files.probeContentType(Path.of(name));
             } catch (IOException e) {
                 // Log or handle the exception appropriately
             }
