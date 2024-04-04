@@ -150,7 +150,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.4.0</version>
+            <version>${mockito.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
         <dependency>
@@ -239,6 +239,7 @@
         <mysql.connector.version>8.2.0</mysql.connector.version>
         <graalvm.version>22.3.3</graalvm.version>
         <jmh.version>1.37</jmh.version>
+        <mockito.version>5.10.0</mockito.version>
         <native.maven.plugin.version>0.10.1</native.maven.plugin.version>
     </properties>
     <build>
