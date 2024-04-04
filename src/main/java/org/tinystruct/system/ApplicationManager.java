@@ -54,7 +54,7 @@ public final class ApplicationManager {
         synchronized (ApplicationManager.class) {
             if (initialized) return;
 
-            settings = (settings == null) ? new Settings("/application.properties") : settings;
+            settings = (settings == null) ? new Settings("application.properties") : settings;
             // Generate Command Script
             generateDispatcherCommand(VERSION, false);
 

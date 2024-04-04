@@ -35,7 +35,7 @@ public final class ClassFileLoader extends ClassLoader {
     // Private constructor to prevent direct instantiation
     private ClassFileLoader() {
         // Initialize configuration settings from application.properties
-        config = new Settings("/application.properties");
+        config = new Settings("application.properties");
     }
 
     /**
