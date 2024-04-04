@@ -15,33 +15,33 @@
  *******************************************************************************/
 package org.tinystruct.handler;
 
-import org.tinystruct.ApplicationContext;
-import org.tinystruct.ApplicationException;
-import org.tinystruct.application.Context;
-import org.tinystruct.http.Header;
-import org.tinystruct.http.Request;
-import org.tinystruct.http.Response;
-import org.tinystruct.http.ResponseStatus;
-import org.tinystruct.http.servlet.RequestBuilder;
-import org.tinystruct.http.servlet.ResponseBuilder;
-import org.tinystruct.system.*;
-import org.tinystruct.system.util.StringUtilities;
-
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import org.tinystruct.ApplicationContext;
+import org.tinystruct.ApplicationException;
+import org.tinystruct.application.Context;
+import org.tinystruct.http.*;
+import org.tinystruct.http.servlet.RequestBuilder;
+import org.tinystruct.http.servlet.ResponseBuilder;
+import org.tinystruct.system.ApplicationManager;
+import org.tinystruct.system.Bootstrap;
+import org.tinystruct.system.Configuration;
+import org.tinystruct.system.Settings;
+import org.tinystruct.system.util.StringUtilities;
+
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;
 
-import static org.tinystruct.Application.LANGUAGE;
 import static org.tinystruct.Application.METHOD;
 import static org.tinystruct.http.Constants.*;
 
+/**
+ * DefaultHandler is responsible for handling HTTP requests and managing the application's lifecycle.
+ */
 public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
-
     private static final Logger logger = Logger.getLogger(DefaultHandler.class.getName());
     private static final long serialVersionUID = 0;
     private String charsetName;
@@ -57,149 +57,147 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             logger.severe(e.getMessage());
         }
 
-        System.out.println("Initialize servlet config and starting...");
+        logger.info("Initialized servlet config and starting...");
     }
 
     @Override
     public void init(FilterConfig config) throws ServletException {
         this.path = config.getServletContext().getRealPath("");
-
         try {
             this.start();
         } catch (ApplicationException e) {
             logger.severe(e.getMessage());
         }
 
-        logger.info("Initialize filter config and starting...");
+        logger.info("Initialized filter config and starting...");
     }
 
     @Override
-    public void service(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-        request.setCharacterEncoding(this.charsetName);
-
-        response.setContentType("text/html;charset=" + this.charsetName);
-        response.setCharacterEncoding(this.charsetName);
+    public void service(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        request.setCharacterEncoding(charsetName);
+        response.setContentType("text/html;charset=" + charsetName);
+        response.setCharacterEncoding(charsetName);
         response.setHeader("Pragma", "No-cache");
         response.setHeader("Cache-Control", "No-cache");
         response.setDateHeader("Expires", 0);
 
-        String ssl_enabled, http_protocol = "http://";
-        boolean ssl = false;
-        if ((ssl_enabled = this.settings.get("ssl.enabled")) != null) {
-            ssl = Boolean.parseBoolean(ssl_enabled);
-
-            if (ssl) http_protocol = "https://";
-        }
-
         final Context context = new ApplicationContext();
-        Request<HttpServletRequest, ServletInputStream> _request = new RequestBuilder(request, ssl);
+        Request<HttpServletRequest, ServletInputStream> _request = new RequestBuilder(request, isSSL());
         Response<HttpServletResponse, ServletOutputStream> _response = new ResponseBuilder(response);
-
-        context.setId(_request.getSession().getId());
-        context.setAttribute(HTTP_REQUEST, _request);
-        context.setAttribute(HTTP_RESPONSE, _response);
-        context.setAttribute(HTTP_SCHEME, request.getScheme());
-        context.setAttribute(HTTP_SERVER, request.getServerName());
-
-        String lang = _request.getParameter("lang"), language = "";
-        if (lang != null && lang.trim().length() > 0) {
-            String name = lang.replace('-', '_');
-
-            if (Language.support(name) && !lang.equalsIgnoreCase(this.settings.get("language"))) {
-                String[] local = name.split("_");
-                context.setAttribute(LANGUAGE, name);
-                language = "lang=" + local[0] + "-" + local[1].toUpperCase() + "&";
-            }
-        }
-
-        String url_prefix = "/";
-        if (this.settings.get("default.url_rewrite") != null && !"enabled".equalsIgnoreCase(this.settings.get("default.url_rewrite"))) {
-            url_prefix = "/?" + language + "q=";
-        }
-
-        String hostName;
-        if ((hostName = this.settings.get("default.hostname")) != null) {
-            if (hostName.length() <= 3) {
-                hostName = request.getServerName();
-            }
-        } else {
-            hostName = request.getServerName();
-        }
-
-        context.setAttribute(HTTP_PROTOCOL, http_protocol);
-
-        if (request.getServerPort() == 80)
-            context.setAttribute(HTTP_HOST, http_protocol + hostName + url_prefix);
-        else
-            context.setAttribute(HTTP_HOST, http_protocol + hostName + ":" + request.getServerPort() + url_prefix);
-        context.setAttribute(METHOD, request.getMethod());
-
-        String query = _request.getParameter("q");
         try {
+            context.setId(_request.getSession().getId());
+            context.setAttribute(HTTP_REQUEST, _request);
+            context.setAttribute(HTTP_RESPONSE, _response);
+            context.setAttribute(HTTP_SCHEME, request.getScheme());
+            context.setAttribute(HTTP_SERVER, request.getServerName());
+            context.setAttribute(HTTP_PROTOCOL, getProtocol(request));
+            context.setAttribute(HTTP_HOST, getHost(request));
+            context.setAttribute(METHOD, request.getMethod());
+
+            String query = _request.getParameter("q");
             if (query != null) {
-                if (query.indexOf('?') != -1)
-                    query = query.substring(0, query.indexOf('?'));
-                query = StringUtilities.htmlSpecialChars(query);
-                if (_request.getParameter("output") != null && "function".equalsIgnoreCase(_request.getParameter("output"))) {
-                    ApplicationManager.call(query, context);
-                } else {
-                    Object message;
-                    if ((message = ApplicationManager.call(query, context)) != null)
-                        if (message instanceof byte[]) {
-                            byte[] bytes = (byte[]) message;
-                            _response.addHeader(Header.CONTENT_LENGTH.name(), bytes.length);
-                            _response.get().write(bytes);
-                            _response.get().close();
-                        } else {
-                            BufferedWriter bufferedWriter = getWriter(_response.get());
-                            bufferedWriter.write(String.valueOf(message));
-                            bufferedWriter.close();
-                        }
-                    else {
-                        BufferedWriter bufferedWriter = getWriter(_response.get());
-                        bufferedWriter.write("No response retrieved!");
-                        bufferedWriter.close();
-                    }
-                }
+                handleRequest(query, context, _response);
             } else {
-                BufferedWriter bufferedWriter = getWriter(_response.get());
-                bufferedWriter.write(String.valueOf(ApplicationManager.call(this.settings.get("default.home.page"), context)));
-                bufferedWriter.close();
+                handleDefaultPage(context, _response);
             }
         } catch (ApplicationException e) {
-            _response.setStatus(ResponseStatus.valueOf(e.getStatus()));
             try {
-                HttpSession session = request.getSession();
-                session.setAttribute("error", e);
-
-                if (!Boolean.parseBoolean(this.settings.get("default.error.process"))) {
-                    String defaultErrorPage = this.settings.get("default.error.page");
-
-                    Reforward forward = new Reforward(_request, _response);
-                    forward.setDefault(defaultErrorPage.trim().isEmpty() ? "/?q=error" : "/?q=" + defaultErrorPage);
-                    forward.forward();
-                }
-            } catch (ApplicationException e1) {
-                e1.printStackTrace();
+                handleApplicationException(_request, _response, e);
+            } catch (ApplicationException ex) {
+                ex.printStackTrace();
             }
+        }
+    }
+
+    /**
+     * Handles the HTTP request by processing the query.
+     *
+     * @param query     The query string
+     * @param context   The application context
+     * @param response The HTTP response object
+     * @throws IOException if an I/O error occurs
+     */
+    private void handleRequest(String query, Context context, Response<HttpServletResponse, ServletOutputStream> response) throws IOException, ApplicationException {
+        // Handle request
+        query = StringUtilities.htmlSpecialChars(query);
+        Object message = ApplicationManager.call(query, context);
+        if (message != null) {
+            if (message instanceof byte[]) {
+                byte[] bytes = (byte[]) message;
+                response.addHeader(Header.CONTENT_LENGTH.name(), String.valueOf(bytes.length));
+                response.get().write(bytes);
+            } else {
+                try (BufferedWriter bufferedWriter = getWriter(response.get())) {
+                    bufferedWriter.write(String.valueOf(message));
+                }
+            }
+        } else {
+            try (BufferedWriter bufferedWriter = getWriter(response.get())) {
+                bufferedWriter.write("No response retrieved!");
+            }
+        }
+    }
+
+    /**
+     * Handles the default page request.
+     *
+     * @param context   The application context
+     * @param response The HTTP response object
+     * @throws IOException if an I/O error occurs
+     */
+    private void handleDefaultPage(Context context, Response<HttpServletResponse, ServletOutputStream> response) throws IOException, ApplicationException {
+        try (BufferedWriter bufferedWriter = getWriter(response.get())) {
+            bufferedWriter.write(String.valueOf(ApplicationManager.call(settings.get("default.home.page"), context)));
+        }
+    }
+
+    /**
+     * Handles application exceptions.
+     *
+     * @param request  The HTTP servlet request
+     * @param response The HTTP servlet response
+     * @param e        The application exception
+     * @throws IOException if an I/O error occurs
+     */
+    private void handleApplicationException(Request request, Response response, ApplicationException e) throws IOException, ApplicationException {
+        response.setStatus(ResponseStatus.valueOf(e.getStatus()));
+        Session session = request.getSession();
+        session.setAttribute("error", e);
+        if (!Boolean.parseBoolean(settings.get("default.error.process"))) {
+            String defaultErrorPage = settings.get("default.error.page");
+            Reforward forward = new Reforward(request, response);
+            forward.setDefault(defaultErrorPage.trim().isEmpty() ? "/?q=error" : "/?q=" + defaultErrorPage);
+            forward.forward();
         }
     }
 
     @Override
     public void start() throws ApplicationException {
-        this.settings = new Settings();
-        if (this.settings.get("default.file.encoding") != null)
-            this.charsetName = this.settings.get("default.file.encoding");
+        settings = new Settings();
+        charsetName = settings.getOrDefault("default.file.encoding", Charset.defaultCharset().name());
+        settings.set("language", "zh_CN");
+        settings.setIfAbsent("system.directory", path);
+    }
 
-        if (this.charsetName == null || this.charsetName.trim().isEmpty())
-            this.charsetName = System.getProperty("file.encoding");
-        else
-            System.setProperty("file.encoding", charsetName);
+    private boolean isSSL() {
+        String sslEnabled = settings.get("ssl.enabled");
+        return Boolean.parseBoolean(sslEnabled);
+    }
 
-        this.settings.set("language", "zh_CN");
-        if (this.settings.get("system.directory") == null)
-            this.settings.set("system.directory", this.path);
+    private String getProtocol(HttpServletRequest request) {
+        return isSSL() ? "https://" : "http://";
+    }
+
+    private String getHost(HttpServletRequest request) {
+        int serverPort = request.getServerPort();
+        String defaultHostName = request.getServerName();
+        String protocol = getProtocol(request);
+
+        if (serverPort == 80) {
+            return protocol + defaultHostName;
+        } else {
+            return protocol + defaultHostName + ":" + serverPort;
+        }
     }
 
     /**
@@ -209,7 +207,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
      * @return BufferedWriter
      */
     private BufferedWriter getWriter(OutputStream out) {
-        return new BufferedWriter(new OutputStreamWriter(out, Charset.defaultCharset()));
+        return new BufferedWriter(new OutputStreamWriter(out, Charset.forName(charsetName)));
     }
 
     @Override
@@ -218,8 +216,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response,
-                         FilterChain chain) throws IOException, ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         final HttpServletRequest req = (HttpServletRequest) request;
         final HttpServletResponse resp = (HttpServletResponse) response;
         final long now = System.currentTimeMillis();
