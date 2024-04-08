@@ -25,16 +25,14 @@ import org.tinystruct.application.Context;
 import org.tinystruct.http.*;
 import org.tinystruct.http.servlet.RequestBuilder;
 import org.tinystruct.http.servlet.ResponseBuilder;
-import org.tinystruct.system.ApplicationManager;
-import org.tinystruct.system.Bootstrap;
-import org.tinystruct.system.Configuration;
-import org.tinystruct.system.Settings;
+import org.tinystruct.system.*;
 import org.tinystruct.system.util.StringUtilities;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;
 
+import static org.tinystruct.Application.LANGUAGE;
 import static org.tinystruct.Application.METHOD;
 import static org.tinystruct.http.Constants.*;
 
@@ -91,7 +89,24 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             context.setAttribute(HTTP_SCHEME, request.getScheme());
             context.setAttribute(HTTP_SERVER, request.getServerName());
             context.setAttribute(HTTP_PROTOCOL, getProtocol(request));
-            context.setAttribute(HTTP_HOST, getHost(request));
+
+            String lang = _request.getParameter("lang"), language = "";
+            if (lang != null && lang.trim().length() > 0) {
+                String name = lang.replace('-', '_');
+
+                if (Language.support(name) && !lang.equalsIgnoreCase(this.settings.get("language"))) {
+                    String[] local = name.split("_");
+                    context.setAttribute(LANGUAGE, name);
+                    language = "lang=" + local[0] + "-" + local[1].toUpperCase() + "&";
+                }
+            }
+
+            String url_prefix = "/";
+            if (this.settings.get("default.url_rewrite") != null && !"enabled".equalsIgnoreCase(this.settings.get("default.url_rewrite"))) {
+                url_prefix = "/?" + language + "q=";
+            }
+
+            context.setAttribute(HTTP_HOST, getHost(request) + url_prefix);
             context.setAttribute(METHOD, request.getMethod());
 
             String query = _request.getParameter("q");
