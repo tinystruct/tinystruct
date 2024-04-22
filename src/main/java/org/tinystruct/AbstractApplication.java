@@ -90,6 +90,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
     private Locale locale;
 
     /**
+     * Default mode for the application.
+     */
+    protected Action.Mode mode = Action.Mode.All;
+
+    /**
      * Abstract application constructor.
      */
     public AbstractApplication() {
@@ -296,6 +301,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
         Action action = this.actionRegistry.getAction(path, method);
         if (action == null)
             throw new ApplicationException("Action " + path + " path does not registered.");
+
+        // Only allow the mode
+        if (action.getMode() != this.mode) {
+            throw new ApplicationException("The action is not allowed to be executed.");
+        }
 
         // Execute the action with or without parameters
         if (parameters == null) {
