@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.tinystruct;
 
+import org.tinystruct.application.Action;
 import org.tinystruct.application.Context;
 import org.tinystruct.application.Template;
 import org.tinystruct.system.Configuration;
@@ -216,4 +217,11 @@ public interface Application {
      * @param path the path of the link
      */
     void createLinkVariable(String path);
+
+    /**
+     * Return the mode of the application.
+     *
+     * @return mode
+     */
+    Action.Mode getMode();
 }
