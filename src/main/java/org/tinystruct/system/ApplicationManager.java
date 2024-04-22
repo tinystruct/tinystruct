@@ -67,7 +67,7 @@ public final class ApplicationManager {
                             Application app = (Application) Class.forName(appClassName).getDeclaredConstructor().newInstance();
                             ApplicationManager.install(app);
                         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException |
-                                InvocationTargetException | NoSuchMethodException e) {
+                                 InvocationTargetException | NoSuchMethodException e) {
                             throw new ApplicationException(e.toString(), e);
                         }
                     }
@@ -211,6 +211,19 @@ public final class ApplicationManager {
      * @throws ApplicationException If an error occurs during action execution.
      */
     public static Object call(final String path, final Context context) throws ApplicationException {
+        return call(path, context, Action.Mode.All);
+    }
+
+    /**
+     * Call an action with a specific context.
+     *
+     * @param path    Path of the action.
+     * @param context Context for the action.
+     * @param mode    Mode of the execution.
+     * @return The result of the action execution.
+     * @throws ApplicationException If an error occurs during action execution.
+     */
+    public static Object call(final String path, final Context context, final Action.Mode mode) throws ApplicationException {
         if (path == null || path.trim().isEmpty()) {
             throw new ApplicationException(
                     "Invalid: empty path", 400);
@@ -228,6 +241,10 @@ public final class ApplicationManager {
         if (action == null) {
             throw new ApplicationException(
                     "Access error [" + path + "]: Application has not been installed, or it has been uninstalled already.", 404);
+        }
+
+        if (action.getMode().ordinal() < mode.ordinal()) {
+            throw new ApplicationException("The action is not allowed to be executed.");
         }
 
         if (context != null) {
