@@ -15,5 +15,7 @@ public @interface Action {
     Argument[] options() default {}; // Command-line options
 
     String example() default ""; // Description of the action
+
+    org.tinystruct.application.Action.Mode mode() default org.tinystruct.application.Action.Mode.All; // Mark the functionality only available to the specified mode
 }
 
