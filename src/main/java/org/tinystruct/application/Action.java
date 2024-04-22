@@ -68,7 +68,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
      * @param mode     The method only be executable with the specified mode.
      */
     public Action(int id, Application app, String pathRule, Method method, Mode mode) {
-        this(id, app, pathRule,method);
+        this(id, app, pathRule, method);
         this.mode = mode;
     }
 
@@ -177,11 +177,6 @@ public class Action implements org.tinystruct.application.Method<Object> {
             throw new ApplicationException("Undefined Application.");
         }
 
-        // Only allow the mode
-        if (app.getMode() != this.mode) {
-            throw new ApplicationException("The action is not allowed to be executed.");
-        }
-
         if (app.getContext() != null && app.getContext().getAttribute("--help") != null) {
             return app.help();
         }
@@ -259,9 +254,9 @@ public class Action implements org.tinystruct.application.Method<Object> {
     }
 
     public enum Mode {
-        All,
         CLI,
-        Web
+        Web,
+        All
     }
 }
 
