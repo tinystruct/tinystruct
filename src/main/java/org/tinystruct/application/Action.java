@@ -177,6 +177,11 @@ public class Action implements org.tinystruct.application.Method<Object> {
             throw new ApplicationException("Undefined Application.");
         }
 
+        // Only allow the mode
+        if (app.getMode() != this.mode) {
+            throw new ApplicationException("The action is not allowed to be executed.");
+        }
+
         if (app.getContext() != null && app.getContext().getAttribute("--help") != null) {
             return app.help();
         }
