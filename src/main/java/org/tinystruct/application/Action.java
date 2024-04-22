@@ -37,6 +37,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
     private final Pattern pattern;
     private final Application app;
     private final Method method;
+    private Mode mode;
     private String pathRule;
     private Object[] args = new Object[]{};
 
@@ -54,6 +55,21 @@ public class Action implements org.tinystruct.application.Method<Object> {
         this.pathRule = pathRule;
         this.method = method;
         this.pattern = Pattern.compile(pathRule);
+        this.mode = Mode.All;
+    }
+
+    /**
+     * Constructor for Action.
+     *
+     * @param id       The unique identifier for the action.
+     * @param app      The associated Application instance.
+     * @param pathRule The URL pattern associated with the action.
+     * @param method   The method to be executed.
+     * @param mode     The method only be executable with the specified mode.
+     */
+    public Action(int id, Application app, String pathRule, Method method, Mode mode) {
+        this(id, app, pathRule,method);
+        this.mode = mode;
     }
 
     /**
@@ -232,4 +248,15 @@ public class Action implements org.tinystruct.application.Method<Object> {
     public Pattern getPattern() {
         return pattern;
     }
+
+    public Mode getMode() {
+        return mode;
+    }
+
+    public enum Mode {
+        All,
+        CLI,
+        Web
+    }
 }
+
