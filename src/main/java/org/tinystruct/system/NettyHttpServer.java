@@ -75,7 +75,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
             @Argument(key = "http.proxyPort", description = "Proxy port for http"),
             @Argument(key = "https.proxyHost", description = "Proxy host for https"),
             @Argument(key = "https.proxyPort", description = "Proxy port for https")
-    }, example = "bin/dispatcher start --import org.tinystruct.system.NettyHttpServer --server-port 777")
+    }, example = "bin/dispatcher start --import org.tinystruct.system.NettyHttpServer --server-port 777", mode = org.tinystruct.application.Action.Mode.CLI)
     @Override
     public void start() throws ApplicationException {
 
@@ -95,7 +95,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
             }
         }
 
-        System.out.println(ApplicationManager.call("--logo", null));
+        System.out.println(ApplicationManager.call("--logo", null, org.tinystruct.application.Action.Mode.CLI));
 
         String charsetName = null;
         Settings settings = new Settings();
@@ -152,7 +152,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
 
             // Open the default browser
             this.context.setAttribute("--url", "http://localhost:" + this.port);
-            ApplicationManager.call("open", this.context);
+            ApplicationManager.call("open", this.context, org.tinystruct.application.Action.Mode.CLI);
 
             // Wait until the server socket is closed.
             future.channel().closeFuture().sync();

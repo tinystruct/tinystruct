@@ -57,7 +57,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             @Argument(key = "http.proxyPort", description = "Proxy port for http"),
             @Argument(key = "https.proxyHost", description = "Proxy host for https"),
             @Argument(key = "https.proxyPort", description = "Proxy port for https")
-    }, example = "bin/dispatcher start --import org.tinystruct.system.TomcatServer --server-port 777")
+    }, example = "bin/dispatcher start --import org.tinystruct.system.TomcatServer --server-port 777", mode = org.tinystruct.application.Action.Mode.CLI)
     @Override
     public void start() throws ApplicationException {
         if (started) return;
@@ -100,7 +100,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             }
         }
 
-        System.out.println(ApplicationManager.call("--logo", null));
+        System.out.println(ApplicationManager.call("--logo", null, org.tinystruct.application.Action.Mode.CLI));
 
         final long start = System.currentTimeMillis();
         final String webappDirLocation = ".";
@@ -139,7 +139,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
 
             // Open the default browser
             this.context.setAttribute("--url", "http://localhost:" + webPort);
-            ApplicationManager.call("open", this.context);
+            ApplicationManager.call("open", this.context, org.tinystruct.application.Action.Mode.CLI);
 
             tomcat.getServer().await();
         } catch (LifecycleException e) {

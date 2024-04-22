@@ -28,7 +28,7 @@ public class RedisProxyServer extends ProxyServer implements Bootstrap {
     private final Logger logger = Logger.getLogger(RedisProxyServer.class.getName());
 
     public RedisProxyServer() {
-
+        super();
     }
 
     @Override
@@ -45,7 +45,7 @@ public class RedisProxyServer extends ProxyServer implements Bootstrap {
             @Argument(key = "server-port", description = "Server port"),
             @Argument(key = "remote-server-host", description = "Remote Server host"),
             @Argument(key = "remote-server-port", description = "Remote Server port"),
-    }, example = "bin/dispatcher start --import org.tinystruct.system.RedisProxyServer --server-port 8080")
+    }, example = "bin/dispatcher start --import org.tinystruct.system.RedisProxyServer --server-port 8080", mode = org.tinystruct.application.Action.Mode.CLI)
     @Override
     public void start() throws ApplicationException {
         if (this.context != null) {
