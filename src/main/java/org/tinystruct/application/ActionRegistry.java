@@ -44,11 +44,23 @@ public final class ActionRegistry {
      * @param methodName The method name
      */
     public void set(final Application app, final String path, final String methodName) {
+        this.set(app, path, methodName, Action.Mode.All);
+    }
+
+    /**
+     * Register a method with a specific URL pattern and method type (GET, POST, etc.).
+     *
+     * @param app        The Application instance
+     * @param path       The URL pattern
+     * @param methodName The method name
+     * @param mode       The mode name
+     */
+    public void set(final Application app, final String path, final String methodName, final Action.Mode mode) {
         if (path == null || methodName == null) {
             throw new IllegalArgumentException("Path or methodName cannot be null.");
         }
 
-        initializePatterns(app, path, methodName);
+        initializePatterns(app, path, methodName, mode);
     }
 
     /**
@@ -157,8 +169,9 @@ public final class ActionRegistry {
      * @param app        The Application instance
      * @param path       The URL pattern
      * @param methodName The method name
+     * @param mode
      */
-    private synchronized void initializePatterns(Application app, String path, String methodName) {
+    private synchronized void initializePatterns(Application app, String path, String methodName, Action.Mode mode) {
         Class<?> clazz = app.getClass();
         Method[] methods = getMethods(methodName, clazz);
 
@@ -187,7 +200,9 @@ public final class ActionRegistry {
                 } else {
                     expression = patternPrefix + "$";
                 }
-                map.put(expression, new Action(map.size(), app, expression, m));
+
+                Action action = mode == Action.Mode.All ? new Action(map.size(), app, expression, m) : new Action(map.size(), app, expression, m, mode);
+                map.put(expression, action);
             }
         }
     }
