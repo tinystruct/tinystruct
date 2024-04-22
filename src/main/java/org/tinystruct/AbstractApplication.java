@@ -653,4 +653,14 @@ public abstract class AbstractApplication implements Application, Cloneable {
     public Map<String, CommandLine> getCommandLines() {
         return this.commandLines;
     }
+
+    /**
+     * Return the mode of the application.
+     *
+     * @return mode
+     */
+    @Override
+    public Action.Mode getMode() {
+        return mode;
+    }
 }
