@@ -43,6 +43,7 @@ public class AnnotationProcessor {
                 String description = actionAnnotation.description();
                 String example = actionAnnotation.example();
                 String path = actionAnnotation.value();
+                org.tinystruct.application.Action.Mode mode = actionAnnotation.mode();
 
                 CommandLine commandLine = new CommandLine(this.app, commandName, description);
                 this.app.getCommandLines().put(commandName, commandLine);
@@ -72,7 +73,11 @@ public class AnnotationProcessor {
 
                 // Register the action handler method
                 // Set the action in the action registry
-                this.actionRegistry.set(this.app, path, method.getName());
+                if (mode != org.tinystruct.application.Action.Mode.All) {
+                    this.actionRegistry.set(this.app, path, method.getName(), mode);
+                } else {
+                    this.actionRegistry.set(this.app, path, method.getName());
+                }
 
                 // Exclude the command starting with '-'
                 if (path.indexOf("-") != 0)
