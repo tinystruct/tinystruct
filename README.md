@@ -119,7 +119,7 @@ You can access the below URLs:
 
 Architecture
 --
-![tinystruct-framework-architecture](https://github.com/tinystruct/tinystruct/assets/3631818/fa4ba67c-c175-4c40-9434-e2931e998b4c)
+![tinystruct-framework-architecture](https://github.com/tinystruct/tinystruct/assets/3631818/83f9d806-9e35-447d-ba88-9ba449bff61d)
 
 License
 --
