@@ -117,6 +117,10 @@ You can access the below URLs:
 * <a href="http://localhost:8080/?q=say/Praise%20to%20the%20Lord!">http://localhost:8080/?q=say/Praise%20to%20the%20Lord! </a>
 * <a href="http://localhost:8080/?q=praise">http://localhost:8080/?q=praise</a>
 
+Architecture
+--
+![tinystruct-framework-architecture](https://github.com/tinystruct/tinystruct/assets/3631818/fa4ba67c-c175-4c40-9434-e2931e998b4c)
+
 License
 --
 
