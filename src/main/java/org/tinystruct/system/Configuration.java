@@ -30,7 +30,7 @@ public interface Configuration<T> extends Serializable {
 
     Set<String> propertyNames();
 
-    T getOrDefault(T s, T name);
+    T getOrDefault(T s, T value);
 
     void setIfAbsent(T s, T path);
 }
