@@ -162,7 +162,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
      */
     private void handleDefaultPage(Context context, Response<HttpServletResponse, ServletOutputStream> response) throws IOException, ApplicationException {
         try (BufferedWriter bufferedWriter = getWriter(response.get())) {
-            bufferedWriter.write(String.valueOf(ApplicationManager.call(settings.get("default.home.page"), context)));
+            bufferedWriter.write(String.valueOf(ApplicationManager.call(settings.getOrDefault("default.home.page", "say/Praise to the Lord."), context)));
         }
     }
 

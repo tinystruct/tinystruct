@@ -146,7 +146,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                     return;
                 }
             } else {
-                message = ApplicationManager.call(this.configuration.get("default.home.page"), context);
+                message = ApplicationManager.call(this.configuration.getOrDefault("default.home.page", "say/Praise to the Lord."), context);
             }
         } catch (ApplicationException e) {
             StackTraceElement[] trace = e.getStackTrace();
