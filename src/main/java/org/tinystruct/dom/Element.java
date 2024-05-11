@@ -427,8 +427,7 @@ public class Element implements Cloneable {
         Iterator<Attribute> iterator = this.attributes.iterator();
         while (iterator.hasNext()) {
             currentAttribute = iterator.next();
-            buffer.append(" " + currentAttribute.name + "=\""
-                    + currentAttribute.value + "\"");
+            buffer.append(" ").append(currentAttribute.name).append("=\"").append(currentAttribute.value).append("\"");
         }
 
         if (this.data != null) {

@@ -721,7 +721,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         if (length < examples.length())
             builder.append(examples);
 
-        builder.append("\nRun 'bin" + File.separator + "dispatcher COMMAND --help' for more information on a command.");
+        builder.append("\nRun 'bin").append(File.separator).append("dispatcher COMMAND --help' for more information on a command.");
         return builder.toString();
     }
 

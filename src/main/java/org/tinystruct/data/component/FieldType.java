@@ -15,17 +15,18 @@
  *******************************************************************************/
 package org.tinystruct.data.component;
 
+import java.io.Serializable;
 import java.sql.Types;
 import java.util.Vector;
 
-public final class FieldType {
+public final class FieldType implements Serializable {
 
     public final static FieldType INT = new FieldType("INT", 0, "int");
     public final static FieldType STRING = new FieldType("STRING", 0, "String");
     public final static FieldType LONG = new FieldType("LONG", 0, "long");
     public final static FieldType TEXT = new FieldType("TEXT", 0, "String");
     public final static FieldType LONGTEXT = new FieldType("LONGTEXT", 0, "String");
-    public static final long serialVersionUID = -2800196753010521325L;
+    private static final long serialVersionUID = -2800196753010521328L;
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type

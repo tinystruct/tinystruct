@@ -285,11 +285,11 @@ public class Document extends DefaultHandler {
     @Override
 	public InputSource resolveEntity(String publicId, String systemId)
             throws SAXException {
-        InputSource source = null;
+        InputSource source;
 
         try {
             String path = doctypeMap.get(publicId);
-            source = getInputSource(path, source);
+            source = getInputSource(path, null);
             if (source != null) {
                 path = doctypeMap.get(systemId);
                 source = getInputSource(path, source);

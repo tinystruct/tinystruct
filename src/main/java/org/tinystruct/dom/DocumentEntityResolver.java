@@ -49,7 +49,7 @@ public class DocumentEntityResolver implements EntityResolver {
 
         try {
             String path = doctypeMap.get(publicId);
-            source = getInputSource(path, source);
+            source = getInputSource(path, null);
             if (source != null) {
                 path = doctypeMap.get(systemId);
                 source = getInputSource(path, source);

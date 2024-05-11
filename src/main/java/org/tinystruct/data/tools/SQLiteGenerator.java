@@ -71,7 +71,7 @@ public class SQLiteGenerator implements Generator {
         this.path = this.path + className;
 
         if (this.packageName != null) {
-            java_resource.append("package " + this.packageName + ";\r\n");
+            java_resource.append("package ").append(this.packageName).append(";\r\n");
         } else {
             java_resource.append("package org.tinystruct.customer.object;\r\n");
         }
@@ -81,7 +81,7 @@ public class SQLiteGenerator implements Generator {
         if (this.packageList.length > 0) {
             java_resource.append("\r\n");
             for (int i = 0; i < this.packageList.length; i++) {
-                java_resource.append("import " + this.packageList[i] + ";\r\n");
+                java_resource.append("import ").append(this.packageList[i]).append(";\r\n");
             }
         }
 
@@ -93,7 +93,7 @@ public class SQLiteGenerator implements Generator {
         java_resource.append("   * Auto Generated Serial Version UID\r\n");
         java_resource.append("   */\r\n");
         try {
-            java_resource.append("  private static final long serialVersionUID = " + SecureRandom.getInstance("NativePRNG").nextLong() + "L;\r\n");
+            java_resource.append("  private static final long serialVersionUID = ").append(SecureRandom.getInstance("NativePRNG").nextLong()).append("L;\r\n");
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
