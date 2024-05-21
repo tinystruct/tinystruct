@@ -562,18 +562,6 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     /**
-     * Sets the command line for the context.
-     *
-     * @param command the command line to set
-     * @return the previous command line for the context
-     */
-    @Deprecated(since = "1.1.8", forRemoval = true)
-    @Override
-    public CommandLine setCommandLine(CommandLine command) {
-        return this.commandLines.put(command.getCommand(), command);
-    }
-
-    /**
      * Implements runnable interface.
      */
     public void run() {

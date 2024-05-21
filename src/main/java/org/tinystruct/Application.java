@@ -188,15 +188,6 @@ public interface Application {
     String getName();
 
     /**
-     * Set commandline.
-     *
-     * @param command Command
-     * @return commandline
-     */
-    @Deprecated(since = "1.8.0", forRemoval = true)
-    CommandLine setCommandLine(CommandLine command);
-
-    /**
      * Return a list of CommandLine for current application.
      *
      * @return A map for commandline
