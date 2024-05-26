@@ -31,20 +31,20 @@
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
-            <version>6.0.0</version>
+            <version>${jakarta.servlet.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/jakarta.activation/jakarta.activation-api -->
         <dependency>
             <groupId>jakarta.activation</groupId>
             <artifactId>jakarta.activation-api</artifactId>
-            <version>2.1.2</version>
+            <version>${jakarta.activation.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.apache.tomcat/tomcat -->
         <!-- https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core -->
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>10.1.19</version>
+            <version>${tomcat.embed.version}</version>
             <scope>provided</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
@@ -57,18 +57,18 @@
         <dependency>
             <groupId>com.sun.mail</groupId>
             <artifactId>jakarta.mail</artifactId>
-            <version>2.0.1</version>
+            <version>${jakarta.mail.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.google.zxing/core -->
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
-            <version>3.5.3</version>
+            <version>${zxing.version}</version>
         </dependency>
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
-            <version>6.2.5.RELEASE</version>
+            <version>${lettuce.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
         <dependency>
@@ -121,35 +121,35 @@
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>0.12.5</version>
+            <version>${jjwt.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-impl -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>0.12.5</version>
+            <version>${jjwt.version}</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
-            <version>0.12.5</version>
+            <version>${jjwt.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.openjdk.jol/jol-core -->
         <dependency>
             <groupId>org.openjdk.jol</groupId>
             <artifactId>jol-core</artifactId>
-            <version>0.17</version>
+            <version>${jol.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>3.5.1</version>
+            <version>${kafka.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.9.2</version>
+            <version>${jupiter.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -166,24 +166,24 @@
         <dependency>
             <groupId>org.openjdk.nashorn</groupId>
             <artifactId>nashorn-core</artifactId>
-            <version>15.4</version>
+            <version>${nashorn.version}</version>
         </dependency>
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
-            <version>5.12.1</version>
+            <version>${jna.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.bouncycastle/bctls-jdk15on -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bctls-jdk18on</artifactId>
-            <version>1.78.1</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk18on -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
-            <version>1.78.1</version>
+            <version>${bouncycastle.version}</version>
         </dependency>
 
         <dependency>
@@ -203,13 +203,13 @@
         <dependency>
             <groupId>org.eclipse.paho</groupId>
             <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-            <version>1.2.5</version>
+            <version>${mqtt.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.brotli/dec -->
         <dependency>
             <groupId>org.brotli</groupId>
             <artifactId>dec</artifactId>
-            <version>0.1.2</version>
+            <version>${brotli.version}</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.graalvm.nativeimage/native-image-maven-plugin -->
         <dependency>
@@ -227,6 +227,16 @@
             <artifactId>jmh-generator-annprocess</artifactId>
             <version>${jmh.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>${tika.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers-standard-package</artifactId>
+            <version>${tika.version}</version>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -240,18 +250,34 @@
         </dependencies>
     </dependencyManagement>
     <properties>
+        <bouncycastle.version>1.78.1</bouncycastle.version>
+        <brotli.version>0.1.2</brotli.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jakarta.activation.version>2.1.3</jakarta.activation.version>
+        <jakarta.mail.version>2.0.1</jakarta.mail.version>
+        <jakarta.servlet.version>6.0.0</jakarta.servlet.version>
         <java.version>11</java.version>
+        <jjwt.version>0.12.5</jjwt.version>
+        <jna.version>5.14.0</jna.version>
+        <jol.version>0.17</jol.version>
+        <jupiter.version>5.10.2</jupiter.version>
+        <kafka.version>3.7.0</kafka.version>
+        <lettuce.version>6.3.2.RELEASE</lettuce.version>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <slf4j.version>2.0.12</slf4j.version>
-        <h2.version>2.2.222</h2.version>
-        <netty.version>4.1.108.Final</netty.version>
-        <mysql.connector.version>8.2.0</mysql.connector.version>
-        <graalvm.version>22.3.3</graalvm.version>
+        <mqtt.version>1.2.5</mqtt.version>
+        <slf4j.version>2.0.13</slf4j.version>
+        <h2.version>2.2.224</h2.version>
+        <netty.version>4.1.110.Final</netty.version>
+        <mysql.connector.version>8.4.0</mysql.connector.version>
+        <graalvm.version>24.0.1</graalvm.version>
         <jmh.version>1.37</jmh.version>
-        <mockito.version>5.10.0</mockito.version>
-        <native.maven.plugin.version>0.10.1</native.maven.plugin.version>
+        <mockito.version>5.12.0</mockito.version>
+        <nashorn.version>15.4</nashorn.version>
+        <native.maven.plugin.version>0.10.2</native.maven.plugin.version>
+        <tika.version>3.0.0-BETA</tika.version>
+        <tomcat.embed.version>10.1.24</tomcat.embed.version>
+        <zxing.version>3.5.3</zxing.version>
     </properties>
     <build>
         <plugins>
