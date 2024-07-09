@@ -276,7 +276,7 @@
         <nashorn.version>15.4</nashorn.version>
         <native.maven.plugin.version>0.10.2</native.maven.plugin.version>
         <tika.version>3.0.0-BETA</tika.version>
-        <tomcat.embed.version>10.1.24</tomcat.embed.version>
+        <tomcat.embed.version>10.1.25</tomcat.embed.version>
         <zxing.version>3.5.3</zxing.version>
     </properties>
     <build>
