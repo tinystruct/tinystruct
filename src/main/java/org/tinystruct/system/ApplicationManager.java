@@ -23,7 +23,7 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ApplicationManager {
-    public static final String VERSION = "1.2.6";
+    public static final String VERSION = "1.2.7";
     private static final ConcurrentHashMap<String, Application> applications = new ConcurrentHashMap<>();
     private static final ActionRegistry ROUTE_REGISTRY_INSTANCE = ActionRegistry.getInstance();
     private static Configuration<String> settings;
@@ -230,7 +230,6 @@ public final class ApplicationManager {
         }
 
         String method = (context != null && context.getAttribute("METHOD") != null) ? context.getAttribute("METHOD").toString() : null;
-
         if (context != null && context.getAttribute("--help") != null) {
             CommandLine command;
             if ((command = ROUTE_REGISTRY_INSTANCE.getCommand(path)) != null)
