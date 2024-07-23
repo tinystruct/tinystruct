@@ -20,7 +20,6 @@ public class DatabaseOperator implements Closeable {
     private Connection connection;
     private PreparedStatement preparedStatement;
     private ResultSet resultSet;
-    private int effect = 0;
 
     /**
      * Default constructor to create a DatabaseOperator and obtain a connection from the ConnectionManager.
@@ -136,7 +135,7 @@ public class DatabaseOperator implements Closeable {
      */
     public int executeUpdate(PreparedStatement statement) throws ApplicationException {
         try {
-            effect = statement.executeUpdate();
+            int effect = statement.executeUpdate();
             statement.close(); // Close the statement after execution
             logger.log(Level.INFO, statement.toString());
             return effect;

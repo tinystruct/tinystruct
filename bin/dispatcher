@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 ROOT="$(pwd)"
-VERSION="1.2.7"
+VERSION="1.2.8"
 cd "$(dirname "$0")" || exit
 cd "../"
 # Navigate to the root directory
