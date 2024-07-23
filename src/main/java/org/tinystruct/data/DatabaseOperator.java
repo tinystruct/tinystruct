@@ -14,6 +14,8 @@ import java.util.logging.Logger;
 public class DatabaseOperator implements Closeable {
     private static final Logger logger = Logger.getLogger(DatabaseOperator.class.getName());
     private static final String SQL_STATE_COMMUNICATION_LINK_FAILURE = "08S01";
+    private static final int MAX_RETRIES = 3;
+    private static final long RETRY_DELAY_MS = 1000;
     private final ConnectionManager manager;
     private Connection connection;
     private PreparedStatement preparedStatement;
@@ -104,14 +106,25 @@ public class DatabaseOperator implements Closeable {
     public ResultSet executeQuery(PreparedStatement statement) throws ApplicationException {
         closeResultSet(); // Close previous result set if exists
 
-        try {
-            resultSet = statement.executeQuery();
-            logger.log(Level.INFO, statement.toString());
-        } catch (SQLException e) {
-            handleSQLException(e);
+        for (int retry = 0; retry < MAX_RETRIES; retry++) {
+            try {
+                logger.log(Level.INFO, statement.toString());
+                return statement.executeQuery(); // Return execution result if successful
+            } catch (SQLException e) {
+                handleSQLException(e, statement);
+            }
+
+            // Retry delay before next attempt
+            if (retry < MAX_RETRIES - 1) {
+                try {
+                    Thread.sleep(RETRY_DELAY_MS);
+                } catch (InterruptedException ignore) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
 
-        return resultSet;
+        throw new ApplicationException("Max retries exceeded for execute");
     }
 
     /**
@@ -252,19 +265,18 @@ public class DatabaseOperator implements Closeable {
     /**
      * Handle SQLException, specifically handling communication link failure.
      *
-     * @param e The SQLException to handle.
+     * @param e         The SQLException to handle.
+     * @param statement
      * @throws ApplicationException If an error occurs while handling the exception.
      */
-    private void handleSQLException(SQLException e) throws ApplicationException {
+    private void handleSQLException(SQLException e, PreparedStatement statement) throws ApplicationException {
         if (e.getSQLState().equals(SQL_STATE_COMMUNICATION_LINK_FAILURE)) {
             closeResultSet(); // Close the current result set
             if (manager != null) {
                 manager.clear();
             }
-            PreparedStatement ps = createPreparedStatement(preparedStatement.toString(), false); // Re-prepare the statement
-            executeQuery(ps);
         } else {
-            logger.severe("SQLState(" + e.getSQLState() + ") vendor code(" + e.getErrorCode() + ")");
+            logger.severe("SQLState(" + e.getSQLState() + ") vendor code(" + e.getErrorCode() + "); Query:" + statement.toString() + " Message:" + e.getMessage());
             throw new ApplicationException(e.getMessage(), e);
         }
     }
