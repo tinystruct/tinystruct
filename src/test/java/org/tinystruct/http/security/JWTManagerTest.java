@@ -1,6 +1,9 @@
 package org.tinystruct.http.security;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.MalformedJwtException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.tinystruct.data.component.Builder;
@@ -13,7 +16,7 @@ public class JWTManagerTest {
     private static final String SUBJECT = "user123";
     private static final long VALIDITY = 1; // 1 hour validity
 
-    private JWTManager jwtManager;
+    private JWTManager jwtManager = new JWTManager();
 
     @BeforeEach
     public void setUp() {
@@ -23,6 +26,8 @@ public class JWTManagerTest {
 
     @Test
     public void testCreateAndParseToken() {
+        assertNotNull(jwtManager); // Ensure jwtManager is not null
+        jwtManager.withSecret(SECRET);
         // Create a builder with some claims
         Builder builder = new Builder();
         builder.put("role", "admin");
@@ -40,6 +45,9 @@ public class JWTManagerTest {
 
     @Test
     public void testExpiredToken() {
+        assertNotNull(jwtManager); // Ensure jwtManager is not null
+        jwtManager.withSecret(SECRET);
+
         // Create a builder with some claims
         Builder builder = new Builder();
         builder.put("role", "admin");
@@ -60,6 +68,9 @@ public class JWTManagerTest {
 
     @Test
     public void testInvalidToken() {
+        assertNotNull(jwtManager); // Ensure jwtManager is not null
+        jwtManager.withSecret(SECRET);
+
         // Create an invalid JWT (tampered token)
         String invalidToken = "invalid.token";
 
@@ -67,4 +78,3 @@ public class JWTManagerTest {
         assertThrows(MalformedJwtException.class, () -> jwtManager.parseToken(invalidToken));
     }
 }
-
