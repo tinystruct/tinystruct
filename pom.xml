@@ -106,14 +106,14 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-tcnative</artifactId>
-            <version>2.0.61.Final</version>
+            <version>2.0.65.Final</version>
             <classifier>linux-x86_64</classifier>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.netty.incubator</groupId>
             <artifactId>netty-incubator-transport-native-io_uring</artifactId>
-            <version>0.0.21.Final</version>
+            <version>0.0.25.Final</version>
             <classifier>linux-x86_64</classifier>
             <optional>true</optional>
         </dependency>
@@ -255,32 +255,41 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jakarta.activation.version>2.1.3</jakarta.activation.version>
         <jakarta.mail.version>2.0.1</jakarta.mail.version>
-        <jakarta.servlet.version>6.0.0</jakarta.servlet.version>
+        <jakarta.servlet.version>6.1.0</jakarta.servlet.version>
         <java.version>11</java.version>
-        <jjwt.version>0.12.5</jjwt.version>
+        <jjwt.version>0.12.6</jjwt.version>
         <jna.version>5.14.0</jna.version>
         <jol.version>0.17</jol.version>
-        <jupiter.version>5.10.2</jupiter.version>
-        <kafka.version>3.7.0</kafka.version>
+        <jupiter.version>5.10.3</jupiter.version>
+        <kafka.version>3.7.1</kafka.version>
         <lettuce.version>6.3.2.RELEASE</lettuce.version>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <mqtt.version>1.2.5</mqtt.version>
         <slf4j.version>2.0.13</slf4j.version>
-        <h2.version>2.2.224</h2.version>
-        <netty.version>4.1.110.Final</netty.version>
-        <mysql.connector.version>8.4.0</mysql.connector.version>
+        <h2.version>2.3.230</h2.version>
+        <netty.version>4.1.112.Final</netty.version>
+        <mysql.connector.version>9.0.0</mysql.connector.version>
         <graalvm.version>24.0.1</graalvm.version>
         <jmh.version>1.37</jmh.version>
         <mockito.version>5.12.0</mockito.version>
         <nashorn.version>15.4</nashorn.version>
         <native.maven.plugin.version>0.10.2</native.maven.plugin.version>
         <tika.version>3.0.0-BETA</tika.version>
-        <tomcat.embed.version>10.1.25</tomcat.embed.version>
+        <tomcat.embed.version>10.1.26</tomcat.embed.version>
         <zxing.version>3.5.3</zxing.version>
     </properties>
     <build>
         <plugins>
+<!--            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.5.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
+            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
