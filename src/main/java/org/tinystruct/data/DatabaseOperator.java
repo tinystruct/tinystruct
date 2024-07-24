@@ -108,7 +108,7 @@ public class DatabaseOperator implements Closeable {
         for (int retry = 0; retry < MAX_RETRIES; retry++) {
             try {
                 logger.log(Level.INFO, statement.toString());
-                return statement.executeQuery(); // Return execution result if successful
+                return resultSet = statement.executeQuery(); // Return execution result if successful
             } catch (SQLException e) {
                 handleSQLException(e, statement);
             }
