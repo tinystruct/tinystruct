@@ -80,7 +80,7 @@ final class ConnectionManager implements Runnable {
         this.database = config.get("database").trim();
         String dbUrl = config.get("database.url");
         String dbUser = config.get("database.user");
-        String dbPassword = config.get("database.password");
+        String dbPassword = config.get("database.password").trim();
 
         String dbType = getConfiguredType().name().toLowerCase();
         if (null != dbUrl && !"h2".equalsIgnoreCase(dbType)) {
