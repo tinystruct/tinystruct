@@ -57,7 +57,7 @@ public class TextFileLoader {
             } catch (IOException e) {
                 throw new ApplicationException(e.getMessage(), e);
             }
-        } else {
+        } else if (this.inputStream != null) {
             read(this.inputStream, this.charsetName, content);
         }
 
