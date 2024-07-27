@@ -25,7 +25,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Enumeration;
 
-public class MySQLServer implements Repository {
+public class MySQLServer extends AbstractDataRepository {
 
     public static final String COMMA = ",";
 
@@ -131,30 +131,6 @@ public class MySQLServer implements Repository {
     }
 
     /**
-     * Delete records from the MySQL database table.
-     *
-     * @param Id    The identifier of the record to be deleted.
-     * @param table The table name.
-     * @return True if the record is successfully deleted, otherwise false.
-     * @throws ApplicationException if there is an error deleting the record.
-     */
-    @Override
-    public boolean delete(Object Id, String table) throws ApplicationException {
-        boolean deleted = false;
-        String SQL = "DELETE FROM " + table + " WHERE id=?";
-
-        try (DatabaseOperator operator = new DatabaseOperator()) {
-            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
-            ps.setObject(1, Id);
-            if (ps.execute()) deleted = true;
-        } catch (SQLException e) {
-            throw new ApplicationException(e.getMessage(), e);
-        }
-
-        return deleted;
-    }
-
-    /**
      * Get the type of the repository, which is MySQL in this case.
      *
      * @return The repository type.
@@ -174,7 +150,6 @@ public class MySQLServer implements Repository {
      */
     @Override
     public Table find(String SQL, Object[] parameters) throws ApplicationException {
-
         Table table = new Table();
         Row row;
         FieldInfo field;
@@ -220,7 +195,6 @@ public class MySQLServer implements Repository {
      */
     @Override
     public Row findOne(String SQL, Object[] parameters) throws ApplicationException {
-
         Row row = new Row();
         FieldInfo fieldInfo;
         Field field = new Field();
