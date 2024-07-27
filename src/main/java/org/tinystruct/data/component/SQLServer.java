@@ -20,6 +20,7 @@ import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.data.Repository;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Enumeration;
@@ -217,21 +218,22 @@ public class SQLServer implements Repository {
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement preparedStatement = operator.preparedStatement(SQL, parameters);
-            int cols = operator.executeQuery(preparedStatement).getMetaData().getColumnCount();
+            ResultSet resultSet = operator.executeQuery(preparedStatement);
+            int cols = resultSet.getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
             Object[] fieldValue = new Object[cols];
 
             for (int i = 0; i < cols; i++) {
-                fieldName[i] = operator.getResultSet().getMetaData()
+                fieldName[i] = resultSet.getMetaData()
                         .getColumnName(i + 1);
             }
 
             Object v_field;
-            while (operator.getResultSet().next()) {
+            while (resultSet.next()) {
                 row = new Row();
                 fields = new Field();
                 for (int i = 0; i < fieldName.length; i++) {
-                    v_field = operator.getResultSet().getObject(i + 1);
+                    v_field = resultSet.getObject(i + 1);
 
                     fieldValue[i] = (v_field == null ? "" : v_field);
                     field = new FieldInfo();
@@ -261,19 +263,20 @@ public class SQLServer implements Repository {
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement preparedStatement = operator.preparedStatement(SQL, parameters);
-            int cols = operator.executeQuery(preparedStatement).getMetaData().getColumnCount();
+            ResultSet resultSet = operator.executeQuery(preparedStatement);
+            int cols = resultSet.getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
             Object[] fieldValue = new Object[cols];
 
             for (int i = 0; i < cols; i++) {
-                fieldName[i] = operator.getResultSet().getMetaData()
+                fieldName[i] = resultSet.getMetaData()
                         .getColumnName(i + 1);
             }
 
             Object v_field;
-            if (operator.getResultSet().next()) {
+            if (resultSet.next()) {
                 for (int i = 0; i < fieldName.length; i++) {
-                    v_field = operator.getResultSet().getObject(i + 1);
+                    v_field = resultSet.getObject(i + 1);
 
                     fieldValue[i] = (v_field == null ? "" : v_field);
                     fieldInfo = new FieldInfo();

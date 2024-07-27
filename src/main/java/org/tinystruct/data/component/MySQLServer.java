@@ -20,6 +20,7 @@ import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.data.Repository;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Enumeration;
@@ -181,15 +182,16 @@ public class MySQLServer implements Repository {
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement preparedStatement = operator.preparedStatement(SQL, parameters);
-            int cols = operator.executeQuery(preparedStatement).getMetaData().getColumnCount();
+            ResultSet resultSet = operator.executeQuery(preparedStatement);
+            int cols = resultSet.getMetaData().getColumnCount();
             String fieldName;
             Object fieldValue;
-            while (operator.getResultSet().next()) {
+            while (resultSet.next()) {
                 row = new Row();
                 fields = new Field();
                 for (int i = 0; i < cols; i++) {
-                    fieldValue = operator.getResultSet().getObject(i + 1);
-                    fieldName = operator.getResultSet().getMetaData().getColumnName(i + 1);
+                    fieldValue = resultSet.getObject(i + 1);
+                    fieldName = resultSet.getMetaData().getColumnName(i + 1);
 
                     field = new FieldInfo();
                     field.append("name", fieldName);
@@ -225,13 +227,14 @@ public class MySQLServer implements Repository {
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement preparedStatement = operator.preparedStatement(SQL, parameters);
-            int cols = operator.executeQuery(preparedStatement).getMetaData().getColumnCount();
+            ResultSet resultSet = operator.executeQuery(preparedStatement);
+            int cols = resultSet.getMetaData().getColumnCount();
             String fieldName;
             Object fieldValue;
-            if (operator.getResultSet().next()) {
+            if (resultSet.next()) {
                 for (int i = 0; i < cols; i++) {
-                    fieldValue = operator.getResultSet().getObject(i + 1);
-                    fieldName = operator.getResultSet().getMetaData().getColumnName(i + 1);
+                    fieldValue = resultSet.getObject(i + 1);
+                    fieldName = resultSet.getMetaData().getColumnName(i + 1);
 
                     fieldInfo = new FieldInfo();
                     fieldInfo.append("name", fieldName);

@@ -225,6 +225,7 @@ public class DatabaseOperator implements Closeable {
      *
      * @return The result set.
      */
+    @Deprecated
     public ResultSet getResultSet() {
         return resultSet;
     }
@@ -265,7 +266,7 @@ public class DatabaseOperator implements Closeable {
      * Handle SQLException, specifically handling communication link failure.
      *
      * @param e         The SQLException to handle.
-     * @param statement
+     * @param statement The statement that using in the current operation.
      * @throws ApplicationException If an error occurs while handling the exception.
      */
     private void handleSQLException(SQLException e, PreparedStatement statement) throws ApplicationException {
