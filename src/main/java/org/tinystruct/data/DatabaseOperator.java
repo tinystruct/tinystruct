@@ -217,7 +217,10 @@ public class DatabaseOperator implements Closeable {
      */
     public boolean execute(String sql) throws ApplicationException {
         preparedStatement = createPreparedStatement(sql, false);
-        return execute(preparedStatement);
+        if (preparedStatement != null)
+            return execute(preparedStatement);
+
+        throw new ApplicationException("Prepared statement is null.");
     }
 
     /**
