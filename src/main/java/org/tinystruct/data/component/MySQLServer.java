@@ -17,7 +17,6 @@ package org.tinystruct.data.component;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.DatabaseOperator;
-import org.tinystruct.data.Repository;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
