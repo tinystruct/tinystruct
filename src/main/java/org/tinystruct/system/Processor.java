@@ -1,5 +1,7 @@
 package org.tinystruct.system;
 
+import org.tinystruct.ApplicationException;
+
 /**
  * Interface for defining processors that operate on a specific type of input.
  *
@@ -13,5 +15,5 @@ public interface Processor<T> {
      * @param input the input data to process
      * @return the processed result of type T
      */
-    T process(T input);
+    T process(T input) throws ApplicationException;
 }

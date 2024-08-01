@@ -1,6 +1,7 @@
 package org.tinystruct.system.chain;
 
 import org.tinystruct.AbstractApplication;
+import org.tinystruct.ApplicationException;
 import org.tinystruct.system.Processor;
 
 import java.util.ArrayList;
@@ -34,7 +35,11 @@ public abstract class AbstractProcessorChain<T> extends AbstractApplication {
     public T process(T input) {
         T currentData = input;
         for (Processor<T> processor : processors) {
-            currentData = processor.process(currentData);
+            try {
+                currentData = processor.process(currentData);
+            } catch (ApplicationException e) {
+                throw new RuntimeException(e);
+            }
         }
         return currentData;
     }
