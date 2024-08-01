@@ -35,11 +35,19 @@ import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.HttpRequestHandler;
 import org.tinystruct.handler.HttpStaticFileHandler;
+import org.tinystruct.handler.Reforward;
+import org.tinystruct.http.Request;
+import org.tinystruct.http.Response;
+import org.tinystruct.http.Session;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.tinystruct.http.Constants.HTTP_REQUEST;
+import static org.tinystruct.http.Constants.HTTP_RESPONSE;
 
 public class NettyHttpServer extends AbstractApplication implements Bootstrap {
     private static final boolean SSL = System.getProperty("ssl") != null;
@@ -168,4 +176,36 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
         bossgroup.shutdownGracefully();
         workgroup.shutdownGracefully();
     }
+
+    @Action(value = "error", description = "Error page")
+    public Object exceptionCaught() throws ApplicationException {
+        Request request = (Request) this.context.getAttribute(HTTP_REQUEST);
+        Response response = (Response) this.context.getAttribute(HTTP_RESPONSE);
+
+        Reforward reforward = new Reforward(request, response);
+        this.setVariable("from", reforward.getFromURL());
+
+        Session session = request.getSession();
+        if (session.getAttribute("error") != null) {
+            ApplicationException exception = (ApplicationException) session.getAttribute("error");
+
+            String message = exception.getRootCause().getMessage();
+            this.setVariable("exception.message", Objects.requireNonNullElse(message, "Unknown error"));
+
+            StackTraceElement[] stackTrace = exception.getStackTrace();
+            StringBuilder builder = new StringBuilder();
+            builder.append(exception).append("\n");
+            for (StackTraceElement stackTraceElement : stackTrace) {
+                builder.append(stackTraceElement.toString()).append("\n");
+            }
+            logger.severe(builder.toString());
+
+            return this.getVariable("exception.message").getValue().toString();
+        } else {
+            reforward.forward();
+        }
+
+        return "This request is forbidden!";
+    }
+
 }

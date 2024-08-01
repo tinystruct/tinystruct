@@ -33,6 +33,7 @@ import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 
 import java.io.File;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -181,11 +182,16 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             ApplicationException exception = (ApplicationException) session.getAttribute("error");
 
             String message = exception.getRootCause().getMessage();
-            if (message != null) this.setVariable("exception.message", message);
-            else this.setVariable("exception.message", "Unknown error");
+            this.setVariable("exception.message", Objects.requireNonNullElse(message, "Unknown error"));
 
-            logger.severe(exception.toString());
-            exception.printStackTrace();
+            StackTraceElement[] stackTrace = exception.getStackTrace();
+            StringBuilder builder = new StringBuilder();
+            builder.append(exception).append("\n");
+            for (StackTraceElement stackTraceElement : stackTrace) {
+                builder.append(stackTraceElement.toString()).append("\n");
+            }
+            logger.severe(builder.toString());
+
             return this.getVariable("exception.message").getValue().toString();
         } else {
             reforward.forward();
@@ -219,6 +225,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
             if (!context.getIgnoreAnnotations()) {
                 applicationAnnotationsConfig();
             }
+
             if (ok) {
                 validateSecurityRoles();
             }
