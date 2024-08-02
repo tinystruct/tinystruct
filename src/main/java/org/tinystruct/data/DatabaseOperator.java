@@ -77,21 +77,28 @@ public class DatabaseOperator implements Closeable {
      * @throws ApplicationException If an error occurs while preparing the statement.
      */
     public PreparedStatement preparedStatement(String sql, Object[] parameters) throws ApplicationException {
-        if (sql == null) {
-            throw new ApplicationException("SQL statement is NULL");
+        if (sql == null || sql.trim().isEmpty()) {
+            throw new ApplicationException("SQL statement is NULL or empty");
+        }
+
+        if (parameters == null) {
+            throw new ApplicationException("Parameters array is NULL");
         }
 
         try {
-            preparedStatement = connection.prepareStatement(sql);
-            if (parameters.length == 0) return preparedStatement;
-
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            // Setting parameters if provided
             for (int n = 0; n < parameters.length; n++) {
-                preparedStatement.setObject(n + 1, parameters[n]);
+                if (parameters[n] == null) {
+                    preparedStatement.setNull(n + 1, java.sql.Types.NULL);
+                } else {
+                    preparedStatement.setObject(n + 1, parameters[n]);
+                }
             }
 
             return preparedStatement;
         } catch (SQLException ex) {
-            throw new ApplicationException(ex.getMessage(), ex);
+            throw new ApplicationException("Error preparing SQL statement: " + ex.getMessage(), ex);
         }
     }
 
