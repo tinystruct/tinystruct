@@ -23,6 +23,8 @@ import org.tinystruct.system.template.variable.Variable;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Variables represents a collection of variables associated with a specific group.
@@ -32,6 +34,7 @@ public class Variables {
     private final static String SUFFIX_VARIABLE_NAME = "%}";
     private final static ConcurrentHashMap<String, Variables> group = new ConcurrentHashMap<>();
     protected final ConcurrentHashMap<String, Variable<?>> variableMap = new ConcurrentHashMap<>();
+    private final static Logger logger = Logger.getLogger(Variables.class.getName());
 
     private Variables() {
     }
@@ -92,7 +95,7 @@ public class Variables {
                 variableMap.put(newVariableName, new StringVariable(newVariableName, value));
             }
         } catch (ApplicationException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 

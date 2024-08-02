@@ -5,12 +5,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.tinystruct.http.*;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, ServletOutputStream> {
     private final Headers headers = new ResponseHeaders(this);
     private ServletOutputStream outputStream;
     private ResponseStatus status;
     private Version version;
+    private static final Logger logger = Logger.getLogger(ResponseBuilder.class.getName());
 
     public ResponseBuilder(HttpServletResponse response) {
         super(response);
@@ -18,7 +21,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
         try {
             this.outputStream = response.getOutputStream();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         for (String headerName : this.response.getHeaderNames()) {

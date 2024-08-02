@@ -29,6 +29,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -41,6 +42,7 @@ public class Document extends DefaultHandler {
     private static final String DOCTYPE_CONFIGURATION = "org/tinystruct/application/application-1.0.dtd";
     private static final String XHTML_TRANSITIONAL_DOCTYPE_CONFIGURATION = "org/tinystruct/application/application-1.0.dtd";
     private static final String XHTML_STRICT_DOCTYPE_CONFIGURATION = "org/tinystruct/application/application-1.0.dtd";
+    private static final Logger logger = Logger.getLogger(Document.class.getName());
 
     private static final Map<String, String> doctypeMap = new HashMap<String, String>();
 
@@ -133,7 +135,7 @@ public class Document extends DefaultHandler {
             try {
                 input.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.log(Level.SEVERE, e.getMessage(), e);
             }
         }
 

@@ -7,8 +7,11 @@ import org.tinystruct.system.util.TextFileLoader;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class UserCredential implements Credential {
+    private static final Logger logger = Logger.getLogger(UserCredential.class.getName());
 
     @Override
     public String get(String key) throws ApplicationException {
@@ -16,7 +19,7 @@ public class UserCredential implements Credential {
         try (InputStream stream = UserCredential.class.getResourceAsStream("/clients_secrets.json")) {
             loader.setInputStream(stream);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         Builder builder = new Builder();

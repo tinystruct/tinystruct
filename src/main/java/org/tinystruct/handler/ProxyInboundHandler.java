@@ -20,14 +20,14 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.util.internal.logging.InternalLogger;
-import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import javax.net.ssl.SSLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public abstract class ProxyInboundHandler extends ChannelInboundHandlerAdapter implements ProxyHandler {
 
-    private static final InternalLogger logger = InternalLoggerFactory.getInstance(ProxyInboundHandler.class);
+    private static final Logger logger = Logger.getLogger(ProxyInboundHandler.class.getName());
     private Channel outboundChannel;
 
     String remoteHost = "localhost";
@@ -60,7 +60,7 @@ public abstract class ProxyInboundHandler extends ChannelInboundHandlerAdapter i
             try {
                 sslCtx = SslContextBuilder.forClient().build();
             } catch (SSLException e) {
-                e.printStackTrace();
+                logger.log(Level.SEVERE, e.getMessage(), e);
             }
         }
 
@@ -84,7 +84,7 @@ public abstract class ProxyInboundHandler extends ChannelInboundHandlerAdapter i
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg) {
-        logger.debug("{}", msg.getClass());
+        logger.log(Level.INFO, msg.getClass().getName());
 
         if (outboundChannel.isActive() && outboundChannel.isWritable()) {
             outboundChannel.writeAndFlush(msg)
@@ -110,8 +110,8 @@ public abstract class ProxyInboundHandler extends ChannelInboundHandlerAdapter i
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable e) {
+        logger.log(Level.SEVERE, "Exception caught!", e);
         closeOnFlush(ctx.channel());
     }
 

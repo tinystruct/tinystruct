@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.SecureRandom;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class KeyPairGenerator extends AbstractApplication {
@@ -50,7 +51,7 @@ public class KeyPairGenerator extends AbstractApplication {
             Files.writeString(Paths.get("src", "main", "resources", publicKeyFile), new String(publicKey));
             Files.writeString(Paths.get("src", "main", "resources", privateKeyFile), new String(privateKey));
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 

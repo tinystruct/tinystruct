@@ -246,7 +246,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         try {
             this.install(getConfiguration(), List.of(appName));
         } catch (RemoteException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         System.out.println("Completed installation for " + appName + "!");
@@ -474,9 +474,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 System.out.println("|");
             });
         } catch (ApplicationException e) {
-            System.err.println(e.getCause().getMessage());
+            logger.log(Level.SEVERE, e.getMessage(), e);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
@@ -566,7 +566,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                     try {
                         desktop.browse(new URI(url));
                     } catch (IOException | URISyntaxException e) {
-                        e.printStackTrace();
+                        logger.log(Level.SEVERE, e.getMessage(), e);
                     }
                 }
             }
@@ -641,8 +641,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 System.out.printf("File(s) for %s has been generated. %n", className);
             }
         } catch (ApplicationException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 

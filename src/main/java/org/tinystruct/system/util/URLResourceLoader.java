@@ -20,8 +20,11 @@ import org.tinystruct.ApplicationException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class URLResourceLoader extends TextFileLoader {
+    private final static Logger logger = Logger.getLogger(URLResourceLoader.class.getName());
 
     private HttpURLConnection connection;
 
@@ -57,7 +60,7 @@ public class URLResourceLoader extends TextFileLoader {
                 this.connect(url);
                 autoconnect = false;
             } catch (ApplicationException e) {
-                e.printStackTrace();
+                logger.log(Level.SEVERE, e.getMessage(), e);
                 autoconnect = true;
             }
     }

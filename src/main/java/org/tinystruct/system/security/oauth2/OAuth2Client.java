@@ -2,7 +2,10 @@ package org.tinystruct.system.security.oauth2;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
-import org.tinystruct.http.*;
+import org.tinystruct.http.Header;
+import org.tinystruct.http.Headers;
+import org.tinystruct.http.Method;
+import org.tinystruct.http.URLRequest;
 import org.tinystruct.http.client.HttpRequestBuilder;
 import org.tinystruct.system.security.Authentication;
 import org.tinystruct.system.security.Credential;
@@ -13,10 +16,13 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class OAuth2Client implements Authentication {
     boolean status;
     Object token;
+    private static final Logger logger = Logger.getLogger(OAuth2Client.class.getName());
 
     @Override
     public void identify(Credential credential, Map<String, Object> parameters) throws ApplicationException {
@@ -43,9 +49,9 @@ public class OAuth2Client implements Authentication {
             }
 
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         } catch (URISyntaxException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
@@ -75,9 +81,9 @@ public class OAuth2Client implements Authentication {
         try {
             return request.send(builder);
         } catch (ApplicationException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         } catch (URISyntaxException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
         return null;
     }

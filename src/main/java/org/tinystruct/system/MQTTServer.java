@@ -14,7 +14,11 @@ import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.MQTTServerHandler;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class MQTTServer extends AbstractApplication implements Bootstrap {
+    private final static Logger logger = Logger.getLogger(MQTTServer.class.getName());
 
     @Override
     public void init() {
@@ -49,7 +53,7 @@ public class MQTTServer extends AbstractApplication implements Bootstrap {
 
             f.channel().closeFuture().sync();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();

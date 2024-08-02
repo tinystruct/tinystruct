@@ -1,8 +1,12 @@
 package org.tinystruct.http;
 
+import org.tinystruct.http.servlet.ResponseBuilder;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Standard Header Names.
@@ -422,6 +426,7 @@ public class Header implements Cloneable {
     private final String name;
     private StandardValue[] options;
     private Object value;
+    private static final Logger logger = Logger.getLogger(Header.class.getName());
 
     Header(String name) {
         this.name = name;
@@ -466,7 +471,7 @@ public class Header implements Cloneable {
         try {
             return (Header) this.clone();
         } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         return this;
@@ -477,7 +482,7 @@ public class Header implements Cloneable {
         try {
             return (Header) this.clone();
         } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         return this;

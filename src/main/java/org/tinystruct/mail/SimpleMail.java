@@ -82,7 +82,7 @@ public class SimpleMail {
             logger.severe("增加邮件附件：" + fileName + "发生错误！" + e);
             return false;
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
             return false;
         }
 
@@ -227,7 +227,7 @@ public class SimpleMail {
             messages = folder.getMessages();
             logger.info("Messages's length: " + messages.length);
         } catch (MessagingException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         return messages;

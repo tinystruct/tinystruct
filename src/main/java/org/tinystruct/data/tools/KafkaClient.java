@@ -10,15 +10,18 @@ import org.tinystruct.system.annotation.Action;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class KafkaClient extends AbstractApplication {
 
-    private final KafkaProducer<String,String> producer;
+    private final KafkaProducer<String, String> producer;
+    private final static Logger logger = Logger.getLogger(KafkaClient.class.getName());
 
     public KafkaClient() {
         Properties properties = new Properties();
         properties.put("bootstrap.servers", "192.168.1.101:9092");
-        properties.put("ack","all");
+        properties.put("ack", "all");
         properties.put("key.serializer", StringSerializer.class.getName());
         properties.put("value.serializer", StringSerializer.class.getName());
 
@@ -31,11 +34,10 @@ public class KafkaClient extends AbstractApplication {
         try {
             future.get();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         } catch (ExecutionException e) {
-            e.printStackTrace();
-        }
-        finally {
+            logger.log(Level.SEVERE, e.getMessage(), e);
+        } finally {
             producer.close();
         }
     }

@@ -24,6 +24,7 @@ import org.xml.sax.SAXException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 
 public class XHTMLEntityResolver implements EntityResolver {
 
@@ -77,8 +78,6 @@ public class XHTMLEntityResolver implements EntityResolver {
                     source = new InputSource(Resources
                             .getResourceAsStream(path));
             } catch (IOException e) {
-
-                e.printStackTrace();
                 throw new ApplicationException(e.getMessage(), e);
             }
         }

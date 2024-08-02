@@ -31,14 +31,18 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.GZIPInputStream;
 
 import static org.tinystruct.transfer.http.upload.ContentDisposition.LINE;
 
 public class URLRequest {
-
+    private static final Logger logger = Logger.getLogger(URLRequest.class.getName());
     private URL url;
     private Proxy proxy = null;
     private HttpURLConnection connection;
@@ -133,7 +137,7 @@ public class URLRequest {
                                     writer.write(("--" + finalBoundary + LINE).getBytes(StandardCharsets.UTF_8));
                                     writer.write(contentDisposition.getTransferBytes());
                                 } catch (IOException e) {
-                                    e.printStackTrace();
+                                    logger.log(Level.SEVERE, e.getMessage(), e);
                                 }
                             });
                             writer.flush();
@@ -156,7 +160,7 @@ public class URLRequest {
                                     writer.write(contentDisposition.getTransferBytes());
                                     writer.flush();
                                 } catch (IOException e) {
-                                    e.printStackTrace();
+                                    logger.log(Level.SEVERE, e.getMessage(), e);
                                 }
                             });
                         }

@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class H2Generator extends MySQLGenerator {
@@ -83,7 +84,7 @@ public class H2Generator extends MySQLGenerator {
         try {
             java_resource.append("  private static final long serialVersionUID = ").append(SecureRandom.getInstance("NativePRNG").nextLong()).append("L;\r\n");
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         Element rootElement = new Element("mapping");

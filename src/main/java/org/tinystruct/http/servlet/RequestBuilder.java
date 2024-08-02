@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpSession;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.FileEntity;
+import org.tinystruct.handler.ProxyInboundHandler;
 import org.tinystruct.http.*;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
@@ -14,6 +15,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletInputStream> {
     private final SessionManager manager = SessionManager.getInstance();
@@ -24,6 +27,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     private Version version;
     private Method method;
     private String uri;
+    private static final Logger logger = Logger.getLogger(RequestBuilder.class.getName());
 
     public RequestBuilder(HttpServletRequest request, boolean secure) {
         super(request);
@@ -108,7 +112,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
         try {
             return this.request.getInputStream();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         return null;

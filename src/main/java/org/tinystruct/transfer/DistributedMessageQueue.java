@@ -5,12 +5,15 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.annotation.Action;
+import org.tinystruct.valve.DistributedHashMap;
 import org.tinystruct.valve.Lock;
 import org.tinystruct.valve.Watcher;
 
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DistributedMessageQueue extends AbstractApplication implements MessageQueue<String> {
 
@@ -21,6 +24,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     protected final Map<String, List<String>> sessions = Maps.SESSIONS;
     private final Lock lock = Watcher.getInstance().acquire();
     private ExecutorService service;
+    private static final Logger logger = Logger.getLogger(DistributedMessageQueue.class.getName());
 
     @Override
     public void init() {
@@ -38,7 +42,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                                     break;
                                 }
                             } catch (InterruptedException e) {
-                                e.printStackTrace();
+                                logger.log(Level.SEVERE, e.getMessage(), e);
                             }
                         }
                     }
@@ -117,7 +121,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
 
             return builder.toString();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         return "{}";
@@ -230,10 +234,10 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        logger.log(Level.SEVERE, e.getMessage(), e);
                     } catch (InterruptedException e) {
                         // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        logger.log(Level.SEVERE, e.getMessage(), e);
                     }
             }
         });
@@ -249,10 +253,10 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        logger.log(Level.SEVERE, e.getMessage(), e);
                     } catch (InterruptedException e) {
                         // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        logger.log(Level.SEVERE, e.getMessage(), e);
                     }
             }
         });
@@ -267,11 +271,9 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                         System.out.println("**A**:" + ApplicationManager.call("message/take/{A}", null));
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        logger.log(Level.SEVERE, e.getMessage(), e);
                     } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        logger.log(Level.SEVERE, e.getMessage(), e);
                     }
             }
         });
@@ -287,10 +289,10 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
                         Thread.sleep(1);
                     } catch (ApplicationException e) {
                         // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        logger.log(Level.SEVERE, e.getMessage(), e);
                     } catch (InterruptedException e) {
                         // TODO Auto-generated catch block
-                        e.printStackTrace();
+                        logger.log(Level.SEVERE, e.getMessage(), e);
                     }
             }
         });

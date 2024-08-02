@@ -30,6 +30,7 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.tinystruct.Application.LANGUAGE;
@@ -119,7 +120,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             try {
                 handleApplicationException(_request, _response, e);
             } catch (ApplicationException ex) {
-                ex.printStackTrace();
+                logger.log(Level.SEVERE, ex.getMessage(), ex);
             }
         }
     }
@@ -172,9 +173,8 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
      * @param request  The HTTP servlet request
      * @param response The HTTP servlet response
      * @param e        The application exception
-     * @throws IOException if an I/O error occurs
      */
-    private void handleApplicationException(Request request, Response response, ApplicationException e) throws IOException, ApplicationException {
+    private void handleApplicationException(Request request, Response response, ApplicationException e) throws ApplicationException {
         response.setStatus(ResponseStatus.valueOf(e.getStatus()));
         Session session = request.getSession();
         session.setAttribute("error", e);

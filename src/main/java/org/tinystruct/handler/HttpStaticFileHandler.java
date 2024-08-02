@@ -35,6 +35,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import static io.netty.handler.codec.http.HttpMethod.GET;
@@ -95,6 +97,7 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
     private static final Pattern INSECURE_URI = Pattern.compile(".*[<>&\"].*");
     private static final Pattern ALLOWED_FILE_NAME = Pattern.compile("[^-\\._]?[^<>&\\\"]*");
     private FullHttpRequest request;
+    private static final Logger logger = Logger.getLogger(HttpStaticFileHandler.class.getName());
 
     private static String sanitizeUri(String uri) {
         // Decode the path.
@@ -340,7 +343,7 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        logger.log(Level.SEVERE, "Exception caught!", cause);
         if (ctx.channel().isActive()) {
             sendError(ctx, INTERNAL_SERVER_ERROR);
         }

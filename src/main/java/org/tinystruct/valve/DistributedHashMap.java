@@ -1,10 +1,14 @@
 package org.tinystruct.valve;
 
+import org.tinystruct.system.Dispatcher;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * DistributedHashMap implementation. TO BE COMPLETE.
@@ -14,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> {
 
     private static final long serialVersionUID = 2329878484809829362L;
+    private static final Logger logger = Logger.getLogger(DistributedHashMap.class.getName());
 
     private static final int FIXED_LOCK_DATA_SIZE = 44;
     private RandomAccessFile data;
@@ -30,7 +35,7 @@ public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> {
             this.size = (int) (this.data.length() / FIXED_LOCK_DATA_SIZE);
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 

@@ -4,6 +4,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.tinystruct.system.Configuration;
 
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MQTTClient implements MessageQueue<String> {
@@ -97,7 +98,7 @@ public class MQTTClient implements MessageQueue<String> {
         try {
             publisher.close();
         } catch (MqttException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 }

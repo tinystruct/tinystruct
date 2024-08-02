@@ -16,7 +16,6 @@
 package org.tinystruct.data.component;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Row extends CopyOnWriteArrayList<Field> {
@@ -30,7 +29,7 @@ public class Row extends CopyOnWriteArrayList<Field> {
     }
 
     public FieldInfo getFieldInfo(String fieldName) {
-        if (this.size()>0) {
+        if (this.size() > 0) {
             return this.get(0).get(fieldName);
         }
         return null; // or throw an exception if index is out of bounds

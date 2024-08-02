@@ -17,10 +17,8 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.HttpProxyHandler;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
-import org.tinystruct.system.cli.CommandOption;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class HttpProxyServer extends ProxyServer implements Bootstrap {
@@ -33,7 +31,7 @@ public class HttpProxyServer extends ProxyServer implements Bootstrap {
     }
 
     @Override
-	public void init() {
+    public void init() {
         this.setTemplateRequired(false);
     }
 
@@ -97,7 +95,7 @@ public class HttpProxyServer extends ProxyServer implements Bootstrap {
             // Wait until the server socket is closed.
             future.channel().closeFuture().sync();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         } finally {
             this.stop();
         }

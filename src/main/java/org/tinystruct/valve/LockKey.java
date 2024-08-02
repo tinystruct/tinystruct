@@ -5,7 +5,6 @@ import org.tinystruct.ApplicationRuntimeException;
 import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Random;
 
 /**
  * Generate a random lock id.

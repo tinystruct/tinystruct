@@ -14,6 +14,8 @@ import org.tinystruct.data.FileEntity;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
     private final SessionManager manager = SessionManager.getInstance();
@@ -27,6 +29,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
     private Method method;
     private String uri;
     private String sessionId;
+    private static final Logger logger = Logger.getLogger(RequestBuilder.class.getName());
 
     public RequestBuilder(FullHttpRequest request, boolean secure) {
         super(request);
@@ -105,7 +108,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
                             try {
                                 attachment.setContent(upload.get());
                             } catch (IOException e) {
-                                e.printStackTrace();
+                                logger.log(Level.SEVERE, e.getMessage(), e);
                             }
 
                             list.add(attachment);

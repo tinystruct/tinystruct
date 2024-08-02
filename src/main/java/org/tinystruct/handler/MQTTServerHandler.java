@@ -6,6 +6,9 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.mqtt.*;
 import io.netty.util.CharsetUtil;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * MQTT Server handler
  *
@@ -13,6 +16,7 @@ import io.netty.util.CharsetUtil;
  */
 public class MQTTServerHandler extends SimpleChannelInboundHandler<MqttMessage> {
     public static final MQTTServerHandler INSTANCE = new MQTTServerHandler();
+    private static final Logger logger = Logger.getLogger(MQTTServerHandler.class.getName());
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, MqttMessage message) throws Exception {
@@ -79,9 +83,9 @@ public class MQTTServerHandler extends SimpleChannelInboundHandler<MqttMessage> 
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable e) throws Exception {
         // Handle exceptions
-        cause.printStackTrace();
+        logger.log(Level.SEVERE, "Exception caught!", e);
         ctx.close();
     }
 }

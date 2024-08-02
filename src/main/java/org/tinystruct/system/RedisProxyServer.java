@@ -14,10 +14,8 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.RedisProxyHandler;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
-import org.tinystruct.system.cli.CommandOption;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RedisProxyServer extends ProxyServer implements Bootstrap {
@@ -32,7 +30,7 @@ public class RedisProxyServer extends ProxyServer implements Bootstrap {
     }
 
     @Override
-	public void init() {
+    public void init() {
         this.setTemplateRequired(false);
     }
 
@@ -64,7 +62,7 @@ public class RedisProxyServer extends ProxyServer implements Bootstrap {
 
         try {
             ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup)
-                    .channel(Epoll.isAvailable()? EpollServerSocketChannel.class
+                    .channel(Epoll.isAvailable() ? EpollServerSocketChannel.class
                             : NioServerSocketChannel.class)
                     .handler(new LoggingHandler())
                     .childHandler(new ChannelInitializer<SocketChannel>() {
@@ -83,7 +81,7 @@ public class RedisProxyServer extends ProxyServer implements Bootstrap {
             // Wait until the server socket is closed.
             future.channel().closeFuture().sync();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, e.getMessage(), e);
         } finally {
             this.stop();
         }
