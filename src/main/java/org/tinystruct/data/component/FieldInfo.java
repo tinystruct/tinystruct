@@ -30,7 +30,7 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
 
     public FieldInfo() {
         super(8);
-        
+
         this.autoIncrement = false;
         this.length = 0;
     }
@@ -79,7 +79,8 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
     }
 
     public void set(String property, Object value) {
-        this.put(property, value);
+        if (property != null && value != null)
+            this.put(property, value);
     }
 
     public Object value() {
@@ -141,7 +142,7 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
     }
 
     @Override
-	public String toString() {
+    public String toString() {
         StringBuilder to = new StringBuilder();
         String key, value;
 
