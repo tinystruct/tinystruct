@@ -105,7 +105,8 @@ public class HttpRequestBuilder {
     }
 
     public HttpRequestBuilder setParameter(String name, Object value) {
-        this.parameters.put(name, value);
+        if (name != null && value != null)
+            this.parameters.put(name, value);
         return this;
     }
 
