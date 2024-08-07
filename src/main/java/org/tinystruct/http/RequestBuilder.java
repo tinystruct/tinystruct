@@ -17,6 +17,8 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.tinystruct.http.Constants.JSESSIONID;
+
 public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
     private final SessionManager manager = SessionManager.getInstance();
     private final Headers headers = new Headers();
@@ -53,7 +55,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
         int i = _cookies.size();
         this.cookies = new Cookie[i];
         for (io.netty.handler.codec.http.cookie.Cookie _cookie : _cookies) {
-            if (_cookie.name().equalsIgnoreCase("jsessionid")) {
+            if (_cookie.name().equalsIgnoreCase(JSESSIONID)) {
                 this.sessionId = _cookie.value();
             }
             Cookie cookie = new CookieImpl(_cookie.name());
@@ -62,7 +64,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
             cookie.setHttpOnly(_cookie.isHttpOnly());
             cookie.setMaxAge(_cookie.maxAge());
             cookie.setPath(_cookie.path());
-            cookie.setSecure(_cookie.isSecure());
+            cookie.setSecure(secure);
             cookies[--i] = cookie;
         }
 
