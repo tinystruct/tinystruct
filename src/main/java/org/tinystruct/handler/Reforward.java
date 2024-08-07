@@ -23,8 +23,6 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-import static org.tinystruct.http.Constants.JSESSIONID;
-
 public class Reforward {
     private final Response response;
     private String fromURL = "";
@@ -63,18 +61,6 @@ public class Reforward {
         for (Cookie cookie : cookies) {
             responseHeaders.add(Header.SET_COOKIE.set(cookie));
         }
-
-        // Set JSESSIONID cookie in response
-        String host = request.headers().get(Header.HOST).toString();
-        Cookie cookie = new CookieImpl(JSESSIONID);
-        if (host.contains(":"))
-            cookie.setDomain(host.substring(0, host.indexOf(":")));
-        cookie.setValue(request.getSession().getId());
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(-1);
-
-        responseHeaders.add(Header.SET_COOKIE.set(cookie));
     }
 
     /**
