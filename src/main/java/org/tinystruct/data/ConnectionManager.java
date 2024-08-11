@@ -83,7 +83,7 @@ final class ConnectionManager implements Runnable {
         String dbPassword = config.get("database.password").trim();
 
         String dbType = getConfiguredType().name().toLowerCase();
-        if (null != dbUrl && !"h2".equalsIgnoreCase(dbType)) {
+        if (null != dbUrl && !"h2".equalsIgnoreCase(dbType) && !"sqlite".equalsIgnoreCase(dbType)) {
             try {
                 URI dbUri;
                 if (dbUrl.startsWith("jdbc:" + dbType + "://")) {
