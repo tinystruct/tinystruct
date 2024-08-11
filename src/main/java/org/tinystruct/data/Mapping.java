@@ -73,11 +73,12 @@ public class Mapping {
             if (className.equalsIgnoreCase(
                     currentElement.getAttribute(NAME))) {
                 switch (data.getRepository().getType().ordinal()) {
-                    case 0:
+                    case 0: // MySQL
+                    case 2: // SQLite
                         data.setTableName("`"
                                 + currentElement.getAttribute("table") + "`");
                         break;
-                    case 1:
+                    case 1: // SQL Server
                         data.setTableName("["
                                 + currentElement.getAttribute("table") + "]");
                         break;
