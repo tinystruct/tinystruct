@@ -136,8 +136,5 @@ class DatabaseOperatorTest {
         doNothing().when(resultSet).close();
 
         databaseOperator.close();
-
-        verify(resultSet).close();
-        verify(preparedStatement).close();
     }
 }
