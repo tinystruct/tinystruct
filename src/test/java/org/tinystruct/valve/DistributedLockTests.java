@@ -8,15 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tinystruct.ApplicationException;
 
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DistributedLockTests {
-    private static final Logger log = LoggerFactory.getLogger(DistributedLockTests.class);
+    private static final Logger logger = LoggerFactory.getLogger(DistributedLockTests.class);
     private static int tickets = 100;
     private static CountDownLatch latch;
     private static long n;
@@ -30,7 +28,7 @@ public class DistributedLockTests {
         }
 
         assertEquals(0, tickets);
-        log.info("Complete all test methods.");
+        logger.info("Complete all test methods.");
     }
 
     @Test
@@ -100,7 +98,7 @@ public class DistributedLockTests {
                     lock.lock();
                     if (tickets > 0)
                         // TODO
-                        log.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
+                        logger.info("{} is selling #{} with Lock#{}", Thread.currentThread().getName(), tickets--, lock.id());
                     latch.countDown();
                 } finally {
                     lock.unlock();
