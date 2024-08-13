@@ -17,8 +17,8 @@ public class DatabaseOperator implements Closeable {
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 1000;
     private final ConnectionManager manager;
-    private Connection connection;
-    private PreparedStatement preparedStatement;
+    Connection connection;
+    PreparedStatement preparedStatement;
     private ResultSet resultSet;
 
     /**
@@ -243,7 +243,7 @@ public class DatabaseOperator implements Closeable {
     /**
      * Close the result set if it is not null.
      */
-    private void closeResultSet() {
+    void closeResultSet() {
         try {
             if (resultSet != null) {
                 resultSet.close();
@@ -279,7 +279,7 @@ public class DatabaseOperator implements Closeable {
      * @param statement The statement that using in the current operation.
      * @throws ApplicationException If an error occurs while handling the exception.
      */
-    private void handleSQLException(SQLException e, PreparedStatement statement) throws ApplicationException {
+     void handleSQLException(SQLException e, PreparedStatement statement) throws ApplicationException {
         if (e.getSQLState().equals(SQL_STATE_COMMUNICATION_LINK_FAILURE)) {
             closeResultSet(); // Close the current result set
             if (manager != null) {
