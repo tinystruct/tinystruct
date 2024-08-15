@@ -1,7 +1,5 @@
 package org.tinystruct.http;
 
-import org.tinystruct.http.servlet.ResponseBuilder;
-
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;

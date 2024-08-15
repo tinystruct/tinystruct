@@ -5,7 +5,6 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.annotation.Action;
-import org.tinystruct.valve.DistributedHashMap;
 import org.tinystruct.valve.Lock;
 import org.tinystruct.valve.Watcher;
 

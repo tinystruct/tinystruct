@@ -1,7 +1,5 @@
 package org.tinystruct.valve;
 
-import org.tinystruct.system.Dispatcher;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;

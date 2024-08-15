@@ -24,7 +24,6 @@ import org.xml.sax.SAXException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
 
 public class XHTMLEntityResolver implements EntityResolver {
 

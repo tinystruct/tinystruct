@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpSession;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.FileEntity;
-import org.tinystruct.handler.ProxyInboundHandler;
 import org.tinystruct.http.*;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
@@ -75,7 +74,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
         this.secure = secure;
     }
 
-    public RequestBuilder(HttpServletRequest request){
+    public RequestBuilder(HttpServletRequest request) {
         this(request, false);
     }
 
