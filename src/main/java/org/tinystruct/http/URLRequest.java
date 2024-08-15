@@ -187,24 +187,7 @@ public class URLRequest {
             String contentEncoding = connection.getContentEncoding();
             byte[] buffer = new byte[1024];
             int bytesRead;
-            InputStream decodedStream = null;
-            if (contentEncoding != null) {
-                switch (contentEncoding) {
-                    case "gzip":
-                        decodedStream = new GZIPInputStream(in);
-                        break;
-                    case "deflate":
-                        decodedStream = new DeflaterInputStream(in);
-                        break;
-                    case "br":
-                        decodedStream = new BrotliInputStream(in);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            InputStream inputToRead = (decodedStream != null) ? decodedStream : in;
+            InputStream inputToRead = getInputStream(contentEncoding, in);
             while ((bytesRead = inputToRead.read(buffer)) != -1) {
                 out.write(buffer, 0, bytesRead);
             }
@@ -215,6 +198,28 @@ public class URLRequest {
         } finally {
             connection.disconnect();
         }
+    }
+
+    private static InputStream getInputStream(String contentEncoding, InputStream in) throws IOException {
+        InputStream decodedStream = null;
+        if (contentEncoding != null) {
+            switch (contentEncoding) {
+                case "gzip":
+                    decodedStream = new GZIPInputStream(in);
+                    break;
+                case "deflate":
+                    decodedStream = new DeflaterInputStream(in);
+                    break;
+                case "br":
+                    decodedStream = new BrotliInputStream(in);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        InputStream inputToRead = (decodedStream != null) ? decodedStream : in;
+        return inputToRead;
     }
 
     public byte[] send0(HttpRequestBuilder request) throws ApplicationException {
