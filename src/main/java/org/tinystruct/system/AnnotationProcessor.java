@@ -48,14 +48,7 @@ public class AnnotationProcessor {
                 CommandLine commandLine = new CommandLine(this.app, commandName, description);
                 this.app.getCommandLines().put(commandName, commandLine);
 
-                Argument[] argumentAnnotations = actionAnnotation.arguments();
-                Set<CommandArgument<String, Object>> arguments = new HashSet<>();
-                for (Argument argumentAnnotation : argumentAnnotations) {
-                    String key = argumentAnnotation.key();
-                    String argDescription = argumentAnnotation.description();
-                    CommandArgument<String, Object> argument = new CommandArgument<>(key, null, argDescription);
-                    arguments.add(argument);
-                }
+                Set<CommandArgument<String, Object>> arguments = getCommandArguments(actionAnnotation);
                 this.app.getCommandLines().get(commandName).setArguments(arguments);
 
                 Argument[] optionAnnotations = actionAnnotation.options();
@@ -68,7 +61,7 @@ public class AnnotationProcessor {
                 }
                 this.app.getCommandLines().get(commandName).setOptions(options);
 
-                if (!example.equals(""))
+                if (!example.isEmpty())
                     this.app.getCommandLines().get(commandName).setExample(example);
 
                 // Register the action handler method
@@ -85,5 +78,17 @@ public class AnnotationProcessor {
             }
         }
 
+    }
+
+    private static Set<CommandArgument<String, Object>> getCommandArguments(Action actionAnnotation) {
+        Argument[] argumentAnnotations = actionAnnotation.arguments();
+        Set<CommandArgument<String, Object>> arguments = new HashSet<>();
+        for (Argument argumentAnnotation : argumentAnnotations) {
+            String key = argumentAnnotation.key();
+            String argDescription = argumentAnnotation.description();
+            CommandArgument<String, Object> argument = new CommandArgument<>(key, null, argDescription);
+            arguments.add(argument);
+        }
+        return arguments;
     }
 }

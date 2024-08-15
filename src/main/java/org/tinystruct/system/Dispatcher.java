@@ -699,7 +699,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             String example = commandLine.getExample();
             if (command.startsWith("--")) {
 //                    options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
-            } else if (command.equals("")) {
+            } else if (command.isEmpty()) {
                 builder.append(description).append("\n");
                 commandLine.getOptions().forEach(option -> {
                     options.append("\t").append(StringUtilities.rightPadding(option.getKey(), max, ' ')).append("\t").append(option.getDescription()).append("\n");
@@ -708,7 +708,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
             }
 
-            if (example != null && !example.equals("")) {
+            if (example != null && !example.isEmpty()) {
                 examples.append(example).append("\n");
             }
         });

@@ -543,7 +543,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
                 throw new ApplicationRuntimeException(e.getMessage(), e);
             }
         } else {
-            if (this.output != null && this.output.trim().length() > 0) {
+            if (this.output != null && !this.output.trim().isEmpty()) {
                 try {
                     String output;
                     if (locale != null)
@@ -597,13 +597,13 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
             if (command.startsWith("--")) {
                 options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
-            } else if (command.equals("")) {
+            } else if (command.isEmpty()) {
                 builder.append(description).append("\n");
             } else {
                 commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
             }
 
-            if (example != null && !example.equals("")) {
+            if (example != null && !example.isEmpty()) {
                 examples.append(example).append("\n");
             }
         });

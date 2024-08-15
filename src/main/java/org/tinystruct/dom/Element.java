@@ -464,7 +464,7 @@ public class Element implements Cloneable {
 
     public static void printNode(Element node, String indent) {
         String data = node.getData();
-        if ((data == null) || "".equals(data)) {
+        if ((data == null) || data.isEmpty()) {
             System.out.println(indent + node.getName());
         } else {
             System.out.println(indent + node.getName() + " = '" + data + "'");

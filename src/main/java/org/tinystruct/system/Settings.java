@@ -84,7 +84,7 @@ public class Settings implements Configuration<String> {
 
     @Override
     public String getOrDefault(String key, String value) {
-        return this.get(key).equals("") ? value : this.get(key);
+        return this.get(key).isEmpty() ? value : this.get(key);
     }
 
     @Override
