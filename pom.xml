@@ -266,7 +266,7 @@
         <jna.version>5.14.0</jna.version>
         <jol.version>0.17</jol.version>
         <jupiter.version>5.10.3</jupiter.version>
-        <kafka.version>3.7.1</kafka.version>
+        <kafka.version>3.8.0</kafka.version>
         <lettuce.version>6.3.2.RELEASE</lettuce.version>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
