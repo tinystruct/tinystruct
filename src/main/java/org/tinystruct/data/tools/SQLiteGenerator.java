@@ -89,7 +89,7 @@ public class SQLiteGenerator implements Generator {
         java_resource.append("\r\n");
         java_resource.append("import org.tinystruct.data.component.Row;\r\n");
         java_resource.append("import org.tinystruct.data.component.AbstractData;\r\n\r\n");
-        java_resource.append("public class " + className + " extends AbstractData implements Serializable {\r\n");
+        java_resource.append("public class ").append(className).append(" extends AbstractData implements Serializable {\r\n");
         java_resource.append("	/**\r\n");
         java_resource.append("   * Auto Generated Serial Version UID\r\n");
         java_resource.append("   */\r\n");
