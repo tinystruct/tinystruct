@@ -40,7 +40,7 @@ final class ConnectionManager implements Runnable {
     private String url;
     private String user;
     private String password;
-    private int maxConnections;
+    private final int maxConnections;
 
     private String database;
     private volatile boolean pending;
