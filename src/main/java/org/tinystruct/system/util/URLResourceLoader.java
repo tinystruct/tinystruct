@@ -61,7 +61,6 @@ public class URLResourceLoader extends TextFileLoader {
                 autoconnect = false;
             } catch (ApplicationException e) {
                 logger.log(Level.SEVERE, e.getMessage(), e);
-                autoconnect = true;
             }
     }
 
