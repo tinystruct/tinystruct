@@ -1,5 +1,7 @@
 package org.tinystruct.transfer.http;
 
+import org.tinystruct.ApplicationException;
+
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.Channels;
@@ -38,9 +40,8 @@ public class ReadableByteChannelWrapper extends AbstractReadableByteChannelWrapp
      *
      * @param url The URL to retrieve the content length from.
      * @return The content length of the resource, or -1 if it cannot be determined.
-     * @throws Exception If an error occurs while obtaining the content length.
      */
-    private int length(URL url) throws Exception {
+    private int length(URL url) throws ApplicationException {
         HttpURLConnection connection;
         int length = -1;
 
@@ -51,7 +52,7 @@ public class ReadableByteChannelWrapper extends AbstractReadableByteChannelWrapp
             connection.setRequestMethod("HEAD");
             length = connection.getContentLength();
         } catch (Exception e) {
-            throw e;
+            throw new ApplicationException(e.getMessage(), e.getCause());
         }
 
         return length;
