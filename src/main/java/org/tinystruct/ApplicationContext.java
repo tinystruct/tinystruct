@@ -18,6 +18,7 @@ package org.tinystruct;
 import org.tinystruct.application.Context;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 /**
  * Implementation of {@link Context} for application.
@@ -35,7 +36,7 @@ public final class ApplicationContext implements Context {
     @Override
     public String getId() {
         if (null != getAttribute("Id"))
-            return getAttribute("Id").toString();
+            return Objects.requireNonNull(getAttribute("Id")).toString();
 
         return "";
     }
