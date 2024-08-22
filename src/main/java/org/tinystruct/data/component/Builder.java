@@ -140,7 +140,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         // Trim the input value
         value = value.trim();
 
-        if (value.length() > 0 && value.charAt(0) == QUOTE) {
+        if (!value.isEmpty() && value.charAt(0) == QUOTE) {
             // Handle key-value pair starting with a quoted key
             int COLON_POSITION = value.indexOf(COLON);
             int start = COLON_POSITION + 1;
@@ -148,7 +148,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
             String $value = value.substring(start).trim();
             Object keyValue = null;
-            if($value.length()>0) {
+            if(!$value.isEmpty()) {
                 if ($value.charAt(0) == QUOTE) {
                     // Extract the value if it is enclosed in quotes
                     int $end = this.next($value);
@@ -181,7 +181,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     if ($value.indexOf(COMMA) != -1) {
                         // Extract and parse a single value if there are more values in the sequence
                         String _value = $value.substring(0, $value.indexOf(COMMA));
-                        if (_value.length() > 0) {
+                        if (!_value.isEmpty()) {
                             keyValue = getValue(_value);
                         } else {
                             keyValue = _value;
