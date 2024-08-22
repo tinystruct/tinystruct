@@ -8,7 +8,6 @@ import org.tinystruct.data.Vector;
 import org.tinystruct.data.VectorOperator;
 
 import java.nio.ByteBuffer;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
