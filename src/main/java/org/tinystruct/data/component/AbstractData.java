@@ -302,7 +302,7 @@ public abstract class AbstractData implements Data {
         Row row = this.findOne(new Condition().select(this.table).and(
                 "id=?").toString(), new Object[]{this.Id});
 
-        if (row.size() > 0)
+        if (!row.isEmpty())
             this.setData(row);
 
         return row;
@@ -316,7 +316,7 @@ public abstract class AbstractData implements Data {
         Row row = this.findOne(new Condition().select(this.table).and(
                 PK + "=?").toString(), new Object[]{value});
 
-        if (row.size() > 0)
+        if (!row.isEmpty())
             this.setData(row);
 
         return row;
