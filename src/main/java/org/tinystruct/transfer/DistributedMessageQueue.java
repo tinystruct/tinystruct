@@ -97,14 +97,14 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @return builder
      */
     public final String save(final Object groupId, final Builder builder, Runnable listener) {
-        if ((this.groups.get(groupId)) == null) {
+        if ((this.groups.get(groupId.toString())) == null) {
             this.groups.put(groupId.toString(), new ArrayBlockingQueue<Builder>(DEFAULT_MESSAGE_POOL_SIZE));
         }
 
         try {
-            this.groups.get(groupId).put(builder);
+            this.groups.get(groupId.toString()).put(builder);
 
-            final BlockingQueue<Builder> messages = this.groups.get(groupId);
+            final BlockingQueue<Builder> messages = this.groups.get(groupId.toString());
             this.getService().execute(new Runnable() {
                 @Override
                 public void run() {
@@ -168,7 +168,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     private void copy(final Object groupId, final Builder builder) {
         final List<String> _sessions;
 
-        if ((_sessions = this.sessions.get(groupId)) != null) {
+        if ((_sessions = this.sessions.get(groupId.toString())) != null) {
             final Collection<Entry<String, Queue<Builder>>> set = this.list.entrySet();
             final Iterator<Entry<String, Queue<Builder>>> iterator = set.iterator();
             try {
