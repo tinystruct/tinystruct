@@ -20,18 +20,15 @@ public abstract class AbstractDataRepository implements Repository {
      */
     @Override
     public boolean delete(Object Id, String table) throws ApplicationException {
-        boolean deleted = false;
         String SQL = "DELETE FROM " + table + " WHERE id=?";
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
             PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
             ps.setObject(1, Id);
-            if (ps.execute()) deleted = true;
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
-
-        return deleted;
     }
 
     @Override
