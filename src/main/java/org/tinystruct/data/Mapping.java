@@ -74,11 +74,11 @@ public class Mapping {
                     currentElement.getAttribute(NAME))) {
                 switch (data.getRepository().getType().ordinal()) {
                     case 0: // MySQL
-                    case 2: // SQLite
                         data.setTableName("`"
                                 + currentElement.getAttribute("table") + "`");
                         break;
                     case 1: // SQL Server
+                    case 2: // SQLite
                         data.setTableName("["
                                 + currentElement.getAttribute("table") + "]");
                         break;
