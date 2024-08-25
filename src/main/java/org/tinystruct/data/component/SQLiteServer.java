@@ -35,7 +35,6 @@ public class SQLiteServer extends AbstractDataRepository {
     @Override
     public boolean append(Field ready_fields, String table)
             throws ApplicationException {
-        boolean inserted = false;
         String dot = ",", currentProperty;
         StringBuilder expressions = new StringBuilder(), values = new StringBuilder();
         FieldInfo currentField;
@@ -53,9 +52,9 @@ public class SQLiteServer extends AbstractDataRepository {
             fieldNames.add(currentProperty);
 
             if (expressions.length() == 0)
-                expressions.append("`").append(currentField.getColumnName()).append("`");
+                expressions.append("[").append(currentField.getColumnName()).append("]");
             else
-                expressions.append(dot).append("`").append(currentField.getColumnName()).append("`");
+                expressions.append(dot).append("[").append(currentField.getColumnName()).append("]");
 
             if (values.length() == 0)
                 values.append('?');
@@ -80,7 +79,7 @@ public class SQLiteServer extends AbstractDataRepository {
                 if ("int"
                         .equalsIgnoreCase(currentField.getType().getRealType())) {
                     ps.setInt(i++, currentField.intValue());
-                } else if (currentField.getType() == FieldType.TEXT) {
+                } else if (currentField.getType() == FieldType.TEXT || currentField.getType() == FieldType.LONGTEXT) {
                     ps.setString(i++, currentField.stringValue());
                 } else if (currentField.getType() == FieldType.DATE
                         || currentField.getType() == FieldType.DATETIME) {
@@ -93,15 +92,10 @@ public class SQLiteServer extends AbstractDataRepository {
                 }
             }
 
-            if (ps.execute()) {
-                inserted = true;
-            }
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-
             throw new ApplicationException(e.getMessage(), e);
         }
-
-        return inserted;
     }
 
     @Override
@@ -110,7 +104,6 @@ public class SQLiteServer extends AbstractDataRepository {
         String dot = ",", currentProperty;
         StringBuilder expressions = new StringBuilder();
         FieldInfo currentField;
-
 
         Object Id = null;
         boolean edited = false;
@@ -129,9 +122,9 @@ public class SQLiteServer extends AbstractDataRepository {
                 fieldNames.add(currentProperty);
 
                 if (expressions.length() == 0)
-                    expressions.append("`").append(currentField.getColumnName()).append("`").append("=?");
+                    expressions.append("[").append(currentField.getColumnName()).append("]").append("=?");
                 else
-                    expressions.append(dot).append("`").append(currentField.getColumnName()).append("`").append("=?");
+                    expressions.append(dot).append("[").append(currentField.getColumnName()).append("]").append("=?");
             }
         }
 
@@ -143,11 +136,9 @@ public class SQLiteServer extends AbstractDataRepository {
             while (iterator.hasNext()) {
                 currentField = ready_fields.get(iterator.next());
 
-                // System.out.println("["+currentField.getType()+"]"+i+":"+currentField.value());
-                if ("int"
-                        .equalsIgnoreCase(currentField.getType().getRealType())) {
+                if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
                     ps.setInt(i++, currentField.intValue());
-                } else if (currentField.getType() == FieldType.TEXT) {
+                } else if (currentField.getType() == FieldType.TEXT || currentField.getType() == FieldType.LONGTEXT) {
                     ps.setString(i++, currentField.stringValue());
                 } else if (currentField.getType() == FieldType.DATE
                         || currentField.getType() == FieldType.DATETIME) {
@@ -158,20 +149,13 @@ public class SQLiteServer extends AbstractDataRepository {
                 } else {
                     ps.setObject(i++, currentField.value());
                 }
-
             }
 
-            // System.out.println(i+":"+Id);
             ps.setObject(i, Id);
-            if (ps.execute()) {
-                edited = true;
-            }
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-
             throw new ApplicationException(e.getMessage(), e);
         }
-
-        return edited;
     }
 
     @Override
@@ -222,6 +206,5 @@ public class SQLiteServer extends AbstractDataRepository {
         }
 
         return table;
-
     }
 }
