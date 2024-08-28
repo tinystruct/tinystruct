@@ -216,7 +216,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     @Override
     public String setTemplate(Template template) throws ApplicationException {
-        // When the template has not been disabled or the locale does not compared.
+        // When the template has not been disabled or the locale does not match.
         return template.parse();
     }
 

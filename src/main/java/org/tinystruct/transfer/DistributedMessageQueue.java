@@ -162,7 +162,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     /**
      * Copy message to the list of each session.
      *
-     * @param groupId group Id
+     * @param groupId group ID
      * @param builder message
      */
     private void copy(final Object groupId, final Builder builder) {
@@ -193,7 +193,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     }
 
     /**
-     * This function can be override.
+     * This function can be overridden.
      *
      * @param text text
      * @return filtered text

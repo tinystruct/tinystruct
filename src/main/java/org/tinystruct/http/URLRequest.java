@@ -295,7 +295,7 @@ public class URLRequest {
          * Selects all the applicable proxies based on the protocol to
          * access the resource with and a destination address to access
          * the resource at.
-         * The format of the URI is defined as follow:
+         * The format of the URI is defined as follows:
          * <UL>
          * <LI>http URI for http connections</LI>
          * <LI>https URI for https connections
@@ -304,8 +304,7 @@ public class URLRequest {
          * </UL>
          *
          * @param uri The URI that a connection is required to
-         * @return a List of Proxies. Each element in the
-         * the List is of type
+         * @return a List of Proxies. Each element in the List is of type
          * {@link Proxy Proxy};
          * when no proxy is available, the list will
          * contain one element of type
@@ -327,7 +326,7 @@ public class URLRequest {
          *
          * @param uri The URI that the proxy at sa failed to serve.
          * @param sa  The socket address of the proxy/SOCKS server
-         * @param ioe The I/O exception thrown when the connect failed.
+         * @param ioe The I/O exception thrown when to connect failed.
          * @throws IllegalArgumentException if either argument is null
          */
         @Override

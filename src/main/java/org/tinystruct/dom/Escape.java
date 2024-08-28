@@ -291,7 +291,7 @@ public class Escape {
                     if (ch <= mappableLimit) {
                         value[outputPos++] = ch;
                     } else {
-                        // We not sure the encoding supports this code point, so we write it as a character entity reference.
+                        // We are not sure if the encoding supports this code point, so we write it as a character entity reference.
                         outputPos = replaceChars(outputPos, ("&#x" + Integer.toHexString(ch) + ";").toCharArray(), inputLength);
                         changed = true;
                     }
@@ -398,7 +398,7 @@ public class Escape {
                         if (ch <= mappableLimit) {
                             value[outputPos++] = ch;
                         } else {
-                            // We not sure the encoding supports this code point, so we write it as a character entity reference.
+                            // We are not sure if the encoding supports this code point, so we write it as a character entity reference.
                             outputPos = replaceChars(outputPos, ("&#x" + Integer.toHexString(ch) + ";").toCharArray(), inputLength);
                             changed = true;
                         }

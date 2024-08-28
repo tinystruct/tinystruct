@@ -29,7 +29,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * The MultipartFormData class is responsible for reading the
  * input data of a multipart request and splitting it up into
- * input elements, wrapped inside of a
+ * input elements, wrapped inside a
  * {@link org.tinystruct.transfer.http.upload.ContentDisposition ContentDisposition}
  * for easy definition.  To use this class, create a new instance
  * of MultipartFormData passing it a HttpServletRequest in the
@@ -64,7 +64,7 @@ public class MultipartFormData {
     protected String boundary;
 
     /**
-     * Whether or not the input stream is finished
+     * Whether the input stream is finished
      */
     protected boolean end = false;
 
@@ -83,7 +83,7 @@ public class MultipartFormData {
 
     /**
      * Parses a content-type String for the boundary.  Appends a
-     * "--" to the beginning of the boundary, because thats the
+     * "--" to the beginning of the boundary, because that's the
      * real boundary as opposed to the shortened one in the
      * content type.
      *
@@ -147,7 +147,7 @@ public class MultipartFormData {
     }
 
     /**
-     * Parses a string looking for a attribute-value pair, and returns the value.
+     * Parses a string looking for an attribute-value pair, and returns the value.
      * For example:
      * <pre>
      *      String parseString = "Content-Disposition: filename=\"bob\" name=\"jack\"";

@@ -90,7 +90,7 @@ public class SimpleMail {
     }
 
     /**
-     * Set the from name.
+     * Set the name of from.
      *
      * @param fromName from name
      */

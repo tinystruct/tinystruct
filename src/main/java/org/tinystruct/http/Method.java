@@ -49,7 +49,7 @@ public enum Method {
     DELETE ("DELETE"),
 
     /**
-     * The TRACE method is used to invoke a remote, application-layer loop- back of the request
+     * The TRACE method is used to invoke a remote, application-layer loop-back of the request
      * message.
      */
     TRACE ("TRACE"),

@@ -135,7 +135,7 @@ public interface Application {
     /**
      * Return a specific instance for this application.
      *
-     * @param contextId Context Id
+     * @param contextId Context ID
      * @return an instance of this application
      */
     Application getInstance(String contextId);

@@ -257,7 +257,7 @@ public class Document extends DefaultHandler {
      * {@link Element} in order to get the wanted
      * element.
      *
-     * @return a Element if it has been loaded or initialized with it; null
+     * @return an Element if it has been loaded or initialized with it; null
      * otherwise.
      */
     public Element getRoot() {
