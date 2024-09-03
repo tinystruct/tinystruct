@@ -2,6 +2,7 @@ package org.tinystruct.data;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
+import org.tinystruct.data.tools.SQLInjectionDetector;
 
 import java.io.Closeable;
 import java.sql.Connection;
@@ -86,6 +87,8 @@ public class DatabaseOperator implements Closeable {
         }
 
         try {
+            SQLInjectionDetector.checkForUnsafeSQL(sql);
+
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             // Setting parameters if provided
             for (int n = 0; n < parameters.length; n++) {
@@ -182,10 +185,14 @@ public class DatabaseOperator implements Closeable {
         }
 
         try {
+            SQLInjectionDetector.checkForUnsafeSQL(sql);
+
             int resultSetType = scrollable ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY;
             int resultSetConcurrency = ResultSet.CONCUR_READ_ONLY;
 
-            return connection.prepareStatement(sql, resultSetType, resultSetConcurrency);
+            return connection.prepareStatement(sql,
+                    resultSetType,
+                    resultSetConcurrency);
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
@@ -279,7 +286,7 @@ public class DatabaseOperator implements Closeable {
      * @param statement The statement that using in the current operation.
      * @throws ApplicationException If an error occurs while handling the exception.
      */
-     void handleSQLException(SQLException e, PreparedStatement statement) throws ApplicationException {
+    void handleSQLException(SQLException e, PreparedStatement statement) throws ApplicationException {
         if (e.getSQLState().equals(SQL_STATE_COMMUNICATION_LINK_FAILURE)) {
             closeResultSet(); // Close the current result set
             if (manager != null) {
