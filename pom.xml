@@ -273,7 +273,7 @@
         <mqtt.version>1.2.5</mqtt.version>
         <slf4j.version>2.0.13</slf4j.version>
         <sqlite.version>3.46.0.1</sqlite.version>
-        <h2.version>2.3.230</h2.version>
+        <h2.version>2.3.232</h2.version>
         <netty.version>4.1.112.Final</netty.version>
         <mysql.connector.version>9.0.0</mysql.connector.version>
         <graalvm.version>24.0.1</graalvm.version>
