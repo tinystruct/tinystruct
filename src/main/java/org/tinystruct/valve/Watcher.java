@@ -296,7 +296,7 @@ public final class Watcher implements Runnable {
                     long length = lockFile.length();
                     if (length < FIXED_LOCK_DATA_SIZE)
                         return;
-                    try (FileLock fileLock = lockFile.getChannel().tryLock();) {
+                    try (FileLock fileLock = lockFile.getChannel().tryLock()) {
                         if (null != fileLock) {
                             byte[] empty = EMPTY_BYTES;
 
@@ -345,7 +345,7 @@ public final class Watcher implements Runnable {
     public Lock acquire() {
         synchronized (Watcher.class) {
             Lock lock;
-            if (null != this.locks && this.locks.size() > 0 && null != (lock = this.locks.values().toArray(new Lock[]{})[0])) {
+            if (null != this.locks && !this.locks.isEmpty() && null != (lock = this.locks.values().toArray(new Lock[]{})[0])) {
                 return lock;
             }
 
@@ -354,7 +354,7 @@ public final class Watcher implements Runnable {
     }
 
     public void stop() {
-        this.stopped = this.locks.size() == 0;
+        this.stopped = this.locks.isEmpty();
     }
 
     public interface EventListener {

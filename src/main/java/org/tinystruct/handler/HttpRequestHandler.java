@@ -94,7 +94,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         String host = request.headers().get(Header.HOST).toString();
         try {
             String lang = request.getParameter("lang"), language = "";
-            if (lang != null && lang.trim().length() > 0) {
+            if (lang != null && !lang.trim().isEmpty()) {
                 String name = lang.replace('-', '_');
 
                 if (Language.support(name) && !lang.equalsIgnoreCase(this.configuration.get("language"))) {

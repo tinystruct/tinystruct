@@ -174,7 +174,7 @@ public class SimpleMail {
                 multipart.addBodyPart(mBodyPart);
             }
 
-            if (this.fromName != null && this.fromName.trim().length() > 0)
+            if (this.fromName != null && !this.fromName.trim().isEmpty())
                 message.setFrom(new InternetAddress(this.username, MimeUtility.encodeWord(this.fromName, "utf-8", "Q")));
             else
                 message.setFrom(new InternetAddress(this.username));
@@ -184,7 +184,7 @@ public class SimpleMail {
             message.setContent(multipart);
 
             if (this.toAddress == null) {
-                if (this.to != null && this.to.size() > 0) {
+                if (this.to != null && !this.to.isEmpty()) {
                     InternetAddress[] to = new InternetAddress[this.to.size()];
                     message.addRecipients(Message.RecipientType.TO, this.to.toArray(to));
                 }
@@ -192,12 +192,12 @@ public class SimpleMail {
                 message.setRecipient(Message.RecipientType.TO, toAddress);
             }
 
-            if (this.copyTo != null && this.copyTo.size() > 0) {
+            if (this.copyTo != null && !this.copyTo.isEmpty()) {
                 InternetAddress[] cp = new InternetAddress[this.copyTo.size()];
                 message.addRecipients(Message.RecipientType.CC, this.copyTo.toArray(cp));
             }
 
-            if (this.behindCopyTo != null && this.behindCopyTo.size() > 0) {
+            if (this.behindCopyTo != null && !this.behindCopyTo.isEmpty()) {
                 InternetAddress[] bcp = new InternetAddress[this.behindCopyTo.size()];
                 message.addRecipients(Message.RecipientType.BCC, this.behindCopyTo.toArray(bcp));
             }

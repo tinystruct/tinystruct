@@ -91,7 +91,7 @@ public class Condition implements Serializable {
     public Condition orderBy(String orders) {
         this.orders = " order by " + orders.toLowerCase();
         String query = this.SQL.toString();
-        if (query.trim().length() > 0)
+        if (!query.trim().isEmpty())
             this.SQL.append(this.orders);
 
         return this;

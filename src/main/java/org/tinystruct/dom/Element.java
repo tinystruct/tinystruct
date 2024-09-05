@@ -412,7 +412,7 @@ public class Element implements Cloneable {
             return this.name;
         }
 
-        boolean valid = this.name != null && this.name.trim().length() != 0;
+        boolean valid = this.name != null && !this.name.trim().isEmpty();
 
         if (!valid)
             return "Invalid Tag Name";
@@ -434,7 +434,7 @@ public class Element implements Cloneable {
             nodes.append(this.data);
         }
 
-        if (this.childNodes.size() > 0) {
+        if (!this.childNodes.isEmpty()) {
             Iterator<Element> childList = this.childNodes.iterator();
 
             while (childList.hasNext()) {

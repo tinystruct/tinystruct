@@ -27,7 +27,7 @@ public final class SessionManager implements Monitor<SessionListener> {
     }
 
     private void fireEvent(SessionEvent event) {
-        if (listeners.size() < 1) {
+        if (listeners.isEmpty()) {
             return;
         }
         listeners.forEach(listener -> listener.onSessionEvent(event));

@@ -135,7 +135,7 @@ public class DefaultTemplate implements Template {
             }
         }
 
-        if (this.view.trim().length() > 0) {
+        if (!this.view.trim().isEmpty()) {
             Document doc;
             try (InputStream in = new ByteArrayInputStream(this.view.getBytes(StandardCharsets.UTF_8))) {
                 DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();

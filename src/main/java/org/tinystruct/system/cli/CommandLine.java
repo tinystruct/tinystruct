@@ -84,7 +84,7 @@ public class CommandLine implements Comparable<CommandLine> {
         StringBuilder help = new StringBuilder("Usage: bin" + File.separator + "dispatcher " + command + placeholders + " [OPTIONS]\n");
         help.append(this.description).append("\n");
 
-        if (arguments.size() > 0) {
+        if (!arguments.isEmpty()) {
             OptionalInt longSizeCommand = this.arguments.stream().mapToInt(o -> o.getKey().length()).max();
             int max = longSizeCommand.orElse(0);
 
@@ -98,7 +98,7 @@ public class CommandLine implements Comparable<CommandLine> {
             }
         }
 
-        if (options.size() > 0) {
+        if (!options.isEmpty()) {
             OptionalInt longSizeCommand = this.options.stream().mapToInt(o -> o.getKey().length()).max();
             int max = longSizeCommand.orElse(0);
 

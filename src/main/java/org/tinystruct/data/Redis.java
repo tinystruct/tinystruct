@@ -13,9 +13,9 @@ import org.tinystruct.data.component.Table;
  */
 public class Redis implements Repository {
 
-    private RedisClient client;
-    private StatefulRedisConnection<String, String> connection;
-    private RedisCommands<String, String> commands;
+    private final RedisClient client;
+    private final StatefulRedisConnection<String, String> connection;
+    private final RedisCommands<String, String> commands;
 
     /**
      * Constructor for creating a Redis instance.

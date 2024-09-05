@@ -278,7 +278,7 @@ public class Document extends DefaultHandler {
         BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(out,
                 StandardCharsets.UTF_8));
         bufferedWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        if (rootElement.getChildNodes().size() > 0) {
+        if (!rootElement.getChildNodes().isEmpty()) {
             bufferedWriter.write(rootElement.toString());
         }
         bufferedWriter.flush();

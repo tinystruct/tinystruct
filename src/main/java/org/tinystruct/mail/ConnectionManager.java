@@ -87,7 +87,7 @@ public final class ConnectionManager implements Runnable {
     public Connection getConnection(Configuration<String> config, PROTOCOL protocol) throws ApplicationException {
         Connection connection;
         synchronized (ConnectionManager.class) {
-            if (this.list.size() > 0) {
+            if (!this.list.isEmpty()) {
                 connection = this.list.firstElement();// 从连接向量中提取第一个空闲的连接。由于是提取，所以要把它从连接向量中删除
                 this.list.remove(connection);
                 if (!connection.available())// 对提取出来的连接进行判断，如果关闭了，那么提取下一个连接，否则直接获取一个新的连接

@@ -173,7 +173,7 @@ public class StringUtilities implements java.io.Serializable {
                 if (parameters.charAt(i) == ',' || i == parameters.length() - 1) {
                     if (i == parameters.length() - 1 && parameters.charAt(i) != ',')
                         s2.append(parameters.charAt(i));
-                    isValid = s2.toString().trim().length() > 0;
+                    isValid = !s2.toString().trim().isEmpty();
                     s2 = new StringBuilder();
                 } else {
                     s2.append(parameters.charAt(i));

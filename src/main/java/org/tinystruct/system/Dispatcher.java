@@ -254,7 +254,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
     @Override
     public void install(Configuration<String> config, List<String> list) throws RemoteException {
-        if (list != null && list.size() > 0) {
+        if (list != null && !list.isEmpty()) {
             // Initialize the application manager with the configuration.
             list.forEach(appName -> {
                 try {

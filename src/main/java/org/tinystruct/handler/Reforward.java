@@ -47,7 +47,7 @@ public class Reforward {
 
         // Determine the 'from' URL based on the request
         Headers headers = request.headers();
-        if (request.getParameter("from") != null && request.getParameter("from").trim().length() > 0) {
+        if (request.getParameter("from") != null && !request.getParameter("from").trim().isEmpty()) {
             this.setDefault(request.getParameter("from"));
         } else if (headers.get(Header.REFERER) != null && headers.get(Header.REFERER).toString().startsWith(request.isSecure() ? "https" : "http" + "://" + request.headers().get(Header.SERVER))) {
             this.fromURL = request.isSecure() ? headers.get(Header.REFERER).toString().replaceAll("http://", "https://") : headers.get(Header.REFERER).toString();

@@ -139,7 +139,7 @@ public class CookieImpl implements Cookie {
         header.append(this.name);
         header.append('=');
         String value = this.value;
-        if (value != null && value.length() > 0) {
+        if (value != null && !value.isEmpty()) {
             validateCookieValue(value);
             header.append(value);
         }
@@ -169,14 +169,14 @@ public class CookieImpl implements Cookie {
         }
 
         String domain = this.domain;
-        if (domain != null && domain.length() > 0) {
+        if (domain != null && !domain.isEmpty()) {
             validateDomain(domain);
             header.append("; Domain=");
             header.append(domain);
         }
 
         String path = this.path;
-        if (path != null && path.length() > 0) {
+        if (path != null && !path.isEmpty()) {
             validatePath(path);
             header.append("; Path=");
             header.append(path);

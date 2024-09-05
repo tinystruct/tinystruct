@@ -287,12 +287,12 @@ public class MultipartFormData {
         // set the input stream
         inputStream = request.stream();
 
-        if ((boundary == null) || (boundary.length() < 1)) {
+        if ((boundary == null) || (boundary.isEmpty())) {
             // try retrieving the header through more "normal" means
             boundary = parseBoundary(request.headers().get(Header.CONTENT_TYPE).toString());
         }
 
-        if ((boundary == null) || (boundary.length() < 1)) {
+        if ((boundary == null) || (boundary.isEmpty())) {
             throw new ServletException("MultipartFormData: cannot retrieve boundary for multipart request");
         }
 

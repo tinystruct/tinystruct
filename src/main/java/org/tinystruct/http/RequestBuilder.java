@@ -245,7 +245,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
 
     @Override
     public String getParameter(String name) {
-        if (null != this.params.get(name) && this.params.get(name).size() > 0) {
+        if (null != this.params.get(name) && !this.params.get(name).isEmpty()) {
             return this.params.get(name).get(0);
         }
         return null;

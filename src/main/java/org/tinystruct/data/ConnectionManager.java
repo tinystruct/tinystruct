@@ -52,7 +52,7 @@ final class ConnectionManager implements Runnable {
         this.driverName = config.get("driver");
         loadDatabaseDriver();
         loadDatabaseConfig(config);
-        this.maxConnections = config.get("database.connections.max").trim().length() > 0 ?
+        this.maxConnections = !config.get("database.connections.max").trim().isEmpty() ?
                 Integer.parseInt(config.get("database.connections.max")) : 0;
         this.pending = false;
     }
@@ -224,7 +224,7 @@ final class ConnectionManager implements Runnable {
                     DriverManager.getConnection(url, user, password);
             logger.log(Level.INFO, "System default database: " + connection.getCatalog());
 
-            if (this.database.length() > 0 && !connection.getCatalog().equalsIgnoreCase(this.database))
+            if (!this.database.isEmpty() && !connection.getCatalog().equalsIgnoreCase(this.database))
                 connection.setCatalog(this.database);
 
             return connection;

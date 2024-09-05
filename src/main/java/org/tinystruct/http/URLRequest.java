@@ -86,7 +86,7 @@ public class URLRequest {
                 boundary = String.valueOf(UUID.randomUUID());
                 url = this.url;
             } else {
-                if (request.parameters().size() > 0) {
+                if (!request.parameters().isEmpty()) {
                     String parameters = this.buildQuery(request.parameters());
                     if (this.url.toString().contains("?"))
                         url = new URL(this.url + "&" + parameters);
@@ -129,7 +129,7 @@ public class URLRequest {
 
                 try (OutputStream writer = connection.getOutputStream()) {
                     if (boundary != null) {
-                        if (request.parameters().size() > 0) {
+                        if (!request.parameters().isEmpty()) {
                             String finalBoundary = boundary;
                             request.parameters().forEach((name, value) -> {
                                 ContentDisposition contentDisposition = new ContentDisposition(name, null, "text/plain", value.toString().getBytes(StandardCharsets.UTF_8));

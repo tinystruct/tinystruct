@@ -92,7 +92,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             context.setAttribute(HTTP_PROTOCOL, getProtocol(request));
 
             String lang = _request.getParameter("lang"), language = "";
-            if (lang != null && lang.trim().length() > 0) {
+            if (lang != null && !lang.trim().isEmpty()) {
                 String name = lang.replace('-', '_');
 
                 if (Language.support(name) && !lang.equalsIgnoreCase(this.settings.get("language"))) {

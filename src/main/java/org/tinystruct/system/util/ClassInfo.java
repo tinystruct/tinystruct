@@ -30,7 +30,7 @@ public class ClassInfo {
         this.object = this;
         this.properties = new Settings();
 
-        this.default_application_path = this.properties.get("system.directory").trim().length() > 0
+        this.default_application_path = !this.properties.get("system.directory").trim().isEmpty()
                 ? new Local(this.properties.get("system.directory")).getPath()
                 : new Local(getApplicationPath(this.getClass())).getPath();
     }
@@ -39,7 +39,7 @@ public class ClassInfo {
         this.object = object;
         this.properties = new Settings();
 
-        this.default_application_path = this.properties.get("system.directory").trim().length() > 0
+        this.default_application_path = !this.properties.get("system.directory").trim().isEmpty()
                 ? new Local(this.properties.get("system.directory")).getPath()
                 : new Local(getApplicationPath(this.getClass())).getPath();
     }
