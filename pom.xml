@@ -263,7 +263,7 @@
         <jakarta.servlet.version>6.1.0</jakarta.servlet.version>
         <java.version>11</java.version>
         <jjwt.version>0.12.6</jjwt.version>
-        <jna.version>5.14.0</jna.version>
+        <jna.version>5.15.0</jna.version>
         <jol.version>0.17</jol.version>
         <jupiter.version>5.10.3</jupiter.version>
         <kafka.version>3.7.1</kafka.version>
