@@ -27,6 +27,27 @@ class MQTTClientTest {
             @Override
             public void onMessage(final String topic, Object message) {
                 this.on(new Event() {
+                    /**
+                     * Gets the name of the event.
+                     * This can be used to identify or categorize the event.
+                     *
+                     * @return the name of the event as a String.
+                     */
+                    @Override
+                    public String getName() {
+                        return "test";
+                    }
+
+                    /**
+                     * Gets the payload of the event.
+                     * The payload contains any additional data associated with the event.
+                     *
+                     * @return the payload of the event, which can be of any type specified by T.
+                     */
+                    @Override
+                    public Object getPayload() {
+                        return "{}";
+                    }
                 }, new MessageCallback(message) {
                     @Override
                     public void process() {
