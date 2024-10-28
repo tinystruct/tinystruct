@@ -272,16 +272,16 @@
         <maven.compiler.target>8</maven.compiler.target>
         <mqtt.version>1.2.5</mqtt.version>
         <slf4j.version>2.0.14</slf4j.version>
-        <sqlite.version>3.46.1.1</sqlite.version>
+        <sqlite.version>3.46.1.3</sqlite.version>
         <h2.version>2.3.232</h2.version>
         <netty.version>4.1.112.Final</netty.version>
         <mysql.connector.version>9.0.0</mysql.connector.version>
         <graalvm.version>24.1.0</graalvm.version>
         <jmh.version>1.37</jmh.version>
-        <mockito.version>5.13.0</mockito.version>
+        <mockito.version>5.14.1</mockito.version>
         <nashorn.version>15.4</nashorn.version>
         <native.maven.plugin.version>0.10.3</native.maven.plugin.version>
-        <tika.version>3.0.0-BETA</tika.version>
+        <tika.version>3.0.0</tika.version>
         <tomcat.embed.version>10.1.30</tomcat.embed.version>
         <zxing.version>3.5.3</zxing.version>
     </properties>
