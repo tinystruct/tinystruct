@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.3.4</version>
+    <version>1.3.5</version>
     <name>tinystruct framework</name>
     <description>A simple framework for Java development. Simplicity is difficult, while complexity is easy. Better thinking leads to better design.
     </description>
