@@ -2,12 +2,13 @@ package org.tinystruct.mqtt;
 
 import org.eclipse.paho.client.mqttv3.*;
 import org.tinystruct.system.Configuration;
+import org.tinystruct.system.Event;
 
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class MQTTClient implements MessageQueue<String> {
+public class MQTTClient implements MessageQueue<Event> {
     private final static Logger logger = Logger.getLogger(MQTTClient.class.getName());
 
     /**
@@ -47,7 +48,7 @@ public class MQTTClient implements MessageQueue<String> {
     }
 
     @Override
-    public void subscribe(String topic, MessageListener<String> listener) {
+    public void subscribe(String topic, MessageListener<Event> listener) {
         if (!this.publisher.isConnected()) {
             return;
         }
@@ -86,7 +87,19 @@ public class MQTTClient implements MessageQueue<String> {
                  */
                 @Override
                 public void messageArrived(String topic, MqttMessage message) {
-                    listener.onMessage(topic, new String(message.getPayload()));
+                    Event evt = new Event() {
+
+                        @Override
+                        public String getName() {
+                            return "";
+                        }
+
+                        @Override
+                        public String getPayload() {
+                            return new String(message.getPayload());
+                        }
+                    };
+                    listener.onMessage(topic, evt);
                 }
             });
         } catch (MqttException e) {
