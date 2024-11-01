@@ -25,6 +25,7 @@ import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.cli.Kernel32;
+import org.tinystruct.system.event.UpgradeEvent;
 import org.tinystruct.system.util.StringUtilities;
 import org.tinystruct.system.util.URLResourceLoader;
 import org.tinystruct.transfer.http.ReadableByteChannelWrapper;
@@ -69,6 +70,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     public static final String OK = "OK!";
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
     private boolean virtualTerminal;
+    private final EventDispatcher eventDispatcher = EventDispatcher.getInstance();
 
     /**
      * Main functionality.
@@ -278,7 +280,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     /**
      * Update for latest version.
      */
-    @Action(value = "update", description = "Update for latest version", mode = org.tinystruct.application.Action.Mode.CLI)
+    @Action(value = "update", options = {@Argument(key = "force", description = "Force to update the framework"),
+    }, description = "Update for latest version", mode = org.tinystruct.application.Action.Mode.CLI)
     public String update() {
         System.out.print("Checking...");
         System.out.println("\rThe current project is based on tinystruct-" + this.color(ApplicationManager.VERSION, FORE_COLOR.green));
@@ -286,29 +289,13 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             URLResourceLoader loader = new URLResourceLoader(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/maven-metadata.xml"));
             StringBuilder content = loader.getContent();
             String latestVersion = content.substring(content.indexOf("<latest>") + 8, content.indexOf("</latest>"));
-            if (latestVersion.equalsIgnoreCase(ApplicationManager.VERSION))
+
+            if (this.context.getAttribute("--force") == null && latestVersion.equalsIgnoreCase(ApplicationManager.VERSION))
                 return "\r" + this.color("You are already using the latest available Dispatcher version " + ApplicationManager.VERSION + ".", FORE_COLOR.green);
-            System.out.print("\rGot a new version " + latestVersion + "...");
-            System.out.print("\rDownloading...");
-            this.download(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + latestVersion
-                    + "/tinystruct-" + latestVersion + "-jar-with-dependencies.jar"), "lib/tinystruct-" + latestVersion + "-jar-with-dependencies.jar");
-            System.out.println("\nDownloaded (" + this.color(latestVersion, FORE_COLOR.green) + ").");
-            System.out.print("\rUpdating..");
 
-            boolean git = new File(".git").exists();
-            if (git) {
-                this.context.setAttribute("--shell-command", "git pull origin master");
-                this.exec();
-            } else {
-                boolean maven = new File("pom.xml").exists();
-                if (maven) {
-                    this.context.setAttribute("--shell-command", "./mvnw versions:use-dep-version -Dincludes=org.tinystruct:tinystruct -DdepVersion=" + latestVersion + " -DforceVersion=true");
-                    this.context.setAttribute("--output", false);
-                    this.exec();
-                }
-            }
+            eventDispatcher.dispatch(new UpgradeEvent(latestVersion));
+
             ApplicationManager.generateDispatcherCommand(latestVersion, true);
-
         } catch (ApplicationException | MalformedURLException e) {
             return e.getMessage();
         }
@@ -483,6 +470,39 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     @Override
     public void init() {
         this.setTemplateRequired(false);
+
+        eventDispatcher.registerHandler(UpgradeEvent.class, evt -> {
+            System.out.print("\rGot a new version " + evt.getLatestVersion() + "...");
+            System.out.print("\rDownloading...");
+            try {
+                this.download(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + evt.getLatestVersion()
+                        + "/tinystruct-" + evt.getLatestVersion() + "-jar-with-dependencies.jar"), "lib/tinystruct-" + evt.getLatestVersion() + "-jar-with-dependencies.jar");
+
+                System.out.println("\nDownloaded (" + this.color(evt.getLatestVersion(), FORE_COLOR.green) + ").");
+                System.out.print("\rUpdating..");
+                boolean git = new File(".git").exists();
+                if (git) {
+                    this.context.setAttribute("--shell-command", "git pull origin master");
+                    this.exec();
+                } else {
+                    boolean maven = new File("pom.xml").exists();
+                    if (maven) {
+                        this.context.setAttribute("--shell-command", "./mvnw versions:use-dep-version -Dincludes=org.tinystruct:tinystruct -DdepVersion=" + evt.getLatestVersion() + " -DforceVersion=true");
+                        this.context.setAttribute("--output", false);
+                        this.exec();
+                    }
+                }
+
+                // Auto compile the update project
+                this.context.setAttribute("--shell-command", "./mvnw compile");
+                this.context.setAttribute("--output", true);
+                this.exec();
+            } catch (ApplicationException e) {
+                throw new RuntimeException(e);
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void bind(Dispatcher dispatcher) {
