@@ -1,5 +1,5 @@
 package org.tinystruct.system;
 
 public interface Listener<T> {
-    void on(Event event, Callback callback);
+    void on(T event, Callback<T> callback);
 }
