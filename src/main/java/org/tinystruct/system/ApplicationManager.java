@@ -97,7 +97,7 @@ public final class ApplicationManager {
         if (force || (!Files.exists(Paths.get(scriptName)) && !Files.exists(path))) {
             try {
                 while (!Files.exists(path)) {
-                    paths = paths.substring(0, paths.indexOf(File.separator));
+                    paths = paths.substring(0, paths.lastIndexOf(File.separator));
                     path = Paths.get(paths);
                     Files.createDirectories(path);
                 }
