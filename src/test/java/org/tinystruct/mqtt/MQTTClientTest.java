@@ -19,20 +19,15 @@ class MQTTClientTest {
     void subscribe() {
         client.subscribe("@test@", new MessageListener<Event>() {
             @Override
-            public void on(Event event, Callback callback) {
-                callback.process(event);
+            public void onMessage(String topic, Event message) {
+                if (topic.equalsIgnoreCase("@test@")) {
+                    this.on(message, event -> System.out.println("OK:" + event.getPayload()));
+                }
             }
 
             @Override
-            public void onMessage(final String topic, Event evt) {
-                if (topic.equalsIgnoreCase("@test@")) {
-                    this.on(evt, new Callback<Event>() {
-                        @Override
-                        public void process(Event evt) {
-                            System.out.println("OK:" + evt.getPayload());
-                        }
-                    });
-                }
+            public void on(Event event, Callback<Event> callback) {
+                callback.process(event);
             }
         });
     }
