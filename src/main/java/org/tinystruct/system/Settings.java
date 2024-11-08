@@ -15,9 +15,11 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
+import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -106,12 +108,22 @@ public class Settings implements Configuration<String> {
     public void saveProperties() {
         URL resource = Settings.class.getClassLoader().getResource(this.file != null ? this.file : DEFAULT_FILE);
         if (null != resource) {
-            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(resource.toURI().getPath()))) {
-                properties.store(out, "Tinystruct Configuration");
-            } catch (IOException e) {
-                throw new ApplicationRuntimeException("Error saving properties: " + e.getMessage(), e);
+            URI uri;
+            try {
+                uri = resource.toURI();
             } catch (URISyntaxException e) {
-                throw new ApplicationRuntimeException("Error saving properties: " + e.getMessage(), e);
+                throw new ApplicationRuntimeException(e.getMessage());
+            }
+
+            String path = uri.getPath();
+            if (path != null) {
+                try (FileOutputStream outputStream = new FileOutputStream(path); OutputStream out = new BufferedOutputStream(outputStream)) {
+                    properties.store(out, "#tinystruct configuration");
+                } catch (FileNotFoundException e) {
+                    throw new ApplicationRuntimeException("File not found:" + e.getMessage());
+                } catch (IOException e) {
+                    throw new ApplicationRuntimeException("Error saving properties: " + e.getMessage(), e);
+                }
             }
         }
     }
