@@ -482,25 +482,24 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 System.out.print("\rUpdating..");
                 boolean git = new File(".git").exists();
                 if (git) {
-                    this.context.setAttribute("--shell-command", "git pull origin master");
+                    this.context.setAttribute("--shell-command", "git pull");
                     this.exec();
+                    System.out.println("Reminder: DO NOT forget to compile it.");
                 } else {
                     boolean maven = new File("pom.xml").exists();
                     if (maven) {
                         this.context.setAttribute("--shell-command", "./mvnw versions:use-dep-version -Dincludes=org.tinystruct:tinystruct -DdepVersion=" + evt.getLatestVersion() + " -DforceVersion=true");
                         this.context.setAttribute("--output", false);
                         this.exec();
+
+                        // Auto compile the update project
+                        this.context.setAttribute("--shell-command", "./mvnw compile");
+                        this.context.setAttribute("--output", true);
+                        this.exec();
                     }
                 }
-
-                // Auto compile the update project
-                this.context.setAttribute("--shell-command", "./mvnw compile");
-                this.context.setAttribute("--output", true);
-                this.exec();
-            } catch (ApplicationException e) {
-                throw new RuntimeException(e);
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
+            } catch (ApplicationException | MalformedURLException e) {
+                throw new ApplicationRuntimeException(e.getMessage(), e);
             }
         });
     }
