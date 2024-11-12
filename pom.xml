@@ -190,13 +190,6 @@
             <artifactId>bcpkix-jdk18on</artifactId>
             <version>${bouncycastle.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.graalvm.sdk</groupId>
-            <artifactId>graal-sdk</artifactId>
-            <version>${graalvm.version}</version>
-            <scope>provided</scope>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -216,12 +209,6 @@
             <artifactId>dec</artifactId>
             <version>${brotli.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.graalvm.nativeimage/native-image-maven-plugin -->
-        <dependency>
-            <groupId>org.graalvm.buildtools</groupId>
-            <artifactId>native-maven-plugin</artifactId>
-            <version>${native.maven.plugin.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-core</artifactId>
@@ -231,16 +218,6 @@
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-generator-annprocess</artifactId>
             <version>${jmh.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-core</artifactId>
-            <version>${tika.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-parsers-standard-package</artifactId>
-            <version>${tika.version}</version>
         </dependency>
     </dependencies>
     <dependencyManagement>
@@ -280,8 +257,6 @@
         <jmh.version>1.37</jmh.version>
         <mockito.version>5.14.2</mockito.version>
         <nashorn.version>15.4</nashorn.version>
-        <native.maven.plugin.version>0.10.3</native.maven.plugin.version>
-        <tika.version>3.0.0</tika.version>
         <tomcat.embed.version>10.1.30</tomcat.embed.version>
         <zxing.version>3.5.3</zxing.version>
     </properties>
@@ -410,42 +385,6 @@
         <!--            </resource>-->
         <!--        </resources>-->
     </build>
-    <profiles>
-        <profile>
-            <id>native</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.graalvm.buildtools</groupId>
-                        <artifactId>native-maven-plugin</artifactId>
-                        <version>${native.maven.plugin.version}</version>
-                        <extensions>true</extensions>
-                        <executions>
-                            <execution>
-                                <id>build-native</id>
-                                <goals>
-                                    <goal>build</goal>
-                                </goals>
-                                <phase>package</phase>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <fallback>false</fallback>
-                            <buildArgs>
-                                --initialize-at-run-time=io.netty.handler.ssl.BouncyCastleAlpnSslUtils
-                                --initialize-at-run-time=io.netty.util.AbstractReferenceCounted
-                                --initialize-at-run-time=io.netty.channel.epoll.Epoll,io.netty.channel.epoll.EpollEventLoop,io.netty.channel.epoll.Native
-                                --report-unsupported-elements-at-runtime
-                                -H:+StaticExecutableWithDynamicLibC --native-image-info --verbose
-                            </buildArgs>
-                            <imageName>dispatcher-native</imageName>
-                            <mainClass>org.tinystruct.system.Dispatcher</mainClass>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
     <distributionManagement>
         <repository>
             <id>release</id>
