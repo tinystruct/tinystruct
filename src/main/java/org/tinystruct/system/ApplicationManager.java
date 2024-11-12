@@ -239,7 +239,7 @@ public final class ApplicationManager {
         Action action = ROUTE_REGISTRY_INSTANCE.getAction(path, method);
         if (action == null) {
             throw new ApplicationException(
-                    "Access error [" + path + "]: Application has not been installed, or it has been uninstalled already.", 404);
+                    "Access error: No matching function found for path [" + path + "]. Ensure the path is correct and the function is public.", 404);
         }
 
         if (action.getMode().ordinal() < mode.ordinal()) {
