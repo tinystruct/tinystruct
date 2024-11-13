@@ -71,38 +71,39 @@ public class Builders extends ArrayList<Builder> implements Serializable {
      */
     public String parse(String value) throws ApplicationException {
         value = value.trim();
+        if(!value.isEmpty()) {
+            if (value.charAt(0) == LEFT_BRACE) {
+                // Parse entity and add it to the list
+                logger.log(Level.FINE, "Parsing entity: {}", value);
+                Builder builder = new Builder();
+                builder.parse(value);
+                this.add(builder);
 
-        if (value.charAt(0) == LEFT_BRACE) {
-            // Parse entity and add it to the list
-            logger.log(Level.FINE, "Parsing entity: {}", value);
-            Builder builder = new Builder();
-            builder.parse(value);
-            this.add(builder);
-
-            int p = builder.getClosedPosition();
-            // Check if there are more entities in the string
-            if (p < value.length() && value.charAt(p) == COMMA) {
-                value = value.substring(p + 1);
-                return this.parse(value);
+                int p = builder.getClosedPosition();
+                // Check if there are more entities in the string
+                if (p < value.length() && value.charAt(p) == COMMA) {
+                    value = value.substring(p + 1);
+                    return this.parse(value);
+                }
             }
-        }
 
-        if (value.charAt(0) == LEFT_BRACKETS) {
-            // Parse array and add its entities to the list
-            logger.log(Level.FINE, "Parsing array: {}", value);
-            int end = this.seekPosition(value);
-            this.parse(value.substring(1, end - 1));
+            if (value.charAt(0) == LEFT_BRACKETS) {
+                // Parse array and add its entities to the list
+                logger.log(Level.FINE, "Parsing array: {}", value);
+                int end = this.seekPosition(value);
+                this.parse(value.substring(1, end - 1));
 
-            // Check if there are more entities in the string
-            int len = value.length();
-            if (end < len - 1) {
-                return this.parse(value.substring(end + 1));
+                // Check if there are more entities in the string
+                int len = value.length();
+                if (end < len - 1) {
+                    return this.parse(value.substring(end + 1));
+                }
             }
-        }
 
-        if (value.charAt(0) == QUOTE) {
-            // Return the string if it starts with a quote
-            return value;
+            if (value.charAt(0) == QUOTE) {
+                // Return the string if it starts with a quote
+                return value;
+            }
         }
 
         // Return an empty string if no valid parsing is performed
