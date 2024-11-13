@@ -97,18 +97,20 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public void parse(String resource) throws ApplicationException {
         // Ensure the input string is a valid JSON format
         resource = resource.trim();
-        if (resource.charAt(0) != LEFT_BRACE && resource.charAt(resource.length()-1) != RIGHT_BRACE) {
-            throw new ApplicationException("Invalid data format!");
-        }
+        if(!resource.isEmpty()) {
+            if (resource.charAt(0) != LEFT_BRACE && resource.charAt(resource.length() - 1) != RIGHT_BRACE) {
+                throw new ApplicationException("Invalid data format!");
+            }
 
-        if (resource.charAt(0) == LEFT_BRACE) {
-            // Find the closing position of the JSON structure
-            this.closedPosition = this.seekPosition(resource);
-            // Extract the key-value pairs sequence from the JSON structure
-            String values = resource.substring(1, closedPosition - 1);
+            if (resource.charAt(0) == LEFT_BRACE) {
+                // Find the closing position of the JSON structure
+                this.closedPosition = this.seekPosition(resource);
+                // Extract the key-value pairs sequence from the JSON structure
+                String values = resource.substring(1, closedPosition - 1);
 
-            // Parse the key-value pairs
-            this.parseValue(values);
+                // Parse the key-value pairs
+                this.parseValue(values);
+            }
         }
     }
 
