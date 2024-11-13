@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 ROOT="$(pwd)"
-VERSION="1.3.6"
+VERSION="1.3.7"
 cd "$(dirname "$0")" || exit
 cd "../"
 # Navigate to the root directory
@@ -26,9 +26,7 @@ for arg; do
     fi
 done
 
-# Check if the JAR file exists
-JAR_FILE="$ROOT/lib/tinystruct-$VERSION-jar-with-dependencies.jar"
-[ -f "$JAR_FILE" ] && JAR_FILE="$JAR_FILE:"
+JAR_FILE=""
 
 # Check if additional JAR files exist and add them to the classpath
 # shellcheck disable=SC2043
@@ -172,6 +170,14 @@ fi
 for jar_file in "$ROOT"/lib/*.jar; do
     CLASSPATH="$CLASSPATH:$jar_file"
 done
+
+# Check if the JAR file exists in .m2
+DEFAULT_JAR_FILE="$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION.jar"
+[ -f "$DEFAULT_JAR_FILE" ] && JAR_FILE="$DEFAULT_JAR_FILE:"
+
+# Check if the JAR file exists in .m2
+DEFAULT_JAR_FILE_WITH_DEPENDENCIES="$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar"
+[ -f "$DEFAULT_JAR_FILE_WITH_DEPENDENCIES" ] && JAR_FILE="$DEFAULT_JAR_FILE_WITH_DEPENDENCIES:"
 
 # Java execution
 $JAVACMD \
