@@ -73,8 +73,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
             if (value instanceof String || value instanceof StringBuffer || value instanceof StringBuilder)
                 buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
-            else
-                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(value);
+            else buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(value);
 
             buffer.append(COMMA);
         }
@@ -97,7 +96,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public void parse(String resource) throws ApplicationException {
         // Ensure the input string is a valid JSON format
         resource = resource.trim();
-        if(!resource.isEmpty()) {
+        if (!resource.isEmpty()) {
             if (resource.charAt(0) != LEFT_BRACE && resource.charAt(resource.length() - 1) != RIGHT_BRACE) {
                 throw new ApplicationException("Invalid data format!");
             }
@@ -146,11 +145,16 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             // Handle key-value pair starting with a quoted key
             int COLON_POSITION = value.indexOf(COLON);
             int start = COLON_POSITION + 1;
+
             String keyName = value.substring(1, COLON_POSITION - 1);
+            int QUOTE_POSITION = keyName.lastIndexOf(QUOTE);
+            if (QUOTE_POSITION != -1) {
+                keyName = keyName.substring(0, QUOTE_POSITION);
+            }
 
             String $value = value.substring(start).trim();
             Object keyValue = null;
-            if(!$value.isEmpty()) {
+            if (!$value.isEmpty()) {
                 if ($value.charAt(0) == QUOTE) {
                     // Extract the value if it is enclosed in quotes
                     int $end = this.next($value);
@@ -245,17 +249,14 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             char c = chars[i];
             if (c == LEFT_BRACE) {
                 if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
-                } else
-                    n++;
+                } else n++;
             } else if (c == RIGHT_BRACE) {
                 if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
-                } else
-                    n--;
+                } else n--;
             }
 
             i++;
-            if (n == 0)
-                position = i;
+            if (n == 0) position = i;
         }
 
         return position;
@@ -278,13 +279,11 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             char c = chars[i];
             if (c == Builder.QUOTE) {
                 if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
-                } else
-                    n++;
+                } else n++;
             }
 
             i++;
-            if (n == 2)
-                position = i;
+            if (n == 2) position = i;
         }
 
         return position;
