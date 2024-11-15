@@ -28,6 +28,8 @@ import org.tinystruct.system.util.ClassInfo;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -70,6 +72,8 @@ public abstract class AbstractData implements Data {
     // Condition for querying data
     private Condition condition;
 
+    private StringBuilder fields = new StringBuilder();
+
     /**
      * Constructor to initialize classPath, className, and readyFields.
      */
@@ -84,6 +88,11 @@ public abstract class AbstractData implements Data {
 
         try {
             this.readyFields = Mapping.getMappedField(this); // Get mapped fields of the data object
+
+            for (Map.Entry<String, FieldInfo> next : this.readyFields.entrySet()) {
+                if (fields.length() > 0) fields.append(",");
+                fields.append(next.getValue().getColumnName());
+            }
         } catch (ApplicationException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
@@ -327,7 +336,11 @@ public abstract class AbstractData implements Data {
      */
     @Override
     public Table findAll() throws ApplicationException {
-        return this.find(Objects.requireNonNullElseGet(this.condition, Condition::new).select(this.table), new Object[]{});
+        if (this.condition == null) {
+            this.condition = new Condition();
+            this.condition.setRequestFields(fields.toString());
+        }
+        return this.find(this.condition.select(this.table), new Object[]{});
     }
 
     /**
