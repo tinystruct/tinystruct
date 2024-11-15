@@ -58,6 +58,16 @@ public class Action implements org.tinystruct.application.Method<Object> {
         this.mode = Mode.All;
     }
 
+    public Action(Action action) {
+        this.id = action.getId();
+        this.app = action.app;
+        this.pathRule = action.getPathRule();
+        this.method = action.method;
+        this.pattern = action.getPattern();
+        this.mode = action.getMode();
+        this.args = new Object[]{};
+    }
+
     /**
      * Constructor for Action.
      *
@@ -236,8 +246,8 @@ public class Action implements org.tinystruct.application.Method<Object> {
      *
      * @param args The arguments to set.
      */
-    public void setArguments(Object[] args) {
-        this.args = args;
+    public void setArguments(final Object[] args) {
+        this.args = args.clone();
     }
 
     /**
