@@ -102,8 +102,10 @@ public final class ActionRegistry {
                 for (int i = 0; i < matcher.groupCount(); i++) {
                     args[i] = matcher.group(i + 1);
                 }
-                action.setArguments(args);
-                return action;
+
+                Action clone = new Action(action);
+                clone.setArguments(args);
+                return clone;
             }
         }
         return null;
