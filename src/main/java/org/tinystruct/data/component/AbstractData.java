@@ -264,8 +264,10 @@ public abstract class AbstractData implements Data {
                 orders.append(fields);
         }
 
-        if (this.condition == null)
+        if (this.condition == null) {
             this.condition = new Condition();
+            this.condition.setRequestFields(fields.toString());
+        }
         this.condition.orderBy(orders.toString());
 
         return this;
@@ -292,7 +294,11 @@ public abstract class AbstractData implements Data {
      */
     @Override
     public Table findWith(String where, Object[] parameters) throws ApplicationException {
-        return this.find(Objects.requireNonNullElseGet(this.condition, Condition::new).select(this.table).with(where), parameters);
+        if (this.condition == null) {
+            this.condition = new Condition();
+            this.condition.setRequestFields(fields.toString());
+        }
+        return this.find(this.condition.select(this.table).with(where), parameters);
     }
 
     /**
@@ -308,7 +314,11 @@ public abstract class AbstractData implements Data {
      */
     @Override
     public Row findOneById() throws ApplicationException {
-        Row row = this.findOne(new Condition().select(this.table).and(
+        if (this.condition == null) {
+            this.condition = new Condition();
+            this.condition.setRequestFields(fields.toString());
+        }
+        Row row = this.findOne(condition.select(this.table).and(
                 "id=?").toString(), new Object[]{this.Id});
 
         if (!row.isEmpty())
@@ -322,7 +332,11 @@ public abstract class AbstractData implements Data {
      */
     @Override
     public Row findOneByKey(String PK, String value) throws ApplicationException {
-        Row row = this.findOne(new Condition().select(this.table).and(
+        if (this.condition == null) {
+            this.condition = new Condition();
+            this.condition.setRequestFields(fields.toString());
+        }
+        Row row = this.findOne(this.condition.select(this.table).and(
                 PK + "=?").toString(), new Object[]{value});
 
         if (!row.isEmpty())
