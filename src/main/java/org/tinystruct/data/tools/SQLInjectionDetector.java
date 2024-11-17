@@ -8,7 +8,7 @@ public class SQLInjectionDetector {
     private static final Pattern[] SQL_INJECTION_PATTERNS = new Pattern[]{
             Pattern.compile("(?i)\\sOR\\s+1=1"),
             Pattern.compile("(?i)\\sOR\\s+'1'='1'"),
-            Pattern.compile("(?i)'.*?'"),
+//            Pattern.compile("(?i)'.*?'"),
             Pattern.compile("(?i)--[^\r\n]*"),
             Pattern.compile(";"),
             Pattern.compile("(?i)\\bUNION\\b\\s+SELECT"),
