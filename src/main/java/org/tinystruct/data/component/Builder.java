@@ -46,13 +46,33 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public static final char ESCAPE_CHAR = '\\';
 
     private static final Logger logger = Logger.getLogger(Builder.class.getName());
-
     private int closedPosition = 0;
+
+    private String key = null;
+    private Object value = null;
 
     /**
      * Default constructor for Builder.
      */
     public Builder() {
+    }
+
+    public Builder(String value) {
+        this.value = value;
+    }
+
+    public Builder(Number value) {
+        this.value = value;
+    }
+
+    public Builder(String key, Object value) {
+        this.key = key;
+        this.value = value;
+        this.put(key, value);
+    }
+
+    public Object getValue(){
+        return this.value;
     }
 
     /**
@@ -62,6 +82,21 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      */
     @Override
     public String toString() {
+        if (this.value != null) {
+            String tmp = "";
+            if (this.value instanceof String) {
+                tmp = QUOTE + this.value.toString() + QUOTE;
+            } else {
+                tmp = this.value.toString();
+            }
+
+            if (this.key != null) {
+                return QUOTE + this.key + QUOTE + ":" + tmp;
+            }
+
+            return tmp;
+        }
+
         // Build a string representation of the data
         StringBuilder buffer = new StringBuilder();
         Set<Entry<String, Object>> keys = this.entrySet();
@@ -97,6 +132,10 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         // Ensure the input string is a valid JSON format
         resource = resource.trim();
         if (!resource.isEmpty()) {
+            if (resource.charAt(0) == QUOTE) {
+                this.parseValue(resource);
+            }
+
             if (resource.charAt(0) != LEFT_BRACE && resource.charAt(resource.length() - 1) != RIGHT_BRACE) {
                 throw new ApplicationException("Invalid data format!");
             }
@@ -144,66 +183,69 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         if (!value.isEmpty() && value.charAt(0) == QUOTE) {
             // Handle key-value pair starting with a quoted key
             int COLON_POSITION = value.indexOf(COLON);
-            int start = COLON_POSITION + 1;
 
-            String keyName = value.substring(1, COLON_POSITION - 1);
-            int QUOTE_POSITION = keyName.lastIndexOf(QUOTE);
-            if (QUOTE_POSITION != -1) {
-                keyName = keyName.substring(0, QUOTE_POSITION);
-            }
+            if (COLON_POSITION != -1) {
+                int start = COLON_POSITION + 1;
 
-            String $value = value.substring(start).trim();
-            Object keyValue = null;
-            if (!$value.isEmpty()) {
-                if ($value.charAt(0) == QUOTE) {
-                    // Extract the value if it is enclosed in quotes
-                    int $end = this.next($value);
-                    keyValue = $value.substring(1, $end - 1).trim();
+                String keyName = value.substring(1, COLON_POSITION - 1);
+                int QUOTE_POSITION = keyName.lastIndexOf(QUOTE);
+                if (QUOTE_POSITION != -1) {
+                    keyName = keyName.substring(0, QUOTE_POSITION);
+                }
 
-                    if ($end + 1 < $value.length()) {
-                        $value = $value.substring($end + 1); // COMMA length: 1
-                        this.parseValue($value);
-                    }
-                } else if ($value.charAt(0) == LEFT_BRACE) {
-                    // Handle nested JSON structure
-                    int closedPosition = this.seekPosition($value);
-                    String _$value = $value.substring(0, closedPosition);
-                    Builder builder = new Builder();
-                    builder.parse(_$value);
-                    keyValue = builder;
-                    if (closedPosition < $value.length()) {
-                        _$value = $value.substring(closedPosition + 1); // COMMA length: 1
-                        this.parseValue(_$value);
-                    }
-                } else if ($value.charAt(0) == LEFT_BRACKETS) {
-                    // Handle array
-                    Builders builders = new Builders();
-                    String remainings = builders.parse($value);
-                    keyValue = builders;
-                    if (!Objects.equals(remainings, "")) {
-                        this.parseValue(remainings);
-                    }
-                } else {
-                    if ($value.indexOf(COMMA) != -1) {
-                        // Extract and parse a single value if there are more values in the sequence
-                        String _value = $value.substring(0, $value.indexOf(COMMA));
-                        if (!_value.isEmpty()) {
-                            keyValue = getValue(_value);
-                        } else {
-                            keyValue = _value;
+                String $value = value.substring(start).trim();
+                Object keyValue = null;
+                if (!$value.isEmpty()) {
+                    if ($value.charAt(0) == QUOTE) {
+                        // Extract the value if it is enclosed in quotes
+                        int $end = this.next($value);
+                        keyValue = $value.substring(1, $end - 1).trim();
+
+                        if ($end + 1 < $value.length()) {
+                            $value = $value.substring($end + 1); // COMMA length: 1
+                            this.parseValue($value);
                         }
-
-                        $value = $value.substring($value.indexOf(COMMA) + 1);
-                        this.parseValue($value);
+                    } else if ($value.charAt(0) == LEFT_BRACE) {
+                        // Handle nested JSON structure
+                        int closedPosition = this.seekPosition($value);
+                        String _$value = $value.substring(0, closedPosition);
+                        Builder builder = new Builder();
+                        builder.parse(_$value);
+                        keyValue = builder;
+                        if (closedPosition < $value.length()) {
+                            _$value = $value.substring(closedPosition + 1); // COMMA length: 1
+                            this.parseValue(_$value);
+                        }
+                    } else if ($value.charAt(0) == LEFT_BRACKETS) {
+                        // Handle array
+                        Builders builders = new Builders();
+                        String remainings = builders.parse($value);
+                        keyValue = builders;
+                        if (!Objects.equals(remainings, "")) {
+                            this.parseValue(remainings);
+                        }
                     } else {
-                        // Parse the last value in the sequence
-                        keyValue = getValue($value);
+                        if ($value.indexOf(COMMA) != -1) {
+                            // Extract and parse a single value if there are more values in the sequence
+                            String _value = $value.substring(0, $value.indexOf(COMMA));
+                            if (!_value.isEmpty()) {
+                                keyValue = getValue(_value);
+                            } else {
+                                keyValue = _value;
+                            }
+
+                            $value = $value.substring($value.indexOf(COMMA) + 1);
+                            this.parseValue($value);
+                        } else {
+                            // Parse the last value in the sequence
+                            keyValue = getValue($value);
+                        }
                     }
                 }
-            }
 
-            // Add the key-value pair to the map
-            this.put(keyName, keyValue);
+                // Add the key-value pair to the map
+                this.put(keyName, keyValue);
+            }
         }
     }
 

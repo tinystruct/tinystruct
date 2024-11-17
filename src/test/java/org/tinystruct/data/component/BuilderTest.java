@@ -14,19 +14,20 @@ public class BuilderTest {
     @Test
     void parse() {
         String payload = "{\n" +
-                "  \"model\": \"text-davinci-003\"," +
+                "  \"model\": \"text-davinci-003,ok\"," +
                 "  \"prompt\": \"\"," +
                 "  \"max_tokens\": 2500," +
                 "  \"temperature\": 0," +
                 "  \"correct\": true," +
                 "  \"passed\": FALSE," +
+                "  \"object\":[{\"id\":\"0001\"}]" +
                 "}";
 
         Builder builder = new Builder();
         Assertions.assertDoesNotThrow(() -> {
             builder.parse(payload);
 
-            assertEquals("text-davinci-003", builder.get("model"));
+            assertEquals("text-davinci-003,ok", builder.get("model"));
             assertEquals("", builder.get("prompt"));
             assertEquals(true, builder.get("correct"));
             assertEquals(false, builder.get("passed"));
