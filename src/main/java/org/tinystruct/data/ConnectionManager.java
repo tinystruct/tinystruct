@@ -17,6 +17,7 @@ package org.tinystruct.data;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
+import org.tinystruct.data.repository.Type;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
 
@@ -130,10 +131,10 @@ final class ConnectionManager implements Runnable {
         this.password = dbPassword;
     }
 
-    private Repository.Type getConfiguredType() {
-        int index = -1, length = Repository.Type.values().length;
+    private Type getConfiguredType() {
+        int index = -1, length = Type.values().length;
         for (int i = 0; i < length; i++) {
-            if (this.driverName.contains(Repository.Type.values()[i].name().toLowerCase())) {
+            if (this.driverName.contains(Type.values()[i].name().toLowerCase())) {
                 index = i;
                 break;
             }
@@ -141,17 +142,17 @@ final class ConnectionManager implements Runnable {
 
         switch (index) {
             case 0:
-                return Repository.Type.MySQL;
+                return Type.MySQL;
             case 1:
-                return Repository.Type.SQLServer;
+                return Type.SQLServer;
             case 2:
-                return Repository.Type.SQLite;
+                return Type.SQLite;
             case 3:
-                return Repository.Type.H2;
+                return Type.H2;
             default:
                 break;
         }
-        return Repository.Type.MySQL;
+        return Type.MySQL;
     }
 
     /**

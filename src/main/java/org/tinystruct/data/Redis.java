@@ -7,6 +7,7 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Field;
 import org.tinystruct.data.component.Row;
 import org.tinystruct.data.component.Table;
+import org.tinystruct.data.repository.Type;
 
 /**
  * Repository implementation for Redis database.

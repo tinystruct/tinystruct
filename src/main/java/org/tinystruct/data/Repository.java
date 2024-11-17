@@ -17,19 +17,13 @@
 package org.tinystruct.data;
 
 import org.tinystruct.ApplicationException;
-import org.tinystruct.data.component.Field;
-import org.tinystruct.data.component.Row;
-import org.tinystruct.data.component.Table;
+import org.tinystruct.data.component.*;
+import org.tinystruct.data.repository.Type;
 
 /**
  * Interface for database repository.
  */
 public interface Repository {
-
-    /**
-     * Enum representing different types of database.
-     */
-    enum Type {MySQL, SQLServer, SQLite, Redis, H2}
 
     /**
      * Get the type of the repository.

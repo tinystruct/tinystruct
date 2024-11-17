@@ -19,7 +19,7 @@ import com.sun.jna.Platform;
 import org.tinystruct.*;
 import org.tinystruct.application.Context;
 import org.tinystruct.data.DatabaseOperator;
-import org.tinystruct.data.Repository;
+import org.tinystruct.data.repository.Type;
 import org.tinystruct.data.tools.*;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
@@ -619,9 +619,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         if (driver.trim().isEmpty())
             throw new ApplicationRuntimeException("Database Connection Driver has not been set in application.properties!");
 
-        int index = -1, length = Repository.Type.values().length;
+        int index = -1, length = Type.values().length;
         for (int i = 0; i < length; i++) {
-            if (driver.contains(Repository.Type.values()[i].name().toLowerCase())) {
+            if (driver.contains(Type.values()[i].name().toLowerCase())) {
                 index = i;
                 break;
             }

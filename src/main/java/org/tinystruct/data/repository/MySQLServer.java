@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.tinystruct.data.component;
+package org.tinystruct.data.repository;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.DatabaseOperator;
+import org.tinystruct.data.component.*;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

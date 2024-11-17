@@ -1,8 +1,11 @@
-package org.tinystruct.data.component;
+package org.tinystruct.data.repository;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.data.Repository;
+import org.tinystruct.data.component.Field;
+import org.tinystruct.data.component.FieldInfo;
+import org.tinystruct.data.component.Row;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
