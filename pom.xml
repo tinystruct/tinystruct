@@ -257,7 +257,7 @@
         <jmh.version>1.37</jmh.version>
         <mockito.version>5.14.2</mockito.version>
         <nashorn.version>15.4</nashorn.version>
-        <tomcat.embed.version>10.1.30</tomcat.embed.version>
+        <tomcat.embed.version>10.1.31</tomcat.embed.version>
         <zxing.version>3.5.3</zxing.version>
     </properties>
     <build>
