@@ -333,6 +333,12 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             // Remove insecure string in the destination
             destination = destination.replaceAll("\\.\\.", "");
 
+            // Replace the path with default file separator
+            destination = destination.replaceAll("/", "\\" + File.separator);
+
+            // Remove the suffix after ?
+            destination = destination.substring(0, destination.indexOf("?"));
+
             String path = new File("").getAbsolutePath() + File.separatorChar + destination;
             Path dest = Paths.get(path);
             try {
