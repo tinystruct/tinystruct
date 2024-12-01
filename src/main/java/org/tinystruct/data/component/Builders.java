@@ -157,12 +157,19 @@ public class Builders extends ArrayList<Builder> implements Serializable {
      */
     private void processElement(String element) throws ApplicationException {
         element = element.trim();
-
+        logger.fine("Processing element: " + element);
         if (element.startsWith("{")) {
             // Handle nested object
             Builder builder = new Builder();
             builder.parse(element);
             this.add(builder);
+
+            int p = builder.getClosedPosition();
+            // Check if there are more entities in the string
+            if (p < element.length() && element.charAt(p) == COMMA) {
+                element = element.substring(p + 1).trim();  // Skip comma and move to next entity
+                this.processElement(element);  // Recursively parse the next part of the string
+            }
         } else if (element.startsWith("[")) {
             // Handle nested array
             Builders nestedBuilders = new Builders();
