@@ -71,7 +71,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         this.put(key, value);
     }
 
-    public Object getValue(){
+    public Object getValue() {
         return this.value;
     }
 
@@ -198,7 +198,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                 if (!$value.isEmpty()) {
                     if ($value.charAt(0) == QUOTE) {
                         // Extract the value if it is enclosed in quotes
-                        int $end = this.next($value);
+                        int $end = this.next($value, Builder.QUOTE);
                         keyValue = $value.substring(1, $end - 1).trim();
 
                         if ($end + 1 < $value.length()) {
@@ -307,10 +307,11 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     /**
      * Find the position of the next occurrence of a character in a string.
      *
-     * @param value String to search.
+     * @param value     String to search.
+     * @param character The character that looking for.
      * @return Position of the next occurrence of the character.
      */
-    private int next(String value) {
+    private int next(String value, char character) {
         // Find the position of the next occurrence of a character in a string
         char[] chars = value.toCharArray();
         int i = 0;
@@ -319,7 +320,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
         while (i < position) {
             char c = chars[i];
-            if (c == Builder.QUOTE) {
+            if (c == character) {
                 if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
                 } else n++;
             }
