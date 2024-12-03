@@ -244,7 +244,7 @@
         <jol.version>0.17</jol.version>
         <jupiter.version>5.11.3</jupiter.version>
         <kafka.version>3.9.0</kafka.version>
-        <lettuce.version>6.5.0.RELEASE</lettuce.version>
+        <lettuce.version>6.5.1.RELEASE</lettuce.version>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <mqtt.version>1.2.5</mqtt.version>
