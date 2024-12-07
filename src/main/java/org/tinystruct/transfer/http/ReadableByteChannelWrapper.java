@@ -65,6 +65,10 @@ public class ReadableByteChannelWrapper extends AbstractReadableByteChannelWrapp
      */
     @Override
     public void progress(double progress) {
-        System.out.print("\r" + String.format("%d bytes received, %.02f%%", this.getReceived(), progress));
+        if (this.getExpected() != -1) {
+            System.out.print("\r" + String.format("%d bytes received, %.02f%%", this.getReceived(), progress));
+        } else {
+            System.out.print("\r" + String.format("%d bytes received", this.getReceived()));
+        }
     }
 }
