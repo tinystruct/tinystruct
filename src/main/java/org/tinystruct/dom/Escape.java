@@ -128,7 +128,7 @@ public class Escape {
         grow(inputLength);
         int outputPos = 0;
         int inputPos = 0;
-        char ch = 0;
+        char ch;
         while (inputLength-- > 0) {
             ch = input.charAt(inputPos++); // value[outputPos];
             switch (ch) {
@@ -216,7 +216,7 @@ public class Escape {
         grow(inputLength);
         int outputPos = 0;
         int inputPos = 0;
-        char ch = 0;
+        char ch;
         while (inputLength-- > 0) {
             ch = input.charAt(inputPos++); // value[outputPos];
             switch (ch) {

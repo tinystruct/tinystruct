@@ -110,7 +110,7 @@ public class MSSQLGenerator implements Generator {
         Row currentRow;
 
         String propertyName, propertyType;
-        boolean increment = false;
+        boolean increment;
         while (listRow.hasNext()) {
             currentRow = listRow.next();
 

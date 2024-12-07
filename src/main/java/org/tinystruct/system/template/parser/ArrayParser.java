@@ -42,7 +42,7 @@ public class ArrayParser<T> implements Parser {
         T[] values = this.variable.getValue();
 
         Node current = doc.getElementById(elementId);
-        int n = 0, j = 0;
+        int n = 0, j;
 
         if (current == null)
             throw new ApplicationException(

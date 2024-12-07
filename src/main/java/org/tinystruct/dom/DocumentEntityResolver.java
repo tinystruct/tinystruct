@@ -45,7 +45,7 @@ public class DocumentEntityResolver implements EntityResolver {
     @Override
 	public InputSource resolveEntity(String publicId, String systemId)
             throws SAXException {
-        InputSource source = null;
+        InputSource source;
 
         try {
             String path = doctypeMap.get(publicId);
@@ -63,7 +63,7 @@ public class DocumentEntityResolver implements EntityResolver {
 
     private InputSource getInputSource(String path, InputSource source) {
         if (path != null) {
-            InputStream in = null;
+            InputStream in;
             try {
                 in = Resources.getResourceAsStream(path);
                 source = new InputSource(in);

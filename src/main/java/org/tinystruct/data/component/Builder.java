@@ -83,7 +83,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     @Override
     public String toString() {
         if (this.value != null) {
-            String tmp = "";
+            String tmp;
             if (this.value instanceof String) {
                 tmp = QUOTE + this.value.toString() + QUOTE;
             } else {

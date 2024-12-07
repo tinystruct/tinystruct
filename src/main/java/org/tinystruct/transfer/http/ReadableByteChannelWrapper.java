@@ -43,7 +43,7 @@ public class ReadableByteChannelWrapper extends AbstractReadableByteChannelWrapp
      */
     private int length(URL url) throws ApplicationException {
         HttpURLConnection connection;
-        int length = -1;
+        int length;
 
         try {
             HttpURLConnection.setFollowRedirects(false);

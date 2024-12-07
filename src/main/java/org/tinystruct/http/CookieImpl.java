@@ -216,7 +216,7 @@ public class CookieImpl implements Cookie {
 
     private void validateDomain(String domain) {
         int i = 0;
-        int prev = -1;
+        int prev;
         int cur = -1;
         char[] chars = domain.toCharArray();
         while (i < chars.length) {
