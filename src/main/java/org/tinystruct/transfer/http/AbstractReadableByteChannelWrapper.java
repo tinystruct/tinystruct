@@ -10,6 +10,11 @@ import java.nio.channels.ReadableByteChannel;
 public abstract class AbstractReadableByteChannelWrapper implements ReadableByteChannel {
     protected final ReadableByteChannel rbc; // The wrapped ReadableByteChannel
     private int read; // Number of bytes read
+
+    public int getExpected() {
+        return expected;
+    }
+
     private int expected; // Expected total number of bytes to read
 
     /**
