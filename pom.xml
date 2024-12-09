@@ -47,12 +47,6 @@
             <version>${tomcat.embed.version}</version>
             <scope>provided</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-            <version>${mysql.connector.version}</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/com.sun.mail/jakarta.mail -->
         <dependency>
             <groupId>com.sun.mail</groupId>
@@ -134,13 +128,6 @@
             <artifactId>jjwt-jackson</artifactId>
             <version>${jjwt.version}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.openjdk.jol/jol-core -->
-        <dependency>
-            <groupId>org.openjdk.jol</groupId>
-            <artifactId>jol-core</artifactId>
-            <version>${jol.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
@@ -209,16 +196,6 @@
             <artifactId>dec</artifactId>
             <version>${brotli.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.openjdk.jmh</groupId>
-            <artifactId>jmh-core</artifactId>
-            <version>${jmh.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openjdk.jmh</groupId>
-            <artifactId>jmh-generator-annprocess</artifactId>
-            <version>${jmh.version}</version>
-        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -241,7 +218,6 @@
         <java.version>11</java.version>
         <jjwt.version>0.12.6</jjwt.version>
         <jna.version>5.15.0</jna.version>
-        <jol.version>0.17</jol.version>
         <jupiter.version>5.11.3</jupiter.version>
         <kafka.version>3.9.0</kafka.version>
         <lettuce.version>6.5.1.RELEASE</lettuce.version>
@@ -252,9 +228,6 @@
         <sqlite.version>3.47.1.0</sqlite.version>
         <h2.version>2.3.232</h2.version>
         <netty.version>4.1.115.Final</netty.version>
-        <mysql.connector.version>9.1.0</mysql.connector.version>
-        <graalvm.version>24.1.0</graalvm.version>
-        <jmh.version>1.37</jmh.version>
         <mockito.version>5.14.2</mockito.version>
         <nashorn.version>15.4</nashorn.version>
         <tomcat.embed.version>10.1.31</tomcat.embed.version>
@@ -282,13 +255,6 @@
                     </compilerArgs>
                     <source>11</source>
                     <target>11</target>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.openjdk.jmh</groupId>
-                            <artifactId>jmh-generator-annprocess</artifactId>
-                            <version>${jmh.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
