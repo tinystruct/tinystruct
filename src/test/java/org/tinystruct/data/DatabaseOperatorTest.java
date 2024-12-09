@@ -49,7 +49,7 @@ class DatabaseOperatorTest {
     void testPreparedStatement() throws SQLException, ApplicationException {
         when(connection.prepareStatement(anyString())).thenReturn(preparedStatement);
 
-        PreparedStatement result = databaseOperator.preparedStatement("SELECT * FROM list where id=?", new Object[]{"1"});
+        PreparedStatement result = databaseOperator.preparedStatement("SELECT name FROM list where id=?", new Object[]{"1"});
 
         verify(preparedStatement).setObject(1, "1");
         verify(preparedStatement, times(1)).setObject(1, "1");
