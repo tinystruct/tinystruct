@@ -78,7 +78,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             try {
                 Jws<Claims> claims = manager.parseToken(token);
                 context.setAttribute("CLAIMS", claims);
-            } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | IllegalArgumentException e) {
+            } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException |
+                     IllegalArgumentException e) {
                 ByteBuf resp = copiedBuffer(e.getMessage(), CharsetUtil.UTF_8);
                 FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.UNAUTHORIZED, resp);
                 response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html");
@@ -193,8 +194,17 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         }
 
         if (!responseHeaders.contains(Header.CONTENT_TYPE))
-            responseHeaders.add(Header.CONTENT_TYPE.set("text/html; charset=UTF-8"));
-        responseHeaders.add(Header.CONTENT_LENGTH.setInt(resp.readableBytes()));
+            response.setContentType("text/html; charset=UTF-8");
+
+        switch (response.status()) {
+            case TEMPORARY_REDIRECT:
+            case MOVED_PERMANENTLY:
+            case PERMANENT_REDIRECT:
+                break;
+            default:
+                responseHeaders.add(Header.CONTENT_LENGTH.setInt(resp.readableBytes()));
+                break;
+        }
 
         // Write the response.
         ChannelFuture future = ctx.writeAndFlush(response.get());
