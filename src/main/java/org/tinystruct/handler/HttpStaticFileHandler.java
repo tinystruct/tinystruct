@@ -181,10 +181,10 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
             // Log or handle the exception appropriately
         }
 
-        if (contentType == null) {
+        if (contentType == null || contentType.equalsIgnoreCase("application/octet-stream")) {
             try {
                 // Fix the issue as if the name include two dots, the content type will be retrieved incorrectly.
-                String name = file.getName().replaceAll("\\.min\\.", ".");
+                String name = file.getName().substring(0, file.getName().indexOf(".")) + file.getName().substring(file.getName().lastIndexOf("."));
                 contentType = Files.probeContentType(Path.of(name));
             } catch (IOException e) {
                 // Log or handle the exception appropriately
