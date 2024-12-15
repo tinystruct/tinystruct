@@ -7,9 +7,10 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import java.io.IOException;
 
 public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpResponse> {
-    private final Headers headers = new ResponseHeaders(this);
     private ResponseStatus status;
     private Version version;
+    private final Headers headers = new Headers();
+
     public ResponseBuilder(FullHttpResponse response) {
         super(response);
 
@@ -24,16 +25,24 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpR
     }
 
     public void setContentType(String contentType) {
-        this.headers.add(Header.CONTENT_TYPE.set(contentType));
+        this.response.headers().add(Header.CONTENT_TYPE.name(), contentType);
     }
 
     @Override
     public void addHeader(String header, Object value) {
-        if (!this.response.headers().contains(header) || !this.response.headers().get(header).equalsIgnoreCase(value.toString())) {
+        if (!this.response.headers().contains(header)) {
+            this.headers.add(new Header(header).set(value));
             if (value instanceof Integer) {
                 this.response.headers().addInt(header, (Integer) value);
             } else
                 this.response.headers().add(header, value);
+        } else {
+            if (!this.response.headers().get(header).equalsIgnoreCase(value.toString())) {
+                if (value instanceof Integer) {
+                    this.response.headers().addInt(header, (Integer) value);
+                } else
+                    this.response.headers().add(header, value);
+            }
         }
     }
 
@@ -67,10 +76,12 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpR
     public Headers headers() {
         return this.headers;
     }
+
     @Override
     public FullHttpResponse get() {
         return this.response;
     }
+
     @Override
     public void sendRedirect(String url) throws IOException {
         ResponseHeaders responseHeaders = new ResponseHeaders(this);
