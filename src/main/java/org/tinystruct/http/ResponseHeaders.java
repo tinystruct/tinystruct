@@ -5,17 +5,21 @@ public class ResponseHeaders extends Headers {
 
     public ResponseHeaders(Response response) {
         this.response = response;
+        this.response.headers().values().forEach(this::add);
     }
 
     @Override
     public boolean add(Header header) {
-        String value = "";
-        if(header.value() != null) {
-            value =  header.value().toString();
-            value = value.replaceAll("[\r\n]", "");
+        if (!super.contains(header)) {
+            String value = "";
+            if (header.value() != null) {
+                value = header.value().toString();
+                value = value.replaceAll("[\r\n]", "");
+            }
+            this.response.addHeader(header.name(), value);
+            return super.add(header);
         }
 
-        this.response.addHeader(header.name(), value);
-        return super.add(header);
+        return false;
     }
 }
