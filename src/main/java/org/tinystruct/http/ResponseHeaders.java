@@ -5,7 +5,8 @@ public class ResponseHeaders extends Headers {
 
     public ResponseHeaders(Response response) {
         this.response = response;
-        this.response.headers().values().forEach(this::add);
+        if (this.response.headers() != null)
+            this.response.headers().values().forEach(this::add);
     }
 
     @Override
