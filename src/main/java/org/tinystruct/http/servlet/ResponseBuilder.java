@@ -35,7 +35,24 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
 
     @Override
     public void addHeader(String header, Object value) {
-        this.response.addHeader(header, value.toString());
+        if (!this.response.containsHeader(header)) {
+            this.headers.add(new Header(header).set(value));
+            if (value instanceof Integer) {
+                this.response.addIntHeader(header, (Integer) value);
+            } else if (value instanceof Long) {
+                this.response.addDateHeader(header, (Long) value);
+            } else
+                this.response.addHeader(header, value.toString());
+        } else {
+            if (!this.response.getHeader(header).equalsIgnoreCase(value.toString())) {
+                if (value instanceof Integer) {
+                    this.response.addIntHeader(header, (Integer) value);
+                } else if (value instanceof Long) {
+                    this.response.addDateHeader(header, (Long) value);
+                } else
+                    this.response.addHeader(header, value.toString());
+            }
+        }
     }
 
     public String getHeader(String header) {
