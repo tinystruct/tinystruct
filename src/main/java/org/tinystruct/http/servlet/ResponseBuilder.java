@@ -9,7 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, ServletOutputStream> {
-    private final Headers headers = new ResponseHeaders(this);
+    private final Headers headers = new Headers();
     private ServletOutputStream outputStream;
     private ResponseStatus status;
     private Version version;
