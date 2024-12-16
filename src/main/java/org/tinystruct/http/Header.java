@@ -426,12 +426,12 @@ public class Header implements Cloneable {
     private Object value;
     private static final Logger logger = Logger.getLogger(Header.class.getName());
 
-    Header(String name) {
+    public Header(String name) {
         this.name = name;
         map.put(this.name.toLowerCase(Locale.ROOT), this);
     }
 
-    Header(String name, StandardValue[] options) {
+    public Header(String name, StandardValue[] options) {
         this(name);
         this.options = options;
     }
