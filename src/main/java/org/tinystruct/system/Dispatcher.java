@@ -494,8 +494,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                     this.exec();
                     System.out.println("Reminder: DO NOT forget to compile it.");
                 } else {
-                    boolean maven = new File("pom.xml").exists();
-                    if (maven) {
+                    boolean pom = new File("pom.xml").exists();
+                    boolean maven = Platform.isWindows() ? new File("mvnw.cmd").exists() : new File("mvnw").exists();
+                    if (pom && maven) {
                         this.context.setAttribute("--shell-command", "./mvnw versions:use-dep-version -Dincludes=org.tinystruct:tinystruct -DdepVersion=" + evt.getLatestVersion() + " -DforceVersion=true");
                         this.context.setAttribute("--output", false);
                         this.exec();
