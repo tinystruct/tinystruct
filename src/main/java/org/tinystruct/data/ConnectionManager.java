@@ -27,6 +27,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,6 +44,7 @@ final class ConnectionManager implements Runnable {
     private String user;
     private String password;
     private final int maxConnections;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private String database;
     private volatile boolean pending;
@@ -179,15 +182,14 @@ final class ConnectionManager implements Runnable {
      * @param connection The connection to be added.
      */
     public void flush(Connection connection) {
-        connections.add(connection);
-        if (connections.size() > maxConnections) {
-            synchronized (ConnectionManager.class) {
-                if (connections.size() > maxConnections && !pending) {
-                    pending = true;
-                    logger.severe("The current connection size (" + connections.size() + ") is out of the max number.");
-                    Thread thread = new Thread(this);
-                    thread.start();
-                }
+        synchronized (ConnectionManager.class) {
+            connections.add(connection);
+            if (connections.size() == 1) return;
+
+            if (connections.size() > maxConnections && !pending) {
+                pending = true;
+                logger.severe("The current connection size (" + connections.size() + ") is out of the max number.");
+                executor.submit(this);
             }
         }
     }
