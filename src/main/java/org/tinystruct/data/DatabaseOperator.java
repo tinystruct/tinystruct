@@ -18,6 +18,7 @@ public class DatabaseOperator implements Closeable {
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 1000;
     private final ConnectionManager manager;
+    private boolean injectionCheckEnabled;
     Connection connection;
     PreparedStatement preparedStatement;
     private ResultSet resultSet;
@@ -30,6 +31,7 @@ public class DatabaseOperator implements Closeable {
     public DatabaseOperator() throws ApplicationException {
         manager = ConnectionManager.getInstance();
         connection = manager.getConnection();
+        injectionCheckEnabled = true;
     }
 
     /**
@@ -87,7 +89,8 @@ public class DatabaseOperator implements Closeable {
         }
 
         try {
-            SQLInjectionDetector.checkForUnsafeSQL(sql);
+            if (this.injectionCheckEnabled)
+                SQLInjectionDetector.checkForUnsafeSQL(sql);
 
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             // Setting parameters if provided
@@ -296,5 +299,12 @@ public class DatabaseOperator implements Closeable {
             logger.severe("SQLState(" + e.getSQLState() + ") vendor code(" + e.getErrorCode() + "); Query:" + statement.toString() + " Message:" + e.getMessage());
             throw new ApplicationException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Disable safe check. e.g. CLI Mode
+     */
+    public void disableSafeCheck() {
+        this.injectionCheckEnabled = false;
     }
 }
