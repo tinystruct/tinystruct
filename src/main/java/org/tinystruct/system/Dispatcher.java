@@ -437,6 +437,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
         String sql = this.context.getAttribute("--sql").toString();
         try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.disableSafeCheck();
+
             ResultSet set = operator.query(sql);
             int columnCount = set.getMetaData().getColumnCount();
             String[] columns = new String[columnCount];
