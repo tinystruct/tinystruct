@@ -188,7 +188,8 @@ public class DatabaseOperator implements Closeable {
         }
 
         try {
-            SQLInjectionDetector.checkForUnsafeSQL(sql);
+            if (this.injectionCheckEnabled)
+                SQLInjectionDetector.checkForUnsafeSQL(sql);
 
             int resultSetType = scrollable ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY;
             int resultSetConcurrency = ResultSet.CONCUR_READ_ONLY;
