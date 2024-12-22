@@ -29,6 +29,7 @@ import java.sql.SQLException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -267,6 +268,16 @@ final class ConnectionManager implements Runnable {
             }
             pending = false;
         }
+    }
+
+    public void shutdownExecutor() throws InterruptedException {
+        logger.info("Shutting down executor...");
+        executor.shutdown(); // Stop accepting new tasks
+        if (!executor.awaitTermination(10, TimeUnit.SECONDS)) { // Wait for tasks to complete
+            logger.warning("Executor did not terminate in the specified time. Forcing shutdown...");
+            executor.shutdownNow(); // Force shutdown
+        }
+        logger.info("Executor shut down successfully.");
     }
 
     private void handleSQLException(String message, SQLException ex) {
