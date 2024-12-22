@@ -97,6 +97,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
 
     @Override
     public void sendRedirect(String url) throws IOException {
-        this.response.sendRedirect(url);
+        if(!this.response.isCommitted())
+            this.response.sendRedirect(url);
     }
 }
