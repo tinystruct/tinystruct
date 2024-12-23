@@ -207,4 +207,11 @@ public interface Application {
      * @param path the path of the link
      */
     void createLinkVariable(String path);
+
+    /**
+     * Set context for the application.
+     *
+     * @param context A context to be set
+     */
+    Application setContext(Context context);
 }
