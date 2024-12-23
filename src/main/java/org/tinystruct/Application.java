@@ -135,10 +135,10 @@ public interface Application {
     /**
      * Return a specific instance for this application.
      *
-     * @param contextId Context ID
+     * @param context Context ID
      * @return an instance of this application
      */
-    Application getInstance(String contextId);
+    Application getInstance(Context context);
 
     /**
      * To invoke the action with action name specified.
