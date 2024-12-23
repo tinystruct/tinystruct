@@ -156,20 +156,20 @@ public abstract class AbstractApplication implements Application, Cloneable {
     /**
      * Creates and returns an instance of the application based on the context ID.
      *
-     * @param contextId The context ID for which to retrieve the application instance.
+     * @param context The context for which to retrieve the application instance.
      * @return The application instance.
      */
     @Override
-    public Application getInstance(String contextId) {
+    public Application getInstance(Context context) {
         String language;
-        if (this.context.getAttribute(LANGUAGE) != null) {
-            language = this.context.getAttribute(LANGUAGE).toString();
+        if (context.getAttribute(LANGUAGE) != null) {
+            language = context.getAttribute(LANGUAGE).toString();
         } else {
             language = config.get(DEFAULT_LANGUAGE);
         }
 
         // Retrieve the instance from the container based on context, language, and name
-        return CONTAINER.get(contextId + language + File.separatorChar + this.getName());
+        return CONTAINER.get(context.getId() + language + File.separatorChar + this.getName());
     }
 
     /**
