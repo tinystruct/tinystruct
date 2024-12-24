@@ -22,17 +22,17 @@ public class KeyPairGenerator extends AbstractApplication {
     @Action("generateKeyPair")
     public void getKeyPair() {
         String publicKeyFile = "/ca.pub", privateKeyFile = "/ca.pri";
-        if (context.getAttribute("--public-key") != null) {
-            publicKeyFile = context.getAttribute("--public-key").toString();
+        if (getContext().getAttribute("--public-key") != null) {
+            publicKeyFile = getContext().getAttribute("--public-key").toString();
         }
 
-        if (context.getAttribute("--private-key") != null) {
-            privateKeyFile = context.getAttribute("--private-key").toString();
+        if (getContext().getAttribute("--private-key") != null) {
+            privateKeyFile = getContext().getAttribute("--private-key").toString();
         }
 
         String password;
-        if (context.getAttribute("--password") != null) {
-            password = context.getAttribute("--password").toString();
+        if (getContext().getAttribute("--password") != null) {
+            password = getContext().getAttribute("--password").toString();
         } else {
             logger.info("Password is required. please use --password PASSWORD option.");
             return;

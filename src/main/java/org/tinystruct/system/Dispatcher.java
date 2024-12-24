@@ -240,7 +240,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }, mode = org.tinystruct.application.Action.Mode.CLI)
     public void install() {
         String appName;
-        if ((appName = (String) this.context.getAttribute("--app")) == null)
+        if ((appName = (String) getContext().getAttribute("--app")) == null)
             throw new ApplicationRuntimeException("The app could not be found in the context.");
 
         System.out.println("Installing...");
@@ -290,7 +290,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             StringBuilder content = loader.getContent();
             String latestVersion = content.substring(content.indexOf("<latest>") + 8, content.indexOf("</latest>"));
 
-            if (this.context.getAttribute("--force") == null && latestVersion.equalsIgnoreCase(ApplicationManager.VERSION))
+            if (getContext().getAttribute("--force") == null && latestVersion.equalsIgnoreCase(ApplicationManager.VERSION))
                 return "\r" + this.color("You are already using the latest available Dispatcher version " + ApplicationManager.VERSION + ".", FORE_COLOR.green);
 
             eventDispatcher.dispatch(new UpgradeEvent(latestVersion));
@@ -313,10 +313,10 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             @Argument(key = "https.proxyPort", description = "Proxy port for https")
     }, mode = org.tinystruct.application.Action.Mode.CLI)
     public void download() throws ApplicationException {
-        if (this.context.getAttribute("--url") != null) {
+        if (getContext().getAttribute("--url") != null) {
             URL uri;
             try {
-                uri = new URL(this.context.getAttribute("--url").toString());
+                uri = new URL(getContext().getAttribute("--url").toString());
                 this.download(uri, uri.getFile());
             } catch (MalformedURLException e) {
                 throw new ApplicationException(e.getMessage(), e.getCause());
@@ -371,16 +371,16 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             @Argument(key = "output", description = "Specify a boolean value to determine output of the command")
     }, mode = org.tinystruct.application.Action.Mode.CLI)
     public void exec() throws ApplicationException {
-        if (this.context.getAttribute("--shell-command") == null) {
+        if (getContext().getAttribute("--shell-command") == null) {
             throw new ApplicationException("Invalid shell command");
         }
 
         boolean output = true;
-        if (this.context.getAttribute("--output") != null) {
-            output = Boolean.parseBoolean(this.context.getAttribute("--output").toString());
+        if (getContext().getAttribute("--output") != null) {
+            output = Boolean.parseBoolean(getContext().getAttribute("--output").toString());
         }
 
-        String cmd = this.context.getAttribute("--shell-command").toString();
+        String cmd = getContext().getAttribute("--shell-command").toString();
         try {
             String line;
             Process p = Runtime.getRuntime().exec(cmd);
@@ -410,11 +410,11 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             @Argument(key = "sql", description = "an SQL Data Manipulation Language (DML) statement, such as INSERT, UPDATE or DELETE; or an SQL statement that returns nothing, such as a DDL statement.")
     }, mode = org.tinystruct.application.Action.Mode.CLI)
     public void executeUpdate() throws ApplicationException {
-        if (this.context.getAttribute("--sql") == null) {
+        if (getContext().getAttribute("--sql") == null) {
             throw new ApplicationException("Invalid SQL Statement.");
         }
 
-        String query = this.context.getAttribute("--sql").toString();
+        String query = getContext().getAttribute("--sql").toString();
         try (DatabaseOperator operator = new DatabaseOperator()) {
             if (operator.update(query) > 0) {
                 System.out.println("Done!");
@@ -431,11 +431,11 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             @Argument(key = "sql", description = "an SQL statement to be sent to the database, typically a static SQL SELECT statement")
     }, mode = org.tinystruct.application.Action.Mode.CLI)
     public void executeQuery() throws ApplicationException {
-        if (this.context.getAttribute("--sql") == null) {
+        if (getContext().getAttribute("--sql") == null) {
             throw new ApplicationException("Invalid SQL Statement.");
         }
 
-        String sql = this.context.getAttribute("--sql").toString();
+        String sql = getContext().getAttribute("--sql").toString();
         try (DatabaseOperator operator = new DatabaseOperator()) {
             operator.disableSafeCheck();
 
@@ -492,20 +492,20 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 System.out.print("\rUpdating..");
                 boolean git = new File(".git").exists();
                 if (git) {
-                    this.context.setAttribute("--shell-command", "git pull");
+                    getContext().setAttribute("--shell-command", "git pull");
                     this.exec();
                     System.out.println("Reminder: DO NOT forget to compile it.");
                 } else {
                     boolean pom = new File("pom.xml").exists();
                     boolean maven = Platform.isWindows() ? new File("mvnw.cmd").exists() : new File("mvnw").exists();
                     if (pom && maven) {
-                        this.context.setAttribute("--shell-command", "./mvnw versions:use-dep-version -Dincludes=org.tinystruct:tinystruct -DdepVersion=" + evt.getLatestVersion() + " -DforceVersion=true");
-                        this.context.setAttribute("--output", false);
+                        getContext().setAttribute("--shell-command", "./mvnw versions:use-dep-version -Dincludes=org.tinystruct:tinystruct -DdepVersion=" + evt.getLatestVersion() + " -DforceVersion=true");
+                        getContext().setAttribute("--output", false);
                         this.exec();
 
                         // Auto compile the update project
-                        this.context.setAttribute("--shell-command", "./mvnw compile");
-                        this.context.setAttribute("--output", true);
+                        getContext().setAttribute("--shell-command", "./mvnw compile");
+                        getContext().setAttribute("--output", true);
                         this.exec();
                     }
                 }
@@ -543,9 +543,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
      */
     @Action(value = "set", description = "Set system property", mode = org.tinystruct.application.Action.Mode.CLI)
     public String setProperty(String propertyName) {
-        if (this.context.getAttribute(propertyName) == null)
+        if (getContext().getAttribute(propertyName) == null)
             throw new ApplicationRuntimeException("The key " + propertyName + " could not be found in the context.");
-        String property = this.context.getAttribute(propertyName).toString();
+        String property = getContext().getAttribute(propertyName).toString();
         propertyName = propertyName.substring(2);
         System.setProperty(propertyName, property);
         return propertyName + ":" + System.getProperty(propertyName);
@@ -572,11 +572,11 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             @Argument(key = "url", description = "URL resource to be downloaded")
     }, mode = org.tinystruct.application.Action.Mode.CLI)
     public void open() throws ApplicationException {
-        if (this.context.getAttribute("--url") == null) {
+        if (getContext().getAttribute("--url") == null) {
             throw new ApplicationException("Invalid URL.");
         }
 
-        final String url = this.context.getAttribute("--url").toString();
+        final String url = getContext().getAttribute("--url").toString();
         new Thread(new Runnable() {
             /**
              * When an object implementing interface <code>Runnable</code> is used

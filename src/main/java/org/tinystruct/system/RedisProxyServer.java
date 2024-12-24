@@ -46,17 +46,17 @@ public class RedisProxyServer extends ProxyServer implements Bootstrap {
     }, example = "bin/dispatcher start --import org.tinystruct.system.RedisProxyServer --server-port 8080", mode = org.tinystruct.application.Action.Mode.CLI)
     @Override
     public void start() throws ApplicationException {
-        if (this.context != null) {
-            if (this.context.getAttribute("--server-port") != null) {
-                this.port = Integer.parseInt(this.context.getAttribute("--server-port").toString());
+        if (getContext() != null) {
+            if (getContext().getAttribute("--server-port") != null) {
+                this.port = Integer.parseInt(getContext().getAttribute("--server-port").toString());
             }
 
-            if (this.context.getAttribute("--remote-server-port") != null) {
-                this.remotePort = Integer.parseInt(this.context.getAttribute("--remote-server-port").toString());
+            if (getContext().getAttribute("--remote-server-port") != null) {
+                this.remotePort = Integer.parseInt(getContext().getAttribute("--remote-server-port").toString());
             }
 
-            if (this.context.getAttribute("--remote-server-host") != null) {
-                this.remoteHost = this.context.getAttribute("--remote-server-host").toString();
+            if (getContext().getAttribute("--remote-server-host") != null) {
+                this.remoteHost = getContext().getAttribute("--remote-server-host").toString();
             }
         }
 

@@ -87,19 +87,19 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
     @Override
     public void start() throws ApplicationException {
 
-        if (this.context != null) {
-            if (this.context.getAttribute("--server-port") != null) {
-                this.port = Integer.parseInt(this.context.getAttribute("--server-port").toString());
+        if (getContext() != null) {
+            if (getContext().getAttribute("--server-port") != null) {
+                this.port = Integer.parseInt(getContext().getAttribute("--server-port").toString());
             }
 
-            if (this.context.getAttribute("--http.proxyHost") != null && this.context.getAttribute("--http.proxyPort") != null) {
-                System.setProperty("http.proxyHost", this.context.getAttribute("--http.proxyHost").toString());
-                System.setProperty("http.proxyPort", this.context.getAttribute("--http.proxyPort").toString());
+            if (getContext().getAttribute("--http.proxyHost") != null && getContext().getAttribute("--http.proxyPort") != null) {
+                System.setProperty("http.proxyHost", getContext().getAttribute("--http.proxyHost").toString());
+                System.setProperty("http.proxyPort", getContext().getAttribute("--http.proxyPort").toString());
             }
 
-            if (this.context.getAttribute("--https.proxyHost") != null && this.context.getAttribute("--https.proxyPort") != null) {
-                System.setProperty("https.proxyHost", this.context.getAttribute("--https.proxyHost").toString());
-                System.setProperty("https.proxyPort", this.context.getAttribute("--https.proxyPort").toString());
+            if (getContext().getAttribute("--https.proxyHost") != null && getContext().getAttribute("--https.proxyPort") != null) {
+                System.setProperty("https.proxyHost", getContext().getAttribute("--https.proxyHost").toString());
+                System.setProperty("https.proxyPort", getContext().getAttribute("--https.proxyPort").toString());
             }
         }
 
@@ -159,8 +159,8 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
             logger.info("Netty server (" + port + ") startup in " + (System.currentTimeMillis() - start) + " ms");
 
             // Open the default browser
-            this.context.setAttribute("--url", "http://localhost:" + this.port);
-            ApplicationManager.call("open", this.context, org.tinystruct.application.Action.Mode.CLI);
+            getContext().setAttribute("--url", "http://localhost:" + this.port);
+            ApplicationManager.call("open", getContext(), org.tinystruct.application.Action.Mode.CLI);
 
             // Wait until the server socket is closed.
             future.channel().closeFuture().sync();
@@ -179,8 +179,8 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
 
     @Action(value = "error", description = "Error page")
     public Object exceptionCaught() throws ApplicationException {
-        Request request = (Request) this.context.getAttribute(HTTP_REQUEST);
-        Response response = (Response) this.context.getAttribute(HTTP_RESPONSE);
+        Request request = (Request) getContext().getAttribute(HTTP_REQUEST);
+        Response response = (Response) getContext().getAttribute(HTTP_RESPONSE);
 
         Reforward reforward = new Reforward(request, response);
         this.setVariable("from", reforward.getFromURL());
