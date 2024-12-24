@@ -67,7 +67,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     /**
      * Context of application
      */
-    protected Context context;
+    protected ThreadLocal<Context> threadLocalContext = ThreadLocal.withInitial(() -> null);
 
     /**
      * Configuration
@@ -123,33 +123,29 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     @Override
     public void init(Context context) {
-        String language;
-        if (context.getAttribute(LANGUAGE) != null) {
-            language = context.getAttribute(LANGUAGE).toString();
-        } else {
-            language = config.get(DEFAULT_LANGUAGE);
-        }
+        this.setContext(context);
+
+        String language = context.getAttribute(LANGUAGE) != null
+                ? context.getAttribute(LANGUAGE).toString()
+                : config.get(DEFAULT_LANGUAGE);
 
         // Unique key for the instance based on context, language, and name
         String key = context.getId() + language + File.separatorChar + this.getName();
 
-        // Synchronize to ensure thread safety when accessing the shared container
-        synchronized (CONTAINER) {
-            if (!CONTAINER.containsKey(key)) {
-                try {
-                    // Clone the current instance and set the locale
-                    Application clone = (Application) this.clone();
-                    // Initialize the context
-                    clone.setContext(context).setLocale(language);
-                    CONTAINER.put(key, clone);
-                } catch (CloneNotSupportedException e) {
-                    // Handle clone not supported exception
-                    throw new ApplicationRuntimeException(e.toString(), e.getCause());
-                }
-            } else {
-                // If the instance already exists in the container, update its locale
-                CONTAINER.get(key).setContext(context).setLocale(language);
+        if (!CONTAINER.containsKey(key)) {
+            try {
+                // Clone the current instance and set the locale
+                Application clone = (Application) this.clone();
+                // Initialize the context
+                clone.setContext(context).setLocale(language);
+                CONTAINER.put(key, clone);
+            } catch (CloneNotSupportedException e) {
+                // Handle clone not supported exception
+                throw new ApplicationRuntimeException(e.toString(), e.getCause());
             }
+        } else {
+            // If the instance already exists in the container, update its locale
+            CONTAINER.get(key).setContext(context).setLocale(language);
         }
     }
 
@@ -161,12 +157,9 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     @Override
     public Application getInstance(Context context) {
-        String language;
-        if (context.getAttribute(LANGUAGE) != null) {
-            language = context.getAttribute(LANGUAGE).toString();
-        } else {
-            language = config.get(DEFAULT_LANGUAGE);
-        }
+        String language = context.getAttribute(LANGUAGE) != null
+                ? context.getAttribute(LANGUAGE).toString()
+                : config.get(DEFAULT_LANGUAGE);
 
         // Retrieve the instance from the container based on context, language, and name
         return CONTAINER.get(context.getId() + language + File.separatorChar + this.getName());
@@ -288,6 +281,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
     @Override
     public Object invoke(String path, Object[] parameters) throws ApplicationException {
         String method = null;
+        Context context = threadLocalContext.get();
+
         if (context != null && context.getAttribute(METHOD) != null) {
             method = context.getAttribute(METHOD).toString();
         }
@@ -312,7 +307,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     @Override
     public Context getContext() {
-        return this.context;
+        return this.threadLocalContext.get();
     }
 
     /**
@@ -627,7 +622,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     @Override
     public Application setContext(Context context) {
-        this.context = context;
+        threadLocalContext.set(context);
         return this;
     }
 
@@ -641,5 +636,10 @@ public abstract class AbstractApplication implements Application, Cloneable {
     @Override
     public Map<String, CommandLine> getCommandLines() {
         return this.commandLines;
+    }
+
+    @Override
+    public void destroy(){
+        threadLocalContext.remove();
     }
 }
