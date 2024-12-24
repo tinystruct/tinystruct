@@ -214,4 +214,9 @@ public interface Application {
      * @param context A context to be set
      */
     Application setContext(Context context);
+
+    /**
+     * Destroy process.
+     */
+    void destroy();
 }
