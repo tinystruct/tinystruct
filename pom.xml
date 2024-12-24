@@ -229,7 +229,7 @@
         <h2.version>2.3.232</h2.version>
         <netty.version>4.1.115.Final</netty.version>
         <mockito.version>5.14.2</mockito.version>
-        <nashorn.version>15.5</nashorn.version>
+        <nashorn.version>15.4</nashorn.version>
         <tomcat.embed.version>10.1.31</tomcat.embed.version>
         <zxing.version>3.5.3</zxing.version>
     </properties>
