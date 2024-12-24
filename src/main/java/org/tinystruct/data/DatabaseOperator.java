@@ -147,9 +147,8 @@ public class DatabaseOperator implements Closeable {
      * @throws ApplicationException If an error occurs while executing the update.
      */
     public int executeUpdate(PreparedStatement statement) throws ApplicationException {
-        try {
+        try (statement) {  // Try-with-resources ensures statement is closed
             int effect = statement.executeUpdate();
-            statement.close(); // Close the statement after execution
             logger.log(Level.INFO, statement.toString());
             return effect;
         } catch (SQLException e) {
@@ -165,10 +164,8 @@ public class DatabaseOperator implements Closeable {
      * @throws ApplicationException If an error occurs while executing the query.
      */
     public boolean execute(PreparedStatement statement) throws ApplicationException {
-        try {
-            boolean execute = statement.execute();
-            statement.close(); // Close the statement after execution
-            return execute;
+        try (statement) {
+            return statement.execute();
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
@@ -279,6 +276,12 @@ public class DatabaseOperator implements Closeable {
         } finally {
             if (manager != null && connection != null) {
                 manager.flush(connection);
+            } else if (connection != null) {
+                try {
+                    connection.close();  // Close the connection if not managed by a ConnectionManager
+                } catch (SQLException e) {
+                    logger.warning("Error closing Connection: " + e.getMessage());
+                }
             }
         }
     }
