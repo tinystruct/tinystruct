@@ -58,14 +58,14 @@ public class Action implements org.tinystruct.application.Method<Object> {
         this.mode = Mode.All;
     }
 
-    public Action(Action action) {
+    public Action(Action action, Object[] args) {
         this.id = action.getId();
         this.app = action.app;
         this.pathRule = action.getPathRule();
         this.method = action.method;
         this.pattern = action.getPattern();
         this.mode = action.getMode();
-        this.args = new Object[]{};
+        this.args = args;
     }
 
     /**
@@ -152,6 +152,9 @@ public class Action implements org.tinystruct.application.Method<Object> {
             if (method.getReturnType().isAssignableFrom(Void.TYPE)) {
                 try {
                     method.invoke(app, arguments);
+
+                    // start destroy process.
+                    app.destroy();
                     if (!app.isTemplateRequired()) return null;
                 } catch (IllegalAccessException e) {
                     throw new ApplicationException(method + ":" + e.getMessage(), e.getCause());

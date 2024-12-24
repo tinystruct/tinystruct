@@ -103,9 +103,7 @@ public final class ActionRegistry {
                     args[i] = matcher.group(i + 1);
                 }
 
-                Action clone = new Action(action);
-                clone.setArguments(args);
-                return clone;
+                return new Action(action, args);
             }
         }
         return null;
