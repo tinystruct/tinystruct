@@ -30,6 +30,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -46,6 +48,7 @@ final class ConnectionManager implements Runnable {
     private String password;
     private final int maxConnections;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Lock lock = new ReentrantLock();
 
     private String database;
     private volatile boolean pending;
@@ -183,15 +186,18 @@ final class ConnectionManager implements Runnable {
      * @param connection The connection to be added.
      */
     public void flush(Connection connection) {
-        synchronized (ConnectionManager.class) {
+        lock.lock();
+        try {
             connections.add(connection);
             if (connections.size() == 1) return;
 
             if (connections.size() > maxConnections && !pending) {
                 pending = true;
-                logger.severe("The current connection size (" + connections.size() + ") is out of the max number.");
+                logger.severe("The connection pool size (" + connections.size() + ") is out of the max number.");
                 executor.submit(this);
             }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -203,21 +209,25 @@ final class ConnectionManager implements Runnable {
      */
     public Connection getConnection() throws ApplicationException {
         Connection connection;
-        if (!connections.isEmpty()) {
-            connection = connections.poll();
-            try {
-                if (connection.isClosed()) {
-                    logger.severe("Found an invalid connection, removing it.");
+        lock.lock();
+        try {
+            if (!connections.isEmpty()) {
+                connection = connections.poll();
+                try {
+                    if (connection.isClosed()) {
+                        logger.severe("Found an invalid connection, removing it.");
+                        connection = getConnection();
+                    }
+                } catch (SQLException ex) {
+                    handleSQLException("Error while checking connection status.", ex);
                     connection = getConnection();
                 }
-            } catch (SQLException ex) {
-                handleSQLException("Error while checking connection status.", ex);
-                connection = getConnection();
+            } else {
+                connection = createNewConnection();
             }
-        } else {
-            connection = createNewConnection();
+        } finally {
+            lock.unlock();
         }
-
         return connection;
     }
 
@@ -233,7 +243,7 @@ final class ConnectionManager implements Runnable {
 
             return connection;
         } catch (SQLException ex) {
-            throw new ApplicationException("Error while creating a new connection.", ex);
+            throw new ApplicationException(ex.getMessage(), ex);
         }
     }
 
@@ -255,18 +265,22 @@ final class ConnectionManager implements Runnable {
      * Clears excess connections from the queue, maintaining the maximum allowed connections.
      */
     public void clear() {
-        synchronized (ConnectionManager.class) {
-            Connection current;
-            while (connections.size() > maxConnections && (current = connections.poll()) != null) {
-                try {
-                    if (!current.isClosed()) {
-                        current.close();
+        lock.lock();
+
+        try {
+            if (pending) {
+                while (connections.size() > maxConnections) {
+                    try (Connection current = connections.poll()) {
+                        assert current != null;
+                        logger.info("Released 1 connection.");
+                    } catch (SQLException ex) {
+                        handleSQLException("Error while closing connection.", ex);
                     }
-                } catch (SQLException ex) {
-                    handleSQLException("Error while closing connection.", ex);
                 }
+                pending = false;
             }
-            pending = false;
+        } finally {
+            lock.unlock();
         }
     }
 
