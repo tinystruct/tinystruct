@@ -26,9 +26,7 @@ import java.util.Objects;
  * @author James Zhou
  * @since 0.1.0
  */
-public final class ApplicationContext implements Context {
-
-    private static final ThreadLocal<HashMap<String, Object>> threadLocal = ThreadLocal.withInitial(HashMap::new);
+public final class ApplicationContext extends HashMap<String, Object> implements Context {
 
     public ApplicationContext() {
     }
@@ -48,13 +46,13 @@ public final class ApplicationContext implements Context {
 
     @Override
     public void setAttribute(String name, Object value) {
-        threadLocal.get().put(name, value);
+        this.put(name, value);
     }
 
     @Override
     public Object getAttribute(String name) {
-        if (threadLocal.get().containsKey(name)) {
-            return threadLocal.get().get(name);
+        if (this.containsKey(name)) {
+            return this.get(name);
         }
 
         return null;
@@ -62,11 +60,11 @@ public final class ApplicationContext implements Context {
 
     @Override
     public void removeAttribute(String name) {
-        threadLocal.get().remove(name);
+        this.remove(name);
     }
 
     @Override
     public String[] getAttributeNames() {
-        return threadLocal.get().keySet().toArray(new String[]{});
+        return this.keySet().toArray(new String[]{});
     }
 }
