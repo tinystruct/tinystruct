@@ -32,7 +32,7 @@ import java.util.logging.Logger;
 public class Variables {
     private final static String PREFIX_VARIABLE_NAME = "{%";
     private final static String SUFFIX_VARIABLE_NAME = "%}";
-    private final static ConcurrentHashMap<String, Variables> group = new ConcurrentHashMap<>();
+    private final static ThreadLocal<ConcurrentHashMap<String, Variables>> group = ThreadLocal.withInitial(ConcurrentHashMap::new);
     protected final ConcurrentHashMap<String, Variable<?>> variableMap = new ConcurrentHashMap<>();
     private final static Logger logger = Logger.getLogger(Variables.class.getName());
 
@@ -46,7 +46,7 @@ public class Variables {
      * @return The Variables instance for the specified group.
      */
     public static Variables getInstance(String group) {
-        return Variables.group.computeIfAbsent(group, k -> new Variables());
+        return Variables.group.get().computeIfAbsent(group, k -> new Variables());
     }
 
     /**
