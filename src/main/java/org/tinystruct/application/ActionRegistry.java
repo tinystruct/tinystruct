@@ -2,6 +2,8 @@ package org.tinystruct.application;
 
 import org.tinystruct.Application;
 import org.tinystruct.data.component.Cache;
+import org.tinystruct.http.Request;
+import org.tinystruct.http.Response;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.util.StringUtilities;
 
@@ -169,7 +171,7 @@ public final class ActionRegistry {
      * @param app        The Application instance
      * @param path       The URL pattern
      * @param methodName The method name
-     * @param mode
+     * @param mode       The execution mode
      */
     private synchronized void initializePatterns(Application app, String path, String methodName, Action.Mode mode) {
         Class<?> clazz = app.getClass();
@@ -188,6 +190,7 @@ public final class ActionRegistry {
                     StringBuilder patterns = new StringBuilder();
 
                     for (Class<?> type : types) {
+                        if (type.isAssignableFrom(Request.class) || type.isAssignableFrom(Response.class)) continue;
                         String pattern = "(" + this.getPatternForType(type) + ")";
 
                         if (patterns.length() != 0) {
@@ -196,7 +199,11 @@ public final class ActionRegistry {
                         patterns.append(pattern);
                     }
 
-                    expression = patternPrefix + "/" + patterns + "$";
+                    if (patterns.length() > 0) {
+                        expression = patternPrefix + "/" + patterns + "$";
+                    } else {
+                        expression = patternPrefix + "$";
+                    }
                 } else {
                     expression = patternPrefix + "$";
                 }
