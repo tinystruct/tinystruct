@@ -31,6 +31,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
     private Method method;
     private String uri;
     private String sessionId;
+    private String body;
     private static final Logger logger = Logger.getLogger(RequestBuilder.class.getName());
 
     public RequestBuilder(FullHttpRequest request, boolean secure) {
@@ -69,16 +70,14 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
         }
 
         if (content.capacity() > 0) {
-            String requestBody;
             String contentType = null;
             Object originHeader;
             if ((originHeader = this.headers.get(Header.CONTENT_TYPE)) != null && (contentType = originHeader.toString()).indexOf(';') != -1) {
                 contentType = contentType.substring(0, contentType.indexOf(';'));
             }
-
+            this.body = content.toString(CharsetUtil.UTF_8);
             switch (Objects.requireNonNull(contentType)) {
                 case "multipart/form-data":
-                    requestBody = content.toString(CharsetUtil.UTF_8);
                     String boundary = null;
                     int index;
                     if ((index = originHeader.toString().lastIndexOf("boundary=")) != -1) {
@@ -87,11 +86,11 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
                             //strip it off
                             boundary = boundary.substring(0, boundary.length() - 1);
                         }
-                        requestBody = requestBody.substring(0, requestBody.indexOf(boundary) + boundary.length());
+                        this.body = this.body.substring(0, this.body.indexOf(boundary) + boundary.length());
                     }
 
-                    if (boundary != null && !requestBody.startsWith(boundary)) {
-                        parseQuery(requestBody, false);
+                    if (boundary != null && !this.body.startsWith(boundary)) {
+                        parseQuery(this.body, false);
                     }
 
                     // TODO
@@ -120,7 +119,6 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
                     break;
 
                 case "text/plain":
-                    break;
                 case "application/json":
                     break;
                 case "application/x-www-form-urlencoded":
@@ -192,6 +190,14 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
     @Override
     public String query() {
         return this.query;
+    }
+
+    /**
+     * @return body string.
+     */
+    @Override
+    public String body() {
+        return this.body;
     }
 
     @Override

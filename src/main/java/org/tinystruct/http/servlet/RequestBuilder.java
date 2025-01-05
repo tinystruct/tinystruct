@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpSession;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.FileEntity;
+import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.*;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
@@ -23,6 +24,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     private final Cookie[] cookies;
     private final Session memorySession;
     private final boolean secure;
+    private final String body;
     private Version version;
     private Method method;
     private String uri;
@@ -71,6 +73,19 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
             memorySession.setAttribute(s, session.getAttribute(s));
         }
 
+        StringBuilder lines = new StringBuilder();
+
+        String line;
+        while (true) {
+            try {
+                if ((line = this.request.getReader().readLine()) == null) break;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            lines.append(line);
+        }
+        this.body = lines.toString();
+
         this.secure = secure;
     }
 
@@ -99,6 +114,14 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     @Override
     public String query() {
         return this.request.getQueryString();
+    }
+
+    /**
+     * @return body string.
+     */
+    @Override
+    public String body() {
+        return this.body;
     }
 
     @Override
