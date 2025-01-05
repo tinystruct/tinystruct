@@ -222,7 +222,7 @@ public class URLRequest {
         return inputToRead;
     }
 
-    public byte[] send0(HttpRequestBuilder request) throws ApplicationException {
+    public int send0(HttpRequestBuilder request) throws ApplicationException {
         return send0(request, new Callback<HttpResponse<byte[]>>() {
             @Override
             public byte[] process(HttpResponse<byte[]> data) throws ApplicationException {
@@ -231,8 +231,7 @@ public class URLRequest {
         });
     }
 
-    public byte[] send0(HttpRequestBuilder request, Callback<HttpResponse<byte[]>> callback) throws ApplicationException {
-
+    private int send0(HttpRequestBuilder request, Callback<HttpResponse<byte[]>> callback) throws ApplicationException {
         HttpRequest.Builder builder = HttpRequest.newBuilder();
         try {
             builder.uri(this.url.toURI());
@@ -270,7 +269,8 @@ public class URLRequest {
 
         try {
             HttpResponse<byte[]> response = httpClientBuilder.build().send(builder.build(), HttpResponse.BodyHandlers.ofByteArray());
-            return callback.process(response);
+
+            return response.statusCode();
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
         } catch (InterruptedException e) {
