@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpSession;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.FileEntity;
-import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.*;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
@@ -138,6 +137,19 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
         }
 
         return null;
+    }
+
+    /**
+     * @return Parameter Names
+     */
+    @Override
+    public String[] parameterNames() {
+        ArrayList<String> names = new ArrayList<>();
+        Enumeration<String> parameterNames = this.request.getParameterNames();
+        while (parameterNames.hasMoreElements()) {
+            names.add(parameterNames.nextElement());
+        }
+        return names.toArray(new String[0]);
     }
 
     @Override

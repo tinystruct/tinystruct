@@ -67,4 +67,6 @@ public interface Request<T, I> extends Protocol {
     boolean isSecure();
 
     I stream();
+
+    String[] parameterNames();
 }

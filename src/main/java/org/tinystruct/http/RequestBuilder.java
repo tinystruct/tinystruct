@@ -210,6 +210,14 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
         return null;
     }
 
+    /**
+     * @return Parameter Names
+     */
+    @Override
+    public String[] parameterNames() {
+        return this.params.keySet().toArray(new String[0]);
+    }
+
     @Override
     public Version version() {
         return this.version;
