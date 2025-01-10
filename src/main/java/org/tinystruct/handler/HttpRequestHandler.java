@@ -90,6 +90,13 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             }
         }
 
+        String[] parameterNames = request.parameterNames();
+        for (String parameter: parameterNames) {
+            if(parameter.startsWith("--")) {
+                context.setAttribute(parameter, request.getParameter(parameter));
+            }
+        }
+
         HttpResponseStatus status = HttpResponseStatus.OK;
         ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
         String host = request.headers().get(Header.HOST).toString();

@@ -110,6 +110,13 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             context.setAttribute(HTTP_HOST, getHost(request) + url_prefix);
             context.setAttribute(METHOD, request.getMethod());
 
+            String[] parameterNames = _request.parameterNames();
+            for (String parameter: parameterNames) {
+                if(parameter.startsWith("--")) {
+                    context.setAttribute(parameter, request.getParameter(parameter));
+                }
+            }
+
             String query = _request.getParameter("q");
             if (query != null) {
                 handleRequest(query, context, _response);
