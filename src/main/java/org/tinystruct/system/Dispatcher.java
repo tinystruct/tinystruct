@@ -96,10 +96,10 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
         if (args.length > 0) {
             // Detect the command.
-            String command = null;
+            List<String> commands = new ArrayList<>();
             int start = 0;
             if (!args[0].startsWith("--") && !args[0].startsWith("-")) {
-                command = args[0];
+                commands.add(args[0]);
                 start = 1;
             }
 
@@ -135,7 +135,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                     String[] args0 = arg.substring(2).split("=");
                     System.setProperty(args0[0], args0[1]);
                 } else
-                    command = arg;
+                    commands.add(arg);
             }
 
             boolean remote = false;
@@ -187,13 +187,17 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             }
 
             if (remote) {
-                System.out.print(remoteDispatcher.execute(command, context));
+                for (String command : commands) {
+                    System.out.print(remoteDispatcher.execute(command, context));
+                }
                 System.exit(0);
             }
 
-            if (!disableHelper || command != null) {
-                // Execute a local method.
-                dispatcher.execute(command, context);
+            for (String command : commands) {
+                if (!disableHelper || command != null) {
+                    // Execute a local method.
+                    dispatcher.execute(command, context);
+                }
             }
         } else {
             System.out.println(dispatcher.help());
