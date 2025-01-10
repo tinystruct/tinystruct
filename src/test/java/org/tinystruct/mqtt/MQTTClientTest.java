@@ -12,7 +12,7 @@ class MQTTClientTest {
     @Test
     void publish() {
         subscribe();
-        client.publish("@test@", "Praise to the Lord!");
+        client.publish("@test@", "Praise the Lord!");
     }
 
     @Test

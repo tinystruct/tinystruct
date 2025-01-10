@@ -42,7 +42,7 @@ public class example extends AbstractApplication {
 
     @Action("praise")
     public String praise() {
-        return "Praise to the Lord!";
+        return "Praise the Lord!";
     }
 
     @Action("say")
@@ -99,8 +99,8 @@ Options:
 Run 'bin/dispatcher COMMAND --help' for more information on a command.
 ```
 ```tcsh
-$ bin/dispatcher say/"Praise to the Lord"
-Praise to the Lord
+$ bin/dispatcher say/"Praise the Lord"
+Praise the Lord
 ```
 ```tcsh
 $ bin/dispatcher say --words Hello --import tinystruct.examples.example
