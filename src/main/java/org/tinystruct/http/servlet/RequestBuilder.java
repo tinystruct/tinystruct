@@ -23,7 +23,6 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     private final Cookie[] cookies;
     private final Session memorySession;
     private final boolean secure;
-    private final String body;
     private Version version;
     private Method method;
     private String uri;
@@ -72,19 +71,6 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
             memorySession.setAttribute(s, session.getAttribute(s));
         }
 
-        StringBuilder lines = new StringBuilder();
-
-        String line;
-        while (true) {
-            try {
-                if ((line = this.request.getReader().readLine()) == null) break;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            lines.append(line);
-        }
-        this.body = lines.toString();
-
         this.secure = secure;
     }
 
@@ -120,7 +106,18 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
      */
     @Override
     public String body() {
-        return this.body;
+        StringBuilder lines = new StringBuilder();
+        String line;
+        while (true) {
+            try {
+                if ((line = this.request.getReader().readLine()) == null) break;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            lines.append(line);
+        }
+
+        return lines.toString();
     }
 
     @Override
