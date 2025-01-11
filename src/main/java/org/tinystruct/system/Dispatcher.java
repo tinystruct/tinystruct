@@ -187,16 +187,28 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             }
 
             if (remote) {
-                for (String command : commands) {
-                    System.out.print(remoteDispatcher.execute(command, context));
+                if(!commands.isEmpty()) {
+                    for (String command : commands) {
+                        System.out.print(remoteDispatcher.execute(command, context));
+                    }
+                }
+                else {
+                    System.out.print(remoteDispatcher.execute(null, context));
                 }
                 System.exit(0);
             }
 
-            for (String command : commands) {
-                if (!disableHelper || command != null) {
+            if(!commands.isEmpty()) {
+                for (String command : commands) {
+                    if (!disableHelper || command != null) {
+                        // Execute a local method.
+                        dispatcher.execute(command, context);
+                    }
+                }
+            } else {
+                if (!disableHelper) {
                     // Execute a local method.
-                    dispatcher.execute(command, context);
+                    dispatcher.execute(null, context);
                 }
             }
         } else {
