@@ -37,7 +37,7 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpR
             } else
                 this.response.headers().add(header, value);
         } else {
-            if (!this.response.headers().get(header).equalsIgnoreCase(value.toString())) {
+            if (this.response.headers().get(header) == null || !this.response.headers().get(header).equalsIgnoreCase(value.toString())) {
                 if (value instanceof Integer) {
                     this.response.headers().addInt(header, (Integer) value);
                 } else
