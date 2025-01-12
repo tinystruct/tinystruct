@@ -131,6 +131,12 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
             <version>${kafka.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -175,13 +181,6 @@
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
             <version>${bouncycastle.version}</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>provided</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3 -->
         <dependency>
@@ -234,15 +233,6 @@
     </properties>
     <build>
         <plugins>
-<!--            <plugin>
-                <groupId>org.sonatype.central</groupId>
-                <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.5.0</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <publishingServerId>central</publishingServerId>
-                </configuration>
-            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -341,14 +331,6 @@
                 </executions>
             </plugin>
        </plugins>
-        <!--        <resources>-->
-        <!--            <resource>-->
-        <!--                <directory>src/main/resources</directory>-->
-        <!--                <excludes>-->
-        <!--                    <exclude>**/*.properties</exclude>-->
-        <!--                </excludes>-->
-        <!--            </resource>-->
-        <!--        </resources>-->
     </build>
     <distributionManagement>
         <repository>
