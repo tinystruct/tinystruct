@@ -72,7 +72,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     /**
      * Configuration
      */
-    protected Configuration<String> config;
+    private Configuration<String> config;
 
     /**
      * Output string
@@ -176,28 +176,19 @@ public abstract class AbstractApplication implements Application, Cloneable {
     public void setAction(String path, Action action) {
         // Set the action in the action registry
         this.actionRegistry.set(action);
-
-        // Exclude the command starting with '-'
-        if (path.indexOf("-") != 0)
-            this.createLinkVariable(path);
     }
 
     /**
-     * Sets the action for the given path and associates it with the provided function.
+     * Sets the action for the given path and associates it with the provided action object.
      *
      * @param path     The path for which to set the action.
-     * @param function The function to be associated with the path.
+     * @param function The action object to be associated with the path.
      * @deprecated Use the {@link org.tinystruct.system.annotation.Action} annotation instead.
      */
     @Deprecated
-    @Override
     public void setAction(String path, String function) {
         // Set the action in the action registry
         this.actionRegistry.set(this, path, function);
-
-        // Exclude the command starting with '-'
-        if (path.indexOf("-") != 0)
-            this.createLinkVariable(path);
     }
 
     /**
@@ -360,7 +351,18 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * @param value the value of the shared variable
      */
     public void setSharedVariable(String name, String value) {
-        SharedVariables.getInstance().setVariable(new StringVariable(name, value), true);
+        this.setSharedVariable(name, value, getLocale().toString());
+    }
+
+    /**
+     * Sets a shared variable with a given name, value and locale.
+     *
+     * @param name   the name of the shared variable
+     * @param value  the value of the shared variable
+     * @param locale the value of the locale
+     */
+    public void setSharedVariable(String name, String value, String locale) {
+        SharedVariables.getInstance(locale).setVariable(new StringVariable(name, value), true);
     }
 
     /**
@@ -402,32 +404,21 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     /**
-     * Sets a link with a given name.
-     *
-     * @param linkName the name of the link
-     */
-    public void createLinkVariable(String linkName) {
-        String name = "LINK:" + linkName;
-        this.setSharedVariable(name, linkName);
-    }
-
-    /**
      * Get a link.
      *
-     * @param variable variable
+     * @param path path
      * @return link string
      */
-    public String getLink(String variable) {
-        String linkName = "LINK:" + variable;
-        SharedVariables sharedVariables = SharedVariables.getInstance();
-        if (sharedVariables.getVariable(linkName) != null) {
-            String baseUrl;
-            if (this.getContext() != null && this.getContext().getAttribute("HTTP_HOST") != null)
-                baseUrl = this.getContext().getAttribute("HTTP_HOST").toString();
-            else
-                baseUrl = this.config.get(DEFAULT_BASE_URL);
-            return baseUrl + sharedVariables.getVariable(linkName).getValue();
+    public String getLink(String path) {
+        String baseUrl;
+        if (this.getContext() != null && this.getContext().getAttribute("HTTP_HOST") != null) {
+            baseUrl = this.getContext().getAttribute("HTTP_HOST").toString();
+        } else {
+            baseUrl = this.config.get(DEFAULT_BASE_URL);
         }
+
+        if (actionRegistry.paths().contains(path))
+            return baseUrl + path + "&lang=" + getLocale().toString();
         return "#";
     }
 
@@ -473,6 +464,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      *
      * @return locale
      */
+    @Override
     public Locale getLocale() {
         return this.locale;
     }
@@ -639,7 +631,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     @Override
-    public void destroy(){
+    public void destroy() {
         threadLocalContext.remove();
     }
 }
