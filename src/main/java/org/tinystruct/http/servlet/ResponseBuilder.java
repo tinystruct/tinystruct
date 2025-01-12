@@ -44,7 +44,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
             } else
                 this.response.addHeader(header, value.toString());
         } else {
-            if (!this.response.getHeader(header).equalsIgnoreCase(value.toString())) {
+            if (this.response.getHeader(header) == null || !this.response.getHeader(header).equalsIgnoreCase(value.toString())) {
                 if (value instanceof Integer) {
                     this.response.addIntHeader(header, (Integer) value);
                 } else if (value instanceof Long) {
@@ -97,7 +97,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
 
     @Override
     public void sendRedirect(String url) throws IOException {
-        if(!this.response.isCommitted())
+        if (!this.response.isCommitted())
             this.response.sendRedirect(url);
     }
 }
