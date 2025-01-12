@@ -20,6 +20,7 @@ import org.tinystruct.application.Template;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.cli.CommandLine;
 
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -37,7 +38,7 @@ public interface Application {
     /**
      * Constant for language.
      */
-    String LANGUAGE = "LANGUAGE";
+    String LANGUAGE = "language";
 
     /**
      * Constant for language tag.
@@ -202,13 +203,6 @@ public interface Application {
     String help();
 
     /**
-     * Sets a link with a given path.
-     *
-     * @param path the path of the link
-     */
-    void createLinkVariable(String path);
-
-    /**
      * Set context for the application.
      *
      * @param context A context to be set
@@ -219,4 +213,11 @@ public interface Application {
      * Destroy process.
      */
     void destroy();
+
+    /**
+     * Get current locale setting.
+     *
+     * @return locale
+     */
+    Locale getLocale();
 }
