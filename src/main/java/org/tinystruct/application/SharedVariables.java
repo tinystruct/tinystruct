@@ -54,6 +54,8 @@ public final class SharedVariables {
     private void saveVariable(String variableName, Variable<?> variable, boolean force) {
         // If the variable does not exist in the map, or force is true
         if (force || !variableMap.containsKey(variableName)) {
+            variableMap.put(variableName, variable);
+        } else {
             variableMap.putIfAbsent(variableName, variable);
         }
     }

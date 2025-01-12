@@ -76,6 +76,8 @@ public class Variables {
             } else {
                 variableMap.put(variableName, variable);
             }
+        } else {
+            variableMap.putIfAbsent(variableName, variable);
         }
     }
 
