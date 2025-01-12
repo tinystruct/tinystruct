@@ -11,17 +11,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SharedVariables {
     private final static String PREFIX_SHARED_VARIABLE_NAME = "[%";
     private final static String SUFFIX_SHARED_VARIABLE_NAME = "%]";
-    private final static ConcurrentHashMap<String, Variable<?>> variableMap = new ConcurrentHashMap<>();
-
-    private final static SharedVariables INSTANCE = new SharedVariables();
+    private final static ConcurrentHashMap<String, SharedVariables> group = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Variable<?>> variableMap = new ConcurrentHashMap<>();
 
     /**
      * Get the singleton instance of SharedVariables.
      *
      * @return The singleton instance.
      */
-    public static SharedVariables getInstance() {
-        return INSTANCE;
+    public static SharedVariables getInstance(String group) {
+        return SharedVariables.group.computeIfAbsent(group, k -> new SharedVariables());
     }
 
     /**
