@@ -96,15 +96,13 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                 String name = lang.replace('-', '_');
 
                 if (Language.support(name) && !lang.equalsIgnoreCase(this.settings.get("language"))) {
-                    String[] local = name.split("_");
                     context.setAttribute(LANGUAGE, name);
-                    language = "lang=" + local[0] + "-" + local[1].toUpperCase() + "&";
                 }
             }
 
             String url_prefix = "/";
             if (this.settings.get("default.url_rewrite") != null && !"enabled".equalsIgnoreCase(this.settings.get("default.url_rewrite"))) {
-                url_prefix = "/?" + language + "q=";
+                url_prefix = "/?q=";
             }
 
             context.setAttribute(HTTP_HOST, getHost(request) + url_prefix);
