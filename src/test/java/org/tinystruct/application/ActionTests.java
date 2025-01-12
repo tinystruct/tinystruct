@@ -3,8 +3,6 @@ package org.tinystruct.application;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.tinystruct.AbstractApplication;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
@@ -13,12 +11,13 @@ import org.tinystruct.system.Settings;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ActionTests {
-    private static final Logger log = LoggerFactory.getLogger(ActionTests.class);
+    private static final Logger log = Logger.getLogger(ActionTests.class.getName());
 
     @AfterAll
     static void done() {
@@ -37,7 +36,7 @@ public class ActionTests {
             log.info(a.getName());
         });
 
-        log.info("ApplicationManager.call(\"hi/James\", null) = {}", ApplicationManager.call("hi/James", null));
+        log.info("ApplicationManager.call(\"hi/James\", null) = " + ApplicationManager.call("hi/James", null));
 
         assertEquals(String.valueOf(ApplicationManager.call("hi", null)), "Hi.");
         assertEquals(String.valueOf(ApplicationManager.call("hi/10", null)), "hi, 10");

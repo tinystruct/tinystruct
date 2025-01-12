@@ -4,17 +4,16 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.tinystruct.ApplicationException;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DistributedLockTests {
-    private static final Logger logger = LoggerFactory.getLogger(DistributedLockTests.class);
+    private static final Logger logger = Logger.getLogger(DistributedLockTests.class.getName());
     private static int tickets = 100;
     private static CountDownLatch latch;
     private static long n;
@@ -98,7 +97,7 @@ public class DistributedLockTests {
                     lock.lock();
                     if (tickets > 0)
                         // TODO
-                        logger.info("{} is selling #{} with Lock#{}", Thread.currentThread().getName(), tickets--, lock.id());
+                        logger.info(Thread.currentThread().getName() + " is selling #" + (tickets--) + " with Lock#" + lock.id());
                     latch.countDown();
                 } finally {
                     lock.unlock();
