@@ -572,11 +572,11 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
      */
     @Action(value = "--settings", description = "Print settings", mode = org.tinystruct.application.Action.Mode.CLI)
     public StringBuilder settings() {
-        String[] names = this.config.propertyNames().toArray(new String[0]);
+        String[] names = getConfiguration().propertyNames().toArray(new String[0]);
         Arrays.sort(names);
         StringBuilder settings = new StringBuilder();
         for (String name : names) {
-            settings.append(name).append(":").append(this.config.get(name)).append("\n");
+            settings.append(name).append(":").append(getConfiguration().get(name)).append("\n");
         }
         return settings;
     }
@@ -642,7 +642,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
         scanner.close();
 
-        String driver = this.config.get("driver");
+        String driver = getConfiguration().get("driver");
         if (driver.trim().isEmpty())
             throw new ApplicationRuntimeException("Database Connection Driver has not been set in application.properties!");
 
