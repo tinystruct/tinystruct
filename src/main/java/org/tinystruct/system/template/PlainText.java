@@ -17,6 +17,7 @@ package org.tinystruct.system.template;
 
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.application.ActionRegistry;
 import org.tinystruct.application.Context;
 import org.tinystruct.application.SharedVariables;
 import org.tinystruct.application.Template;
@@ -32,23 +33,26 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import static org.tinystruct.Application.DEFAULT_BASE_URL;
+
 public class PlainText implements Template {
 
     private final Application app;
     private Map<String, Variable<?>> variables;
     private InputStream in;
     private String text;
+    private final ActionRegistry registry = ActionRegistry.getInstance();
 
     public PlainText(Application app, InputStream in) {
         this.app = app;
         this.in = in;
-        this.variables = SharedVariables.getInstance().getVariables();
+        this.variables = SharedVariables.getInstance(this.app.getLocale().toString()).getVariables();
     }
 
     public PlainText(Application app, final String text) {
         this.app = app;
         this.text = text;
-        this.variables = SharedVariables.getInstance().getVariables();
+        this.variables = SharedVariables.getInstance(this.app.getLocale().toString()).getVariables();
     }
 
     public PlainText(Application app, final String text, Map<String, Variable<?>> variables) {
@@ -106,29 +110,43 @@ public class PlainText implements Template {
             if (variable.getType() == DataType.ARRAY) {
                 // TODO
             } else {
-                if (v.getKey().startsWith("[%LINK:")) {
-                    String base_url;
-
-                    if (ctx != null
-                            && ctx.getAttribute("HTTP_HOST") != null)
-                        base_url = ctx.getAttribute("HTTP_HOST").toString();
-                    else
-                        base_url = config.get("default.base_url");
-
-                    value = base_url + variable.getValue();
-                } else
-                    value = variable.getValue().toString();
-
+                value = variable.getValue().toString();
                 value = value.replaceAll("&", "&amp;");
                 this.text = this.text.replace(v.getKey(), value);
             }
         }
 
+        registry.paths().forEach(path -> {
+            final String v = this.generateLink(path);
+            this.text = this.text.replace("[%LINK:" + path + "%]", v);
+        });
+
         return this.text;
     }
 
+    /**
+     * Generate a link.
+     *
+     * @param path path
+     * @return link string
+     */
+    public String generateLink(String path) {
+        String baseUrl;
+        if (app.getContext() != null && app.getContext().getAttribute("HTTP_HOST") != null) {
+            baseUrl = app.getContext().getAttribute("HTTP_HOST").toString();
+        } else {
+            baseUrl = app.getConfiguration().get(DEFAULT_BASE_URL);
+        }
+
+        if (path != null) {
+            return baseUrl + path + "&lang=" + app.getLocale().toString();
+        }
+
+        return "#";
+    }
+
     @Override
-	public void setVariable(Variable<?> arg0) {
+    public void setVariable(Variable<?> arg0) {
         this.variables.put(arg0.getName(), arg0);
     }
 

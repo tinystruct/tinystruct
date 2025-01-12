@@ -17,7 +17,7 @@ package org.tinystruct.system.template;
 
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
-import org.tinystruct.application.Context;
+import org.tinystruct.application.ActionRegistry;
 import org.tinystruct.application.SharedVariables;
 import org.tinystruct.application.Template;
 import org.tinystruct.system.Configuration;
@@ -40,11 +40,10 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
+
+import static org.tinystruct.Application.DEFAULT_BASE_URL;
 
 public class DefaultTemplate implements Template {
 
@@ -56,6 +55,7 @@ public class DefaultTemplate implements Template {
     private Map<String, Variable<?>> variables;
     private InputStream in;
     private String view;
+    private final ActionRegistry registry = ActionRegistry.getInstance();
 
     public DefaultTemplate(Application app, InputStream in) {
         this.app = app;
@@ -64,7 +64,7 @@ public class DefaultTemplate implements Template {
             this.engine.put("self", this.app);
         this.in = in;
 
-        this.variables = SharedVariables.getInstance().getVariables();
+        this.variables = SharedVariables.getInstance(this.app.getLocale().toString()).getVariables();
     }
 
     public DefaultTemplate(Application app, InputStream in, Map<String, Variable<?>> variables) {
@@ -85,7 +85,7 @@ public class DefaultTemplate implements Template {
             this.engine.put("self.toString", "Please don't execute like this.");
         }
 
-        this.variables = SharedVariables.getInstance().getVariables();
+        this.variables = SharedVariables.getInstance(this.app.getLocale().toString()).getVariables();
     }
 
     private static void stripEmptyTextNode(Node node) {
@@ -93,10 +93,10 @@ public class DefaultTemplate implements Template {
         for (int i = 0; i < children.getLength(); ++i) {
             Node child = children.item(i);
             boolean condition = child.getNodeType() == Node.TEXT_NODE && child.getTextContent().trim().isEmpty();
-			if (condition) {
-			    child.getParentNode().removeChild(child);
-			    i--;
-			}
+            if (condition) {
+                child.getParentNode().removeChild(child);
+                i--;
+            }
             stripEmptyTextNode(child);
         }
     }
@@ -119,11 +119,10 @@ public class DefaultTemplate implements Template {
     @Override
     public String parse() throws ApplicationException {
         Configuration<String> config = app.getConfiguration();
-        if(config == null) {
+        if (config == null) {
             throw new ApplicationException("The configuration for the app has not been set.");
         }
         String value;
-
         if (this.view == null) {
             TextFileLoader loader = new TextFileLoader(in);
             loader.setCharset(config.get("charset"));
@@ -218,8 +217,6 @@ public class DefaultTemplate implements Template {
                     .iterator();
 
             Variable<?> variable;
-            Context ctx = app.getContext();
-
             while (iterator.hasNext()) {
                 Entry<String, Variable<?>> v = iterator.next();
                 variable = v.getValue();
@@ -227,23 +224,16 @@ public class DefaultTemplate implements Template {
                 if (variable.getType() == DataType.ARRAY) {
                     // TODO
                 } else {
-                    if (v.getKey().startsWith("[%LINK:")) {
-                        String baseUrl;
-
-                        if (ctx != null
-                                && ctx.getAttribute("HTTP_HOST") != null)
-                            baseUrl = ctx.getAttribute("HTTP_HOST").toString();
-                        else
-                            baseUrl = config.get("default.base_url");
-
-                        value = baseUrl + variable.getValue();
-                    } else
-                        value = variable.getValue().toString();
-
+                    value = variable.getValue().toString();
                     value = value.replace("&", "&amp;");
                     this.view = this.view.replace(v.getKey(), value);
                 }
             }
+
+            registry.paths().forEach(path -> {
+                final String v = this.generateLink(path);
+                this.view = this.view.replace("[%LINK:" + path + "%]", v);
+            });
 
             return this.view;
         }
@@ -251,8 +241,29 @@ public class DefaultTemplate implements Template {
         return this.view;
     }
 
+    /**
+     * Get a link.
+     *
+     * @param path path
+     * @return link string
+     */
+    public String generateLink(String path) {
+        String baseUrl;
+        if (app.getContext() != null && app.getContext().getAttribute("HTTP_HOST") != null) {
+            baseUrl = app.getContext().getAttribute("HTTP_HOST").toString();
+        } else {
+            baseUrl = app.getConfiguration().get(DEFAULT_BASE_URL);
+        }
+
+        if (path != null) {
+            return baseUrl + path + "&lang=" + app.getLocale().toString();
+        }
+
+        return "#";
+    }
+
     @Override
-	public void setVariable(Variable<?> arg0) {
+    public void setVariable(Variable<?> arg0) {
         this.variables.put(arg0.getName(), arg0);
     }
 
