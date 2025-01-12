@@ -8,10 +8,7 @@ import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.util.StringUtilities;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 
@@ -24,6 +21,7 @@ public final class ActionRegistry {
     private static final Map<String, Action> map = new ConcurrentHashMap<>();
     // Map to store URL patterns and their corresponding CommandLine objects
     private static final Map<String, CommandLine> commands = new ConcurrentHashMap<>();
+    private final Set<String> paths = new HashSet<>();
 
     // Private constructor to enforce singleton pattern
     private ActionRegistry() {
@@ -62,6 +60,7 @@ public final class ActionRegistry {
             throw new IllegalArgumentException("Path or methodName cannot be null.");
         }
 
+        paths.add(path);
         initializePatterns(app, path, methodName, mode);
     }
 
@@ -128,6 +127,15 @@ public final class ActionRegistry {
      */
     public Collection<Action> list() {
         return Collections.unmodifiableCollection(map.values());
+    }
+
+    /**
+     * Return all paths has been registered.
+     *
+     * @return paths Set
+     */
+    public Collection<String> paths(){
+        return this.paths;
     }
 
     /**
