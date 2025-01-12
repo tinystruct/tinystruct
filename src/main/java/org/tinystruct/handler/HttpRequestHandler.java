@@ -101,20 +101,18 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
         String host = request.headers().get(Header.HOST).toString();
         try {
-            String lang = request.getParameter("lang"), language = "";
+            String lang = request.getParameter("lang");
             if (lang != null && !lang.trim().isEmpty()) {
                 String name = lang.replace('-', '_');
 
                 if (Language.support(name) && !lang.equalsIgnoreCase(this.configuration.get("language"))) {
-                    String[] local = name.split("_");
                     context.setAttribute(LANGUAGE, name);
-                    language = "lang=" + local[0] + "-" + local[1].toUpperCase() + "&";
                 }
             }
 
             String url_prefix = "/";
             if (this.configuration.get("default.url_rewrite") != null && !"enabled".equalsIgnoreCase(this.configuration.get("default.url_rewrite"))) {
-                url_prefix = "/?" + language + "q=";
+                url_prefix = "/?q=";
             }
 
             String hostName;
