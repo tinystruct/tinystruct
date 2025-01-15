@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.logging.Logger;
 
+import static org.tinystruct.http.Constants.HTTP_HOST;
+
 /**
  * AbstractApplication provides some common methods for a standard {link:Application}.
  *
@@ -125,9 +127,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     public void init(Context context) {
         this.setContext(context);
 
-        String language = context.getAttribute(LANGUAGE) != null
-                ? context.getAttribute(LANGUAGE).toString()
-                : config.get(DEFAULT_LANGUAGE);
+        String language = context.getAttribute(LANGUAGE) != null ? context.getAttribute(LANGUAGE).toString() : config.get(DEFAULT_LANGUAGE);
 
         // Unique key for the instance based on context, language, and name
         String key = context.getId() + language + File.separatorChar + this.getName();
@@ -157,9 +157,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     @Override
     public Application getInstance(Context context) {
-        String language = context.getAttribute(LANGUAGE) != null
-                ? context.getAttribute(LANGUAGE).toString()
-                : config.get(DEFAULT_LANGUAGE);
+        String language = context.getAttribute(LANGUAGE) != null ? context.getAttribute(LANGUAGE).toString() : config.get(DEFAULT_LANGUAGE);
 
         // Retrieve the instance from the container based on context, language, and name
         return CONTAINER.get(context.getId() + language + File.separatorChar + this.getName());
@@ -280,8 +278,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         // Get the action from the registry based on path and method
         Action action = this.actionRegistry.getAction(path, method);
-        if (action == null)
-            throw new ApplicationException("Action " + path + " path does not registered.");
+        if (action == null) throw new ApplicationException("Action " + path + " path does not registered.");
 
         // Execute the action with or without parameters
         if (parameters == null) {
@@ -410,15 +407,31 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * @return link string
      */
     public String getLink(String path) {
+        return this.getLink(path, getLocale());
+    }
+
+    /**
+     * Get a link with language.
+     *
+     * @param path   path
+     * @param locale locale
+     * @return link string
+     */
+    public String getLink(String path, Locale locale) {
         String baseUrl;
-        if (this.getContext() != null && this.getContext().getAttribute("HTTP_HOST") != null) {
-            baseUrl = this.getContext().getAttribute("HTTP_HOST").toString();
+        if (this.getContext() != null && this.getContext().getAttribute(HTTP_HOST) != null) {
+            baseUrl = this.getContext().getAttribute(HTTP_HOST).toString();
         } else {
             baseUrl = this.config.get(DEFAULT_BASE_URL);
         }
 
-        if (actionRegistry.paths().contains(path))
-            return baseUrl + path + "&lang=" + getLocale().toString();
+        if (actionRegistry.paths().contains(path)) {
+            if (locale != null) {
+                return baseUrl + path + "&lang=" + locale.toLanguageTag();
+            } else {
+                return baseUrl + path;
+            }
+        }
         return "#";
     }
 
@@ -521,11 +534,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         if (null != in) {
             try {
-                if (locale != null)
+                if (locale != null) {
                     return this.setTemplate(new DefaultTemplate(this, in, Variables.getInstance(locale.toString()).getVariables()));
-                else
+                } else {
                     return this.setTemplate(new DefaultTemplate(this, in));
-
+                }
             } catch (ApplicationException e) {
                 throw new ApplicationRuntimeException(e.getMessage(), e);
             }
@@ -533,10 +546,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
             if (this.output != null && !this.output.trim().isEmpty()) {
                 try {
                     String output;
-                    if (locale != null)
+                    if (locale != null) {
                         output = this.setTemplate(new PlainText(this, this.output, Variables.getInstance(locale.toString()).getVariables()));
-                    else
+                    } else {
                         output = this.setTemplate(new PlainText(this, this.output));
+                    }
 
                     return output.replace("[%", "").replace("%]", "");
                 } catch (ApplicationException e) {
@@ -597,11 +611,9 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         // Add the commands and options to the StringBuilder
         builder.append(commands).append("\n");
-        if (optionsLength < options.length())
-            builder.append(options);
+        if (optionsLength < options.length()) builder.append(options);
 
-        if (length < examples.length())
-            builder.append(examples);
+        if (length < examples.length()) builder.append(examples);
 
         // Return the help message as a String
         return builder.toString();
