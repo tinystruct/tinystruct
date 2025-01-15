@@ -256,7 +256,7 @@ public class DefaultTemplate implements Template {
         }
 
         if (path != null) {
-            return baseUrl + path + "&lang=" + app.getLocale().toString();
+            return baseUrl + path + "&lang=" + app.getLocale().toLanguageTag();
         }
 
         return "#";

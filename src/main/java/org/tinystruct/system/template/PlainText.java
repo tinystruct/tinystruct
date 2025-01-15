@@ -34,6 +34,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import static org.tinystruct.Application.DEFAULT_BASE_URL;
+import static org.tinystruct.http.Constants.HTTP_HOST;
 
 public class PlainText implements Template {
 
@@ -132,14 +133,14 @@ public class PlainText implements Template {
      */
     public String generateLink(String path) {
         String baseUrl;
-        if (app.getContext() != null && app.getContext().getAttribute("HTTP_HOST") != null) {
-            baseUrl = app.getContext().getAttribute("HTTP_HOST").toString();
+        if (app.getContext() != null && app.getContext().getAttribute(HTTP_HOST) != null) {
+            baseUrl = app.getContext().getAttribute(HTTP_HOST).toString();
         } else {
             baseUrl = app.getConfiguration().get(DEFAULT_BASE_URL);
         }
 
         if (path != null) {
-            return baseUrl + path + "&lang=" + app.getLocale().toString();
+            return baseUrl + path + "&lang=" + app.getLocale().toLanguageTag();
         }
 
         return "#";
