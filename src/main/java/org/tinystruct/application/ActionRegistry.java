@@ -189,7 +189,7 @@ public final class ActionRegistry {
         if (cli != null) {
             commands.put(path, cli);
         }
-        String patternPrefix = "/?" + path;
+        String patternPrefix = "^/?" + path;
         for (Method m : methods) {
             if (null != m) {
                 Class<?>[] types = m.getParameterTypes();
@@ -240,7 +240,7 @@ public final class ActionRegistry {
         } else if (type.isAssignableFrom(Character.TYPE) || type.isAssignableFrom(Character.class)) {
             return ".{1}";
         } else {
-            return ".*";
+            return "[^/]+";
         }
     }
 
