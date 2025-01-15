@@ -559,7 +559,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
             }
         }
 
-        throw new ApplicationRuntimeException("The template " + templatePath + " could not be found and the output has not been set.");
+        throw new ApplicationRuntimeException("The template " + templatePath + " could not be found and the output has not been set. Reminder: If you don't need a template for this application, please setTemplateRequired(false) in init();");
     }
 
     /**
