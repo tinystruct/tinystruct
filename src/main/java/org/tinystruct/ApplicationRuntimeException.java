@@ -38,6 +38,10 @@ public class ApplicationRuntimeException extends RuntimeException {
         super(message, cause);
     }
 
+    public ApplicationRuntimeException(Throwable cause) {
+        super(cause);
+    }
+
     public String getStatus() {
         if (this.status == null) return "1111";
         return this.status;
