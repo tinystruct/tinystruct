@@ -1,12 +1,15 @@
 package org.tinystruct.application;
 
 import org.tinystruct.Application;
+import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.component.Cache;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.util.StringUtilities;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -134,7 +137,7 @@ public final class ActionRegistry {
      *
      * @return paths Set
      */
-    public Collection<String> paths(){
+    public Collection<String> paths() {
         return this.paths;
     }
 
@@ -184,7 +187,7 @@ public final class ActionRegistry {
     private synchronized void initializePatterns(Application app, String path, String methodName, Action.Mode mode) {
         Class<?> clazz = app.getClass();
         Method[] methods = getMethods(methodName, clazz);
-
+        MethodHandles.Lookup lookup = MethodHandles.publicLookup();
         CommandLine cli = app.getCommandLines().get(path);
         if (cli != null) {
             commands.put(path, cli);
@@ -216,8 +219,13 @@ public final class ActionRegistry {
                     expression = patternPrefix + "$";
                 }
 
-                Action action = mode == Action.Mode.All ? new Action(map.size(), app, expression, m) : new Action(map.size(), app, expression, m, mode);
-                map.put(expression, action);
+                try {
+                    MethodHandle handle = lookup.unreflect(m);
+                    Action action = mode == Action.Mode.All ? new Action(map.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes()) : new Action(map.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes(), mode);
+                    map.put(expression, action);
+                } catch (IllegalAccessException e) {
+                    throw new ApplicationRuntimeException(e);
+                }
             }
         }
     }
