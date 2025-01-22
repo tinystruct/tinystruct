@@ -21,8 +21,8 @@ import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -41,7 +41,10 @@ public class Action implements org.tinystruct.application.Method<Object> {
     private final int id;
     private final Pattern pattern;
     private final Application app;
-    private final Method method;
+    private final String method;
+    private final MethodHandle methodHandle;
+    private final Class<?>[] parameterTypes;
+    private final Class<?> returnType;
     private Mode mode;
     private String pathRule;
     private Object[] args = new Object[]{};
@@ -49,41 +52,55 @@ public class Action implements org.tinystruct.application.Method<Object> {
     /**
      * Constructor for Action.
      *
-     * @param id       The unique identifier for the action.
-     * @param app      The associated Application instance.
-     * @param pathRule The URL pattern associated with the action.
-     * @param method   The method to be executed.
+     * @param id             The unique identifier for the action.
+     * @param app            The associated Application instance.
+     * @param pathRule       The URL pattern associated with the action.
+     * @param parameterTypes The method parameter types to be executed.
      */
-    public Action(int id, Application app, String pathRule, Method method) {
-        this.id = id;
+    public Action(int id, Application app, String pathRule, MethodHandle methodHandle, String method, Class<?> returnType, Class<?>[] parameterTypes) {
         this.app = app;
-        this.pathRule = pathRule;
+        this.id = id;
+        this.returnType = returnType;
+        this.parameterTypes = parameterTypes;
         this.method = method;
-        this.pattern = Pattern.compile(pathRule);
+        this.methodHandle = methodHandle;
         this.mode = Mode.All;
+        this.pathRule = pathRule;
+        this.pattern = Pattern.compile(pathRule);
     }
 
     public Action(Action action, Object[] args) {
-        this.id = action.getId();
         this.app = action.app;
-        this.pathRule = action.getPathRule();
-        this.method = action.method;
-        this.pattern = action.getPattern();
-        this.mode = action.getMode();
         this.args = args;
+        this.id = action.getId();
+        this.returnType = action.getReturnType();
+        this.parameterTypes = action.getParameterTypes();
+        this.method = action.getMethod();
+        this.methodHandle = action.getMethodHandle();
+        this.mode = action.getMode();
+        this.pathRule = action.getPathRule();
+        this.pattern = action.getPattern();
+    }
+
+    public MethodHandle getMethodHandle() {
+        return this.methodHandle;
+    }
+
+    public String getMethod() {
+        return this.method;
     }
 
     /**
      * Constructor for Action.
      *
-     * @param id       The unique identifier for the action.
-     * @param app      The associated Application instance.
-     * @param pathRule The URL pattern associated with the action.
-     * @param method   The method to be executed.
-     * @param mode     The method only be executable with the specified mode.
+     * @param id             The unique identifier for the action.
+     * @param app            The associated Application instance.
+     * @param pathRule       The URL pattern associated with the action.
+     * @param parameterTypes The method parameter types to be executed.
+     * @param mode           The method only be executable with the specified mode.
      */
-    public Action(int id, Application app, String pathRule, Method method, Mode mode) {
-        this(id, app, pathRule, method);
+    public Action(int id, Application app, String pathRule, MethodHandle methodHandle, String method, Class<?> returnType, Class<?>[] parameterTypes, Mode mode) {
+        this(id, app, pathRule, methodHandle, method, returnType, parameterTypes);
         this.mode = mode;
     }
 
@@ -141,7 +158,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
      */
     @Override
     public Object execute(Object[] args) throws ApplicationException {
-        if (method != null) {
+        if (methodHandle != null) {
             Application app;
             Context context;
             if ((context = this.app.getContext()) == null || (app = this.app.getInstance(context)) == null) {
@@ -149,38 +166,52 @@ public class Action implements org.tinystruct.application.Method<Object> {
             }
 
             Object[] arguments = new Object[0];
-            Class<?>[] types = method.getParameterTypes();
+            Class<?>[] types = this.getParameterTypes();
             if (types.length > 0) {
                 arguments = getArguments(args, types, context);
             }
 
-            if (method.getReturnType().isAssignableFrom(Void.TYPE)) {
-                try {
-                    method.invoke(app, arguments);
+            try {
+                // Dynamically invoke the method with resolved arguments.
+                Object result = methodHandle.invokeWithArguments(mergeArguments(app, arguments));
 
-                    // start destroy process.
-                    app.destroy();
+                // Handle void return type specifically.
+                if (this.getReturnType().isAssignableFrom(Void.TYPE)) {
+                    app.destroy(); // Trigger destruction logic if applicable.
                     if (!app.isTemplateRequired()) return null;
-                } catch (IllegalAccessException e) {
-                    throw new ApplicationException(method + ":" + e.getMessage(), e.getCause());
-                } catch (InvocationTargetException e) {
-                    throw new ApplicationException(method + ":" + e.getTargetException().getMessage(), e.getCause());
+                    return app.toString();
                 }
 
-                return app.toString();
-            }
-
-            try {
-                return method.invoke(app, arguments);
-            } catch (IllegalAccessException e) {
-                throw new ApplicationException(method + ":" + e.getMessage(), e.getCause());
+                return result;
             } catch (InvocationTargetException e) {
-                throw new ApplicationException(method + ":" + e.getTargetException().getMessage(), e.getCause());
+                // Handle target-specific exceptions.
+                throw new ApplicationException(method + ": " + e.getTargetException().getMessage(), e.getTargetException());
+            } catch (Throwable e) {
+                // General error handling.
+                throw new ApplicationException(method + ": " + e.getMessage(), e);
             }
         }
 
         logger.warning("Unsupported Operation.");
         throw new UnsupportedOperationException();
+    }
+
+    private Class<?> getReturnType() {
+        return this.returnType;
+    }
+
+    private Class<?>[] getParameterTypes() {
+        return this.parameterTypes;
+    }
+
+    /**
+     * Merges the application instance with the arguments array for method invocation.
+     */
+    private Object[] mergeArguments(Application app, Object[] arguments) {
+        Object[] merged = new Object[arguments.length + 1];
+        merged[0] = app; // The first argument is the Application instance.
+        System.arraycopy(arguments, 0, merged, 1, arguments.length);
+        return merged;
     }
 
     /**
@@ -204,8 +235,8 @@ public class Action implements org.tinystruct.application.Method<Object> {
     /**
      * Converts an array of arguments to match the specified target types, using a context for special cases.
      *
-     * @param args   The input arguments to convert.
-     * @param types  The target types for each argument.
+     * @param args    The input arguments to convert.
+     * @param types   The target types for each argument.
      * @param context The context providing additional information for certain types like Request or Response.
      * @return An array of converted arguments matching the target types.
      */
@@ -267,6 +298,9 @@ public class Action implements org.tinystruct.application.Method<Object> {
             else if (targetType.isAssignableFrom(Boolean.TYPE) || targetType.isAssignableFrom(Boolean.class)) {
                 return Boolean.valueOf(_arg);
             }
+            else if (targetType.isEnum()) {
+                return Enum.valueOf((Class<Enum>) targetType, _arg);
+            }
             // Default case: Return the argument as-is.
             else {
                 return arg;
@@ -299,35 +333,42 @@ public class Action implements org.tinystruct.application.Method<Object> {
     /**
      * Parses a string into a primitive or wrapper type object.
      *
-     * @param arg  The string representation of the argument.
+     * @param arg        The string representation of the argument.
      * @param targetType The target type to convert to.
      * @return The converted primitive or wrapper type object.
      */
     private Object parsePrimitive(String arg, Class<?> targetType) {
+        // Switch block for both null handling and type conversion
         switch (targetType.getName()) {
             case "int":
             case "java.lang.Integer":
-                return Integer.valueOf(arg);
+                return (arg == null) ? 0 : Integer.parseInt(arg);
             case "long":
             case "java.lang.Long":
-                return Long.valueOf(arg);
+                return (arg == null) ? 0L : Long.parseLong(arg);
             case "float":
             case "java.lang.Float":
-                return Float.valueOf(arg);
+                return (arg == null) ? 0.0f : Float.parseFloat(arg);
             case "double":
             case "java.lang.Double":
-                return Double.valueOf(arg);
+                return (arg == null) ? 0.0d : Double.parseDouble(arg);
+            case "boolean":
+            case "java.lang.Boolean":
+                return Boolean.parseBoolean(arg);
+            case "char":
+            case "java.lang.Character":
+                return (arg == null || arg.isEmpty()) ? '\u0000' : arg.charAt(0);
             case "short":
             case "java.lang.Short":
-                return Short.valueOf(arg);
+                return (arg == null) ? (short) 0 : Short.parseShort(arg);
             case "byte":
             case "java.lang.Byte":
-                return Byte.valueOf(arg);
+                return (arg == null) ? (byte) 0 : Byte.parseByte(arg);
             default:
-                // Throw an error for unsupported primitive types.
-                throw new IllegalArgumentException("Unsupported primitive type: " + targetType.getName());
+                throw new IllegalArgumentException("Unsupported type: " + targetType.getName());
         }
     }
+
 
     /**
      * Set the arguments for the action.
