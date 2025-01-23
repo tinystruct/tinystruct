@@ -165,15 +165,17 @@ public class Action implements org.tinystruct.application.Method<Object> {
                 app = this.app;
             }
 
-            Object[] arguments = new Object[0];
+            Object[] arguments;
             Class<?>[] types = this.getParameterTypes();
             if (types.length > 0) {
-                arguments = getArguments(args, types, context);
+                arguments = getArguments(app, args, types, context);
+            } else {
+                arguments = new Object[]{app};
             }
 
             try {
                 // Dynamically invoke the method with resolved arguments.
-                Object result = methodHandle.invokeWithArguments(mergeArguments(app, arguments));
+                Object result = methodHandle.invokeWithArguments(arguments);
 
                 // Handle void return type specifically.
                 if (this.getReturnType().isAssignableFrom(Void.TYPE)) {
@@ -205,16 +207,6 @@ public class Action implements org.tinystruct.application.Method<Object> {
     }
 
     /**
-     * Merges the application instance with the arguments array for method invocation.
-     */
-    private Object[] mergeArguments(Application app, Object[] arguments) {
-        Object[] merged = new Object[arguments.length + 1];
-        merged[0] = app; // The first argument is the Application instance.
-        System.arraycopy(arguments, 0, merged, 1, arguments.length);
-        return merged;
-    }
-
-    /**
      * Execute the action without providing specific arguments.
      *
      * @return The result of the execution.
@@ -240,14 +232,13 @@ public class Action implements org.tinystruct.application.Method<Object> {
      * @param context The context providing additional information for certain types like Request or Response.
      * @return An array of converted arguments matching the target types.
      */
-    private Object[] getArguments(Object[] args, Class<?>[] types, Context context) {
-        // If no target types are specified, return the input arguments as-is.
-        if (types.length == 0) {
-            return args;
-        }
+    private Object[] getArguments(Application instance, Object[] args, Class<?>[] types, Context context) {
+        // Initialize the resulting arguments array start with the instance.
+        Object[] arguments = new Object[types.length + 1];
+        arguments[0] = instance;
 
-        // Initialize the resulting arguments array.
-        Object[] arguments = new Object[types.length];
+        // If no target types are specified, return the arguments as-is, which only includes the instance.
+        if (types.length == 0) return arguments;
 
         // Iterate over each target type.
         for (int n = 0; n < types.length; n++) {
@@ -256,15 +247,15 @@ public class Action implements org.tinystruct.application.Method<Object> {
 
             // Convert the argument to the required target type, if provided.
             if (arg != null) {
-                arguments[n] = convertArgument(arg, targetType);
+                arguments[n + 1] = convertArgument(arg, targetType);
             }
 
             // Handle context-specific arguments like Request and Response.
             if (context != null) {
                 if (targetType.isAssignableFrom(Request.class) && context.getAttribute(HTTP_REQUEST) != null) {
-                    arguments[n] = context.getAttribute(HTTP_REQUEST);
+                    arguments[n + 1] = context.getAttribute(HTTP_REQUEST);
                 } else if (targetType.isAssignableFrom(Response.class) && context.getAttribute(HTTP_RESPONSE) != null) {
-                    arguments[n] = context.getAttribute(HTTP_RESPONSE);
+                    arguments[n + 1] = context.getAttribute(HTTP_RESPONSE);
                 }
             }
         }
@@ -297,8 +288,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
             // Handle Boolean type conversion.
             else if (targetType.isAssignableFrom(Boolean.TYPE) || targetType.isAssignableFrom(Boolean.class)) {
                 return Boolean.valueOf(_arg);
-            }
-            else if (targetType.isEnum()) {
+            } else if (targetType.isEnum()) {
                 return Enum.valueOf((Class<Enum>) targetType, _arg);
             }
             // Default case: Return the argument as-is.
