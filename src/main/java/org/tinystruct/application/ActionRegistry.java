@@ -187,7 +187,7 @@ public final class ActionRegistry {
     private synchronized void initializePatterns(Application app, String path, String methodName, Action.Mode mode) {
         Class<?> clazz = app.getClass();
         Method[] methods = getMethods(methodName, clazz);
-        MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
         CommandLine cli = app.getCommandLines().get(path);
         if (cli != null) {
             commands.put(path, cli);
@@ -247,6 +247,8 @@ public final class ActionRegistry {
             return "true|false";
         } else if (type.isAssignableFrom(Character.TYPE) || type.isAssignableFrom(Character.class)) {
             return ".{1}";
+        }  else if (type.isAssignableFrom(String.class)) {
+            return "\\w+";
         } else {
             return "[^/]+";
         }
