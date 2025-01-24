@@ -23,7 +23,7 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ApplicationManager {
-    public static final String VERSION = "1.5.1";
+    public static final String VERSION = "1.5.2";
     private static final ConcurrentHashMap<String, Application> applications = new ConcurrentHashMap<>();
     private static final ActionRegistry ROUTE_REGISTRY_INSTANCE = ActionRegistry.getInstance();
     private static Configuration<String> settings;
