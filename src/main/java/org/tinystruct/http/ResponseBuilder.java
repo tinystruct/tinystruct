@@ -84,6 +84,8 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpR
 
     @Override
     public void sendRedirect(String url) throws IOException {
+        this.response.content().clear();
+
         ResponseHeaders responseHeaders = new ResponseHeaders(this);
         responseHeaders.add(Header.CONTENT_LENGTH.setInt(0));
         responseHeaders.add(Header.LOCATION.set(url));
