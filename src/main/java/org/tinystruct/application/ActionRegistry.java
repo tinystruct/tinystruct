@@ -247,8 +247,6 @@ public final class ActionRegistry {
             return "true|false";
         } else if (type.isAssignableFrom(Character.TYPE) || type.isAssignableFrom(Character.class)) {
             return ".{1}";
-        }  else if (type.isAssignableFrom(String.class)) {
-            return "[\\p{L}\\w]+";
         } else {
             return "[^/]+";
         }
