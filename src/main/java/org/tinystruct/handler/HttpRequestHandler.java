@@ -205,6 +205,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             case TEMPORARY_REDIRECT:
             case MOVED_PERMANENTLY:
             case PERMANENT_REDIRECT:
+                keepAlive = false;
                 break;
             default:
                 responseHeaders.add(Header.CONTENT_LENGTH.setInt(resp.readableBytes()));
