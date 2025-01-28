@@ -51,11 +51,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) {
         // Decide whether to close the connection or not.
         boolean keepAlive = HttpUtil.isKeepAlive(msg);
-        boolean ssl = false;
-        String ssl_enabled;
-        if ((ssl_enabled = this.configuration.get("ssl.enabled")) != null) {
-            ssl = Boolean.parseBoolean(ssl_enabled);
-        }
+        boolean ssl = Boolean.parseBoolean(configuration.getOrDefault("ssl.enabled", "false"));
 
         Request<FullHttpRequest, Object> request = new RequestBuilder(msg, ssl);
         Context context = new ApplicationContext();
@@ -64,30 +60,9 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     }
 
     private void service(final ChannelHandlerContext ctx, final Request<FullHttpRequest, Object> request, final Context context, boolean keepAlive) {
-        Headers headers = request.headers();
-        String auth, token;
-        Object message;
-        if (headers.get(Header.AUTHORIZATION) != null && (auth = headers.get(Header.AUTHORIZATION).toString()) != null && auth.startsWith("Bearer ")) {
-            JWTManager manager = new JWTManager();
-            String secret;
-            if ((secret = configuration.get("jwt.secret")) != null) {
-                manager.withSecret(secret);
-            }
-
-            token = auth.substring(7);
-            try {
-                Jws<Claims> claims = manager.parseToken(token);
-                context.setAttribute("CLAIMS", claims);
-            } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException |
-                     IllegalArgumentException e) {
-                ByteBuf resp = copiedBuffer(e.getMessage(), CharsetUtil.UTF_8);
-                FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.UNAUTHORIZED, resp);
-                response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html");
-                response.headers().set(HttpHeaderNames.CONTENT_LENGTH, resp.readableBytes());
-                ctx.write(response);
-                ctx.close();
-                return;
-            }
+        if (!authenticateRequest(request, context)) {
+            sendErrorResponse(ctx, HttpResponseStatus.UNAUTHORIZED, "Invalid or expired token.");
+            return;
         }
 
         String[] parameterNames = request.parameterNames();
@@ -100,6 +75,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         HttpResponseStatus status = HttpResponseStatus.OK;
         ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
         String host = request.headers().get(Header.HOST).toString();
+        Object message;
         try {
             String lang = request.getParameter("lang");
             if (lang != null && !lang.trim().isEmpty()) {
@@ -124,12 +100,9 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                 hostName = host;
             }
 
-            String ssl_enabled, http_protocol = "http://";
-            boolean ssl;
-            if ((ssl_enabled = this.configuration.get("ssl.enabled")) != null) {
-                ssl = Boolean.parseBoolean(ssl_enabled);
-
-                if (ssl) http_protocol = "https://";
+            String http_protocol = "http://";
+            if (request.isSecure()) {
+                http_protocol = "https://";
             }
 
             context.setAttribute(HTTP_HOST, http_protocol + hostName + url_prefix);
@@ -218,6 +191,36 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         if (!keepAlive) {
             future.addListener(ChannelFutureListener.CLOSE);
         }
+    }
+
+    private boolean authenticateRequest(Request<FullHttpRequest, Object> request, Context context) {
+        Object authorization;
+        if ((authorization = request.headers().get(Header.AUTHORIZATION)) != null) {
+            String authHeader = authorization.toString();
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                JWTManager jwtManager = new JWTManager();
+                jwtManager.withSecret(configuration.get("jwt.secret"));
+
+                try {
+                    Jws<Claims> claims = jwtManager.parseToken(token);
+                    context.setAttribute("CLAIMS", claims);
+                    return true;
+                } catch (JwtException e) {
+                    // Log authentication failure
+                    return false;
+                }
+            }
+        }
+        return true; // Allow requests without a token
+    }
+
+    private void sendErrorResponse(ChannelHandlerContext ctx, HttpResponseStatus status, String message) {
+        ByteBuf content = copiedBuffer(message, CharsetUtil.UTF_8);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, content);
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
+        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override
