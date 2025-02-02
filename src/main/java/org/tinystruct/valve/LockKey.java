@@ -29,7 +29,7 @@ public class LockKey {
                 try {
                     fixedBytes[i] = (byte) (alphabetNumbers[SecureRandom.getInstance("NativePRNG").nextInt(alphabetNumbers.length - 1)]);
                 } catch (NoSuchAlgorithmException e) {
-                    throw new ApplicationRuntimeException(e.getMessage());
+                    throw new ApplicationRuntimeException(e);
                 }
             }
         }

@@ -120,7 +120,7 @@ public class Settings implements Configuration<String> {
                 try (FileOutputStream outputStream = new FileOutputStream(path); OutputStream out = new BufferedOutputStream(outputStream)) {
                     properties.store(out, "#tinystruct configuration");
                 } catch (FileNotFoundException e) {
-                    throw new ApplicationRuntimeException("File not found:" + e.getMessage());
+                    throw new ApplicationRuntimeException("File not found:" + e.getMessage(), e);
                 } catch (IOException e) {
                     throw new ApplicationRuntimeException("Error saving properties: " + e.getMessage(), e);
                 }

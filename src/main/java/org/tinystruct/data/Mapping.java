@@ -55,7 +55,7 @@ public class Mapping {
                         }
                         manager.set(className, document);
                     } catch (IOException e) {
-                        throw new ApplicationRuntimeException("Failed to load mapping file: " + mapFile + ", Error: " + e.getMessage());
+                        throw new ApplicationRuntimeException("Failed to load mapping file: " + mapFile + ", Error: " + e.getMessage(), e);
                     }
                 } else
                     document = manager.get(className);
