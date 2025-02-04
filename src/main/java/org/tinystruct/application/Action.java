@@ -45,63 +45,111 @@ public class Action implements org.tinystruct.application.Method<Object> {
     private final MethodHandle methodHandle;
     private final Class<?>[] parameterTypes;
     private final Class<?> returnType;
+    private final int priority;
     private Mode mode;
     private String pathRule;
     private Object[] args = new Object[]{};
 
     /**
-     * Constructor for Action.
+     * Constructs a new Action instance with the specified configuration parameters.
      *
-     * @param id             The unique identifier for the action.
-     * @param app            The associated Application instance.
-     * @param pathRule       The URL pattern associated with the action.
-     * @param parameterTypes The method parameter types to be executed.
+     * <p>This constructor creates an Action that is fully defined by its unique identifier, associated
+     * Application instance, URL pattern (expressed as a regular expression), method handle, method name,
+     * return type, parameter types, and a priority level. The priority is used to determine the selection
+     * order when multiple actions match a given URL.</p>
+     *
+     * @param id             A unique identifier for the action.
+     * @param app            The Application instance associated with this action.
+     * @param pathRule       The URL pattern (as a regular expression) that the action responds to.
+     * @param methodHandle   A MethodHandle providing reflective access to the underlying method.
+     * @param method         The name of the method to be executed when this action is invoked.
+     * @param returnType     The return type of the underlying method.
+     * @param parameterTypes An array of the parameter types expected by the method (excluding any Request/Response parameters).
+     * @param priority       The priority of the action, determining its selection order when multiple actions match.
      */
-    public Action(int id, Application app, String pathRule, MethodHandle methodHandle, String method, Class<?> returnType, Class<?>[] parameterTypes) {
+    public Action(int id, Application app, String pathRule, MethodHandle methodHandle, String method, Class<?> returnType, Class<?>[] parameterTypes, int priority) {
         this.app = app;
         this.id = id;
         this.returnType = returnType;
-        this.parameterTypes = parameterTypes;
         this.method = method;
         this.methodHandle = methodHandle;
-        this.mode = Mode.All;
+        this.parameterTypes = parameterTypes;
         this.pathRule = pathRule;
         this.pattern = Pattern.compile(pathRule);
+        this.priority = priority;
+        this.mode = Mode.All;
     }
 
+    /**
+     * Creates a new Action instance based on an existing Action, applying the resolved runtime arguments.
+     *
+     * <p>This copy constructor is typically used during request processing. It takes an existing Action
+     * (which contains all the static configuration such as the URL pattern, method handle, etc.) and combines
+     * it with the actual arguments (e.g., values extracted from the URL) to produce an instance that is ready
+     * for invocation.</p>
+     *
+     * @param action The existing Action instance to copy.
+     * @param args   An array of arguments extracted from the URL or request to be passed to the method.
+     */
     public Action(Action action, Object[] args) {
         this.app = action.app;
         this.args = args;
         this.id = action.getId();
         this.returnType = action.getReturnType();
-        this.parameterTypes = action.getParameterTypes();
         this.method = action.getMethod();
         this.methodHandle = action.getMethodHandle();
         this.mode = action.getMode();
+        this.parameterTypes = action.getParameterTypes();
         this.pathRule = action.getPathRule();
         this.pattern = action.getPattern();
+        this.priority = action.getPriority();
     }
 
+    /**
+     * Constructs a new Action instance with the specified configuration parameters, including a custom mode.
+     *
+     * <p>This constructor extends the basic Action configuration by allowing a specific execution {@code mode} to be set.
+     * It leverages the primary constructor to initialize all common properties, and then overrides the default mode
+     * with the provided value.</p>
+     *
+     * @param id             A unique identifier for the action.
+     * @param app            The Application instance associated with this action.
+     * @param pathRule       The URL pattern (expressed as a regular expression) that this action will respond to.
+     * @param methodHandle   A MethodHandle that provides reflective access to the underlying method.
+     * @param method         The name of the method to be executed when this action is invoked.
+     * @param returnType     The return type of the underlying method.
+     * @param parameterTypes An array representing the types of parameters expected by the method (excluding any Request/Response parameters).
+     * @param priority       The priority of the action, used to determine the selection order when multiple actions match a given URL.
+     * @param mode           The execution mode for the action, allowing for custom handling (e.g., distinguishing between GET, POST, etc.).
+     */
+    public Action(int id, Application app, String pathRule, MethodHandle methodHandle, String method, Class<?> returnType, Class<?>[] parameterTypes, int priority, Mode mode) {
+        this(id, app, pathRule, methodHandle, method, returnType, parameterTypes, priority);
+        this.mode = mode;
+    }
+
+    /**
+     * return the priority of the action.
+     *
+     * @return priority
+     */
+    public int getPriority() {
+        return this.priority;
+    }
+
+    /**
+     * Return the MethodHandle that provides reflective access to the underlying method.
+     * @return methodHandle
+     */
     public MethodHandle getMethodHandle() {
         return this.methodHandle;
     }
 
+    /**
+     * Return the name of the method to be executed when this action is invoked.
+     * @return method
+     */
     public String getMethod() {
         return this.method;
-    }
-
-    /**
-     * Constructor for Action.
-     *
-     * @param id             The unique identifier for the action.
-     * @param app            The associated Application instance.
-     * @param pathRule       The URL pattern associated with the action.
-     * @param parameterTypes The method parameter types to be executed.
-     * @param mode           The method only be executable with the specified mode.
-     */
-    public Action(int id, Application app, String pathRule, MethodHandle methodHandle, String method, Class<?> returnType, Class<?>[] parameterTypes, Mode mode) {
-        this(id, app, pathRule, methodHandle, method, returnType, parameterTypes);
-        this.mode = mode;
     }
 
     /**
