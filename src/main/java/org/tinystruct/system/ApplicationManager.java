@@ -176,7 +176,7 @@ public final class ApplicationManager {
             action = (Action) item;
 
             if (action.getApplicationName().equalsIgnoreCase(application.getName())) {
-                return actionRegistry.remove(action.getPathRule());
+                return actionRegistry.remove(action);
             }
         }
 
