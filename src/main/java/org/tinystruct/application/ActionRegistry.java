@@ -21,7 +21,7 @@ import java.util.regex.Matcher;
 public final class ActionRegistry {
 
     // Map to store URL patterns and their corresponding Action objects
-    private static final Map<String, Action> map = new ConcurrentHashMap<>();
+    private static final List<Action> actions = new ArrayList<>();
     // Map to store URL patterns and their corresponding CommandLine objects
     private static final Map<String, CommandLine> commands = new ConcurrentHashMap<>();
     private final Set<String> paths = new HashSet<>();
@@ -89,7 +89,7 @@ public final class ActionRegistry {
             throw new IllegalArgumentException("Action or pathRule cannot be null.");
         }
 
-        map.put(action.getPathRule(), action);
+        actions.add(action);
     }
 
     /**
@@ -99,28 +99,34 @@ public final class ActionRegistry {
      * @return The corresponding Action object or null if not found
      */
     public Action get(final String path) {
-        for (Action action : map.values()) {
+        Action bestMatch = null;
+        Object[] args = new Object[]{};
+        int bestPriority = Integer.MIN_VALUE; // assume lower numbers indicate higher priority
+        for (Action action : actions) {
             Matcher matcher = action.getPattern().matcher(path);
-            if (matcher.find()) {
-                Object[] args = new Object[matcher.groupCount()];
-                for (int i = 0; i < matcher.groupCount(); i++) {
-                    args[i] = matcher.group(i + 1);
+            if (matcher.matches()) {
+                if (action.getPriority() > bestPriority) {
+                    args = new Object[matcher.groupCount()];
+                    for (int i = 0; i < matcher.groupCount(); i++) {
+                        args[i] = matcher.group(i + 1);
+                    }
+                    bestMatch = action;
+                    bestPriority = action.getPriority();
                 }
-
-                return new Action(action, args);
             }
         }
-        return null;
+
+        return bestMatch != null ? new Action(bestMatch, args) : null;
     }
 
     /**
      * Remove an Action object for a given URL pattern.
      *
-     * @param path The URL pattern
+     * @param action The URL pattern
      * @return True if the Action was removed, false otherwise
      */
-    public boolean remove(final String path) {
-        return map.remove(path) != null;
+    public boolean remove(final Action action) {
+        return actions.remove(action);
     }
 
     /**
@@ -129,7 +135,7 @@ public final class ActionRegistry {
      * @return Collection of Action objects
      */
     public Collection<Action> list() {
-        return Collections.unmodifiableCollection(map.values());
+        return actions;
     }
 
     /**
@@ -197,13 +203,16 @@ public final class ActionRegistry {
             if (null != m) {
                 Class<?>[] types = m.getParameterTypes();
                 String expression;
+                int priority = 0;
                 if (types.length > 0) {
                     StringBuilder patterns = new StringBuilder();
-
                     for (Class<?> type : types) {
                         if (type.isAssignableFrom(Request.class) || type.isAssignableFrom(Response.class)) continue;
-                        String pattern = "(" + this.getPatternForType(type) + ")";
+                        String[] patternWithPriority = this.getPatternForType(type).split(":");
+                        String patternForType = patternWithPriority[0];
+                        priority += Integer.parseInt(patternWithPriority[1]);
 
+                        String pattern = "(" + patternForType + ")";
                         if (patterns.length() != 0) {
                             patterns.append("/");
                         }
@@ -221,8 +230,8 @@ public final class ActionRegistry {
 
                 try {
                     MethodHandle handle = lookup.unreflect(m);
-                    Action action = mode == Action.Mode.All ? new Action(map.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes()) : new Action(map.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes(), mode);
-                    map.put(expression, action);
+                    Action action = mode == Action.Mode.All ? new Action(actions.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes(), priority) : new Action(actions.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes(), priority, mode);
+                    actions.add(action);
                 } catch (IllegalAccessException e) {
                     throw new ApplicationRuntimeException(e);
                 }
@@ -232,23 +241,23 @@ public final class ActionRegistry {
 
     private String getPatternForType(Class<?> type) {
         if (type.isAssignableFrom(Integer.TYPE) || type.isAssignableFrom(Integer.class)) {
-            return "-?\\d+";
+            return "-?\\d+:2";
         } else if (type.isAssignableFrom(Long.TYPE) || type.isAssignableFrom(Long.class)) {
-            return "-?\\d+";
+            return "-?\\d+:2";
         } else if (type.isAssignableFrom(Float.TYPE) || type.isAssignableFrom(Float.class)) {
-            return "-?\\d+(\\.\\d+)?";
+            return "-?\\d+(\\.\\d+)?:3";
         } else if (type.isAssignableFrom(Double.TYPE) || type.isAssignableFrom(Double.class)) {
-            return "-?\\d+(\\.\\d+)?";
+            return "-?\\d+(\\.\\d+)?:3";
         } else if (type.isAssignableFrom(Short.TYPE) || type.isAssignableFrom(Short.class)) {
-            return "-?\\d+";
+            return "-?\\d+:2";
         } else if (type.isAssignableFrom(Byte.TYPE) || type.isAssignableFrom(Byte.class)) {
-            return "\\d+";
+            return "\\d+:2";
         } else if (type.isAssignableFrom(Boolean.TYPE) || type.isAssignableFrom(Boolean.class)) {
-            return "true|false";
+            return "true|false:3";
         } else if (type.isAssignableFrom(Character.TYPE) || type.isAssignableFrom(Character.class)) {
-            return ".{1}";
+            return ".{1}:1";
         } else {
-            return "[^/]+";
+            return "[^/]+:0";
         }
     }
 
