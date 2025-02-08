@@ -14,14 +14,15 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 
 /**
  * The ActionRegistry class is responsible for managing and mapping actions/methods to their corresponding URL patterns.
  */
 public final class ActionRegistry {
 
-    // Map to store URL patterns and their corresponding Action objects
-    private static final List<Action> actions = new ArrayList<>();
+    // Map to store pattern groups
+    private static final Map<String, List<Action>> patternGroups = new ConcurrentHashMap<>();
     // Map to store URL patterns and their corresponding CommandLine objects
     private static final Map<String, CommandLine> commands = new ConcurrentHashMap<>();
     private final Set<String> paths = new HashSet<>();
@@ -89,7 +90,10 @@ public final class ActionRegistry {
             throw new IllegalArgumentException("Action or pathRule cannot be null.");
         }
 
+        String group = extractGroupFromPattern(action.getPathRule());
+        List<Action> actions = patternGroups.getOrDefault(group, new ArrayList<>());
         actions.add(action);
+        patternGroups.put(group, actions);
     }
 
     /**
@@ -102,6 +106,8 @@ public final class ActionRegistry {
         Action bestMatch = null;
         Object[] args = new Object[]{};
         int bestPriority = Integer.MIN_VALUE; // assume lower numbers indicate higher priority
+        String group = extractGroupFromPath(path);
+        List<Action> actions = patternGroups.getOrDefault(group, new ArrayList<>());
         for (Action action : actions) {
             Matcher matcher = action.getPattern().matcher(path);
             if (matcher.matches()) {
@@ -126,7 +132,11 @@ public final class ActionRegistry {
      * @return True if the Action was removed, false otherwise
      */
     public boolean remove(final Action action) {
-        return actions.remove(action);
+        String group = extractGroupFromPattern(action.getPathRule());
+        List<Action> actions = patternGroups.get(group);
+        if (actions != null && !actions.isEmpty())
+            return actions.remove(action);
+        return false;
     }
 
     /**
@@ -135,7 +145,10 @@ public final class ActionRegistry {
      * @return Collection of Action objects
      */
     public Collection<Action> list() {
-        return actions;
+        return patternGroups.values()
+                .stream()
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -198,11 +211,13 @@ public final class ActionRegistry {
         if (cli != null) {
             commands.put(path, cli);
         }
+        String group = extractGroupFromPath(path);
         String patternPrefix = "^/?" + path;
         for (Method m : methods) {
             if (null != m) {
                 Class<?>[] types = m.getParameterTypes();
                 String expression;
+
                 int priority = 0;
                 if (types.length > 0) {
                     StringBuilder patterns = new StringBuilder();
@@ -230,8 +245,11 @@ public final class ActionRegistry {
 
                 try {
                     MethodHandle handle = lookup.unreflect(m);
+                    List<Action> actions = patternGroups.getOrDefault(group, new ArrayList<>());
                     Action action = mode == Action.Mode.All ? new Action(actions.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes(), priority) : new Action(actions.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes(), priority, mode);
                     actions.add(action);
+
+                    patternGroups.put(group, actions);
                 } catch (IllegalAccessException e) {
                     throw new ApplicationRuntimeException(e);
                 }
@@ -259,6 +277,36 @@ public final class ActionRegistry {
         } else {
             return "[^/]+:0";
         }
+    }
+
+    /**
+     * Extracts the first static segment from a pattern.
+     * Example: "^/?download/([^/]+)/([^/]+)$" -> "download"
+     */
+    private String extractGroupFromPattern(String pattern) {
+        // Remove the start and end anchors (^ and $) and optional leading slash
+        String cleanedPattern = pattern.replaceAll("^\\^/\\?|\\$$", "");
+        // Split into segments
+        String[] segments = cleanedPattern.split("/");
+        // Return the first segment if it's static (not a regex group)
+        if (segments.length > 0 && !segments[0].startsWith("(") && !segments[0].isEmpty()) {
+            return segments[0];
+        }
+        // If no static segment is found, use a default group name
+        return "other";
+    }
+
+    /**
+     * Extracts the first segment from a path.
+     * Example: "/download/123/abc" -> "download"
+     */
+    private String extractGroupFromPath(String path) {
+        if (path == null || path.isEmpty()) {
+            return "other";
+        }
+        // Remove leading/trailing slashes and split
+        String[] parts = path.replaceAll("^/|/$", "").split("/");
+        return parts.length > 0 ? parts[0] : "other";
     }
 
     /**
