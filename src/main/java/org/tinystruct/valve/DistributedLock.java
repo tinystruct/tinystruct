@@ -6,6 +6,7 @@ import org.tinystruct.ApplicationRuntimeException;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -30,8 +31,9 @@ import java.util.logging.Logger;
 public class DistributedLock implements Lock {
     private final String id;
     private final Watcher watcher;
+    private volatile Thread owner;
 
-    private static final Logger logger = Logger.getLogger(Watcher.class.getName());
+    private static final Logger logger = Logger.getLogger(DistributedLock.class.getName());
 
     /**
      * Constructor to create a new DistributedLock instance with a random UUID as the lock ID.
@@ -64,10 +66,18 @@ public class DistributedLock implements Lock {
      */
     @Override
     public void lock() {
-        // If try lock successfully, then the lock does exist, then don't need to lock.
-        // And continue to work on the next steps.
-        while (!tryLock()) {
-            logger.info("Waiting for lock to be released...");
+        Thread current = Thread.currentThread();
+        // Check for reentrant lock
+        if (current == owner) {
+            return;
+        }
+
+        try {
+            while (!tryLock(1000, TimeUnit.MILLISECONDS)) {
+                logger.log(Level.FINE, "Waiting for lock to be released...");
+            }
+        } catch (ApplicationException e) {
+            throw new ApplicationRuntimeException("Failed to acquire lock", e);
         }
     }
 
@@ -94,23 +104,32 @@ public class DistributedLock implements Lock {
      */
     @Override
     public boolean tryLock(long timeout, TimeUnit unit) throws ApplicationException {
-        // If the lock is existing, then wait for it to be released.
-        if (watcher.watch(this)) {
-            try {
-                if (timeout > 0)
-                    watcher.waitFor(this.id, timeout, unit);
-                else
-                    watcher.waitFor(this.id);
-            } catch (InterruptedException e) {
-                logger.severe("Error while waiting for lock: " + e.getMessage());
-                throw new ApplicationException(e.getMessage(), e.getCause());
-            }
-        } else {
-            // Register the lock.
-            this.watcher.register(this);
+        Thread current = Thread.currentThread();
+        // Check for reentrant lock
+        if (current == owner) {
+            return true;
         }
 
-        // If you get this step, that means the lock has not been registered, and the thread can work on the next steps.
+        synchronized (this) {
+            // If the lock is existing, then wait for it to be released.
+            if (watcher.watch(this)) {
+                try {
+                    if (timeout > 0) {
+                        watcher.waitFor(this.id, timeout, unit);
+                    } else {
+                        watcher.waitFor(this.id);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Preserve interrupt status
+                    logger.severe("Error while waiting for lock: " + e.getMessage());
+                    throw new ApplicationException(e.getMessage(), e.getCause());
+                }
+            }
+
+            // Register the lock and set owner
+            this.watcher.register(this);
+            this.owner = current;
+        }
         return true;
     }
 
@@ -119,12 +138,20 @@ public class DistributedLock implements Lock {
      */
     @Override
     public void unlock() {
+        Thread current = Thread.currentThread();
+        if (owner == null) return;
+        if (current != owner) {
+            throw new IllegalMonitorStateException(
+                    "Thread " + current.getName() +
+                            " attempting to unlock while not holding the lock"
+            );
+        }
+
         try {
-            if (watcher.watch(this)) {
-                watcher.unregister(this);
-            }
+            watcher.unregister(this);
+            owner = null;
         } catch (ApplicationException e) {
-            logger.severe("Error while unlocking: " + e.getMessage());
+            logger.severe("Error while unlocking: " + e);
             throw new ApplicationRuntimeException(e.getMessage(), e.getCause());
         }
     }
