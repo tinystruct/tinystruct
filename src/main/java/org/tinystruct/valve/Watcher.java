@@ -412,7 +412,7 @@ public final class Watcher implements Runnable {
         public void onCreate(String lockId) {
             if (lockId.equalsIgnoreCase(lock.id())) {
                 latch = new CountDownLatch(1);
-                logger.log(Level.INFO, "Created " + lockId);
+                logger.log(Level.FINE, "Created " + lockId);
             }
         }
 
@@ -424,7 +424,7 @@ public final class Watcher implements Runnable {
         @Override
         public void onDelete(String lockId) {
             if (lockId.equalsIgnoreCase(lock.id())) {
-                logger.log(Level.INFO, "Deleted " + lockId);
+                logger.log(Level.FINE, "Deleted " + lockId);
                 latch.countDown();
             }
         }
