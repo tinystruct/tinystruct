@@ -120,7 +120,7 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
 
     private ExecutorService getService() {
         return this.service != null ? this.service
-                : (this.service = new ThreadPoolExecutor(0, 10, TIMEOUT, TimeUnit.MILLISECONDS, new SynchronousQueue<Runnable>()));
+                : (this.service = new ThreadPoolExecutor(10, 20, TIMEOUT, TimeUnit.MILLISECONDS, new SynchronousQueue<>(true), new ThreadPoolExecutor.CallerRunsPolicy()));
     }
 
     /**
