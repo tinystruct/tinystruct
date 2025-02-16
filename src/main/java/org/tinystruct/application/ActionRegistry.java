@@ -222,7 +222,7 @@ public final class ActionRegistry {
                 if (types.length > 0) {
                     StringBuilder patterns = new StringBuilder();
                     for (Class<?> type : types) {
-                        if (type.isAssignableFrom(Request.class) || type.isAssignableFrom(Response.class)) continue;
+                        if (Request.class.isAssignableFrom(type) || Response.class.isAssignableFrom(type)) continue;
                         String[] patternWithPriority = this.getPatternForType(type).split(":");
                         String patternForType = patternWithPriority[0];
                         priority += Integer.parseInt(patternWithPriority[1]);
@@ -258,22 +258,24 @@ public final class ActionRegistry {
     }
 
     private String getPatternForType(Class<?> type) {
-        if (type.isAssignableFrom(Integer.TYPE) || type.isAssignableFrom(Integer.class)) {
+        if (Integer.TYPE.isAssignableFrom(type) || Integer.class.isAssignableFrom(type)) {
             return "-?\\d+:2";
-        } else if (type.isAssignableFrom(Long.TYPE) || type.isAssignableFrom(Long.class)) {
+        } else if (Long.TYPE.isAssignableFrom(type) || Long.class.isAssignableFrom(type)) {
             return "-?\\d+:2";
-        } else if (type.isAssignableFrom(Float.TYPE) || type.isAssignableFrom(Float.class)) {
+        } else if (Float.TYPE.isAssignableFrom(type) || Float.class.isAssignableFrom(type)) {
             return "-?\\d+(\\.\\d+)?:3";
-        } else if (type.isAssignableFrom(Double.TYPE) || type.isAssignableFrom(Double.class)) {
+        } else if (Double.TYPE.isAssignableFrom(type) || Double.class.isAssignableFrom(type)) {
             return "-?\\d+(\\.\\d+)?:3";
-        } else if (type.isAssignableFrom(Short.TYPE) || type.isAssignableFrom(Short.class)) {
+        } else if (Short.TYPE.isAssignableFrom(type) || Short.class.isAssignableFrom(type)) {
             return "-?\\d+:2";
-        } else if (type.isAssignableFrom(Byte.TYPE) || type.isAssignableFrom(Byte.class)) {
+        } else if (Byte.TYPE.isAssignableFrom(type) || Byte.class.isAssignableFrom(type)) {
             return "\\d+:2";
-        } else if (type.isAssignableFrom(Boolean.TYPE) || type.isAssignableFrom(Boolean.class)) {
+        } else if (Boolean.TYPE.isAssignableFrom(type) || Boolean.class.isAssignableFrom(type)) {
             return "true|false:3";
-        } else if (type.isAssignableFrom(Character.TYPE) || type.isAssignableFrom(Character.class)) {
+        } else if (Character.TYPE.isAssignableFrom(type) || Character.class.isAssignableFrom(type)) {
             return ".{1}:1";
+        }  else if (String.class.isAssignableFrom(type)) {
+            return "[^/]+:1";
         } else {
             return "[^/]+:0";
         }

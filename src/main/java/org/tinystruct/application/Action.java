@@ -326,7 +326,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
         String _arg = String.valueOf(arg); // Convert argument to string for parsing.
         try {
             // Handle Date type conversion.
-            if (targetType.isAssignableFrom(Date.class)) {
+            if (Date.class.isAssignableFrom(targetType)) {
                 return parseDate(_arg);
             }
             // Handle primitive and wrapper number types.
@@ -334,7 +334,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
                 return parsePrimitive(_arg, targetType);
             }
             // Handle Boolean type conversion.
-            else if (targetType.isAssignableFrom(Boolean.TYPE) || targetType.isAssignableFrom(Boolean.class)) {
+            else if (Boolean.TYPE.isAssignableFrom(targetType) || Boolean.class.isAssignableFrom(targetType)) {
                 return Boolean.valueOf(_arg);
             } else if (targetType.isEnum()) {
                 return Enum.valueOf((Class<Enum>) targetType, _arg);
