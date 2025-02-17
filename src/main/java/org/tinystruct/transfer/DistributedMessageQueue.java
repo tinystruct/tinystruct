@@ -8,8 +8,10 @@ import org.tinystruct.system.annotation.Action;
 import org.tinystruct.valve.Lock;
 import org.tinystruct.valve.Watcher;
 
-import java.util.*;
-import java.util.Map.Entry;
+import java.util.ArrayDeque;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -89,20 +91,20 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @return builder
      */
     public final String save(final Object groupId, final Builder builder, Runnable listener) {
-        if ((this.groups.get(groupId.toString())) == null) {
-            this.groups.put(groupId.toString(), new ArrayBlockingQueue<Builder>(DEFAULT_MESSAGE_POOL_SIZE));
-        }
+        String group = groupId.toString();
+        this.groups.computeIfAbsent(group, k -> new ArrayBlockingQueue<Builder>(DEFAULT_MESSAGE_POOL_SIZE));
 
         try {
-            this.groups.get(groupId.toString()).put(builder);
+            this.groups.get(group).put(builder);
 
             final BlockingQueue<Builder> messages = this.groups.get(groupId.toString());
             this.getService().execute(new Runnable() {
                 @Override
                 public void run() {
                     Builder message;
-                    if ((message = messages.poll()) == null)
+                    if ((message = messages.poll()) == null) {
                         return;
+                    }
                     copy(groupId, message);
 
                     if (listener != null)
@@ -112,10 +114,10 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
 
             return builder.toString();
         } catch (InterruptedException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+            Thread.currentThread().interrupt();
+            logger.log(Level.SEVERE, "Message save interrupted", e);
+            return "{}";
         }
-
-        return "{}";
     }
 
     private ExecutorService getService() {
@@ -138,11 +140,13 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
         // If there is a new message, then return it directly
         if ((message = messages.poll()) != null)
             return message.toString();
+
         long startTime = System.currentTimeMillis();
-        // If waited less than 10 seconds, then continue to wait
+        // Wait for new messages within the timeout period
         try {
             lock.tryLock(TIMEOUT, TimeUnit.MILLISECONDS);
             while ((message = messages.poll()) == null && (System.currentTimeMillis() - startTime) <= TIMEOUT) {
+                // Allow for other threads to execute while waiting
             }
         } finally {
             lock.unlock();
@@ -158,21 +162,23 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
      * @param builder message
      */
     private void copy(final Object groupId, final Builder builder) {
-        final Set<String> _sessions;
+        Set<String> groupSessions = sessions.get(groupId.toString());
+        if (groupSessions == null || groupSessions.isEmpty()) {
+            return;
+        }
 
-        if ((_sessions = this.sessions.get(groupId.toString())) != null) {
-            final Collection<Entry<String, Queue<Builder>>> set = this.list.entrySet();
-            final Iterator<Entry<String, Queue<Builder>>> iterator = set.iterator();
-            try {
-                lock.lock();
-                while (iterator.hasNext()) {
-                    Entry<String, Queue<Builder>> list = iterator.next();
-                    if (_sessions.contains(list.getKey())) {
-                        list.getValue().add(builder);
+        // Pre-filter sessions that should receive the message
+        for (String sessionId : groupSessions) {
+            Queue<Builder> sessionQueue = list.get(sessionId);
+            if (sessionQueue != null) {
+                try {
+                    lock.lock();
+                    if (!sessionQueue.offer(builder)) {
+                        logger.warning("Failed to copy message to session: " + sessionId);
                     }
+                } finally {
+                    lock.unlock();
                 }
-            } finally {
-                lock.unlock();
             }
         }
     }
