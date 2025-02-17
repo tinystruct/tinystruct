@@ -97,7 +97,6 @@ public final class Watcher implements Runnable {
     public void run() {
         this.started = true;
 
-        FileLock fileLock;
         while (!this.stopped) {
             synchronized (Watcher.class) {
                 try {
@@ -166,7 +165,7 @@ public final class Watcher implements Runnable {
                 if (condition) {
                     lockId = new String(id, StandardCharsets.UTF_8);
                     // No need to check if the lock exists.
-                    if(!this.locks.containsKey(lockId)) {
+                    if (!this.locks.containsKey(lockId)) {
                         // Add a new lock with id.
                         this.locks.putIfAbsent(lockId, new DistributedLock(id));
                         if ((listener = this.listeners.get(lockId)) != null)
