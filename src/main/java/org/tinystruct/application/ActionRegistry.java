@@ -10,6 +10,7 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -244,7 +245,7 @@ public final class ActionRegistry {
                 }
 
                 try {
-                    MethodHandle handle = lookup.unreflect(m);
+                    MethodHandle handle = lookup.findVirtual(clazz, methodName, MethodType.methodType(m.getReturnType(), types));
                     List<Action> actions = patternGroups.getOrDefault(group, new ArrayList<>());
                     Action action = mode == Action.Mode.All ? new Action(actions.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes(), priority) : new Action(actions.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes(), priority, mode);
                     actions.add(action);
@@ -252,6 +253,8 @@ public final class ActionRegistry {
                     patternGroups.put(group, actions);
                 } catch (IllegalAccessException e) {
                     throw new ApplicationRuntimeException(e);
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException(e);
                 }
             }
         }
@@ -274,7 +277,7 @@ public final class ActionRegistry {
             return "true|false:3";
         } else if (Character.TYPE.isAssignableFrom(type) || Character.class.isAssignableFrom(type)) {
             return ".{1}:1";
-        }  else if (String.class.isAssignableFrom(type)) {
+        } else if (String.class.isAssignableFrom(type)) {
             return "[^/]+:1";
         } else {
             return "[^/]+:0";
