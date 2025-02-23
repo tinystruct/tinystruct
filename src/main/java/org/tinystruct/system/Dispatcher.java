@@ -52,6 +52,8 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -187,18 +189,17 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             }
 
             if (remote) {
-                if(!commands.isEmpty()) {
+                if (!commands.isEmpty()) {
                     for (String command : commands) {
                         System.out.print(remoteDispatcher.execute(command, context));
                     }
-                }
-                else {
+                } else {
                     System.out.print(remoteDispatcher.execute(null, context));
                 }
                 System.exit(0);
             }
 
-            if(!commands.isEmpty()) {
+            if (!commands.isEmpty()) {
                 for (String command : commands) {
                     if (!disableHelper || command != null) {
                         // Execute a local method.
@@ -688,6 +689,44 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             }
         } catch (ApplicationException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
+        }
+    }
+
+    @Action(value = "maven:wrapper", description = "Extract Maven Wrapper", arguments = {
+            @Argument(key = "--jar-file-path", description = "The jar file path which included maven-wrapper.zip"),
+            @Argument(key = "--destination-dir", description = "The destination dir ")
+    }, mode = org.tinystruct.application.Action.Mode.CLI)
+    public void extractMavenWrapperFromJar() throws IOException, ApplicationException {
+        String jarFilePath;
+        String destinationDir;
+        if (getContext().getAttribute("--jar-file-path") != null) {
+            jarFilePath = getContext().getAttribute("--jar-file-path").toString();
+        } else {
+            throw new ApplicationException("Missing --jar-file-path");
+        }
+
+        if (getContext().getAttribute("--destination-dir") != null) {
+            destinationDir = getContext().getAttribute("--destination-dir").toString();
+        } else {
+            throw new ApplicationException("Missing --destination-dir");
+        }
+
+        try (JarFile jarFile = new JarFile(jarFilePath)) {
+            JarEntry entry = jarFile.getJarEntry("maven-wrapper.zip");  // The path in the JAR
+
+            if (entry != null) {
+                File destFile = new File(destinationDir, "maven-wrapper.zip");
+
+                try (InputStream inputStream = jarFile.getInputStream(entry);
+                     FileOutputStream outputStream = new FileOutputStream(destFile)) {
+                    byte[] buffer = new byte[1024];
+                    int length;
+                    while ((length = inputStream.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, length);
+                    }
+                    System.out.println("Maven wrapper ZIP extracted successfully.");
+                }
+            }
         }
     }
 
