@@ -105,6 +105,26 @@ if $mingw ; then
   # TODO classpath?
 fi
 
+# Set the local Maven repository path for tinystruct.jar
+MAVEN_REPO="$M2_HOME/repository/org/tinystruct/tinystruct"
+
+# Define the paths for tinystruct jars in the Maven repository
+TINYSTRUCT_MAVEN_JAR="$MAVEN_REPO/$VERSION/tinystruct-$VERSION.jar"
+TINYSTRUCT_MAVEN_JAR_WITH_DEPS="$MAVEN_REPO/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar"
+
+# Check which jar to use for extracting Maven Wrapper
+if [ -f "$TINYSTRUCT_MAVEN_JAR_WITH_DEPS" ]; then
+    JAR_PATH="$TINYSTRUCT_MAVEN_JAR_WITH_DEPS"
+else
+    JAR_PATH="$TINYSTRUCT_MAVEN_JAR"
+fi
+
+# Check if any of the tinystruct jars exists in the local Maven repository
+if [ ! -f "$TINYSTRUCT_MAVEN_JAR" ] && [ ! -f "$TINYSTRUCT_MAVEN_JAR_WITH_DEPS" ]; then
+    echo "Error: Neither tinystruct-$VERSION.jar nor tinystruct-$VERSION-jar-with-dependencies.jar found in local Maven repository. Please ensure one of them is available."
+    exit 1
+fi
+
 if [ -z "$JAVA_HOME" ]; then
   javaExecutable="`which javac`"
   if [ -n "$javaExecutable" ] && ! [ "`expr \"$javaExecutable\" : '\([^ ]*\)'`" = "no" ]; then
@@ -170,6 +190,24 @@ fi
 for jar_file in "$ROOT"/lib/*.jar; do
     CLASSPATH="$CLASSPATH:$jar_file"
 done
+
+# Check if the Maven Wrapper is already available
+if [ ! -f "mvnw" ]; then
+    echo "Maven Wrapper not found. Extracting from JAR..."
+
+    # Run Java code to extract the ZIP file from the JAR
+    $JAVACMD -cp "$JAR_PATH" org.tinystruct.system.Dispatcher maven:wrapper --jar-file-path "$JAR_PATH" --destination-dir "$ROOT"
+
+    if [ -f "$ROOT/maven-wrapper.zip" ]; then
+        echo "Maven wrapper ZIP extracted successfully."
+        # Now unzip the Maven Wrapper files
+        unzip "$ROOT/maven-wrapper.zip" -d "$ROOT"
+        echo "Maven wrapper setup completed."
+    else
+        echo "Error: Maven wrapper ZIP file not found in JAR."
+        exit 1
+    fi
+fi
 
 # Check if the JAR file exists in .m2
 DEFAULT_JAR_FILE="$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION.jar"
