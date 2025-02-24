@@ -59,7 +59,7 @@ if not exist "mvnw" (
     echo Maven Wrapper not found. Extracting from JAR...
 
     @REM Run Java code to extract the ZIP file from the JAR
-    %JAVA_CMD% -cp "%JAR_PATH%" org.tinystruct.system.Dispatcher maven:wrapper --jar-file-path "%JAR_PATH%" --destination-dir "%ROOT%"
+    %JAVA_CMD% -cp "%JAR_PATH%" org.tinystruct.system.Dispatcher maven-wrapper --jar-file-path "%JAR_PATH%" --destination-dir "%ROOT%"
 
     if exist "%ROOT%\maven-wrapper.zip" (
         echo Maven wrapper ZIP extracted successfully.

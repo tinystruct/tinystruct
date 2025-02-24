@@ -196,7 +196,7 @@ if [ ! -f "mvnw" ]; then
     echo "Maven Wrapper not found. Extracting from JAR..."
 
     # Run Java code to extract the ZIP file from the JAR
-    $JAVACMD -cp "$JAR_PATH" org.tinystruct.system.Dispatcher maven:wrapper --jar-file-path "$JAR_PATH" --destination-dir "$ROOT"
+    $JAVACMD -cp "$JAR_PATH" org.tinystruct.system.Dispatcher maven-wrapper --jar-file-path "$JAR_PATH" --destination-dir "$ROOT"
 
     if [ -f "$ROOT/maven-wrapper.zip" ]; then
         echo "Maven wrapper ZIP extracted successfully."

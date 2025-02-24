@@ -15,7 +15,6 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
-import com.sun.jna.Platform;
 import org.tinystruct.*;
 import org.tinystruct.application.Context;
 import org.tinystruct.data.DatabaseOperator;
@@ -692,7 +691,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         }
     }
 
-    @Action(value = "maven:wrapper", description = "Extract Maven Wrapper", arguments = {
+    @Action(value = "maven-wrapper", description = "Extract Maven Wrapper", arguments = {
             @Argument(key = "--jar-file-path", description = "The jar file path which included maven-wrapper.zip"),
             @Argument(key = "--destination-dir", description = "The destination dir ")
     }, mode = org.tinystruct.application.Action.Mode.CLI)
@@ -743,7 +742,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     public String color(Object s, int color) {
-        if (!virtualTerminal && Platform.isWindows()) {
+        if (!virtualTerminal && Platform.isWindows() && Platform.isJnaAvailable()) {
             Kernel32.INSTANCE.SetConsoleMode(Kernel32.INSTANCE.GetStdHandle(-11), Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING);
             virtualTerminal = true;
         }
