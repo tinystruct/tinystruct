@@ -1,6 +1,5 @@
 package org.tinystruct.system;
 
-import com.sun.jna.Platform;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
