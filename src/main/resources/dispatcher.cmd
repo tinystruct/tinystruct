@@ -18,7 +18,7 @@
 @REM Set the local Maven repository path for tinystruct.jar
 set "MAVEN_REPO=%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct"
 @REM Consolidate classpath entries, initialize ROOT and VERSION
-set "ROOT=%~dp0..\"
+set "ROOT=%~dp0.."
 set "VERSION={%VERSION%}"
 
 @REM Define the paths for tinystruct jars in the Maven repository
