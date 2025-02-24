@@ -243,6 +243,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             }
         } catch (ApplicationException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
+            logger.info("* SOLUTION: if it's caused by a ClassNotFoundException, ensuring that all dependencies are properly downloaded and available in the classpath is crucial. The command uses Maven Wrapper (mvnw) to copy all dependencies to a specified directory (lib) will be helpful to resolve the issue: \n" +
+                    ".\\mvnw dependency:copy-dependencies -DoutputDirectory=lib\n");
         }
 
         return output;
