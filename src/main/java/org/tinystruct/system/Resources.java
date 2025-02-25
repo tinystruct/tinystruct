@@ -18,6 +18,7 @@ package org.tinystruct.system;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Properties;
@@ -191,7 +192,7 @@ public final class Resources {
      * @throws IOException If the resource cannot be found or read
      */
     public static InputStream getUrlAsStream(String urlString) throws IOException {
-        URL url = new URL(urlString);
+        URL url = URI.create(urlString).toURL();
         URLConnection conn = url.openConnection();
         return conn.getInputStream();
     }

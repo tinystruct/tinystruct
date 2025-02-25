@@ -11,6 +11,7 @@ import org.tinystruct.system.security.Authentication;
 import org.tinystruct.system.security.Credential;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +28,7 @@ public class OAuth2Client implements Authentication {
     @Override
     public void identify(Credential credential, Map<String, Object> parameters) throws ApplicationException {
         try {
-            URL uri = new URL(credential.get("token_uri"));
+            URL uri = URI.create(credential.get("token_uri")).toURL();
             Headers headers = new Headers();
             headers.add(Header.CONTENT_TYPE.set("application/x-www-form-urlencoded"));
             headers.add(Header.CACHE_CONTROL.set("no-cache"));

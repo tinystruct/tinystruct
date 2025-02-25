@@ -503,8 +503,8 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             System.out.print("\rGot a new version " + evt.getLatestVersion() + "...");
             System.out.print("\rDownloading...");
             try {
-                this.download(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + evt.getLatestVersion()
-                        + "/tinystruct-" + evt.getLatestVersion() + "-jar-with-dependencies.jar"), "lib/tinystruct-" + evt.getLatestVersion() + "-jar-with-dependencies.jar");
+                this.download(URI.create("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/" + evt.getLatestVersion()
+                        + "/tinystruct-" + evt.getLatestVersion() + "-jar-with-dependencies.jar").toURL(), "lib/tinystruct-" + evt.getLatestVersion() + "-jar-with-dependencies.jar");
 
                 System.out.println("\nDownloaded (" + this.color(evt.getLatestVersion(), FORE_COLOR.green) + ").");
                 System.out.print("\rUpdating..");

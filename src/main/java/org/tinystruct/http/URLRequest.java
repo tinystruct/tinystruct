@@ -20,6 +20,7 @@ import org.brotli.dec.BrotliInputStream;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachments;
 import org.tinystruct.http.client.HttpRequestBuilder;
+import org.tinystruct.net.Callback;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
 import java.io.ByteArrayOutputStream;
@@ -89,9 +90,9 @@ public class URLRequest {
                 if (!request.parameters().isEmpty()) {
                     String parameters = this.buildQuery(request.parameters());
                     if (this.url.toString().contains("?"))
-                        url = new URL(this.url + "&" + parameters);
+                        url = URI.create(this.url + "&" + parameters).toURL();
                     else
-                        url = new URL(this.url + "?" + parameters);
+                        url = URI.create(this.url + "?" + parameters).toURL();
                 } else {
                     url = this.url;
                 }
