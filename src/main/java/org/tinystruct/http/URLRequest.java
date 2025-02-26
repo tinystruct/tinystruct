@@ -42,6 +42,12 @@ import java.util.zip.GZIPInputStream;
 
 import static org.tinystruct.transfer.http.upload.ContentDisposition.LINE;
 
+/**
+ * @deprecated This class is deprecated and will be removed in a future version.
+ * Please use {@link org.tinystruct.net.URLRequest} instead for better protocol support
+ * and more consistent API. This class remains only for backward compatibility.
+ */
+@Deprecated(since = "2.0", forRemoval = true)
 public class URLRequest {
     private static final Logger logger = Logger.getLogger(URLRequest.class.getName());
     private URL url;
