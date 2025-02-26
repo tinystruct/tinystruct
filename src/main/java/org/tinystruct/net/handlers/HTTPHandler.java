@@ -18,15 +18,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.GZIPInputStream;
 
 import static org.tinystruct.transfer.http.upload.ContentDisposition.LINE;
 
 public class HTTPHandler implements URLHandler {
-    private static final Logger logger = Logger.getLogger(HTTPHandler.class.getName());
 
     @Override
     public URLResponse handleRequest(URLRequest request) throws ApplicationException {
