@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.OptionalInt;
-import java.util.logging.Logger;
 
 import static org.tinystruct.http.Constants.HTTP_HOST;
 
@@ -43,8 +42,6 @@ import static org.tinystruct.http.Constants.HTTP_HOST;
  * @author James Zhou
  */
 public abstract class AbstractApplication implements Application, Cloneable {
-
-    private static final Logger logger = Logger.getLogger(AbstractApplication.class.getName());
 
     /**
      * Application instances container.
