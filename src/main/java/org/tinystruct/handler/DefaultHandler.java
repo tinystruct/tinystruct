@@ -91,7 +91,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             context.setAttribute(HTTP_SERVER, request.getServerName());
             context.setAttribute(HTTP_PROTOCOL, getProtocol(request));
 
-            String lang = _request.getParameter("lang"), language = "";
+            String lang = _request.getParameter("lang");
             if (lang != null && !lang.trim().isEmpty()) {
                 String name = lang.replace('-', '_');
 
@@ -179,7 +179,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
      * @param response The HTTP servlet response
      * @param e        The application exception
      */
-    private void handleApplicationException(Request request, Response response, ApplicationException e) throws ApplicationException {
+    private void handleApplicationException(Request<HttpServletRequest, ServletInputStream> request, Response<HttpServletResponse, ServletOutputStream> response, ApplicationException e) throws ApplicationException {
         response.setStatus(ResponseStatus.valueOf(e.getStatus()));
         Session session = request.getSession();
         session.setAttribute("error", e);
