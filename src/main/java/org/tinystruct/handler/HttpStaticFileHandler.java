@@ -95,7 +95,7 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
     public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
     public static final int HTTP_CACHE_SECONDS = 60;
     private static final Pattern INSECURE_URI = Pattern.compile(".*[<>&\"].*");
-    private static final Pattern ALLOWED_FILE_NAME = Pattern.compile("[^-\\._]?[^<>&\\\"]*");
+    // private static final Pattern ALLOWED_FILE_NAME = Pattern.compile("[^-\\._]?[^<>&\\\"]*");
     private FullHttpRequest request;
     private static final Logger logger = Logger.getLogger(HttpStaticFileHandler.class.getName());
 
@@ -347,13 +347,6 @@ public class HttpStaticFileHandler extends SimpleChannelInboundHandler<FullHttpR
         if (ctx.channel().isActive()) {
             sendError(ctx, INTERNAL_SERVER_ERROR);
         }
-    }
-
-    private void sendRedirect(ChannelHandlerContext ctx, String newUri) {
-        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, FOUND, Unpooled.EMPTY_BUFFER);
-        response.headers().set(HttpHeaderNames.LOCATION, newUri);
-
-        this.sendAndCleanupConnection(ctx, response);
     }
 
     private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
