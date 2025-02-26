@@ -17,6 +17,14 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * A specialized request builder for Servlet-based HTTP requests.
+ * This builder creates Request objects from HttpServletRequest instances,
+ * specifically designed for use in servlet containers.
+ *
+ * <p>This builder is distinct from the HTTP client request builder and should be used
+ * only for handling incoming servlet requests in a web container environment.</p>
+ */
 public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletInputStream> {
     private final SessionManager manager = SessionManager.getInstance();
     private final Headers headers = new Headers();
