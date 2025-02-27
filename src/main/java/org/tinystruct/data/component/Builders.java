@@ -71,139 +71,128 @@ public class Builders extends ArrayList<Builder> implements Serializable {
      */
     public String parse(String value) throws ApplicationException {
         value = value.trim();
-        if (!value.isEmpty()) {
-            if (value.charAt(0) == LEFT_BRACE) {
-                // Parse entity and add it to the list
-                logger.log(Level.FINE, "Parsing entity: {}", value);
-                Builder builder = new Builder();
-                builder.parse(value);
-                this.add(builder);
+        if (value.isEmpty()) {
+            return "";
+        }
 
-                int p = builder.getClosedPosition();
-                // Check if there are more entities in the string
-                if (p < value.length() && value.charAt(p) == COMMA) {
-                    value = value.substring(p + 1);
-                    return this.parse(value);
-                }
+        if (value.charAt(0) == LEFT_BRACKETS) {
+            int end = findClosingBracket(value);
+            if (end == -1) {
+                throw new ApplicationException("Invalid array format: missing closing bracket");
             }
-
-            if (value.charAt(0) == LEFT_BRACKETS) {
-                // Parse array and add its entities to the list
-                logger.log(Level.FINE, "Parsing array: []", value);
-                int end = this.seekPosition(value);
-                this.parseArray(value.substring(1, end - 1));
-
-                // Check if there are more entities in the string
-                int len = value.length();
-                if (end < len - 1) {
-                    return this.parse(value.substring(end + 1));
-                }
+            if (end > 1) { // If array is not empty
+                parseArrayContent(value.substring(1, end));
             }
+            return value.substring(Math.min(end + 1, value.length())).trim();
+        }
 
-            if (value.charAt(0) == QUOTE) {
-                // Return the string if it starts with a quote
-                return value;
+        // Handle single elements
+        if (value.charAt(0) == LEFT_BRACE) {
+            Builder builder = new Builder();
+            builder.parse(value);
+            this.add(builder);
+            int p = builder.getClosedPosition();
+            if (p < value.length() && value.charAt(p) == COMMA) {
+                return parse(value.substring(p + 1).trim());
             }
         }
 
-        // Return an empty string if no valid parsing is performed
-        return "";
+        return value;
     }
 
-    /**
-     * Parse the array elements in the array-like format (e.g., ["A", "B", "C"]).
-     *
-     * @param value The portion of the input string containing array elements.
-     * @throws ApplicationException If there is an issue parsing the array data.
-     */
-    private void parseArray(String value) throws ApplicationException {
-        value = value.trim();
-        StringBuilder currentElement = new StringBuilder();
-        boolean insideQuotes = false;
-        int nestedLevel = 0;
+    private void parseArrayContent(String content) throws ApplicationException {
+        content = content.trim();
+        if (content.isEmpty()) {
+            return;
+        }
+
+        StringBuilder element = new StringBuilder();
+        int depth = 0;
+        boolean inQuotes = false;
+
+        for (int i = 0; i < content.length(); i++) {
+            char c = content.charAt(i);
+
+            if (c == QUOTE && (i == 0 || content.charAt(i - 1) != ESCAPE_CHAR)) {
+                inQuotes = !inQuotes;
+                element.append(c);
+            } else if (!inQuotes) {
+                if (c == LEFT_BRACE || c == LEFT_BRACKETS) {
+                    depth++;
+                    element.append(c);
+                } else if (c == RIGHT_BRACE || c == RIGHT_BRACKETS) {
+                    depth--;
+                    element.append(c);
+                } else if (c == COMMA && depth == 0) {
+                    addElement(element.toString().trim());
+                    element.setLength(0);
+                } else {
+                    element.append(c);
+                }
+            } else {
+                element.append(c);
+            }
+        }
+
+        if (element.length() > 0) {
+            addElement(element.toString().trim());
+        }
+    }
+
+    private void addElement(String element) throws ApplicationException {
+        if (element.isEmpty()) {
+            return;
+        }
+
+        if (element.charAt(0) == QUOTE) {
+            // String value
+            String value = element.substring(1, element.length() - 1);
+            this.add(new Builder(value));
+        } else if (element.charAt(0) == LEFT_BRACE) {
+            // Object value
+            Builder builder = new Builder();
+            builder.parse(element);
+            this.add(builder);
+        } else if (element.charAt(0) == LEFT_BRACKETS) {
+            // Array value
+            Builder arrayBuilder = new Builder();
+            Builders nestedBuilders = new Builders();
+            nestedBuilders.parse(element);
+            for (Builder b : nestedBuilders) {
+                arrayBuilder.put(String.valueOf(arrayBuilder.size()), b.getValue());
+            }
+            this.add(arrayBuilder);
+        } else {
+            // All other values (numbers, booleans, null) are stored as strings
+            if (isNumber(element)) {
+                this.add(new Builder(parseNumber(element)));
+            } else {
+                this.add(new Builder(element));
+            }
+        }
+    }
+
+    private int findClosingBracket(String value) {
+        int depth = 0;
+        boolean inQuotes = false;
 
         for (int i = 0; i < value.length(); i++) {
             char c = value.charAt(i);
 
-            if (c == QUOTE) {
-                insideQuotes = !insideQuotes; // Toggle the quote state
-                currentElement.append(c);
-            } else if (c == LEFT_BRACE || c == LEFT_BRACKETS) {
-                nestedLevel++;
-                currentElement.append(c);
-            } else if (c == RIGHT_BRACE || c == RIGHT_BRACKETS) {
-                nestedLevel--;
-                currentElement.append(c);
-            } else if (c == COMMA && !insideQuotes && nestedLevel == 0) {
-                // Split the element when outside quotes and no nested structure
-                processElement(currentElement.toString().trim());
-                currentElement.setLength(0); // Reset the current element
-            } else {
-                currentElement.append(c);
+            if (c == QUOTE && (i == 0 || value.charAt(i - 1) != ESCAPE_CHAR)) {
+                inQuotes = !inQuotes;
+            } else if (!inQuotes) {
+                if (c == LEFT_BRACKETS) {
+                    depth++;
+                } else if (c == RIGHT_BRACKETS) {
+                    depth--;
+                    if (depth == 0) {
+                        return i;
+                    }
+                }
             }
         }
-
-        // Process the last element in the array
-        if (currentElement.length() > 0) {
-            processElement(currentElement.toString().trim());
-        }
-    }
-
-    /**
-     * Process a single array element.
-     *
-     * @param element The array element as a string.
-     * @throws ApplicationException If parsing fails.
-     */
-    private void processElement(String element) throws ApplicationException {
-        element = element.trim();
-        logger.fine("Processing element: " + element);
-        if (element.startsWith("{")) {
-            // Handle nested object
-            Builder builder = new Builder();
-            builder.parse(element);
-            this.add(builder);
-
-            int p = builder.getClosedPosition();
-            // Check if there are more entities in the string
-            if (p < element.length() && element.charAt(p) == COMMA) {
-                element = element.substring(p + 1).trim();  // Skip comma and move to next entity
-                this.processElement(element);  // Recursively parse the next part of the string
-            }
-        } else if (element.startsWith("[")) {
-            // Handle nested array
-            Builders nestedBuilders = new Builders();
-            nestedBuilders.parse(element);
-        } else if (element.startsWith("\"") && element.endsWith("\"")) {
-            // Handle quoted string
-            this.add(new Builder(element.substring(1, element.length() - 1)));
-        } else if (isNumber(element)) {
-            // Handle number
-            this.add(new Builder(parseNumber(element)));
-        } else {
-            // Handle unknown type (pass through recursive parsing if needed)
-            this.parse(element);
-        }
-    }
-
-    /**
-     * Parse a single value (string or number).
-     *
-     * @param value The string value to parse.
-     * @return The parsed value (String or Number).
-     */
-    private Object parseValue(String value) {
-        value = value.trim();
-        if (value.charAt(0) == QUOTE) {
-            // Remove quotes from strings
-            return value.substring(1, value.length() - 1);
-        } else if (isNumber(value)) {
-            // Parse numbers
-            return parseNumber(value);
-        } else {
-            // Return the raw value if unrecognized
-            return value;
-        }
+        return -1;
     }
 
     /**
@@ -233,36 +222,6 @@ public class Builders extends ArrayList<Builder> implements Serializable {
         } else {
             return Integer.parseInt(value);  // Parse as integer otherwise
         }
-    }
-
-    /**
-     * Find the position of the closing bracket in the JSON array.
-     *
-     * @param value JSON array string.
-     * @return Closing position of the JSON array.
-     */
-    private int seekPosition(String value) {
-        char[] chars = value.toCharArray();
-        int i = 0;
-        int n = 0;
-        int position = chars.length;
-
-        while (i < position) {
-            char c = chars[i++];
-
-            if (c == LEFT_BRACKETS) {
-                n++;
-            } else if (c == RIGHT_BRACKETS) {
-                n--;
-            }
-
-            // If n becomes 0, it means the closing bracket is found
-            if (n == 0) {
-                position = i;
-            }
-        }
-
-        return position;
     }
 }
 
