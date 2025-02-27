@@ -59,23 +59,24 @@ class BuildersTest {
     }
 
 
-/*    @Test
+    @Test
     void testParseArrayWithMixedValues() throws ApplicationException {
         String input = "[\"string\", 123, {\"key\":\"value\"}, [1, 2]]";
         builders.parse(input);
 
         assertEquals(4, builders.size());
         assertEquals("string", builders.get(0).getValue());
-        assertEquals("123", builders.get(1).getValue());
+        assertEquals(123, builders.get(1).getValue());
         assertTrue(builders.get(2).toString().contains("key"));
         assertTrue(builders.get(2).toString().contains("value"));
         assertTrue(builders.get(3) instanceof Builder);
 
         Builder nestedArray = (Builder) builders.get(3);
         assertEquals(2, nestedArray.size());
-        assertEquals("1", ((Builder)nestedArray.get(0)).getValue());
-        assertEquals("2", ((Builder)nestedArray.get(1)).getValue());
-    }*/
+
+        assertEquals(1, nestedArray.get("0"));
+        assertEquals(2, nestedArray.get("1"));
+    }
 
     @Test
     void testParseEmptyArray() throws ApplicationException {
