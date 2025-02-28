@@ -46,6 +46,9 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public static final char ESCAPE_CHAR = '\\';
 
     private static final Logger logger = Logger.getLogger(Builder.class.getName());
+    public static final Pattern INTEGER = Pattern.compile("^-?\\d+$");
+    public static final Pattern DOUBLE = Pattern.compile("^-?\\d+(\\.\\d+)$");
+    public static final Pattern BOOLEAN = Pattern.compile("^(true|false)$");
     private int closedPosition = 0;
 
     private String key = null;
@@ -219,10 +222,10 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     } else if ($value.charAt(0) == LEFT_BRACKETS) {
                         // Handle array
                         Builders builders = new Builders();
-                        String remainings = builders.parse($value);
+                        String remaining = builders.parse($value);
                         keyValue = builders;
-                        if (!Objects.equals(remainings, "")) {
-                            this.parseValue(remainings);
+                        if (!Objects.equals(remaining, "")) {
+                            this.parseValue(remaining);
                         }
                     } else {
                         if ($value.indexOf(COMMA) != -1) {
@@ -258,15 +261,15 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     private Object getValue(String value) {
         // Determine the type of the value and parse it accordingly
         Object keyValue;
-        if (Pattern.compile("^-?\\d+$").matcher(value).find()) {
+        if (INTEGER.matcher(value).find()) {
             try {
                 keyValue = Integer.parseInt(value);
             } catch (Exception e) {
                 keyValue = Long.valueOf(value);
             }
-        } else if (Pattern.compile("^-?\\d+(\\.\\d+)$").matcher(value).find()) {
+        } else if (DOUBLE.matcher(value).find()) {
             keyValue = Double.parseDouble(value);
-        } else if (Pattern.compile("^(true|false)$").matcher(value.toLowerCase(Locale.ROOT)).find()) {
+        } else if (BOOLEAN.matcher(value.toLowerCase(Locale.ROOT)).find()) {
             keyValue = Boolean.parseBoolean(value);
         } else {
             keyValue = value;
