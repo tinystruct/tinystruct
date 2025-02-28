@@ -23,11 +23,11 @@ public class URLRequest {
     }
 
     // URL getter/setter
-    public URL getUrl() {
+    public URL getURL() {
         return url;
     }
 
-    public URLRequest setUrl(URL url) {
+    public URLRequest setURL(URL url) {
         this.url = url;
         return this;
     }
