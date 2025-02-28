@@ -93,7 +93,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
             this.add(builder);
             int p = builder.getClosedPosition();
             if (p < value.length() && value.charAt(p) == COMMA) {
-                return parse(value.substring(p + 1).trim());
+                return parse(value.substring(p + 1));
             }
         }
 
@@ -124,7 +124,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
                     depth--;
                     element.append(c);
                 } else if (c == COMMA && depth == 0) {
-                    addElement(element.toString().trim());
+                    addElement(element.toString());
                     element.setLength(0);
                 } else {
                     element.append(c);
@@ -135,11 +135,12 @@ public class Builders extends ArrayList<Builder> implements Serializable {
         }
 
         if (element.length() > 0) {
-            addElement(element.toString().trim());
+            addElement(element.toString());
         }
     }
 
     private void addElement(String element) throws ApplicationException {
+        element = element.trim();
         if (element.isEmpty()) {
             return;
         }
@@ -202,12 +203,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
      * @return True if the string is a valid number, false otherwise.
      */
     private boolean isNumber(String value) {
-        try {
-            Double.parseDouble(value);  // Try parsing the value as a number (integer or float)
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        }
+        return INTEGER.matcher(value).matches() || DOUBLE.matcher(value).matches();
     }
 
     /**
@@ -217,10 +213,27 @@ public class Builders extends ArrayList<Builder> implements Serializable {
      * @return The parsed number.
      */
     private Number parseNumber(String value) {
-        if (value.contains(".")) {
-            return Double.parseDouble(value);  // Parse as double if it contains a decimal point
-        } else {
-            return Integer.parseInt(value);  // Parse as integer otherwise
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Value cannot be null or empty");
+        }
+
+        value = value.trim();
+        if (value.contains(".") || value.contains("e") || value.contains("E")) {
+            try {
+                return Double.parseDouble(value); // Parse as double for decimals or scientific notation
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid double value: " + value, e);
+            }
+        }
+
+        try {
+            return Integer.parseInt(value); // Try parsing as Integer
+        } catch (NumberFormatException e) {
+            try {
+                return Long.parseLong(value); // Fallback to Long
+            } catch (NumberFormatException ex) {
+                throw new IllegalArgumentException("Invalid number value: " + value, ex);
+            }
         }
     }
 }
