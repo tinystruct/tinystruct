@@ -7,12 +7,16 @@ import org.tinystruct.data.Attachments;
 import org.tinystruct.net.URLRequest;
 import org.tinystruct.net.URLResponse;
 
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -98,6 +102,22 @@ public class HTTPHandlerTest {
         // Check that the response contains our file name and file content.
         assertTrue(body.contains("test.txt"), "Response should contain the filename 'test.txt'");
         assertTrue(body.contains("Hello, file upload!"), "Response should contain the file content");
+    }
+
+    @Test
+    void testHandleSSEAutoDetection() throws Exception {
+        URLRequest request = new URLRequest(new URL("https://httpbin.org/stream/3"));
+        HTTPHandler handler = new HTTPHandler();
+
+        AtomicInteger eventCounter = new AtomicInteger();
+
+        URLResponse response = handler.handleRequest(request, (s) -> {
+            System.out.println(s);
+            eventCounter.incrementAndGet();
+        });
+
+        assertEquals(200, response.getStatusCode());
+        assertEquals(3, eventCounter.get(), "Should receive 3 SSE events");
     }
 
     public static class DummyAttachment extends Attachment {
