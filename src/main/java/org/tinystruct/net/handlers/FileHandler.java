@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,7 +26,7 @@ public class FileHandler implements URLHandler {
     @Override
     public URLResponse handleRequest(URLRequest request) throws ApplicationException {
         try {
-            URL url = request.getUrl();
+            URL url = request.getURL();
             File file = new File(url.getPath());
             
             if (!file.exists()) {
@@ -41,6 +42,17 @@ public class FileHandler implements URLHandler {
             logger.log(Level.SEVERE, "Error handling file request", e);
             throw new ApplicationException("Error handling file request: " + e.getMessage());
         }
+    }
+
+    /**
+     * @param request
+     * @param consumer
+     * @return
+     * @throws ApplicationException
+     */
+    @Override
+    public URLResponse handleRequest(URLRequest request, Consumer<String> consumer) throws ApplicationException {
+        throw new ApplicationException("Not implemented yet.");
     }
 
     @Override

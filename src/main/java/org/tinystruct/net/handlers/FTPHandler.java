@@ -12,6 +12,7 @@ import java.net.URLConnection;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,7 +22,7 @@ public class FTPHandler implements URLHandler {
     @Override
     public URLResponse handleRequest(URLRequest request) throws ApplicationException {
         try {
-            URL url = request.getUrl();
+            URL url = request.getURL();
             URLConnection connection = url.openConnection();
             
             // Set up basic connection properties
@@ -34,6 +35,17 @@ public class FTPHandler implements URLHandler {
             logger.log(Level.SEVERE, "Error handling FTP request", e);
             throw new ApplicationException("Error handling FTP request: " + e.getMessage());
         }
+    }
+
+    /**
+     * @param request
+     * @param consumer
+     * @return
+     * @throws ApplicationException
+     */
+    @Override
+    public URLResponse handleRequest(URLRequest request, Consumer<String> consumer) throws ApplicationException {
+        throw new ApplicationException("Not implemented yet.");
     }
 
     @Override

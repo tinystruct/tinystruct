@@ -8,9 +8,7 @@ import org.tinystruct.net.URLRequest;
 import org.tinystruct.net.URLResponse;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -18,6 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.function.Consumer;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.GZIPInputStream;
 
@@ -35,15 +34,15 @@ public class HTTPHandler implements URLHandler {
             String contentType = request.getHeaders().get("Content-Type");
             if (contentType != null && contentType.equalsIgnoreCase("multipart/form-data")) {
                 boundary = UUID.randomUUID().toString();
-                effectiveUrl = request.getUrl();
+                effectiveUrl = request.getURL();
             } else {
                 // Append query parameters if available
                 if (request.getParameters() != null && !request.getParameters().isEmpty()) {
                     String parameters = buildQuery(request.getParameters());
-                    String urlStr = request.getUrl().toString();
+                    String urlStr = request.getURL().toString();
                     effectiveUrl = URI.create(urlStr.contains("?") ? urlStr + "&" + parameters : urlStr + "?" + parameters).toURL();
                 } else {
-                    effectiveUrl = request.getUrl();
+                    effectiveUrl = request.getURL();
                 }
             }
 
@@ -141,6 +140,141 @@ public class HTTPHandler implements URLHandler {
             }
 
             connection.connect();
+
+            // Auto-detect SSE by Content-Type
+            if (contentType != null && contentType.contains("text/event-stream")) {
+                return new HTTPResponse(connection, System.out::println);
+            }
+
+            // Default response for normal HTTP request
+            return new HTTPResponse(connection);
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        }
+    }
+
+    public URLResponse handleRequest(URLRequest request, Consumer<String> consumer) throws ApplicationException {
+        try {
+            String boundary = null;
+            URL effectiveUrl;
+
+            // Determine if we need to use multipart form-data
+            String contentType = request.getHeaders().get("Content-Type");
+            if (contentType != null && contentType.equalsIgnoreCase("multipart/form-data")) {
+                boundary = UUID.randomUUID().toString();
+                effectiveUrl = request.getURL();
+            } else {
+                // Append query parameters if available
+                if (request.getParameters() != null && !request.getParameters().isEmpty()) {
+                    String parameters = buildQuery(request.getParameters());
+                    String urlStr = request.getURL().toString();
+                    effectiveUrl = URI.create(urlStr.contains("?") ? urlStr + "&" + parameters : urlStr + "?" + parameters).toURL();
+                } else {
+                    effectiveUrl = request.getURL();
+                }
+            }
+
+            // Proxy: use the one set in the request or autodetect from system properties
+            Proxy proxy = request.getProxy();
+            if (proxy == null) {
+                if (System.getProperty("https.proxyHost") != null && System.getProperty("https.proxyPort") != null) {
+                    proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(
+                            System.getProperty("https.proxyHost"),
+                            Integer.parseInt(System.getProperty("https.proxyPort"))
+                    ));
+                } else if (System.getProperty("http.proxyHost") != null && System.getProperty("http.proxyPort") != null) {
+                    proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(
+                            System.getProperty("http.proxyHost"),
+                            Integer.parseInt(System.getProperty("http.proxyPort"))
+                    ));
+                }
+            }
+
+            // Open connection using proxy if available
+            HttpURLConnection connection = (proxy != null)
+                    ? (HttpURLConnection) effectiveUrl.openConnection(proxy)
+                    : (HttpURLConnection) effectiveUrl.openConnection();
+
+            connection.setRequestMethod(request.getMethod());
+
+            // Set headers
+            if (request.getHeaders() != null) {
+                for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
+                    connection.setRequestProperty(header.getKey(), header.getValue());
+                }
+            }
+
+            // Enable output if there's a body or multipart data
+            if (request.getBody() != null || boundary != null ||
+                    (request.getFormData() != null && request.getFormData().length > 0) ||
+                    (request.getAttachments() != null)) {
+                connection.setDoOutput(true);
+
+                if (boundary != null) {
+                    connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+                }
+
+                try (OutputStream writer = connection.getOutputStream()) {
+                    // Write multipart parts if needed
+                    if (boundary != null) {
+                        // Write parameters as multipart parts
+                        if (request.getParameters() != null && !request.getParameters().isEmpty()) {
+                            final String finalBoundary = boundary;
+                            for (Map.Entry<String, Object> entry : request.getParameters().entrySet()) {
+                                ContentDisposition cd = new ContentDisposition(
+                                        entry.getKey(),
+                                        null,
+                                        "text/plain",
+                                        entry.getValue().toString().getBytes(StandardCharsets.UTF_8)
+                                );
+                                writer.write(("--" + finalBoundary + LINE).getBytes(StandardCharsets.UTF_8));
+                                writer.write(cd.getTransferBytes());
+                            }
+                            writer.flush();
+                        }
+
+                        // Write explicit form-data parts if available
+                        if (request.getFormData() != null && request.getFormData().length > 0) {
+                            for (ContentDisposition cd : request.getFormData()) {
+                                writer.write(("--" + boundary + LINE).getBytes(StandardCharsets.UTF_8));
+                                writer.write(cd.getTransferBytes());
+                                writer.flush();
+                            }
+                        } else if (request.getAttachments() != null) {
+                            // Write attachments if available
+                            Attachments attachments = request.getAttachments();
+                            for (var attachment : attachments.list()) {
+                                ContentDisposition cd = new ContentDisposition(
+                                        attachments.getParameterName(),
+                                        attachment.getFilename(),
+                                        "binary",
+                                        attachment.get()
+                                );
+                                writer.write(("--" + boundary + LINE).getBytes(StandardCharsets.UTF_8));
+                                writer.write(cd.getTransferBytes());
+                                writer.flush();
+                            }
+                        }
+                        // Write closing boundary
+                        writer.write(("--" + boundary + "--" + LINE).getBytes(StandardCharsets.UTF_8));
+                    }
+
+                    // Write simple body if provided
+                    if (request.getBody() != null) {
+                        writer.write(request.getBody().getBytes(StandardCharsets.UTF_8));
+                    }
+                    writer.flush();
+                }
+            }
+
+            connection.connect();
+
+            String transferEncoding = connection.getHeaderField("Transfer-Encoding");
+            if ("chunked".equalsIgnoreCase(transferEncoding)) {
+                return new HTTPResponse(connection, consumer);
+            }
+
+            // Default response for normal HTTP request
             return new HTTPResponse(connection);
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e);
@@ -175,6 +309,7 @@ public class HTTPHandler implements URLHandler {
         });
         return queryBuilder.toString();
     }
+
 }
 
 class HTTPResponse implements URLResponse {
@@ -200,6 +335,17 @@ class HTTPResponse implements URLResponse {
         } else {
             this.body = "";
         }
+    }
+
+    /**
+     * Constructor for SSE streaming.
+     */
+    public HTTPResponse(HttpURLConnection connection, Consumer<String> onMessage) throws IOException {
+        this.statusCode = connection.getResponseCode();
+        this.headers = connection.getHeaderFields();
+        this.body = ""; // SSE mode does not return the entire body content.
+
+        handleSSE(connection, onMessage);
     }
 
     @Override
@@ -234,5 +380,24 @@ class HTTPResponse implements URLResponse {
             }
         }
         return in;
+    }
+
+    private void handleSSE(HttpURLConnection connection, Consumer<String> listener) throws IOException {
+        String transferEncoding = connection.getHeaderField("Transfer-Encoding");
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // When an empty line is encountered, dispatch the collected event
+                listener.accept(line +"\n");
+            }
+        }
+
+        // Handle the end of the SSE stream (e.g., no more events)
+        if (transferEncoding == null || transferEncoding.equalsIgnoreCase("identity")) {
+            // Ensure the stream is properly closed after chunking finishes
+            // The client should be prepared to handle a properly closed connection.
+            // No further action is needed here as chunking indicates the end of transmission.
+            connection.disconnect();
+        }
     }
 }
