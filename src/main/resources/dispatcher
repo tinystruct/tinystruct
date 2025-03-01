@@ -229,14 +229,14 @@ fi
 
 # Check if the JAR file exists in .m2
 DEFAULT_JAR_FILE="$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION.jar"
-[ -f "$DEFAULT_JAR_FILE" ] && JAR_FILE="$DEFAULT_JAR_FILE:"
+[ -f "$DEFAULT_JAR_FILE" ] && JAR_FILE="$DEFAULT_JAR_FILE"
 
 # Check if the JAR file exists in .m2
 DEFAULT_JAR_FILE_WITH_DEPENDENCIES="$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar"
-[ -f "$DEFAULT_JAR_FILE_WITH_DEPENDENCIES" ] && JAR_FILE="$DEFAULT_JAR_FILE_WITH_DEPENDENCIES:"
+[ -f "$DEFAULT_JAR_FILE_WITH_DEPENDENCIES" ] && JAR_FILE="$DEFAULT_JAR_FILE_WITH_DEPENDENCIES"
 
 # Java execution
 $JAVACMD \
 $JAVA_OPTS \
 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/ \
--cp "$ROOT/target/classes:$JAR_FILE$CLASSPATH:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar" org.tinystruct.system.Dispatcher "$@"
+-cp "$ROOT/target/classes:$CLASSPATH:$ROOT/WEB-INF/lib/*:$ROOT/WEB-INF/classes:$JAR_FILE" org.tinystruct.system.Dispatcher "$@"
