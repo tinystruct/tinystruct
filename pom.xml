@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.5.5</version>
+    <version>1.5.6</version>
     <name>tinystruct framework</name>
     <description>A simple framework for Java development. Simplicity is difficult, while complexity is easy. Better
         thinking leads to better design.
@@ -313,7 +313,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
                 <version>1.6</version>
@@ -326,13 +326,13 @@
                         </goals>
                         <configuration>
                             <gpgArguments>
-                                <arg>--pinentry-mode</arg>
+                                <arg>&#45;&#45;pinentry-mode</arg>
                                 <arg>loopback</arg>
                             </gpgArguments>
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
