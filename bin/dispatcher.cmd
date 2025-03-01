@@ -62,9 +62,10 @@ if not exist "mvnw" (
     %JAVA_CMD% -cp "%JAR_PATH%" org.tinystruct.system.Dispatcher maven-wrapper --jar-file-path "%JAR_PATH%" --destination-dir "%ROOT%"
 
     if exist "%ROOT%\maven-wrapper.zip" (
-        echo Maven wrapper ZIP extracted successfully.
         @REM Now unzip the Maven Wrapper files
         powershell -Command "Expand-Archive -Path '%ROOT%\maven-wrapper.zip' -DestinationPath '%ROOT%'"
+        @REM Delete the ZIP file after extraction
+        del /F /Q "%ROOT%\maven-wrapper.zip"
         echo Maven wrapper setup completed.
     ) else (
         echo Error: Maven wrapper ZIP file not found in JAR.
