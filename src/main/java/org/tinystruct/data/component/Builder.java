@@ -74,6 +74,13 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         this.put(key, value);
     }
 
+    @Override
+    public Builder put(String key, Object value) {
+        super.put(key, value);
+        return this;
+    }
+
+
     public Object getValue() {
         return this.value;
     }
