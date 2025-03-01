@@ -20,6 +20,8 @@ public class ApplicationException extends Exception {
 
     private static final long serialVersionUID = -495731838035883308L;
     private int status;
+    private String source;
+    private int line;
 
     public ApplicationException() {
         super();
@@ -36,6 +38,20 @@ public class ApplicationException extends Exception {
 
     public ApplicationException(String message, Throwable cause) {
         super(message, cause);
+    }
+
+    public ApplicationException(String message, Object source, int line) {
+        super(message);
+        this.source = source.getClass().getName().replace(".", "/") + ".java";
+        this.line = line;
+    }
+
+    public String getSource() {
+        return this.source;
+    }
+
+    public int getLine() {
+        return this.line;
     }
 
     public int getStatus() {
