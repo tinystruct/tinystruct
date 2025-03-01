@@ -122,26 +122,6 @@ if $mingw ; then
   # TODO classpath?
 fi
 
-# Set the local Maven repository path for tinystruct.jar
-MAVEN_REPO="$M2_HOME/repository/org/tinystruct/tinystruct"
-
-# Define the paths for tinystruct jars in the Maven repository
-TINYSTRUCT_MAVEN_JAR="$MAVEN_REPO/$VERSION/tinystruct-$VERSION.jar"
-TINYSTRUCT_MAVEN_JAR_WITH_DEPS="$MAVEN_REPO/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar"
-
-# Check which jar to use for extracting Maven Wrapper
-if [ -f "$TINYSTRUCT_MAVEN_JAR_WITH_DEPS" ]; then
-    JAR_PATH="$TINYSTRUCT_MAVEN_JAR_WITH_DEPS"
-else
-    JAR_PATH="$TINYSTRUCT_MAVEN_JAR"
-fi
-
-# Check if any of the tinystruct jars exists in the local Maven repository
-if [ ! -f "$TINYSTRUCT_MAVEN_JAR" ] && [ ! -f "$TINYSTRUCT_MAVEN_JAR_WITH_DEPS" ]; then
-    echo "Error: Neither tinystruct-$VERSION.jar nor tinystruct-$VERSION-jar-with-dependencies.jar found in local Maven repository. Please ensure one of them is available."
-    exit 1
-fi
-
 if [ -z "$JAVA_HOME" ]; then
   javaExecutable="`which javac`"
   if [ -n "$javaExecutable" ] && ! [ "`expr \"$javaExecutable\" : '\([^ ]*\)'`" = "no" ]; then
@@ -201,6 +181,26 @@ fi
 if [ -z "$M2_HOME" ] || [ "$M2_HOME" = "$(pwd)" ]; then
     # Set M2_HOME to the .m2 folder under the user's home directory
     M2_HOME="$HOME/.m2"
+fi
+
+# Set the local Maven repository path for tinystruct.jar
+MAVEN_REPO="$M2_HOME/repository/org/tinystruct/tinystruct"
+
+# Define the paths for tinystruct jars in the Maven repository
+TINYSTRUCT_MAVEN_JAR="$MAVEN_REPO/$VERSION/tinystruct-$VERSION.jar"
+TINYSTRUCT_MAVEN_JAR_WITH_DEPS="$MAVEN_REPO/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar"
+
+# Check which jar to use for extracting Maven Wrapper
+if [ -f "$TINYSTRUCT_MAVEN_JAR_WITH_DEPS" ]; then
+    JAR_PATH="$TINYSTRUCT_MAVEN_JAR_WITH_DEPS"
+else
+    JAR_PATH="$TINYSTRUCT_MAVEN_JAR"
+fi
+
+# Check if any of the tinystruct jars exists in the local Maven repository
+if [ ! -f "$TINYSTRUCT_MAVEN_JAR" ] && [ ! -f "$TINYSTRUCT_MAVEN_JAR_WITH_DEPS" ]; then
+    echo "Error: Neither tinystruct-$VERSION.jar nor tinystruct-$VERSION-jar-with-dependencies.jar found in local Maven repository. Please ensure one of them is available."
+    exit 1
 fi
 
 # Add all JAR files under the lib folder to the classpath
