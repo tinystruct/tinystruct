@@ -187,7 +187,6 @@ if [ ! -f "mvnw" ]; then
     $JAVACMD -cp "$JAR_FILE" org.tinystruct.system.Dispatcher maven-wrapper --jar-file-path "$JAR_FILE" --destination-dir "$ROOT"
 
     if [ -f "$ROOT/maven-wrapper.zip" ]; then
-        echo "Maven wrapper ZIP extracted successfully."
         # Now unzip the Maven Wrapper files
         unzip -q "$ROOT/maven-wrapper.zip" -d "$ROOT"
         # Delete the ZIP file after extraction
