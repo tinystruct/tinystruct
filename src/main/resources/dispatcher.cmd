@@ -18,7 +18,7 @@
 @REM Set the local Maven repository path for tinystruct.jar
 set "MAVEN_REPO=%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct"
 @REM Consolidate classpath entries, initialize ROOT and VERSION
-set "ROOT=%~dp0..\"
+set "ROOT=%~dp0.."
 set "VERSION={%VERSION%}"
 
 @REM Define the paths for tinystruct jars in the Maven repository
@@ -61,10 +61,10 @@ if not exist "mvnw" (
     @REM Run Java code to extract the ZIP file from the JAR
     %JAVA_CMD% -cp "%JAR_PATH%" org.tinystruct.system.Dispatcher maven-wrapper --jar-file-path "%JAR_PATH%" --destination-dir "%ROOT%"
 
-    if exist "%ROOT%maven-wrapper.zip" (
+    if exist "%ROOT%\maven-wrapper.zip" (
         echo Maven wrapper ZIP extracted successfully.
         @REM Now unzip the Maven Wrapper files
-        powershell -Command "Expand-Archive -Path '%ROOT%maven-wrapper.zip' -DestinationPath '%ROOT%'"
+        powershell -Command "Expand-Archive -Path '%ROOT%\maven-wrapper.zip' -DestinationPath '%ROOT%'"
         echo Maven wrapper setup completed.
     ) else (
         echo Error: Maven wrapper ZIP file not found in JAR.
@@ -72,7 +72,7 @@ if not exist "mvnw" (
     )
 )
 
-set "classpath=%ROOT%target\classes;%ROOT%lib\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%lib\tinystruct-%VERSION%.jar;%ROOT%lib\*;%ROOT%WEB-INF\lib\*;%ROOT%WEB-INF\classes;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%.jar"
+set "classpath=%ROOT%\target\classes;%ROOT%\lib\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%\lib\tinystruct-%VERSION%.jar;%ROOT%\lib\*;%ROOT%\WEB-INF\lib\*;%ROOT%\WEB-INF\classes;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%.jar"
 
 @REM Run Java application
 %JAVA_CMD% -cp "%classpath%" org.tinystruct.system.Dispatcher %*
