@@ -25,7 +25,8 @@ import java.util.Properties;
 public class POP3Connection implements Connection {
 
     /**
-     * Email Connection .
+     * Email Connection for POP3 protocol.
+     * This connection is used for receiving emails only, not for sending.
      */
     private final Configuration<String> config;
 
@@ -37,6 +38,12 @@ public class POP3Connection implements Connection {
 
     private String id;
 
+    /**
+     * Creates a new POP3 connection with the given configuration.
+     *
+     * @param properties Configuration properties for the connection
+     * @throws ApplicationException if connection initialization fails
+     */
     public POP3Connection(Configuration<String> properties) throws ApplicationException {
         this.config = properties;
 
@@ -91,15 +98,9 @@ public class POP3Connection implements Connection {
         try {
             this.store = this.session.getStore();
             this.store.connect();
-
-        } catch (NoSuchProviderException e) {
-
-            throw new ApplicationException(e.getMessage(), e);
         } catch (MessagingException e) {
-
             throw new ApplicationException(e.getMessage(), e);
         }
-
     }
 
     public Store getStore() throws ApplicationException {
@@ -134,6 +135,13 @@ public class POP3Connection implements Connection {
             this.store.close();
     }
 
+    /**
+     * Gets a folder from the POP3 store.
+     *
+     * @param folder The name of the folder to get
+     * @return The requested folder
+     * @throws MessagingException if folder access fails
+     */
     public Folder getFolder(String folder)
             throws MessagingException {
         return this.store.getFolder(folder);
@@ -147,5 +155,10 @@ public class POP3Connection implements Connection {
     @Override
 	public PROTOCOL getProtocol() {
         return PROTOCOL.POP3;
+    }
+
+    @Override
+    public void send(Message message, Address[] recipients) throws MessagingException {
+        throw new MessagingException("POP3 connection does not support sending messages. Use SMTP connection for sending emails.");
     }
 }

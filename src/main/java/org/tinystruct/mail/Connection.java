@@ -15,23 +15,65 @@
  *******************************************************************************/
 package org.tinystruct.mail;
 
+import jakarta.mail.Address;
+import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
 
+/**
+ * Interface for mail connections that can be pooled and managed.
+ */
 public interface Connection {
-
-    enum PROTOCOL {
-        SMTP, POP3
-    }
-
-    Session getSession();
-
-    boolean available();
-
-    void close() throws MessagingException;
-
+    /**
+     * Gets the unique identifier for this connection.
+     *
+     * @return Connection ID
+     */
     String getId();
 
+    /**
+     * Gets the mail protocol used by this connection.
+     *
+     * @return Mail protocol
+     */
     PROTOCOL getProtocol();
 
+    /**
+     * Gets the mail session associated with this connection.
+     *
+     * @return Mail session
+     */
+    Session getSession();
+
+    /**
+     * Checks if the connection is available for use.
+     *
+     * @return true if the connection is available
+     */
+    boolean available();
+
+    /**
+     * Sends a message to specified recipients.
+     *
+     * @param message The message to send
+     * @param recipients The recipients
+     * @throws MessagingException if sending fails
+     */
+    void send(Message message, Address[] recipients) throws MessagingException;
+
+    /**
+     * Closes the connection and releases resources.
+     *
+     * @throws MessagingException if closing fails
+     */
+    void close() throws MessagingException;
+
+    /**
+     * Mail protocols supported by connections.
+     */
+    enum PROTOCOL {
+        SMTP,
+        POP3,
+        IMAP
+    }
 }

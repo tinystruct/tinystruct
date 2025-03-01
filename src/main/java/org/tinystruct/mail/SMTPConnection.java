@@ -87,8 +87,6 @@ public class SMTPConnection implements Connection {
         try {
             this.transport = this.session.getTransport("smtp");
             this.transport.connect();
-        } catch (NoSuchProviderException e) {
-            throw new ApplicationException(e.getMessage(), e);
         } catch (MessagingException e) {
             throw new ApplicationException(e.getMessage(), e);
         }

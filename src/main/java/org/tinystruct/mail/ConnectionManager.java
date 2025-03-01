@@ -21,97 +21,276 @@ import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
 
 import jakarta.mail.MessagingException;
-import java.util.Vector;
+import jakarta.mail.Session;
+import jakarta.mail.Message;
+import jakarta.mail.Address;
 
-public final class ConnectionManager implements Runnable {
-    private final Vector<Connection> list;
-    private boolean pending;
+import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.time.Duration;
+import java.time.Instant;
+
+/**
+ * Manages a pool of mail connections with automatic cleanup and monitoring.
+ * Implements connection pooling pattern with thread-safe operations.
+ */
+public final class ConnectionManager implements AutoCloseable {
+    private static final Logger logger = Logger.getLogger(ConnectionManager.class.getName());
+    
+    private final ConcurrentLinkedQueue<PooledConnection> idleConnections;
+    private final ConcurrentHashMap<Connection, Instant> activeConnections;
+    private final ScheduledExecutorService cleanupExecutor;
+    private final int maxPoolSize;
+    private final Duration maxIdleTime;
+    private final Duration maxLifetime;
+    private volatile boolean isShutdown;
 
     private static final class SingletonHolder {
-        static final ConnectionManager manager = new ConnectionManager();
+        static final ConnectionManager INSTANCE = new ConnectionManager();
     }
 
     private ConnectionManager() {
-        this.list = new Vector<Connection>();
-        this.pending = false;
+        this.idleConnections = new ConcurrentLinkedQueue<>();
+        this.activeConnections = new ConcurrentHashMap<>();
+        this.cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "ConnectionManager-Cleanup");
+            t.setDaemon(true);
+            return t;
+        });
+        this.maxPoolSize = Integer.parseInt(System.getProperty("mail.pool.size", "10"));
+        this.maxIdleTime = Duration.ofMinutes(Integer.parseInt(System.getProperty("mail.pool.idle.minutes", "5")));
+        this.maxLifetime = Duration.ofMinutes(Integer.parseInt(System.getProperty("mail.pool.lifetime.minutes", "30")));
+        this.isShutdown = false;
+
+        // Schedule periodic cleanup
+        this.cleanupExecutor.scheduleAtFixedRate(
+            this::cleanup,
+            1, 1, TimeUnit.MINUTES
+        );
     }
 
     public static ConnectionManager getInstance() {
-        return SingletonHolder.manager;
-    }
-
-    @Override
-	public void run() {
-
-        Connection current;
-        synchronized (ConnectionManager.class) {
-            int i = 0;
-            while (i < this.list.size()) {
-                current = this.list.get(i);
-
-                if (current != null && !current.available()) {
-                    try {
-                        current.close();
-                    } catch (MessagingException e) {
-
-                        e.printStackTrace();
-                    }
-
-                    this.list.remove(i);
-                }
-                i++;
-            }
-
-            this.pending = false;
-        }
-
+        return SingletonHolder.INSTANCE;
     }
 
     /**
-     * When connection is finished work,then put it into collection.
+     * Gets a connection from the pool or creates a new one if needed.
      *
-     * @param connection connection
+     * @param config Configuration for creating new connections
+     * @param protocol Mail protocol to use
+     * @return A connection from the pool
+     * @throws ApplicationException if connection creation fails
      */
-    public void flush(Connection connection) {
-        synchronized (ConnectionManager.class) {
-            this.list.add(connection);
+    public Connection getConnection(Configuration<String> config, PROTOCOL protocol) throws ApplicationException {
+        if (isShutdown) {
+            throw new ApplicationException("Connection manager is shut down");
+        }
 
-            if (this.list.size() > 3 && !this.pending) {
-                this.pending = true;
-
-                new Thread(this).start();
+        // First try to get an idle connection
+        PooledConnection connection = idleConnections.poll();
+        if (connection != null) {
+            if (isConnectionValid(connection)) {
+                markConnectionActive(connection);
+                return connection;
+            } else {
+                closeConnection(connection);
             }
         }
-    }
 
-    public Connection getConnection(Configuration<String> config, PROTOCOL protocol) throws ApplicationException {
-        Connection connection;
-        synchronized (ConnectionManager.class) {
-            if (!this.list.isEmpty()) {
-                connection = this.list.firstElement();// 从连接向量中提取第一个空闲的连接。由于是提取，所以要把它从连接向量中删除
-                this.list.remove(connection);
-                if (!connection.available())// 对提取出来的连接进行判断，如果关闭了，那么提取下一个连接，否则直接获取一个新的连接
-                {
-                    connection = this.getConnection(protocol);
-                }
-            } else {
-                if (protocol == PROTOCOL.SMTP)
-                    connection = new SMTPConnection(config);
-                else
-                    connection = new POP3Connection(config);
-            }
-
+        // Create new connection if pool is not full
+        if (activeConnections.size() < maxPoolSize) {
+            connection = createNewConnection(config, protocol);
+            markConnectionActive(connection);
             return connection;
         }
+
+        // Wait for a connection to become available
+        try {
+            return waitForConnection(config, protocol);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ApplicationException("Interrupted while waiting for connection", e);
+        }
     }
 
-    public Connection getConnection(PROTOCOL protocol) throws ApplicationException {
-        return this.getConnection(new Settings("/application.properties"), protocol);
+    /**
+     * Returns a connection to the pool.
+     *
+     * @param connection The connection to return
+     */
+    public void releaseConnection(Connection connection) {
+        if (connection instanceof PooledConnection) {
+            PooledConnection pooledConnection = (PooledConnection) connection;
+            activeConnections.remove(connection);
+            
+            if (isConnectionValid(pooledConnection)) {
+                idleConnections.offer(pooledConnection);
+            } else {
+                closeConnection(pooledConnection);
+            }
+        }
     }
 
-    public int size() {
-        return list.size();
+    @Override
+    public void close() {
+        isShutdown = true;
+        cleanupExecutor.shutdown();
+        
+        try {
+            if (!cleanupExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                cleanupExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            cleanupExecutor.shutdownNow();
+        }
+
+        // Close all connections
+        idleConnections.forEach(this::closeConnection);
+        idleConnections.clear();
+        activeConnections.keySet().forEach(this::closeConnection);
+        activeConnections.clear();
     }
 
+    private void cleanup() {
+        Instant now = Instant.now();
+
+        // Cleanup idle connections
+        idleConnections.removeIf(conn -> {
+            if (isConnectionExpired(conn, now)) {
+                closeConnection(conn);
+                return true;
+            }
+            return false;
+        });
+
+        // Cleanup active connections
+        activeConnections.entrySet().removeIf(entry -> {
+            if (Duration.between(entry.getValue(), now).compareTo(maxLifetime) > 0) {
+                closeConnection(entry.getKey());
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private boolean isConnectionValid(PooledConnection connection) {
+        return connection != null && 
+               connection.getCreationTime() != null && 
+               connection.getLastUsedTime() != null &&
+               Duration.between(connection.getCreationTime(), Instant.now()).compareTo(maxLifetime) <= 0 &&
+               Duration.between(connection.getLastUsedTime(), Instant.now()).compareTo(maxIdleTime) <= 0;
+    }
+
+    private boolean isConnectionExpired(PooledConnection connection, Instant now) {
+        return Duration.between(connection.getLastUsedTime(), now).compareTo(maxIdleTime) > 0 ||
+               Duration.between(connection.getCreationTime(), now).compareTo(maxLifetime) > 0;
+    }
+
+    private void closeConnection(Connection connection) {
+        try {
+            connection.close();
+        } catch (MessagingException e) {
+            logger.log(Level.WARNING, "Error closing connection", e);
+        }
+    }
+
+    private void markConnectionActive(PooledConnection connection) {
+        connection.setLastUsedTime(Instant.now());
+        activeConnections.put(connection, Instant.now());
+    }
+
+    private PooledConnection createNewConnection(Configuration<String> config, PROTOCOL protocol) 
+            throws ApplicationException {
+        Connection baseConnection = protocol == PROTOCOL.SMTP ? 
+            new SMTPConnection(config) : new POP3Connection(config);
+        return new PooledConnection(baseConnection);
+    }
+
+    private Connection waitForConnection(Configuration<String> config, PROTOCOL protocol) 
+            throws InterruptedException, ApplicationException {
+        int attempts = 0;
+        while (attempts < 3) {
+            PooledConnection connection = idleConnections.poll();
+            if (connection != null && isConnectionValid(connection)) {
+                markConnectionActive(connection);
+                return connection;
+            }
+            
+            Thread.sleep(1000);
+            attempts++;
+        }
+        throw new ApplicationException("Connection pool exhausted");
+    }
+
+    /**
+     * Wraps a Connection with pooling metadata.
+     */
+    private static class PooledConnection implements Connection {
+        private final Connection delegate;
+        private final Instant creationTime;
+        private volatile Instant lastUsedTime;
+
+        PooledConnection(Connection delegate) {
+            this.delegate = delegate;
+            this.creationTime = Instant.now();
+            this.lastUsedTime = Instant.now();
+        }
+
+        @Override
+        public String getId() {
+            return delegate.getId();
+        }
+
+        @Override
+        public PROTOCOL getProtocol() {
+            return delegate.getProtocol();
+        }
+
+        @Override
+        public Session getSession() {
+            return delegate.getSession();
+        }
+
+        @Override
+        public boolean available() {
+            return delegate.available();
+        }
+
+        @Override
+        public void send(Message message, Address[] recipients) throws MessagingException {
+            try {
+                delegate.send(message, recipients);
+                lastUsedTime = Instant.now();
+            } catch (MessagingException e) {
+                // Log the error and rethrow
+                logger.log(Level.WARNING, "Failed to send message using connection: " + getId(), e);
+                throw e;
+            }
+        }
+
+        @Override
+        public void close() throws MessagingException {
+            try {
+                delegate.close();
+            } catch (MessagingException e) {
+                logger.log(Level.WARNING, "Error closing connection: " + getId(), e);
+                throw e;
+            }
+        }
+
+        Instant getCreationTime() {
+            return creationTime;
+        }
+
+        Instant getLastUsedTime() {
+            return lastUsedTime;
+        }
+
+        void setLastUsedTime(Instant time) {
+            this.lastUsedTime = time;
+        }
+    }
 }
 

@@ -15,223 +15,281 @@
  *******************************************************************************/
 package org.tinystruct.mail;
 
+import jakarta.mail.*;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 import org.tinystruct.ApplicationException;
-import org.tinystruct.mail.Connection.PROTOCOL;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
+import org.tinystruct.mail.Connection.PROTOCOL;
 
-import jakarta.activation.DataHandler;
-import jakarta.activation.FileDataSource;
-import jakarta.mail.*;
-import jakarta.mail.internet.*;
-import java.io.UnsupportedEncodingException;
+import java.io.File;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * @author Mover
+ * Enhanced email service implementation that supports both simple emails and emails with attachments.
+ * This class implements the MailService interface and provides a fluent builder pattern for configuration.
+ * Uses connection pooling through ConnectionManager for better resource management.
  */
-public class SimpleMail {
+public class SimpleMail implements MailService {
     private final static Logger logger = Logger.getLogger(SimpleMail.class.getName());
+    private static final Configuration<String> config = new Settings();
+    private static final ConnectionManager manager = ConnectionManager.getInstance();
 
-    private final String username; // smtp认证用户名和密码
+    private final Properties properties;
+    private final String username;
+    private final String password;
     private String fromName;
     private List<InternetAddress> to;
     private List<InternetAddress> copyTo;
     private List<InternetAddress> behindCopyTo;
     private String content;
     private String subject;
+    private List<File> attachments;
 
-    private InternetAddress toAddress;
-
-    private MimeBodyPart mBodyPart;
-
-    private static final Configuration<String> config = new Settings();
-    private static final ConnectionManager manager = ConnectionManager.getInstance();
-
-    public SimpleMail() {
-        this.username = config.get("smtp.auth.user");
-    }
-
-    public void setSubject(String mailSubject) {
-        this.subject = mailSubject;
-    }
-
-    public void setBody(String mailBody) {
-        this.content = mailBody;
+    /**
+     * Creates a new SimpleMail instance with SMTP configuration.
+     *
+     * @param host SMTP host
+     * @param port SMTP port
+     * @param username SMTP username
+     * @param password SMTP password
+     */
+    public SimpleMail(String host, int port, String username, String password) {
+        this.properties = new Properties();
+        this.properties.put("mail.smtp.host", host);
+        this.properties.put("mail.smtp.port", port);
+        this.properties.put("mail.smtp.auth", "true");
+        this.properties.put("mail.smtp.starttls.enable", "true");
+        
+        this.username = username;
+        this.password = password;
+        this.to = new ArrayList<>();
+        this.copyTo = new ArrayList<>();
+        this.behindCopyTo = new ArrayList<>();
+        this.attachments = new ArrayList<>();
     }
 
     /**
-     * Attach a file with the file name.
-     *
-     * @param fileName file name
-     * @return true or false
+     * Creates a new SimpleMail instance with default configuration from settings.
+     */
+    public SimpleMail() {
+        this(
+            config.get("mail.smtp.host"),
+            Integer.parseInt(config.get("mail.smtp.port")),
+            config.get("mail.smtp.username"),
+            config.get("mail.smtp.password")
+        );
+    }
+
+    @Override
+    public void sendMail(String to, String subject, String content) throws ApplicationException {
+        try {
+            clearRecipients();
+            setTo(to);
+            setSubject(subject);
+            setBody(content);
+            send();
+        } catch (Exception e) {
+            throw new ApplicationException("Failed to send email: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void sendMailWithAttachments(String to, String subject, String content, String[] attachmentPaths) 
+            throws ApplicationException {
+        try {
+            clearRecipients();
+            setTo(to);
+            setSubject(subject);
+            setBody(content);
+            
+            // Add attachments
+            for (String path : attachmentPaths) {
+                attachFile(path);
+            }
+            
+            send();
+        } catch (Exception e) {
+            throw new ApplicationException("Failed to send email with attachments: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Sets the email subject.
+     */
+    public SimpleMail setSubject(String mailSubject) {
+        this.subject = mailSubject;
+        return this;
+    }
+
+    /**
+     * Sets the email body content.
+     */
+    public SimpleMail setBody(String mailBody) {
+        this.content = mailBody;
+        return this;
+    }
+
+    /**
+     * Adds a file attachment to the email.
      */
     public boolean attachFile(String fileName) {
-        logger.log(Level.INFO, "增加邮件附件：{}", fileName);
-        mBodyPart = new MimeBodyPart();
-        FileDataSource fileds = new FileDataSource(fileName);
-
         try {
-            mBodyPart.setDataHandler(new DataHandler(fileds));
-            mBodyPart.setFileName(MimeUtility.encodeWord(fileds.getName(), "utf-8", "Q"));
-        } catch (MessagingException e) {
-            logger.severe("增加邮件附件：" + fileName + "发生错误！" + e);
+            File file = new File(fileName);
+            if (file.exists() && file.canRead()) {
+                attachments.add(file);
+                return true;
+            }
+            logger.warning("Cannot attach file: " + fileName + " (file not found or not readable)");
             return false;
-        } catch (UnsupportedEncodingException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to attach file: " + fileName, e);
             return false;
         }
-
-        return true;
     }
 
     /**
-     * Set the name of from.
-     *
-     * @param fromName from name
+     * Sets the sender's display name.
      */
-    public void setFrom(String fromName) {
+    public SimpleMail setFrom(String fromName) {
         this.fromName = fromName;
+        return this;
     }
 
     /**
-     * Set the address to be sent to.
-     *
-     * @param to to address
-     * @throws ApplicationException application exception
+     * Sets the primary recipient.
      */
-    public void setTo(String to) throws ApplicationException {
+    public SimpleMail setTo(String to) throws ApplicationException {
         try {
-            this.toAddress = new InternetAddress(to);
-        } catch (AddressException e) {
-
-            throw new ApplicationException(e.getMessage(), e);
+            clearRecipients();
+            addTo(to);
+            return this;
+        } catch (Exception e) {
+            throw new ApplicationException("Invalid recipient address: " + to, e);
         }
     }
 
-    public void addTo(String to) throws ApplicationException {
-        if (this.to == null) {
-            this.to = new ArrayList<InternetAddress>();
-        }
-
+    /**
+     * Adds a recipient to the TO list.
+     */
+    public SimpleMail addTo(String to) throws ApplicationException {
         try {
             this.to.add(new InternetAddress(to));
-        } catch (AddressException e) {
-
-            throw new ApplicationException(e.getMessage(), e);
-        }
-
-    }
-
-    public void addCopyTo(String copyto) throws AddressException {
-        if (this.copyTo == null) {
-            this.copyTo = new ArrayList<InternetAddress>();
-        }
-
-        this.copyTo.add(new InternetAddress(copyto));
-    }
-
-    public void addBehindCopyTo(String copyto) throws ApplicationException {
-        if (this.behindCopyTo == null) {
-            this.behindCopyTo = new ArrayList<InternetAddress>();
-        }
-
-        try {
-            this.behindCopyTo.add(new InternetAddress(copyto));
-        } catch (AddressException e) {
-
-            throw new ApplicationException(e.getMessage(), e);
+            return this;
+        } catch (Exception e) {
+            throw new ApplicationException("Invalid recipient address: " + to, e);
         }
     }
 
     /**
-     * Send mail.
-     *
-     * @return true or false
-     * @throws ApplicationException application exception
+     * Adds a CC recipient.
+     */
+    public SimpleMail addCopyTo(String copyTo) throws ApplicationException {
+        try {
+            this.copyTo.add(new InternetAddress(copyTo));
+            return this;
+        } catch (Exception e) {
+            throw new ApplicationException("Invalid CC address: " + copyTo, e);
+        }
+    }
+
+    /**
+     * Adds a BCC recipient.
+     */
+    public SimpleMail addBehindCopyTo(String bccTo) throws ApplicationException {
+        try {
+            this.behindCopyTo.add(new InternetAddress(bccTo));
+            return this;
+        } catch (Exception e) {
+            throw new ApplicationException("Invalid BCC address: " + bccTo, e);
+        }
+    }
+
+    /**
+     * Sends the email with current configuration using a connection from the pool.
      */
     public boolean send() throws ApplicationException {
+        if (to.isEmpty()) {
+            throw new ApplicationException("No recipients specified");
+        }
 
-        SMTPConnection connection = (SMTPConnection) manager.getConnection(config, PROTOCOL.SMTP);
-
-        Session session = connection.getSession();
-        Message message = new MimeMessage(session);
-
-        logger.log(Level.INFO, "正在发送邮件....");
+        Connection connection = null;
         try {
-            Multipart multipart = new MimeMultipart();
+            // Get a connection from the pool
+            connection = manager.getConnection(config, PROTOCOL.SMTP);
 
-            BodyPart body = new MimeBodyPart();
-            body.setHeader("Content-Transfer-Encoding", "base64");
-            body.setContent(this.content, "text/html;charset=utf-8");
-            multipart.addBodyPart(body);
-
-            if (this.mBodyPart != null) {
-                multipart.addBodyPart(mBodyPart);
-            }
-
-            if (this.fromName != null && !this.fromName.trim().isEmpty())
-                message.setFrom(new InternetAddress(this.username, MimeUtility.encodeWord(this.fromName, "utf-8", "Q")));
-            else
-                message.setFrom(new InternetAddress(this.username));
-
-            message.setSubject(MimeUtility.encodeWord(this.subject, "utf-8", "Q"));
-            message.setSentDate(new Date());
-            message.setContent(multipart);
-
-            if (this.toAddress == null) {
-                if (this.to != null && !this.to.isEmpty()) {
-                    InternetAddress[] to = new InternetAddress[this.to.size()];
-                    message.addRecipients(Message.RecipientType.TO, this.to.toArray(to));
-                }
+            // Create the message
+            Session session = connection.getSession();
+            MimeMessage message = new MimeMessage(session);
+            
+            // Set From
+            if (fromName != null) {
+                message.setFrom(new InternetAddress(username, fromName));
             } else {
-                message.setRecipient(Message.RecipientType.TO, toAddress);
+                message.setFrom(new InternetAddress(username));
             }
 
-            if (this.copyTo != null && !this.copyTo.isEmpty()) {
-                InternetAddress[] cp = new InternetAddress[this.copyTo.size()];
-                message.addRecipients(Message.RecipientType.CC, this.copyTo.toArray(cp));
+            // Set recipients
+            InternetAddress[] toAddresses = to.toArray(new InternetAddress[0]);
+            message.addRecipients(Message.RecipientType.TO, toAddresses);
+            if (!copyTo.isEmpty()) {
+                message.addRecipients(Message.RecipientType.CC, copyTo.toArray(new InternetAddress[0]));
+            }
+            if (!behindCopyTo.isEmpty()) {
+                message.addRecipients(Message.RecipientType.BCC, behindCopyTo.toArray(new InternetAddress[0]));
             }
 
-            if (this.behindCopyTo != null && !this.behindCopyTo.isEmpty()) {
-                InternetAddress[] bcp = new InternetAddress[this.behindCopyTo.size()];
-                message.addRecipients(Message.RecipientType.BCC, this.behindCopyTo.toArray(bcp));
-            }
-            message.saveChanges();
+            message.setSubject(subject);
 
+            // Handle content and attachments
+            if (attachments.isEmpty()) {
+                message.setContent(content, "text/html; charset=utf-8");
+            } else {
+                // Create multipart message
+                MimeMultipart multipart = new MimeMultipart();
+
+                // Add content part
+                MimeBodyPart contentPart = new MimeBodyPart();
+                contentPart.setContent(content, "text/html; charset=utf-8");
+                multipart.addBodyPart(contentPart);
+
+                // Add attachment parts
+                for (File file : attachments) {
+                    MimeBodyPart attachmentPart = new MimeBodyPart();
+                    attachmentPart.attachFile(file);
+                    multipart.addBodyPart(attachmentPart);
+                }
+
+                message.setContent(multipart);
+            }
+
+            // Send message using the pooled connection
             connection.send(message, message.getAllRecipients());
-            logger.log(Level.INFO, "发送邮件成功！");
+            logger.log(Level.INFO, "Email sent successfully to {0}", to);
             return true;
-        } catch (MessagingException e) {
-            throw new ApplicationException(e.getLocalizedMessage(), e);
-        } catch (UnsupportedEncodingException e) {
-            throw new ApplicationException(e.getLocalizedMessage(), e);
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to send email", e);
+            throw new ApplicationException("Failed to send email: " + e.getMessage(), e);
         } finally {
-            manager.flush(connection);
+            if (connection != null) {
+                manager.releaseConnection(connection);
+            }
         }
-
     }
 
-    public Message[] receive() throws ApplicationException {
-        POP3Connection connection = (POP3Connection) manager.getConnection(config, PROTOCOL.POP3);
-
-        Store store = connection.getStore();
-        Message[] messages = new Message[]{};
-        try {
-            Folder folder = store.getFolder("INBOX");
-            folder.open(Folder.READ_ONLY);
-            messages = folder.getMessages();
-            logger.info("Messages's length: " + messages.length);
-        } catch (MessagingException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
-        }
-
-        return messages;
+    private void clearRecipients() {
+        to.clear();
+        copyTo.clear();
+        behindCopyTo.clear();
+        attachments.clear();
     }
-
 }
 
