@@ -74,18 +74,20 @@ $ bin/dispatcher --version
 ```
 ```tcsh
 $ bin/dispatcher --help
-Usage: bin/dispatcher COMMAND [OPTIONS]
+Usage: bin\dispatcher COMMAND [OPTIONS]
+A command line tool for tinystruct framework
 Commands: 
-        download                Download a resource from other servers
-        exec                    To execute native command(s)
-        generate                POJO object generator
-        install                 Install a package
-        open                    Start a default browser to open the specific URL
-        say                     Output words
-        set                     Set system property
-        sql-execute             Executes the given SQL statement, which may be an INSERT, UPDATE, or DELETE statement or an SQL statement that returns nothing, such as an SQL DDL statement.
-        sql-query               Executes the given SQL statement, which returns a single ResultSet object.
-        update                  Update for latest version
+        download        Download a resource from other servers
+        exec            To execute native command(s)
+        generate        POJO object generator
+        install         Install a package
+        maven-wrapper   Extract Maven Wrapper
+        open            Start a default browser to open the specific URL
+        say             Output words
+        set             Set system property
+        sql-execute     Executes the given SQL statement
+        sql-query       Executes the given SQL statement
+        update          Update for latest version
 
 Options: 
         --allow-remote-access   Allow to be accessed remotely
