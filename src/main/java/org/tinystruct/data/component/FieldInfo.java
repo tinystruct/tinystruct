@@ -98,6 +98,15 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
         return value.toString();
     }
 
+    public double doubleValue() {
+        Object value = this.value();
+
+        if (value == null)
+            return 0;
+
+        return Double.parseDouble(value.toString());
+    }
+
     public int intValue() {
         Object value = this.value();
 
