@@ -705,13 +705,13 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         if (getContext().getAttribute("--jar-file-path") != null) {
             jarFilePath = getContext().getAttribute("--jar-file-path").toString();
         } else {
-            throw new ApplicationException("Missing --jar-file-path");
+            throw new ApplicationException("Missing --jar-file-path. It should point to a jar file of tinystruct framework.");
         }
 
         if (getContext().getAttribute("--destination-dir") != null) {
             destinationDir = getContext().getAttribute("--destination-dir").toString();
         } else {
-            throw new ApplicationException("Missing --destination-dir");
+            destinationDir = getConfiguration().getOrDefault("system.directory", ".");
         }
 
         try (JarFile jarFile = new JarFile(jarFilePath)) {
