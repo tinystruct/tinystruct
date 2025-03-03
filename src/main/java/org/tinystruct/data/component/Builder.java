@@ -229,11 +229,11 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     } else if ($value.charAt(0) == LEFT_BRACKETS) {
                         // Handle array
                         Builders builders = new Builders();
-                        String remaining = builders.parse($value);
+                        String remaining = builders.parse($value).trim();
                         keyValue = builders;
-                        if (!Objects.equals(remaining, "")) {
-                            this.parseValue(remaining);
-                        }
+                        if(!remaining.isEmpty() && remaining.charAt(0) == COMMA)
+                            remaining = remaining.substring(1); // COMMA length: 1
+                        this.parseValue(remaining);
                     } else {
                         if ($value.indexOf(COMMA) != -1) {
                             // Extract and parse a single value if there are more values in the sequence
