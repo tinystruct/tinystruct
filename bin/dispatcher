@@ -191,12 +191,20 @@ for jar_file in "$ROOT"/lib/*.jar; do
     CLASSPATH="$CLASSPATH:$jar_file"
 done
 
+# Check if the JAR file exists in .m2
+DEFAULT_JAR_FILE="$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION.jar"
+[ -f "$DEFAULT_JAR_FILE" ] && JAR_FILE="$DEFAULT_JAR_FILE"
+
+# Check if the JAR file exists in .m2
+DEFAULT_JAR_FILE_WITH_DEPENDENCIES="$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar"
+[ -f "$DEFAULT_JAR_FILE_WITH_DEPENDENCIES" ] && JAR_FILE="$DEFAULT_JAR_FILE_WITH_DEPENDENCIES"
+
 # Check if the Maven Wrapper is already available
 if [ ! -f "mvnw" ]; then
     echo "Maven Wrapper not found. Extracting from JAR..."
 
     # Run Java code to extract the ZIP file from the JAR
-    $JAVACMD -cp "$JAR_PATH" org.tinystruct.system.Dispatcher maven-wrapper --jar-file-path "$JAR_PATH" --destination-dir "$ROOT"
+    $JAVACMD -cp "$JAR_FILE" org.tinystruct.system.Dispatcher maven-wrapper --jar-file-path "$JAR_FILE" --destination-dir "$ROOT"
 
     if [ -f "$ROOT/maven-wrapper.zip" ]; then
         # Now unzip the Maven Wrapper files
@@ -210,13 +218,6 @@ if [ ! -f "mvnw" ]; then
     fi
 fi
 
-# Check if the JAR file exists in .m2
-DEFAULT_JAR_FILE="$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION.jar"
-[ -f "$DEFAULT_JAR_FILE" ] && JAR_FILE="$DEFAULT_JAR_FILE"
-
-# Check if the JAR file exists in .m2
-DEFAULT_JAR_FILE_WITH_DEPENDENCIES="$M2_HOME/repository/org/tinystruct/tinystruct/$VERSION/tinystruct-$VERSION-jar-with-dependencies.jar"
-[ -f "$DEFAULT_JAR_FILE_WITH_DEPENDENCIES" ] && JAR_FILE="$DEFAULT_JAR_FILE_WITH_DEPENDENCIES"
 
 # Java execution
 $JAVACMD \
