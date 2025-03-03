@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright  (c) 2023 James Mover Zhou
+ * Copyright  (c) 2025 James M. Zhou
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,15 @@ import java.util.regex.Pattern;
 
 /**
  * Builder class represents a key-value data structure, similar to a JSON object.
+ * It extends HashMap to provide a map-like interface while adding JSON parsing and formatting capabilities.
+ * This class implements the Struct interface to provide consistent data structure handling across the application.
  */
 public class Builder extends HashMap<String, Object> implements Struct, Serializable {
 
     private static final long serialVersionUID = 3484789992424316230L;
+    private static final Logger logger = Logger.getLogger(Builder.class.getName());
 
+    // JSON parsing constants
     public static final char QUOTE = '"';
     public static final char COMMA = ',';
     public static final char COLON = ':';
@@ -45,12 +49,11 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public static final char RIGHT_BRACKETS = ']';
     public static final char ESCAPE_CHAR = '\\';
 
-    private static final Logger logger = Logger.getLogger(Builder.class.getName());
+    // Value type patterns
     public static final Pattern INTEGER = Pattern.compile("^-?\\d+$");
     public static final Pattern DOUBLE = Pattern.compile("^-?\\d+(\\.\\d+)$");
     public static final Pattern BOOLEAN = Pattern.compile("^(true|false)$");
     private int closedPosition = 0;
-
     private String key = null;
     private Object value = null;
 
@@ -60,35 +63,58 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public Builder() {
     }
 
+    /**
+     * Constructor that initializes with a string value.
+     * @param value The string value to initialize with
+     */
     public Builder(String value) {
         this.value = value;
     }
 
+    /**
+     * Constructor that initializes with a number value.
+     * @param value The number value to initialize with
+     */
     public Builder(Number value) {
         this.value = value;
     }
 
+    /**
+     * Constructor that initializes with a key-value pair.
+     * @param key The key for the value
+     * @param value The value to associate with the key
+     */
     public Builder(String key, Object value) {
         this.key = key;
         this.value = value;
         this.put(key, value);
     }
 
+    /**
+     * Override of HashMap.put to allow method chaining.
+     * @param key The key to store the value under
+     * @param value The value to store
+     * @return This Builder instance for method chaining
+     */
     @Override
     public Builder put(String key, Object value) {
         super.put(key, value);
         return this;
     }
 
-
+    /**
+     * Get the current value of the Builder.
+     * @return The current value
+     */
     public Object getValue() {
         return this.value;
     }
 
     /**
      * Convert the Builder object to its string representation.
+     * The output follows JSON format with proper escaping of special characters.
      *
-     * @return String representation of the Builder.
+     * @return String representation of the Builder in JSON format
      */
     @Override
     public String toString() {
@@ -133,9 +159,10 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     /**
      * Parse the resource string and populate the Builder object with key-value pairs.
+     * The input string should be in JSON format.
      *
-     * @param resource JSON string to parse.
-     * @throws ApplicationException If the data format is invalid.
+     * @param resource JSON string to parse
+     * @throws ApplicationException If the data format is invalid or parsing fails
      */
     @Override
     public void parse(String resource) throws ApplicationException {
@@ -261,34 +288,54 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     /**
      * Determine the type of the value and parse it accordingly.
+     * Supports parsing of integers, doubles, booleans, and strings.
      *
-     * @param value String representation of the value.
-     * @return Parsed value.
+     * @param value String representation of the value
+     * @return Parsed value of appropriate type
      */
     private Object getValue(String value) {
-        // Determine the type of the value and parse it accordingly
-        Object keyValue;
-        if (INTEGER.matcher(value).find()) {
-            try {
-                keyValue = Integer.parseInt(value);
-            } catch (Exception e) {
-                keyValue = Long.valueOf(value);
-            }
-        } else if (DOUBLE.matcher(value).find()) {
-            keyValue = Double.parseDouble(value);
-        } else if (BOOLEAN.matcher(value.toLowerCase(Locale.ROOT)).find()) {
-            keyValue = Boolean.parseBoolean(value);
-        } else {
-            keyValue = value;
+        if (value == null || value.trim().isEmpty()) {
+            return null;
         }
-        return keyValue;
+
+        value = value.trim();
+        if (INTEGER.matcher(value).matches()) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                try {
+                    return Long.parseLong(value);
+                } catch (NumberFormatException ex) {
+                    logger.warning("Failed to parse integer value: " + value);
+                }
+            }
+        }
+        
+        if (DOUBLE.matcher(value).matches()) {
+            try {
+                return Double.parseDouble(value);
+            } catch (NumberFormatException e) {
+                logger.warning("Failed to parse double value: " + value);
+            }
+        }
+        
+        if (BOOLEAN.matcher(value.toLowerCase(Locale.ROOT)).matches()) {
+            return Boolean.parseBoolean(value);
+        }
+        
+        if ("null".equalsIgnoreCase(value)) {
+            return null;
+        }
+        
+        return value;
     }
 
     /**
      * Find the closing position of the JSON structure.
+     * Handles nested structures and escaped characters.
      *
-     * @param value JSON structure string.
-     * @return Closing position of the JSON structure.
+     * @param value JSON structure string
+     * @return Closing position of the JSON structure
      */
     private int seekPosition(String value) {
         // Find the closing position of the JSON structure
@@ -316,10 +363,11 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     /**
      * Find the position of the next occurrence of a character in a string.
+     * Handles escaped characters and nested structures.
      *
-     * @param value     String to search.
-     * @param character The character that looking for.
-     * @return Position of the next occurrence of the character.
+     * @param value String to search
+     * @param character The character to look for
+     * @return Position of the next occurrence of the character
      */
     private int next(String value, char character) {
         // Find the position of the next occurrence of a character in a string
@@ -344,24 +392,21 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     /**
      * Convert the Builder object to a Row object.
+     * This method is used to transform the JSON-like structure into a database row format.
      *
-     * @return Row object representing the data in the Builder.
+     * @return Row object representing the data in the Builder
      */
     @Override
     public Row toData() {
         // Convert the builder to a Row object
         Row row = new Row();
         Field field = new Field();
-        Set<Entry<String, Object>> keySet = this.entrySet();
-        String key;
-        Object value;
-        for (Entry<String, Object> entry : keySet) {
-            value = entry.getValue();
-            key = entry.getKey();
+        
+        for (Entry<String, Object> entry : this.entrySet()) {
             FieldInfo info = new FieldInfo();
-            info.set("name", key);
-            info.set("value", value);
-            field.append(key, info);
+            info.set("name", entry.getKey());
+            info.set("value", entry.getValue());
+            field.append(entry.getKey(), info);
         }
 
         row.append(field);
@@ -370,9 +415,10 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     /**
      * Save the string representation of the data to a file.
+     * The data is saved in JSON format.
      *
-     * @param file File to save the data.
-     * @throws ApplicationException If there is an issue saving the data.
+     * @param file File to save the data
+     * @throws ApplicationException If there is an issue saving the data
      */
     public void saveAsFile(File file) throws ApplicationException {
         // Save the string representation of the data to a file
@@ -386,7 +432,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     /**
      * Get the size of the key set.
      *
-     * @return Size of the key set.
+     * @return Size of the key set
      */
     @Override
     public int size() {
