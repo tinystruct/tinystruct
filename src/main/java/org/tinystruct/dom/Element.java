@@ -18,6 +18,8 @@ package org.tinystruct.dom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 
 public class Element implements Cloneable {
@@ -329,14 +331,18 @@ public class Element implements Cloneable {
 
     private List<Element> getChildElementsByTagName(String tagName) {
         List<Element> found = new ArrayList<>();
+        findElementsByTagName(this.childNodes, tagName, found);
+        return found;
+    }
 
-        for (Element currentElement : this.childNodes) {
+    private void findElementsByTagName(List<Element> nodes, String tagName, List<Element> found) {
+        for (Element currentElement : nodes) {
             if (currentElement.name.equalsIgnoreCase(tagName)) {
                 found.add(currentElement);
             }
+            // Recurse into child nodes
+            findElementsByTagName(currentElement.childNodes, tagName, found);
         }
-
-        return found;
     }
 
     public List<Element> getElementsByTagName(String tagName) {
@@ -591,6 +597,79 @@ public class Element implements Cloneable {
             hashCode += (childNodes.hashCode() * 57);
         }
         return hashCode;
+    }
+
+    /**
+     * Convert the element to HTML format
+     * @param docType The HTML document type
+     * @param voidElements Set of void elements that don't need closing tags
+     * @return HTML string representation
+     */
+    public String toHtml(Document.DocumentType docType, Set<String> voidElements) {
+        StringBuilder buffer = new StringBuilder();
+        String tagName = name.toLowerCase();
+
+        // Opening tag
+        buffer.append('<').append(tagName);
+        
+        // Attributes
+        if (!attributes.isEmpty()) {
+            for (Attribute attr : attributes) {
+                String attrName = attr.name.toLowerCase();
+                String attrValue = attr.value;
+                
+                buffer.append(' ').append(attrName);
+                if (attrValue != null && !attrValue.isEmpty()) {
+                    buffer.append("=\"").append(escapeHtml(attrValue)).append('"');
+                }
+            }
+        }
+
+        // Handle void elements
+        if (voidElements.contains(tagName)) {
+            if (docType == Document.DocumentType.XHTML1_STRICT || 
+                docType == Document.DocumentType.XHTML1_TRANSITIONAL) {
+                buffer.append(" />");
+            } else {
+                buffer.append('>');
+            }
+            return buffer.toString();
+        }
+
+        buffer.append('>');
+
+        // Content
+        if (data != null && !data.isEmpty()) {
+            buffer.append(escapeHtml(data));
+        }
+
+        // Child elements
+        if (!childNodes.isEmpty()) {
+            for (Element child : childNodes) {
+                buffer.append(child.toHtml(docType, voidElements));
+            }
+        }
+
+        // Closing tag
+        buffer.append("</").append(tagName).append('>');
+
+        return buffer.toString();
+    }
+
+    /**
+     * Escape special characters for HTML output
+     * @param text The text to escape
+     * @return Escaped HTML text
+     */
+    private String escapeHtml(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.replace("&", "&amp;")
+                  .replace("<", "&lt;")
+                  .replace(">", "&gt;")
+                  .replace("\"", "&quot;")
+                  .replace("'", "&#39;");
     }
 
 }

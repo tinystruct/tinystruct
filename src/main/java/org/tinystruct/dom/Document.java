@@ -22,15 +22,22 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.ccil.cowan.tagsoup.Parser;
+import org.ccil.cowan.tagsoup.jaxp.SAXFactoryImpl;
 
 /**
  * XML IO reading and writing utility.
@@ -44,16 +51,41 @@ public class Document extends DefaultHandler {
     private static final String XHTML_STRICT_DOCTYPE_CONFIGURATION = "org/tinystruct/application/application-1.0.dtd";
     private static final Logger logger = Logger.getLogger(Document.class.getName());
 
-    private static final Map<String, String> doctypeMap = new HashMap<String, String>();
+    // HTML DOCTYPE declarations
+    private static final String HTML5_DOCTYPE = "<!DOCTYPE html>";
+    private static final String HTML4_TRANSITIONAL_DOCTYPE = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
+    private static final String HTML4_STRICT_DOCTYPE = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">";
+    private static final String XHTML1_TRANSITIONAL_DOCTYPE = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">";
+    private static final String XHTML1_STRICT_DOCTYPE = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">";
+
+    // Document type enum
+    public enum DocumentType {
+        XML,
+        HTML5,
+        HTML4_TRANSITIONAL,
+        HTML4_STRICT,
+        XHTML1_TRANSITIONAL,
+        XHTML1_STRICT
+    }
+
+    private static final Map<String, String> doctypeMap = new HashMap<>();
+    private static final Set<String> voidElements = new HashSet<>(Arrays.asList(
+            "area", "base", "br", "col", "embed", "hr", "img", "input",
+            "link", "meta", "param", "source", "track", "wbr"
+    ));
 
     static {
         doctypeMap.put("-//development.tinystruct.org//DTD APPLICATION Configuration 2.0//EN",
-                        DOCTYPE_CONFIGURATION);
+                DOCTYPE_CONFIGURATION);
         doctypeMap.put("http://development.tinystruct.org/dtd/application-1.0.dtd",
                 DOCTYPE_CONFIGURATION);
         doctypeMap.put("-//W3C//DTD XHTML 1.0 Transitional//EN",
                 XHTML_TRANSITIONAL_DOCTYPE_CONFIGURATION);
         doctypeMap.put("-//W3C//DTD XHTML 1.0 Strict//EN",
+                XHTML_STRICT_DOCTYPE_CONFIGURATION);
+        doctypeMap.put("-//W3C//DTD HTML 4.01 Transitional//EN",
+                XHTML_TRANSITIONAL_DOCTYPE_CONFIGURATION);
+        doctypeMap.put("-//W3C//DTD HTML 4.01//EN",
                 XHTML_STRICT_DOCTYPE_CONFIGURATION);
     }
 
@@ -65,6 +97,8 @@ public class Document extends DefaultHandler {
     // The current element you are working on
     private Element currentElement;
     private URL url = null;
+    private DocumentType documentType = DocumentType.XML;
+    private boolean preserveWhitespace = false;
 
     public Document(URL url) {
         super();
@@ -114,15 +148,28 @@ public class Document extends DefaultHandler {
     public boolean load(InputStream input) {
         try {
             SAXParserFactory factory = SAXParserFactory.newInstance();
+
+            // Configure parser for HTML/XML handling
+            factory.setValidating(false);
+            factory.setNamespaceAware(true);
+
+            // Set features for more lenient HTML parsing
+            if (documentType != DocumentType.XML) {
+                factory.setFeature("http://xml.org/sax/features/namespaces", false);
+                factory.setFeature("http://xml.org/sax/features/validation", false);
+                factory.setFeature("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false);
+                factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            }
+
             SAXParser saxParser = factory.newSAXParser();
             saxParser.parse(input, this);
         } catch (javax.xml.parsers.ParserConfigurationException ex) {
-            LOG.severe("XML config error while attempting to read from the input stream \n'"
+            LOG.severe("Parser configuration error while attempting to read from the input stream \n'"
                     + input + "'");
             LOG.severe(ex.getMessage());
             return false;
         } catch (SAXException ex) {
-            LOG.severe("XML parse error while attempting to read from the input stream \n'"
+            LOG.severe("Parse error while attempting to read from the input stream \n'"
                     + input + "'");
             LOG.severe(ex.getMessage());
             return false;
@@ -196,25 +243,88 @@ public class Document extends DefaultHandler {
 
     }
 
+    /**
+     * Set the document type for proper DOCTYPE handling and formatting.
+     *
+     * @param type The document type to use
+     */
+    public void setDocumentType(DocumentType type) {
+        this.documentType = type;
+    }
+
+    /**
+     * Set whether to preserve whitespace in text content.
+     *
+     * @param preserve True to preserve whitespace, false to trim
+     */
+    public void setPreserveWhitespace(boolean preserve) {
+        this.preserveWhitespace = preserve;
+    }
+
+    /**
+     * Get the appropriate DOCTYPE declaration for the current document type.
+     *
+     * @return The DOCTYPE declaration string
+     */
+    private String getDocTypeDeclaration() {
+        switch (documentType) {
+            case HTML5:
+                return HTML5_DOCTYPE;
+            case HTML4_TRANSITIONAL:
+                return HTML4_TRANSITIONAL_DOCTYPE;
+            case HTML4_STRICT:
+                return HTML4_STRICT_DOCTYPE;
+            case XHTML1_TRANSITIONAL:
+                return XHTML1_TRANSITIONAL_DOCTYPE;
+            case XHTML1_STRICT:
+                return XHTML1_STRICT_DOCTYPE;
+            default:
+                return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+        }
+    }
+
     @Override
     public void startElement(String namespaceURI, String localName,
                              String qName, Attributes attrs) throws SAXException {
-        // Resetting contents buffer.
-        // Assuming that tags either tag content or children, not both.
-        // This is usually the case with XML that is representing
-        // data strucutures in a programming language independant way.
-        // This assumption is not typically valid where XML is being
-        // used in the classical text mark up style where tagging
-        // is used to style content and several styles may overlap
-        // at once.
         try {
             contents.reset();
-            String name = localName; // element name
+            String name = localName;
             if ("".equals(name)) {
                 name = qName; // namespaceAware = false
             }
 
-            if (this.rootElement == null) {
+            // Convert tag names to lowercase for HTML
+            if (documentType != DocumentType.XML) {
+                name = name.toLowerCase();
+            }
+
+            // Handle special HTML elements
+            if (documentType != DocumentType.XML && name.equals("html")) {
+                // Add default HTML attributes if not present
+                if (this.rootElement == null) {
+                    this.rootElement = new Element(name);
+                    this.currentElement = this.rootElement;
+
+                    // Add default HTML attributes
+                    if (attrs == null || attrs.getLength() == 0) {
+                        switch (documentType) {
+                            case XHTML1_STRICT:
+                            case XHTML1_TRANSITIONAL:
+                                this.currentElement.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+                                this.currentElement.setAttribute("xml:lang", "en");
+                                this.currentElement.setAttribute("lang", "en");
+                                break;
+                            case HTML5:
+                                this.currentElement.setAttribute("lang", "en");
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                } else {
+                    this.currentElement = this.currentElement.addElement(name);
+                }
+            } else if (this.rootElement == null) {
                 this.rootElement = new Element(name);
                 this.currentElement = this.rootElement;
             } else {
@@ -223,9 +333,13 @@ public class Document extends DefaultHandler {
 
             if (attrs != null) {
                 for (int i = 0; i < attrs.getLength(); i++) {
-                    String aName = attrs.getLocalName(i); // Attr name
+                    String aName = attrs.getLocalName(i);
                     if ("".equals(aName)) {
                         aName = attrs.getQName(i);
+                    }
+                    // Convert attribute names to lowercase for HTML
+                    if (documentType != DocumentType.XML) {
+                        aName = aName.toLowerCase();
                     }
                     this.currentElement.setAttribute(aName, attrs.getValue(i));
                 }
@@ -238,7 +352,16 @@ public class Document extends DefaultHandler {
     @Override
     public void endElement(String namespaceURI, String localName, String qName) {
         if (this.currentElement != null) {
-            this.currentElement.setData(contents.toString().trim());
+            String content = preserveWhitespace ? contents.toString() : contents.toString().trim();
+
+            // Special handling for script and style tags in HTML
+            if (documentType != DocumentType.XML &&
+                    (this.currentElement.getName().equalsIgnoreCase("script") ||
+                            this.currentElement.getName().equalsIgnoreCase("style"))) {
+                content = contents.toString(); // Preserve exact content
+            }
+
+            this.currentElement.setData(content);
             contents.reset();
             this.currentElement = this.currentElement.getParent();
         }
@@ -246,8 +369,21 @@ public class Document extends DefaultHandler {
 
     @Override
     public void characters(char[] ch, int start, int length) {
-        // accumulate the contents into a buffer.
-        contents.write(ch, start, length);
+        // Accumulate the contents into a buffer
+        if (documentType != DocumentType.XML &&
+                this.currentElement != null &&
+                (this.currentElement.getName().equalsIgnoreCase("script") ||
+                        this.currentElement.getName().equalsIgnoreCase("style"))) {
+            // For script and style tags, preserve exact content
+            contents.write(ch, start, length);
+        } else {
+            // For other tags, normalize whitespace if not preserving
+            String text = new String(ch, start, length);
+            if (!preserveWhitespace) {
+                text = text.replaceAll("\\s+", " ");
+            }
+            contents.write(text.toCharArray(), 0, text.length());
+        }
     }
 
     /**
@@ -271,21 +407,46 @@ public class Document extends DefaultHandler {
     }
 
     /**
-     * Save the contents of this Element
+     * Save the contents of this Element with appropriate formatting
+     *
      * @param out the output stream
      */
     public void save(OutputStream out) throws IOException {
-        BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(out,
-                StandardCharsets.UTF_8));
-        bufferedWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
+
+        // Write DOCTYPE declaration
+        writer.write(getDocTypeDeclaration());
+        writer.write('\n');
+
         if (!rootElement.getChildNodes().isEmpty()) {
-            bufferedWriter.write(rootElement.toString());
+            if (documentType != DocumentType.XML) {
+                writer.write(rootElement.toHtml(documentType, voidElements));
+            } else {
+                writer.write(rootElement.toString());
+            }
         }
-        bufferedWriter.flush();
+
+        writer.flush();
+    }
+
+    /**
+     * Save as HTML file with specified document type
+     *
+     * @param file The file to save to
+     * @param type The HTML document type
+     * @throws ApplicationException If there is an error saving the file
+     */
+    public void saveAsHtml(File file, DocumentType type) throws ApplicationException {
+        this.documentType = type;
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            save(out);
+        } catch (IOException e) {
+            throw new ApplicationException("Failed to save HTML file: " + file.getPath(), e);
+        }
     }
 
     @Override
-	public InputSource resolveEntity(String publicId, String systemId)
+    public InputSource resolveEntity(String publicId, String systemId)
             throws SAXException {
         InputSource source;
 
@@ -313,5 +474,144 @@ public class Document extends DefaultHandler {
         }
 
         return source;
+    }
+
+    /**
+     * Load HTML content from a string.
+     *
+     * @param html The HTML string to parse
+     * @param type The HTML document type
+     * @return true if parsing was successful
+     * @throws ApplicationException if parsing fails
+     */
+    public boolean loadHtml(String html, DocumentType type) throws ApplicationException {
+        this.documentType = type;
+
+        try {
+            // Pre-process HTML to make it more XML-like
+            html = preprocessHtml(html);
+
+            // Configure parser
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            factory.setValidating(false);
+            factory.setNamespaceAware(false);
+
+            // Disable DTD loading and validation
+            try {
+                factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            } catch (ParserConfigurationException e) {
+                // Ignore if features are not supported
+                logger.log(Level.WARNING, "Could not configure parser features", e);
+            }
+
+            // Parse the HTML
+            SAXParser parser = factory.newSAXParser();
+            parser.parse(new InputSource(new StringReader(html)), this);
+            return true;
+        } catch (Exception ex) {
+            throw new ApplicationException("Failed to parse HTML: " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Preprocess HTML to make it more XML-like
+     *
+     * @param html The HTML string to process
+     * @return Processed HTML string
+     */
+    private String preprocessHtml(String html) {
+        // Auto-close unclosed tags
+        String[] tags = html.split("<|</");
+        StringBuilder autoClosedHtml = new StringBuilder();
+        Set<String> openTags = new HashSet<>();
+
+        for (String tag : tags) {
+            if (tag.trim().isEmpty()) continue;
+            int endIndex = tag.indexOf(">");
+            if (endIndex == -1) {
+                autoClosedHtml.append("<").append(tag);
+                continue;
+            }
+
+            String tagName = tag.substring(0, endIndex).split(" |/>")[0].toLowerCase();
+            boolean isSelfClosing = tag.endsWith("/>") || voidElements.contains(tagName);
+
+            if (!tagName.isEmpty() && !tag.startsWith("/") && !isSelfClosing) {
+                if (tagName.indexOf(' ') != -1)
+                    openTags.add(tagName.substring(0, tagName.indexOf(' ')));
+                else
+                    openTags.add(tagName);
+            } else if (!tagName.isEmpty() && tag.startsWith("/")) {
+                openTags.remove(tagName.substring(1));
+            }
+
+            autoClosedHtml.append("<").append(tag);
+        }
+
+        // Close any remaining open tags, excluding void elements
+        for (String openTag : openTags) {
+            if (!voidElements.contains(openTag)) {
+                autoClosedHtml.append("</").append(openTag).append(">");
+            }
+        }
+
+        html = autoClosedHtml.toString();
+
+        // Ensure proper HTML structure
+        boolean hasHtmlTag = html.toLowerCase().contains("<html>");
+        boolean hasBodyTag = html.toLowerCase().contains("<body>");
+
+        if (!hasHtmlTag) {
+            html = "<html>" + html + "</html>";
+        }
+        if (!hasBodyTag) {
+            html = html.replaceFirst("(<html[^>]*>)", "$1<body>")
+                    .replaceFirst("(</html>)", "</body>$1");
+        }
+
+        // Add HTML5 doctype if not present
+        if (!html.toLowerCase().contains("<!doctype")) {
+            html = HTML5_DOCTYPE + "\n" + html;
+        }
+
+        // Convert special characters to XML entities, avoiding double encoding
+        html = html.replaceAll("&(?!#?\\w+;)", "&amp;")
+                .replace("'", "&apos;");
+
+        // Handle void elements
+        StringBuilder processed = new StringBuilder();
+        int pos = 0;
+        while (pos < html.length()) {
+            int tagStart = html.indexOf("<", pos);
+            if (tagStart == -1) {
+                processed.append(html.substring(pos));
+                break;
+            }
+
+            processed.append(html.substring(pos, tagStart));
+            int tagEnd = html.indexOf(">", tagStart);
+            if (tagEnd == -1) {
+                processed.append(html.substring(tagStart));
+                break;
+            }
+
+            String tag = html.substring(tagStart, tagEnd + 1);
+            String tagName = tag.substring(1).split("[ >]")[0].toLowerCase();
+
+            if (voidElements.contains(tagName)) {
+                // Ensure void element is self-closing
+                if (!tag.endsWith("/>")) {
+                    processed.append(tag.substring(0, tag.length() - 1)).append("/>");
+                } else {
+                    processed.append(tag);
+                }
+            } else {
+                processed.append(tag);
+            }
+
+            pos = tagEnd + 1;
+        }
+
+        return processed.toString();
     }
 }
