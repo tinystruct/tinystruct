@@ -208,6 +208,7 @@ if [ ! -f "mvnw" ]; then
         unzip -q "$ROOT/maven-wrapper.zip" -d "$ROOT"
         # Delete the ZIP file after extraction
         rm -f "$ROOT/maven-wrapper.zip"
+        chmod +x ./mvnw
         echo "Maven wrapper setup completed."
     else
         echo "Error: Maven wrapper ZIP file not found in JAR."
