@@ -59,6 +59,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
     private final ActionRegistry actionRegistry = ActionRegistry.getInstance();
 
     /**
+     * The name of the template
+     */
+    private String templateName;
+
+    /**
      * Class simple name
      */
     private final String name;
@@ -93,6 +98,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     public AbstractApplication() {
         this.name = getClass().getName();
+        this.templateName = this.name.substring(this.name.lastIndexOf('.') + 1);
         this.commandLines = new HashMap<>();
     }
 
@@ -116,6 +122,15 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     /**
+     * Set template name.
+     *
+     * @param templateName template name
+     */
+    public void setTemplateName(String templateName) {
+        this.templateName = templateName;
+    }
+
+    /**
      * Initializes the application with the provided context.
      *
      * @param context The context to initialize the application.
@@ -123,9 +138,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
     @Override
     public void init(Context context) {
         this.setContext(context);
-
         String language = context.getAttribute(LANGUAGE) != null ? context.getAttribute(LANGUAGE).toString() : config.get(DEFAULT_LANGUAGE);
-
         // Unique key for the instance based on context, language, and name
         String key = context.getId() + language + File.separatorChar + this.getName();
 
@@ -514,18 +527,17 @@ public abstract class AbstractApplication implements Application, Cloneable {
         if (!this.templateRequired) return this.name + "@" + Integer.toHexString(hashCode());
 
         InputStream in = null;
-        String simpleName = this.getName().substring(this.getName().lastIndexOf('.') + 1);
         String templatePath = "UNKNOWN";
         Locale locale = this.getLocale();
         if (locale != null) {
             if (locale != Locale.CHINA) {
-                templatePath = "themes" + File.separatorChar + simpleName + "_" + locale + ".view";
+                templatePath = "themes" + File.separatorChar + this.templateName + "_" + locale + ".view";
                 in = AbstractApplication.class.getClassLoader().getResourceAsStream(templatePath);
             }
         }
 
         if (null == in) {
-            templatePath = "themes" + File.separatorChar + simpleName + ".view";
+            templatePath = "themes" + File.separatorChar + this.templateName + ".view";
             in = AbstractApplication.class.getClassLoader().getResourceAsStream(templatePath);
         }
 
