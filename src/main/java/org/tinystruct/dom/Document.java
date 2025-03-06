@@ -28,16 +28,9 @@ import javax.xml.parsers.SAXParserFactory;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.ccil.cowan.tagsoup.Parser;
-import org.ccil.cowan.tagsoup.jaxp.SAXFactoryImpl;
 
 /**
  * XML IO reading and writing utility.
@@ -484,7 +477,7 @@ public class Document extends DefaultHandler {
      * @return true if parsing was successful
      * @throws ApplicationException if parsing fails
      */
-    public boolean loadHtml(String html, DocumentType type) throws ApplicationException {
+    public String loadHtml(String html, DocumentType type) throws ApplicationException {
         this.documentType = type;
 
         try {
@@ -507,7 +500,7 @@ public class Document extends DefaultHandler {
             // Parse the HTML
             SAXParser parser = factory.newSAXParser();
             parser.parse(new InputSource(new StringReader(html)), this);
-            return true;
+            return html;
         } catch (Exception ex) {
             throw new ApplicationException("Failed to parse HTML: " + ex.getMessage(), ex);
         }
@@ -574,10 +567,6 @@ public class Document extends DefaultHandler {
             html = HTML5_DOCTYPE + "\n" + html;
         }
 
-        // Convert special characters to XML entities, avoiding double encoding
-        html = html.replaceAll("&(?!#?\\w+;)", "&amp;")
-                .replace("'", "&apos;");
-
         // Handle void elements
         StringBuilder processed = new StringBuilder();
         int pos = 0;
@@ -611,7 +600,48 @@ public class Document extends DefaultHandler {
 
             pos = tagEnd + 1;
         }
+        // Convert special characters to XML entities, avoiding double encoding
+        return escapeTextOnly(processed.toString());
+    }
 
-        return processed.toString();
+    private String escapeTextOnly(String html) {
+        StringBuilder result = new StringBuilder();
+        boolean insideTag = false;
+
+        for (int i = 0; i < html.length(); i++) {
+            char c = html.charAt(i);
+
+            if (c == '<') {
+                insideTag = true;
+                result.append(c);
+            } else if (c == '>') {
+                insideTag = false;
+                result.append(c);
+            } else if (insideTag) {
+                result.append(c);
+            } else {
+                switch (c) {
+                    case '&':
+                        result.append("&amp;");
+                        break;
+                    case '<':
+                        result.append("&lt;");
+                        break;
+                    case '>':
+                        result.append("&gt;");
+                        break;
+                    case '"':
+                        result.append("&quot;");
+                        break;
+                    case '\'':
+                        result.append("&apos;");
+                        break;
+                    default:
+                        result.append(c);
+                }
+            }
+        }
+
+        return result.toString();
     }
 }
