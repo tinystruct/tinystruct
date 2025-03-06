@@ -47,15 +47,36 @@ import static org.tinystruct.Application.DEFAULT_BASE_URL;
 
 public class DefaultTemplate implements Template {
 
+    private static final String HTML5_DOCTYPE = "<!DOCTYPE html>";
+    private static final String HTML4_TRANSITIONAL_DOCTYPE = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
+    private static final String HTML4_STRICT_DOCTYPE = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">";
+    private static final String XHTML1_TRANSITIONAL_DOCTYPE = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">";
+    private static final String XHTML1_STRICT_DOCTYPE = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">";
+
+    // Document type enum
+    public enum DocumentType {
+        XML,
+        HTML5,
+        HTML4_TRANSITIONAL,
+        HTML4_STRICT,
+        XHTML1_TRANSITIONAL,
+        XHTML1_STRICT
+    }
+
+    private static final Set<String> voidElements = new HashSet<>(Arrays.asList(
+            "area", "base", "br", "col", "embed", "hr", "img", "input",
+            "link", "meta", "param", "source", "track", "wbr"
+    ));
+
     // create a script engine manager
     // create a JavaScript engine
     private static final String engineName = "JavaScript";
-    private final Application app;
     private final ScriptEngine engine;
-    private Map<String, Variable<?>> variables;
-    private InputStream in;
-    private String view;
-    private final ActionRegistry registry = ActionRegistry.getInstance();
+    final Application app;
+    final ActionRegistry registry = ActionRegistry.getInstance();
+    Map<String, Variable<?>> variables;
+    InputStream in;
+    String view;
 
     public DefaultTemplate(Application app, InputStream in) {
         this.app = app;
@@ -88,7 +109,7 @@ public class DefaultTemplate implements Template {
         this.variables = SharedVariables.getInstance(this.app.getLocale().toString()).getVariables();
     }
 
-    private static void stripEmptyTextNode(Node node) {
+    static void stripEmptyTextNode(Node node) {
         NodeList children = node.getChildNodes();
         for (int i = 0; i < children.getLength(); ++i) {
             Node child = children.item(i);
@@ -136,7 +157,8 @@ public class DefaultTemplate implements Template {
 
         if (!this.view.trim().isEmpty()) {
             Document doc;
-            try (InputStream in = new ByteArrayInputStream(this.view.getBytes(StandardCharsets.UTF_8))) {
+            String content = preprocess(this.view);
+            try (InputStream in = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
                 DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
                 dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); // Compliant  
                 dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, ""); // compliant
@@ -265,6 +287,140 @@ public class DefaultTemplate implements Template {
     @Override
     public void setVariable(Variable<?> arg0) {
         this.variables.put(arg0.getName(), arg0);
+    }
+
+    /**
+     * Preprocess HTML to make it more XML-like
+     *
+     * @param html The HTML string to process
+     * @return Processed HTML string
+     */
+    private String preprocess(String html) {
+        String[] tags = html.split("<|</");
+        StringBuilder autoClosedHtml = new StringBuilder();
+        Set<String> openTags = new LinkedHashSet<>();
+
+        for (String tag : tags) {
+            if (tag.trim().isEmpty()) continue;
+
+            int endIndex = tag.indexOf(">");
+            if (endIndex == -1) {
+                autoClosedHtml.append("<").append(tag);
+                continue;
+            }
+
+            String tagName = tag.substring(0, endIndex).split("\\s|/>")[0].toLowerCase();
+            boolean isSelfClosing = tag.endsWith("/>") || voidElements.contains(tagName);
+
+            if (!tagName.isEmpty() && !tag.startsWith("!") && !tag.startsWith("/") && !isSelfClosing) {
+                if (tagName.indexOf(' ') != -1)
+                    openTags.add(tagName.substring(0, tagName.indexOf(' ')));
+                else
+                    openTags.add(tagName);
+            } else if (!tagName.isEmpty() && tag.startsWith("/")) {
+                openTags.remove(tagName.substring(1));
+            }
+
+            autoClosedHtml.append("<").append(tag);
+        }
+
+        // Close any remaining open tags, excluding void elements
+        for (String openTag : openTags) {
+            if (!voidElements.contains(openTag)) {
+                autoClosedHtml.append("</").append(openTag).append(">");
+            }
+        }
+
+        html = autoClosedHtml.toString();
+
+        // Ensure proper HTML structure
+        boolean hasHtmlTag = html.toLowerCase().contains("<html");
+        boolean hasBodyTag = html.toLowerCase().contains("<body");
+
+        if (!hasHtmlTag) {
+            html = "<html>" + html + "</html>";
+        }
+        if (!hasBodyTag) {
+            html = html.replaceFirst("(<html[^>]*>)", "$1<body>")
+                    .replaceFirst("(</html>)", "</body>$1");
+        }
+
+        // Handle void elements
+        StringBuilder processed = new StringBuilder();
+        int pos = 0;
+        while (pos < html.length()) {
+            int tagStart = html.indexOf("<", pos);
+            if (tagStart == -1) {
+                processed.append(html.substring(pos));
+                break;
+            }
+
+            processed.append(html, pos, tagStart);
+            int tagEnd = html.indexOf(">", tagStart);
+            if (tagEnd == -1) {
+                processed.append(html.substring(tagStart));
+                break;
+            }
+
+            String tag = html.substring(tagStart, tagEnd + 1);
+            String tagName = tag.substring(1).split("[ >]")[0].toLowerCase();
+
+            if (voidElements.contains(tagName)) {
+                // Ensure void element is self-closing
+                if (!tag.endsWith("/>")) {
+                    processed.append(tag.substring(0, tag.length() - 1)).append("/>");
+                } else {
+                    processed.append(tag);
+                }
+            } else {
+                processed.append(tag);
+            }
+
+            pos = tagEnd + 1;
+        }
+
+        // Add HTML5 doctype if not present
+        if (!html.toLowerCase().contains("<!doctype")) {
+            html = HTML5_DOCTYPE + "\n" + processed;
+        }
+
+        // Convert special characters to XML entities, avoiding double encoding
+        return escapeTextOnly(html);
+    }
+
+    private String escapeTextOnly(String html) {
+        StringBuilder result = new StringBuilder();
+        boolean insideTag = false;
+
+        for (int i = 0; i < html.length(); i++) {
+            char c = html.charAt(i);
+
+            if (c == '<') {
+                insideTag = true;
+                result.append(c);
+            } else if (c == '>') {
+                insideTag = false;
+                result.append(c);
+            } else if (insideTag) {
+                result.append(c);
+            } else {
+                switch (c) {
+                    case '&':
+                        result.append("&amp;");
+                        break;
+                    case '"':
+                        result.append("&quot;");
+                        break;
+                    case '\'':
+                        result.append("&apos;");
+                        break;
+                    default:
+                        result.append(c);
+                }
+            }
+        }
+
+        return result.toString();
     }
 
     private static final class SingletonHolder {
