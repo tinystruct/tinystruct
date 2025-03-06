@@ -513,23 +513,23 @@ public class Document extends DefaultHandler {
      * @return Processed HTML string
      */
     private String preprocessHtml(String html) {
-        // Auto-close unclosed tags
         String[] tags = html.split("<|</");
         StringBuilder autoClosedHtml = new StringBuilder();
-        Set<String> openTags = new HashSet<>();
+        Set<String> openTags = new LinkedHashSet<>();
 
         for (String tag : tags) {
             if (tag.trim().isEmpty()) continue;
+
             int endIndex = tag.indexOf(">");
             if (endIndex == -1) {
                 autoClosedHtml.append("<").append(tag);
                 continue;
             }
 
-            String tagName = tag.substring(0, endIndex).split(" |/>")[0].toLowerCase();
+            String tagName = tag.substring(0, endIndex).split("\\s|/>")[0].toLowerCase();
             boolean isSelfClosing = tag.endsWith("/>") || voidElements.contains(tagName);
 
-            if (!tagName.isEmpty() && !tag.startsWith("/") && !isSelfClosing) {
+            if (!tagName.isEmpty() && !tag.startsWith("!") && !tag.startsWith("/") && !isSelfClosing) {
                 if (tagName.indexOf(' ') != -1)
                     openTags.add(tagName.substring(0, tagName.indexOf(' ')));
                 else
@@ -551,8 +551,8 @@ public class Document extends DefaultHandler {
         html = autoClosedHtml.toString();
 
         // Ensure proper HTML structure
-        boolean hasHtmlTag = html.toLowerCase().contains("<html>");
-        boolean hasBodyTag = html.toLowerCase().contains("<body>");
+        boolean hasHtmlTag = html.toLowerCase().contains("<html");
+        boolean hasBodyTag = html.toLowerCase().contains("<body");
 
         if (!hasHtmlTag) {
             html = "<html>" + html + "</html>";
@@ -560,11 +560,6 @@ public class Document extends DefaultHandler {
         if (!hasBodyTag) {
             html = html.replaceFirst("(<html[^>]*>)", "$1<body>")
                     .replaceFirst("(</html>)", "</body>$1");
-        }
-
-        // Add HTML5 doctype if not present
-        if (!html.toLowerCase().contains("<!doctype")) {
-            html = HTML5_DOCTYPE + "\n" + html;
         }
 
         // Handle void elements
@@ -577,7 +572,7 @@ public class Document extends DefaultHandler {
                 break;
             }
 
-            processed.append(html.substring(pos, tagStart));
+            processed.append(html, pos, tagStart);
             int tagEnd = html.indexOf(">", tagStart);
             if (tagEnd == -1) {
                 processed.append(html.substring(tagStart));
@@ -600,8 +595,14 @@ public class Document extends DefaultHandler {
 
             pos = tagEnd + 1;
         }
+
+        // Add HTML5 doctype if not present
+        if (!html.toLowerCase().contains("<!doctype")) {
+            html = HTML5_DOCTYPE + "\n" + processed;
+        }
+
         // Convert special characters to XML entities, avoiding double encoding
-        return escapeTextOnly(processed.toString());
+        return escapeTextOnly(html);
     }
 
     private String escapeTextOnly(String html) {
@@ -623,12 +624,6 @@ public class Document extends DefaultHandler {
                 switch (c) {
                     case '&':
                         result.append("&amp;");
-                        break;
-                    case '<':
-                        result.append("&lt;");
-                        break;
-                    case '>':
-                        result.append("&gt;");
                         break;
                     case '"':
                         result.append("&quot;");
