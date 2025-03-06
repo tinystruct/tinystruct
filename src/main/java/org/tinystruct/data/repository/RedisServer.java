@@ -1,18 +1,18 @@
-package org.tinystruct.data;
+package org.tinystruct.data.repository;
 
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.data.Repository;
 import org.tinystruct.data.component.Field;
 import org.tinystruct.data.component.Row;
 import org.tinystruct.data.component.Table;
-import org.tinystruct.data.repository.Type;
 
 /**
  * Repository implementation for Redis database.
  */
-public class Redis implements Repository {
+public class RedisServer implements Repository {
 
     private final RedisClient client;
     private final StatefulRedisConnection<String, String> connection;
@@ -21,7 +21,7 @@ public class Redis implements Repository {
     /**
      * Constructor for creating a Redis instance.
      */
-    public Redis() {
+    public RedisServer() {
         // Create a RedisClient
         client = RedisClient.create("redis://localhost");
 
