@@ -17,6 +17,7 @@ package org.tinystruct.system.template;
 
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.application.ActionRegistry;
 import org.tinystruct.application.SharedVariables;
 import org.tinystruct.application.Template;
@@ -24,7 +25,10 @@ import org.tinystruct.system.Configuration;
 import org.tinystruct.system.template.variable.DataType;
 import org.tinystruct.system.template.variable.Variable;
 import org.tinystruct.system.util.TextFileLoader;
-import org.w3c.dom.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
 import org.xml.sax.SAXException;
 
 import javax.script.ScriptContext;
@@ -35,7 +39,10 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.*;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
@@ -137,13 +144,62 @@ public class DefaultTemplate implements Template {
         return this.variables;
     }
 
+    private Document parseDocument(String content) throws ApplicationException {
+        try (InputStream in = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); // Compliant
+            dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, ""); // compliant
+            dbf.setValidating(false);
+            DocumentBuilder builder = dbf.newDocumentBuilder();
+
+            Document doc = builder.parse(in);
+            stripEmptyTextNode(doc);
+            return doc;
+        } catch (ParserConfigurationException | SAXException | IOException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        }
+    }
+
+    private void processJavaScript(Document doc) throws ApplicationException {
+        if (this.engine != null) {
+            NodeList js = doc.getElementsByTagName("javascript");
+            int length = js.getLength();
+
+            if (length > 0) {
+                try {
+                    ScriptContext context = engine.getContext();
+                    StringWriter sw = new StringWriter();
+                    Writer writer = new PrintWriter(sw, true);
+                    context.setWriter(writer);
+
+                    for (int i = 0; i < length; i++) {
+                        Node node = js.item(i);
+                        Object r = engine.eval(node.getTextContent());
+
+                        String result = (r != null) ? String.valueOf(r) : sw.toString();
+                        Text t = doc.createTextNode(result);
+
+                        Node p = node.getParentNode();
+                        p.appendChild(t);
+                        p.replaceChild(t, node);
+                    }
+                    writer.close();
+                } catch (ScriptException e) {
+                    throw new ApplicationException(e.getMessage(), e);
+                } catch (IOException e) {
+                    throw new ApplicationRuntimeException(e);
+                }
+            }
+        }
+    }
+
     @Override
     public String parse() throws ApplicationException {
         Configuration<String> config = app.getConfiguration();
         if (config == null) {
             throw new ApplicationException("The configuration for the app has not been set.");
         }
-        String value;
+
         if (this.view == null) {
             TextFileLoader loader = new TextFileLoader(in);
             loader.setCharset(config.get("charset"));
@@ -156,60 +212,9 @@ public class DefaultTemplate implements Template {
         }
 
         if (!this.view.trim().isEmpty()) {
-            Document doc;
             String content = preprocess(this.view);
-            try (InputStream in = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
-                DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-                dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); // Compliant  
-                dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, ""); // compliant
-                dbf.setValidating(false);
-                DocumentBuilder builder = dbf.newDocumentBuilder();
-
-                doc = builder.parse(in);
-                stripEmptyTextNode(doc);
-
-                if (this.engine != null) {
-                    NodeList js = doc.getElementsByTagName("javascript");
-                    int length = js.getLength();
-
-                    if (length > 0) {
-                        // evaluate JavaScript code from String
-                        String result;
-                        ScriptContext context = engine.getContext();
-                        StringWriter sw = new StringWriter();
-                        Writer writer = new PrintWriter(sw, true);
-                        context.setWriter(writer);
-
-                        for (int i = 0; i < length; i++) {
-                            Node node = js.item(i);
-                            Object r = engine.eval(node.getTextContent());
-
-                            if (r != null) {
-                                result = String.valueOf(r);
-                            } else {
-                                result = sw.toString();
-                            }
-
-                            Text t = doc.createTextNode(result);
-
-                            Node p = node.getParentNode();
-                            p.appendChild(t);
-                            p.replaceChild(t, node);
-                        }
-                        writer.close();
-                    }
-                }
-            } catch (ParserConfigurationException e) {
-                throw new ApplicationException(e.getMessage(), e);
-            } catch (SAXException e) {
-                throw new ApplicationException(e.getMessage(), e);
-            } catch (IOException e) {
-                throw new ApplicationException(e.getMessage(), e);
-            } catch (DOMException e) {
-                throw new ApplicationException(e.getMessage(), e);
-            } catch (ScriptException e) {
-                throw new ApplicationException(e.getMessage(), e);
-            }
+            Document doc = parseDocument(content);
+            processJavaScript(doc);
 
             DOMSource domSource = new DOMSource(doc);
             StringWriter writer = new StringWriter();
@@ -218,16 +223,13 @@ public class DefaultTemplate implements Template {
             TransformerFactory tf = TransformerFactory.newInstance();
             tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
             tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, ""); // Compliant
-            Transformer transformer;
             try {
-                transformer = tf.newTransformer();
+                Transformer transformer = tf.newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "no");
                 transformer.setOutputProperty(OutputKeys.MEDIA_TYPE, "xml");
                 transformer.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "script");
                 transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
                 transformer.transform(domSource, result);
-            } catch (TransformerConfigurationException e) {
-                throw new ApplicationException(e.getMessage(), e);
             } catch (TransformerException e) {
                 throw new ApplicationException(e.getMessage(), e);
             }
@@ -235,19 +237,10 @@ public class DefaultTemplate implements Template {
             this.view = writer.toString();
 
             Set<Entry<String, Variable<?>>> sets = variables.entrySet();
-            Iterator<Entry<String, Variable<?>>> iterator = sets
-                    .iterator();
-
-            Variable<?> variable;
-            while (iterator.hasNext()) {
-                Entry<String, Variable<?>> v = iterator.next();
-                variable = v.getValue();
-
-                if (variable.getType() == DataType.ARRAY) {
-                    // TODO
-                } else {
-                    value = variable.getValue().toString();
-                    value = value.replace("&", "&amp;");
+            for (Entry<String, Variable<?>> v : sets) {
+                Variable<?> variable = v.getValue();
+                if (variable.getType() != DataType.ARRAY) {
+                    String value = variable.getValue().toString().replace("&", "&amp;");
                     this.view = this.view.replace(v.getKey(), value);
                 }
             }
@@ -389,9 +382,9 @@ public class DefaultTemplate implements Template {
             if (voidElements.contains(tagName)) {
                 // Ensure void element is self-closing
                 if (!tag.endsWith("/>")) {
-                    processed.append(tag.substring(0, tag.length() - 1)).append(" />");
+                    processed.append(tag, 0, tag.length() - 1).append(" />");
                 } else {
-                    processed.append(tag.substring(0, tag.length() - 2)).append(" />");
+                    processed.append(tag, 0, tag.length() - 2).append(" />");
                 }
             } else {
                 processed.append(tag);
