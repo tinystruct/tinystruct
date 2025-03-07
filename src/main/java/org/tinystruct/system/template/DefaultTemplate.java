@@ -65,7 +65,7 @@ public class DefaultTemplate implements Template {
 
     private static final Set<String> voidElements = new HashSet<>(Arrays.asList(
             "area", "base", "br", "col", "embed", "hr", "img", "input",
-            "link", "meta", "param", "source", "track", "wbr"
+            "link", "meta", "param", "source", "track", "wbr", "path"
     ));
 
     // create a script engine manager
@@ -295,14 +295,19 @@ public class DefaultTemplate implements Template {
      * @param html The HTML string to process
      * @return Processed HTML string
      */
-    private String preprocess(String html) {
+    private static String preprocess(String html) {
         String[] tags = html.split("<|</");
         StringBuilder autoClosedHtml = new StringBuilder();
         Set<String> openTags = new LinkedHashSet<>();
 
+        boolean skip = false;
         for (String tag : tags) {
+            if (tag.startsWith("/script>")) skip = false;
+            if (skip) {
+                autoClosedHtml.append("<").append(tag);
+                continue;
+            }
             if (tag.trim().isEmpty()) continue;
-
             int endIndex = tag.indexOf(">");
             if (endIndex == -1) {
                 autoClosedHtml.append("<").append(tag);
@@ -313,14 +318,16 @@ public class DefaultTemplate implements Template {
             boolean isSelfClosing = tag.endsWith("/>") || voidElements.contains(tagName);
 
             if (!tagName.isEmpty() && !tag.startsWith("!") && !tag.startsWith("/") && !isSelfClosing) {
-                if (tagName.indexOf(' ') != -1)
+                if (tagName.indexOf(' ') != -1) {
                     openTags.add(tagName.substring(0, tagName.indexOf(' ')));
-                else
+                } else if (tagName.indexOf('/') != -1) {
+                    openTags.add(tagName.substring(0, tagName.indexOf('/')));
+                } else
                     openTags.add(tagName);
             } else if (!tagName.isEmpty() && tag.startsWith("/")) {
                 openTags.remove(tagName.substring(1));
             }
-
+            if (tag.startsWith("script")) skip = true;
             autoClosedHtml.append("<").append(tag);
         }
 
@@ -363,14 +370,28 @@ public class DefaultTemplate implements Template {
             }
 
             String tag = html.substring(tagStart, tagEnd + 1);
-            String tagName = tag.substring(1).split("[ >]")[0].toLowerCase();
+            String tagName = tag.substring(1).split("\\s|>|/>")[0].toLowerCase();
+            if (tagName.equalsIgnoreCase("script")) {
+                String end = "</script>";
+                String tmp = html.substring(tagEnd + 1);
+                String value = tmp.substring(0, tmp.indexOf(end));
+                processed.append(tag);
+                if (!value.trim().isEmpty()) {
+                    processed.append("\n").append("//<![CDATA[\n");
+                    processed.append(value);
+                    processed.append("\n").append("//]]>\n");
+                }
+                processed.append(end);
+                pos = tagEnd + 1 + value.length() + end.length();
+                continue;
+            }
 
             if (voidElements.contains(tagName)) {
                 // Ensure void element is self-closing
                 if (!tag.endsWith("/>")) {
-                    processed.append(tag.substring(0, tag.length() - 1)).append("/>");
+                    processed.append(tag.substring(0, tag.length() - 1)).append(" />");
                 } else {
-                    processed.append(tag);
+                    processed.append(tag.substring(0, tag.length() - 2)).append(" />");
                 }
             } else {
                 processed.append(tag);
@@ -381,46 +402,11 @@ public class DefaultTemplate implements Template {
 
         // Add HTML5 doctype if not present
         if (!html.toLowerCase().contains("<!doctype")) {
-            html = HTML5_DOCTYPE + "\n" + processed;
+            return HTML5_DOCTYPE + "\n" + processed;
         }
 
         // Convert special characters to XML entities, avoiding double encoding
-        return escapeTextOnly(html);
-    }
-
-    private String escapeTextOnly(String html) {
-        StringBuilder result = new StringBuilder();
-        boolean insideTag = false;
-
-        for (int i = 0; i < html.length(); i++) {
-            char c = html.charAt(i);
-
-            if (c == '<') {
-                insideTag = true;
-                result.append(c);
-            } else if (c == '>') {
-                insideTag = false;
-                result.append(c);
-            } else if (insideTag) {
-                result.append(c);
-            } else {
-                switch (c) {
-                    case '&':
-                        result.append("&amp;");
-                        break;
-                    case '"':
-                        result.append("&quot;");
-                        break;
-                    case '\'':
-                        result.append("&apos;");
-                        break;
-                    default:
-                        result.append(c);
-                }
-            }
-        }
-
-        return result.toString();
+        return processed.toString();
     }
 
     private static final class SingletonHolder {
