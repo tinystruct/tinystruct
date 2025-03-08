@@ -370,9 +370,13 @@ public class DefaultTemplate implements Template {
                 String value = tmp.substring(0, tmp.indexOf(end));
                 processed.append(tag);
                 if (!value.trim().isEmpty()) {
-                    processed.append("\n").append("//<![CDATA[\n");
-                    processed.append(value);
-                    processed.append("\n").append("//]]>\n");
+                    if (!value.trim().startsWith("//<![CDATA[")) {
+                        processed.append("\n").append("//<![CDATA[\n");
+                    }
+                    processed.append(value.trim());
+                    if (!value.trim().endsWith("//]]>")) {
+                        processed.append("\n").append("//]]>\n");
+                    }
                 }
                 processed.append(end);
                 pos = tagEnd + 1 + value.length() + end.length();
