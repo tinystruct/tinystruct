@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.5.8</version>
+    <version>1.5.9</version>
     <name>tinystruct framework</name>
     <description>A simple framework for Java development. Simplicity is difficult, while complexity is easy. Better
         thinking leads to better design.
@@ -194,6 +194,12 @@
             <groupId>org.brotli</groupId>
             <artifactId>dec</artifactId>
             <version>${brotli.version}</version>
+        </dependency>
+        <!-- TagSoup for HTML parsing -->
+        <dependency>
+            <groupId>org.ccil.cowan.tagsoup</groupId>
+            <artifactId>tagsoup</artifactId>
+            <version>1.2.1</version>
         </dependency>
     </dependencies>
     <dependencyManagement>
