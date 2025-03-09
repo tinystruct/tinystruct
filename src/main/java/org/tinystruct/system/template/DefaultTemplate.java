@@ -212,29 +212,33 @@ public class DefaultTemplate implements Template {
         }
 
         if (!this.view.trim().isEmpty()) {
-            String content = preprocess(this.view);
-            Document doc = parseDocument(content);
-            processJavaScript(doc);
+            String view = preprocess(this.view);
+            if(view.contains("<javascript>")) {
+                Document doc = parseDocument(view);
+                processJavaScript(doc);
 
-            DOMSource domSource = new DOMSource(doc);
-            StringWriter writer = new StringWriter();
-            writer.write("<!DOCTYPE html>\r\n");
-            StreamResult result = new StreamResult(writer);
-            TransformerFactory tf = TransformerFactory.newInstance();
-            tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-            tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, ""); // Compliant
-            try {
-                Transformer transformer = tf.newTransformer();
-                transformer.setOutputProperty(OutputKeys.INDENT, "no");
-                transformer.setOutputProperty(OutputKeys.MEDIA_TYPE, "xml");
-                transformer.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "script");
-                transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-                transformer.transform(domSource, result);
-            } catch (TransformerException e) {
-                throw new ApplicationException(e.getMessage(), e);
+                DOMSource domSource = new DOMSource(doc);
+                StringWriter writer = new StringWriter();
+                writer.write("<!DOCTYPE html>\r\n");
+                StreamResult result = new StreamResult(writer);
+                TransformerFactory tf = TransformerFactory.newInstance();
+                tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+                tf.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, ""); // Compliant
+                try {
+                    Transformer transformer = tf.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "no");
+                    transformer.setOutputProperty(OutputKeys.MEDIA_TYPE, "xml");
+                    transformer.setOutputProperty(OutputKeys.CDATA_SECTION_ELEMENTS, "script");
+                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+                    transformer.transform(domSource, result);
+                } catch (TransformerException e) {
+                    throw new ApplicationException(e.getMessage(), e);
+                }
+
+                this.view = writer.toString();
+            } else {
+                this.view = view;
             }
-
-            this.view = writer.toString();
 
             Set<Entry<String, Variable<?>>> sets = variables.entrySet();
             for (Entry<String, Variable<?>> v : sets) {
