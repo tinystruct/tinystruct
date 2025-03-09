@@ -185,7 +185,7 @@ public class SQLiteServer extends AbstractDataRepository {
             }
 
             Object v_field;
-            while (resultSet.next()) {
+            do {
                 row = new Row();
                 fields = new Field();
                 for (int i = 0; i < fieldName.length; i++) {
@@ -201,7 +201,7 @@ public class SQLiteServer extends AbstractDataRepository {
                 }
                 row.append(fields);
                 table.append(row);
-            }
+            } while (resultSet.next());
         } catch (Exception e) {
             throw new ApplicationException(e.getMessage(), e);
         }
