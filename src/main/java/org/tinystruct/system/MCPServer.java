@@ -134,7 +134,7 @@ public class MCPServer extends AbstractApplication implements Bootstrap {
             this.clientSocket = socket;
             this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.writer = new PrintWriter(socket.getOutputStream(), true);
-            
+
             LOGGER.info("New client connected from " + socket.getInetAddress());
         }
 
@@ -153,31 +153,69 @@ public class MCPServer extends AbstractApplication implements Bootstrap {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.trim().isEmpty()) {
-                    processJsonRpcMessage(line);
+                    if (line.startsWith("SSE")) {
+                        String[] parts = line.split(" ");
+                        if (parts.length == 2 && authenticate(parts[1])) {
+                            handleSSE();
+                        } else {
+                            writer.println("HTTP/1.1 401 Unauthorized");
+                            writer.flush();
+                        }
+                    } else {
+                        processJsonRpcMessage(line);
+                    }
                 }
             }
+        }
+
+        private boolean authenticate(String token) {
+            // Implement your authentication logic here
+            // For example, check if the token is valid
+            return "valid_token".equals(token);
+        }
+
+        private void handleSSE() {
+            writer.println("HTTP/1.1 200 OK");
+            writer.println("Content-Type: text/event-stream");
+            writer.println("Cache-Control: no-cache");
+            writer.println("Connection: keep-alive");
+            writer.println();
+            writer.flush();
+
+            while (running && !clientSocket.isClosed()) {
+                sendSSEEvent("message", "Server time: " + System.currentTimeMillis());
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+
+        private void sendSSEEvent(String event, String data) {
+            writer.println("event: " + event);
+            writer.println("data: " + data);
+            writer.println();
+            writer.flush();
         }
 
         private void processJsonRpcMessage(String jsonStr) {
             try {
                 Builder jsonObject = new Builder();
                 jsonObject.parse(jsonStr);
-                
-                // Check if it's a request, response, or notification
+
                 if (jsonObject.containsKey("method")) {
                     if (jsonObject.containsKey("id")) {
-                        // It's a request
                         JsonRpcRequest request = new JsonRpcRequest();
                         request.parse(jsonStr);
                         handleRequest(request);
                     } else {
-                        // It's a notification
                         JsonRpcNotification notification = new JsonRpcNotification();
                         notification.parse(jsonStr);
                         handleNotification(notification);
                     }
                 } else if (jsonObject.containsKey("result") || jsonObject.containsKey("error")) {
-                    // It's a response
                     JsonRpcResponse response = new JsonRpcResponse();
                     response.parse(jsonStr);
                     handleResponse(response);
@@ -189,14 +227,14 @@ public class MCPServer extends AbstractApplication implements Bootstrap {
 
         private void handleRequest(JsonRpcRequest request) {
             String method = request.getMethod();
-            
+
             try {
                 switch (method) {
                     case MCPLifecycle.METHOD_INITIALIZE:
                         if (!initialized) {
                             JsonRpcResponse response = MCPLifecycle.createInitializeResponse(
-                                UUID.randomUUID().toString(),
-                                new String[]{"base", "lifecycle", "resources"}
+                                    UUID.randomUUID().toString(),
+                                    new String[]{"base", "lifecycle", "resources"}
                             );
                             response.setId(request.getId());
                             sendResponse(response);
@@ -205,7 +243,7 @@ public class MCPServer extends AbstractApplication implements Bootstrap {
                             sendErrorResponse(request.getId(), -32600, "Server already initialized");
                         }
                         break;
-                        
+
                     case MCPLifecycle.METHOD_SHUTDOWN:
                         if (initialized) {
                             JsonRpcResponse response = MCPLifecycle.createShutdownResponse();
@@ -216,9 +254,8 @@ public class MCPServer extends AbstractApplication implements Bootstrap {
                             sendErrorResponse(request.getId(), -32600, "Server not initialized");
                         }
                         break;
-                        
+
                     case MCPLifecycle.METHOD_CAPABILITIES:
-                        // Handle capabilities request
                         Builder result = new Builder();
                         result.put("version", version());
                         JsonRpcResponse response = new JsonRpcResponse();
@@ -226,7 +263,7 @@ public class MCPServer extends AbstractApplication implements Bootstrap {
                         response.setResult(result);
                         sendResponse(response);
                         break;
-                        
+
                     default:
                         sendErrorResponse(request.getId(), -32601, "Method not found: " + method);
                 }
@@ -236,12 +273,10 @@ public class MCPServer extends AbstractApplication implements Bootstrap {
         }
 
         private void handleNotification(JsonRpcNotification notification) {
-            // Handle notifications (no response needed)
             LOGGER.info("Received notification: " + notification.getMethod());
         }
 
         private void handleResponse(JsonRpcResponse response) {
-            // Handle responses to our requests (if any)
             LOGGER.info("Received response for ID: " + response.getId());
         }
 
