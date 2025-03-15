@@ -65,6 +65,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     /**
      * Constructor that initializes with a string value.
+     *
      * @param value The string value to initialize with
      */
     public Builder(String value) {
@@ -73,6 +74,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     /**
      * Constructor that initializes with a number value.
+     *
      * @param value The number value to initialize with
      */
     public Builder(Number value) {
@@ -81,7 +83,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     /**
      * Constructor that initializes with a key-value pair.
-     * @param key The key for the value
+     *
+     * @param key   The key for the value
      * @param value The value to associate with the key
      */
     public Builder(String key, Object value) {
@@ -92,7 +95,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     /**
      * Override of HashMap.put to allow method chaining.
-     * @param key The key to store the value under
+     *
+     * @param key   The key to store the value under
      * @param value The value to store
      * @return This Builder instance for method chaining
      */
@@ -104,6 +108,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
     /**
      * Get the current value of the Builder.
+     *
      * @return The current value
      */
     public Object getValue() {
@@ -174,7 +179,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             }
 
             if (resource.charAt(0) != LEFT_BRACE && resource.charAt(resource.length() - 1) != RIGHT_BRACE) {
-                throw new ApplicationException("Invalid data format!");
+                throw new ApplicationException("Invalid data format:" + resource);
             }
 
             if (resource.charAt(0) == LEFT_BRACE) {
@@ -258,7 +263,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                         Builders builders = new Builders();
                         String remaining = builders.parse($value).trim();
                         keyValue = builders;
-                        if(!remaining.isEmpty() && remaining.charAt(0) == COMMA)
+                        if (!remaining.isEmpty() && remaining.charAt(0) == COMMA)
                             remaining = remaining.substring(1); // COMMA length: 1
                         this.parseValue(remaining);
                     } else {
@@ -310,7 +315,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                 }
             }
         }
-        
+
         if (DOUBLE.matcher(value).matches()) {
             try {
                 return Double.parseDouble(value);
@@ -318,15 +323,15 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                 logger.warning("Failed to parse double value: " + value);
             }
         }
-        
+
         if (BOOLEAN.matcher(value.toLowerCase(Locale.ROOT)).matches()) {
             return Boolean.parseBoolean(value);
         }
-        
+
         if ("null".equalsIgnoreCase(value)) {
             return null;
         }
-        
+
         return value;
     }
 
@@ -365,7 +370,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      * Find the position of the next occurrence of a character in a string.
      * Handles escaped characters and nested structures.
      *
-     * @param value String to search
+     * @param value     String to search
      * @param character The character to look for
      * @return Position of the next occurrence of the character
      */
@@ -401,7 +406,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         // Convert the builder to a Row object
         Row row = new Row();
         Field field = new Field();
-        
+
         for (Entry<String, Object> entry : this.entrySet()) {
             FieldInfo info = new FieldInfo();
             info.set("name", entry.getKey());
