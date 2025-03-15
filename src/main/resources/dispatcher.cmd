@@ -1,5 +1,5 @@
 @rem ***************************************************************************
-@rem Copyright  (c) 2023 James Mover Zhou
+@rem Copyright  (c) 2025 James M. Zhou
 @rem
 @rem Licensed under the Apache License, Version 2.0 (the "License");
 @rem you may not use this file except in compliance with the License.
