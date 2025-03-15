@@ -22,20 +22,14 @@ set "ROOT=%~dp0.."
 set "VERSION={%VERSION%}"
 
 @REM Define the paths for tinystruct jars in the Maven repository
-set "TINYSTRUCT_MAVEN_JAR=%MAVEN_REPO%\%VERSION%\tinystruct-%VERSION%.jar"
-set "TINYSTRUCT_MAVEN_JAR_WITH_DEPS=%MAVEN_REPO%\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar"
+set "DEFAULT_JAR_FILE=%MAVEN_REPO%\%VERSION%\tinystruct-%VERSION%.jar"
+set "DEFAULT_JAR_FILE_WITH_DEPENDENCIES=%MAVEN_REPO%\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar"
 
 REM Check which jar to use for extracting Maven Wrapper
-if exist "%TINYSTRUCT_MAVEN_JAR_WITH_DEPS%" (
-    set "JAR_PATH=%TINYSTRUCT_MAVEN_JAR_WITH_DEPS%"
+if exist "%DEFAULT_JAR_FILE_WITH_DEPENDENCIES%" (
+    set "JAR_PATH=%DEFAULT_JAR_FILE_WITH_DEPENDENCIES%"
 ) else (
-    set "JAR_PATH=%TINYSTRUCT_MAVEN_JAR%"
-)
-
-@REM Check if any of the tinystruct jars exists in the local Maven repository
-if not exist "%TINYSTRUCT_MAVEN_JAR%" if not exist "%TINYSTRUCT_MAVEN_JAR_WITH_DEPS%" (
-    echo Error: Neither tinystruct.jar nor tinystruct-jar-with-dependencies.jar found in local Maven repository. Please ensure one of them is available.
-    exit /B 1
+    set "JAR_PATH=%DEFAULT_JAR_FILE%"
 )
 
 @REM Check if JAVA_HOME is set and valid
