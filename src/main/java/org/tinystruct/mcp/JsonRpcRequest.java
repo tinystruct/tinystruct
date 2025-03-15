@@ -25,11 +25,12 @@ public class JsonRpcRequest extends JsonRpcMessage {
 
     @Override
     public void parse(String json) throws ApplicationException {
-        super.parse(json);
-        
         Builder builder = new Builder();
         builder.parse(json);
-        
+        if (builder.containsKey("id")) {
+            this.setId(String.valueOf(builder.get("id")));
+        }
+
         if (builder.containsKey("method")) {
             this.method = String.valueOf(builder.get("method"));
         }
