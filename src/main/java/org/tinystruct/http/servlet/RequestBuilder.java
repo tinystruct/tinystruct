@@ -7,10 +7,13 @@ import jakarta.servlet.http.HttpSession;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.FileEntity;
+import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.*;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -35,6 +38,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     private Method method;
     private String uri;
     private static final Logger logger = Logger.getLogger(RequestBuilder.class.getName());
+    private String bodyCache;
 
     public RequestBuilder(HttpServletRequest request, boolean secure) {
         super(request);
@@ -109,11 +113,17 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
         return this.request.getQueryString();
     }
 
+    private boolean isJsonRequest() {
+        String contentType = this.request.getContentType();
+        return contentType != null && contentType.contains("application/json");
+    }
+
     /**
      * @return body string.
      */
     @Override
     public String body() {
+        if (bodyCache != null) return bodyCache;
         StringBuilder lines = new StringBuilder();
         String line;
         while (true) {
@@ -124,8 +134,8 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
             }
             lines.append(line);
         }
-
-        return lines.toString();
+        bodyCache = lines.toString();  // cache the body
+        return bodyCache;
     }
 
     @Override
@@ -150,6 +160,24 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     @Override
     public String[] parameterNames() {
         ArrayList<String> names = new ArrayList<>();
+
+        if (this.isJsonRequest()) {
+            // Handle query parameters when the request is JSON
+            String queryString = this.query();
+            if (queryString != null) {
+                // Split query string by '&' to get individual key-value pairs
+                String[] queryParams = queryString.split("&");
+                for (String param : queryParams) {
+                    // Only add parameter names, avoid duplicates
+                    String[] keyValue = param.split("=");
+                    if (keyValue.length == 2 && !names.contains(keyValue[0])) {
+                        names.add(keyValue[0]);
+                    }
+                }
+            }
+            return names.toArray(new String[0]);
+        }
+
         Enumeration<String> parameterNames = this.request.getParameterNames();
         while (parameterNames.hasMoreElements()) {
             names.add(parameterNames.nextElement());
@@ -196,6 +224,22 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
 
     @Override
     public String getParameter(String name) {
+        if (this.isJsonRequest()) {
+            String queryString = this.query();
+            if (queryString != null && queryString.contains(name + "=")) {
+                // Find the value of the parameter
+                String value = queryString.substring(queryString.indexOf(name + "=") + name.length() + 1);
+                try {
+                    // Decode the value to handle any encoded characters (e.g., '%20' for spaces)
+                    return URLDecoder.decode(value, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    // Log the error and return the raw value if decoding fails
+                    logger.log(Level.WARNING, "Failed to decode query parameter: " + name, e);
+                    return value;
+                }
+            }
+            return null;
+        }
         return this.request.getParameter(name);
     }
 
