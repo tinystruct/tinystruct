@@ -24,6 +24,13 @@ import java.util.logging.Logger;
 public class MCPApplication extends AbstractApplication {
     private static final Logger LOGGER = Logger.getLogger(MCPApplication.class.getName());
     private final ConcurrentHashMap<String, SSESession> sseClients = new ConcurrentHashMap<>();
+    
+    // Base MCP constants
+    private static final String MCP_PROTOCOL_VERSION = "1.0.0";
+    private static final String[] SUPPORTED_FEATURES = {
+        "base", "lifecycle", "resources", "sse", "json-rpc"
+    };
+    private boolean initialized = false;
 
     @Override
     public void init() {
@@ -48,9 +55,10 @@ public class MCPApplication extends AbstractApplication {
             String clientId = validateAuthHeader(request);
             JsonRpcResponse jsonResponse = MCPLifecycle.createInitializeResponse(
                     clientId,
-                    new String[]{"base", "lifecycle", "resources"}
+                    SUPPORTED_FEATURES
             );
-
+            
+            initialized = true;
             response.addHeader("Content-Type", "application/json");
             return jsonResponse.toString();
         } catch (SecurityException e) {
@@ -74,8 +82,9 @@ public class MCPApplication extends AbstractApplication {
             result.put("protocol", "MCP/1.0");
 
             Builders features = new Builders();
-            features.add(new Builder("sse"));
-            features.add(new Builder("json-rpc"));
+            for (String feature : SUPPORTED_FEATURES) {
+                features.add(new Builder(feature));
+            }
             result.put("features", features);
 
             JsonRpcResponse jsonResponse = new JsonRpcResponse();
@@ -134,8 +143,70 @@ public class MCPApplication extends AbstractApplication {
             return createErrorResponse("Internal server error", -32000);
         }
     }
+    
+    /**
+     * Handles JSON-RPC requests for basic MCP operations
+     */
+    @Action("mcp/rpc")
+    public String handleRpcRequest(Request request, Response response) throws ApplicationException {
+        try {
+            // Validate authentication
+            validateAuthHeader(request);
+            
+            // Parse the JSON-RPC request
+            String jsonStr = request.body();
+            LOGGER.fine("Received JSON: " + jsonStr);
+            
+            Builder jsonObject = new Builder();
+            jsonObject.parse(jsonStr);
+            
+            JsonRpcResponse jsonResponse = new JsonRpcResponse();
+            
+            if (jsonObject.containsKey("method")) {
+                JsonRpcRequest rpcRequest = new JsonRpcRequest();
+                rpcRequest.parse(jsonStr);
+                
+                String method = rpcRequest.getMethod();
+                switch (method) {
+                    case MCPLifecycle.METHOD_INITIALIZE:
+                        handleInitialize(rpcRequest, jsonResponse);
+                        break;
+                    // Add other base MCP methods here
+                    default:
+                        jsonResponse.setError(new JsonRpcError(-32601, "Method not found: " + method));
+                }
+            } else {
+                jsonResponse.setError(new JsonRpcError(-32600, "Invalid Request"));
+            }
+            
+            response.addHeader("Content-Type", "application/json");
+            return jsonResponse.toString();
+            
+        } catch (SecurityException e) {
+            response.setStatus(ResponseStatus.UNAUTHORIZED);
+            return createErrorResponse("Unauthorized", -32001);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "RPC request failed", e);
+            response.setStatus(ResponseStatus.INTERNAL_SERVER_ERROR);
+            return createErrorResponse("Internal server error: " + e.getMessage(), -32000);
+        }
+    }
+    
+    protected void handleInitialize(JsonRpcRequest request, JsonRpcResponse response) {
+        if (!initialized) {
+            JsonRpcResponse initResponse = MCPLifecycle.createInitializeResponse(
+                UUID.randomUUID().toString(),
+                SUPPORTED_FEATURES
+            );
+            response.setId(request.getId());
+            response.setResult(initResponse.getResult());
+            initialized = true;
+        } else {
+            response.setError(new JsonRpcError(-32600, "Server already initialized"));
+        }
+    }
 
-    private String validateAuthHeader(Request request) throws SecurityException {
+    protected String validateAuthHeader(Request request) throws SecurityException {
         String auth = request.headers().get(Header.AUTHORIZATION).toString();
         if (auth == null || !authenticate(auth)) {
             throw new SecurityException("Invalid authorization");
@@ -143,12 +214,12 @@ public class MCPApplication extends AbstractApplication {
         return UUID.randomUUID().toString();
     }
 
-    private boolean authenticate(String token) {
+    protected boolean authenticate(String token) {
         String validToken = getConfiguration().get("mcp.auth.token");
         return validToken != null && validToken.equals(token);
     }
 
-    private String createErrorResponse(String message, int code) {
+    protected String createErrorResponse(String message, int code) {
         JsonRpcResponse errorResponse = new JsonRpcResponse();
         errorResponse.setId(UUID.randomUUID().toString());
         JsonRpcError error = new JsonRpcError(code, message);
@@ -158,7 +229,7 @@ public class MCPApplication extends AbstractApplication {
 
     @Override
     public String version() {
-        return "1.0.0";
+        return MCP_PROTOCOL_VERSION;
     }
 
     /**
