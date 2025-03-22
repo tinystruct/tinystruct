@@ -32,26 +32,56 @@ public class JsonRpcResponse extends JsonRpcMessage {
         }
 
         if (builder.containsKey("result")) {
-            if (builder.get("result") instanceof Builder) {
-                this.result = (Builder) builder.get("result");
-            } else {
+            Object resultObj = builder.get("result");
+            if (resultObj instanceof Builder) {
+                this.result = (Builder) resultObj;
+            } else if (resultObj != null) {
                 this.result = new Builder();
-                this.result.parse(builder.get("result").toString());
+                this.result.parse(resultObj.toString());
             }
         }
         
         if (builder.containsKey("error")) {
-            Builder errorBuilder = new Builder();
-            errorBuilder.parse(builder.get("error").toString());
+            Object errorObj = builder.get("error");
+            Builder errorBuilder;
             
-            int code = Integer.parseInt(String.valueOf(errorBuilder.get("code")));
-            String message = String.valueOf(errorBuilder.get("message"));
+            if (errorObj instanceof Builder) {
+                errorBuilder = (Builder) errorObj;
+            } else if (errorObj != null) {
+                errorBuilder = new Builder();
+                errorBuilder.parse(errorObj.toString());
+            } else {
+                return; // Skip if error is null
+            }
+            
+            int code = 0;
+            String message = "";
+            
+            if (errorBuilder.containsKey("code")) {
+                Object codeObj = errorBuilder.get("code");
+                if (codeObj instanceof Number) {
+                    code = ((Number) codeObj).intValue();
+                } else if (codeObj != null) {
+                    code = Integer.parseInt(codeObj.toString());
+                }
+            }
+            
+            if (errorBuilder.containsKey("message")) {
+                Object msgObj = errorBuilder.get("message");
+                message = msgObj != null ? msgObj.toString() : "";
+            }
+            
             this.error = new JsonRpcError(code, message);
             
             if (errorBuilder.containsKey("data")) {
-                Builder dataBuilder = new Builder();
-                dataBuilder.parse(errorBuilder.get("data").toString());
-                this.error.setData(dataBuilder);
+                Object dataObj = errorBuilder.get("data");
+                if (dataObj instanceof Builder) {
+                    this.error.setData((Builder) dataObj);
+                } else if (dataObj != null) {
+                    Builder dataBuilder = new Builder();
+                    dataBuilder.parse(dataObj.toString());
+                    this.error.setData(dataBuilder);
+                }
             }
         }
     }
@@ -77,4 +107,8 @@ public class JsonRpcResponse extends JsonRpcMessage {
         }
         return builder.toString();
     }
-} 
+
+    public boolean hasError() {
+        return error != null;
+    }
+}
