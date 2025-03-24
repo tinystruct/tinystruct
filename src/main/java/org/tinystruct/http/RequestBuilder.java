@@ -103,9 +103,9 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
                         if (fileData != null && fileData.getHttpDataType() == InterfaceHttpData.HttpDataType.FileUpload) {
                             MixedFileUpload upload = (MixedFileUpload) fileData;
                             Attachment attachment = new Attachment();
-                            attachment.setContentType(upload.getContentType());
-                            attachment.setFilename(upload.getFilename());
-                            attachment.setContentTransferEncoding(upload.getContentTransferEncoding());
+                            attachment.setContentType(upload.getContentType().trim());
+                            attachment.setFilename(upload.getFilename().trim());
+                            attachment.setContentTransferEncoding(upload.getContentTransferEncoding().trim());
                             try {
                                 attachment.setContent(upload.get());
                             } catch (IOException e) {

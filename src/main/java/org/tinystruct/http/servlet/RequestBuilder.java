@@ -256,8 +256,8 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
             ContentDisposition e;
             while ((e = iterator.getNextPart()) != null) {
                 Attachment attachment = new Attachment();
-                attachment.setContentType(e.getContentType());
-                attachment.setFilename(e.getFileName());
+                attachment.setContentType(e.getContentType().trim());
+                attachment.setFilename(e.getFileName().trim());
                 attachment.setContent(e.getData());
 
                 list.add(attachment);
