@@ -424,20 +424,62 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     /**
-     * Executes the given SQL statement.
+     * Executes the given SQL statement or SQL script file.
      */
-    @Action(value = "sql-execute", description = "Executes the given SQL statement", options = {
-            @Argument(key = "sql", description = "an SQL Data Manipulation Language (DML) statement, such as INSERT, UPDATE or DELETE; or an SQL statement that returns nothing, such as a DDL statement.")
+    @Action(value = "sql-execute", description = "Executes the given SQL statement or SQL script file", options = {
+            @Argument(key = "sql", description = "an SQL Data Manipulation Language (DML) statement, such as INSERT, UPDATE or DELETE; or an SQL statement that returns nothing, such as a DDL statement."),
+            @Argument(key = "sql-file", description = "path to a SQL script file to execute")
     }, mode = org.tinystruct.application.Action.Mode.CLI)
     public void executeUpdate() throws ApplicationException {
-        if (getContext().getAttribute("--sql") == null) {
-            throw new ApplicationException("Invalid SQL Statement.");
+        String sql = null;
+        String filePath = null;
+
+        if (getContext().getAttribute("--sql") != null) {
+            sql = getContext().getAttribute("--sql").toString();
+        } else if (getContext().getAttribute("--sql-file") != null) {
+            filePath = getContext().getAttribute("--sql-file").toString();
+        } else {
+            throw new ApplicationException("Either --sql or --sql-file parameter must be provided.");
         }
 
-        String query = getContext().getAttribute("--sql").toString();
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            if (operator.update(query) > 0) {
-                System.out.println("Done!");
+            operator.disableSafeCheck();
+
+            if (sql != null) {
+                if (operator.update(sql) > 0) {
+                    System.out.println("Done!");
+                }
+            } else if (filePath != null) {
+                File sqlFile = new File(filePath);
+                if (!sqlFile.exists()) {
+                    throw new ApplicationException("SQL script file not found: " + filePath);
+                }
+
+                try (BufferedReader reader = new BufferedReader(new FileReader(sqlFile))) {
+                    StringBuilder script = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        // Skip comments and empty lines
+                        if (line.trim().startsWith("--") || line.trim().startsWith("//") || line.trim().isEmpty()) {
+                            continue;
+                        }
+                        script.append(line).append("\n");
+                    }
+
+                    // Split the script into individual statements
+                    String[] statements = script.toString().split(";");
+                    for (String statement : statements) {
+                        statement = statement.trim();
+                        if (!statement.isEmpty()) {
+                            if (operator.update(statement) > 0) {
+                                System.out.println("Executed: " + statement);
+                            }
+                        }
+                    }
+                    System.out.println("Script execution completed!");
+                } catch (IOException e) {
+                    throw new ApplicationException("Error reading SQL script file: " + e.getMessage());
+                }
             }
         } catch (ApplicationException e) {
             System.err.println(e.getCause().getMessage());
