@@ -53,6 +53,17 @@ public final class ActionRegistry {
     }
 
     /**
+     * Register a method with a specific URL pattern.
+     *
+     * @param app        The Application instance
+     * @param path       The URL pattern
+     * @param method The method name
+     */
+    public void set(final Application app, final String path, final Method method) {
+        this.set(app, path, method, Action.Mode.All);
+    }
+
+    /**
      * Register a method with a specific URL pattern and method type (GET, POST, etc.).
      *
      * @param app        The Application instance
@@ -67,6 +78,23 @@ public final class ActionRegistry {
 
         paths.add(path);
         initializePatterns(app, path, methodName, mode);
+    }
+
+    /**
+     * Register a method with a specific URL pattern and method type (GET, POST, etc.).
+     *
+     * @param app    The Application instance
+     * @param path   The URL pattern
+     * @param method The method name
+     * @param mode   The mode name
+     */
+    public void set(final Application app, final String path, final Method method, final Action.Mode mode) {
+        if (path == null || method == null) {
+            throw new IllegalArgumentException("Path or methodName cannot be null.");
+        }
+
+        paths.add(path);
+        initializePattern(app, path, method, mode);
     }
 
     /**
@@ -194,6 +222,67 @@ public final class ActionRegistry {
      */
     public Action getAction(String path, String method) {
         return this.getAction(path);
+    }
+
+    /**
+     * Initialize URL patterns based on the registered methods in the Application class.
+     *
+     * @param app    The Application instance
+     * @param path   The URL pattern
+     * @param method The method
+     * @param mode   The execution mode
+     */
+    private synchronized void initializePattern(Application app, String path, Method method, Action.Mode mode) {
+        Class<?> clazz = app.getClass();
+        CommandLine cli = app.getCommandLines().get(path);
+        if (cli != null) {
+            commands.put(path, cli);
+        }
+        String group = extractGroupFromPath(path);
+        String patternPrefix = "^/?" + path;
+        if (null != method) {
+            Class<?>[] types = method.getParameterTypes();
+            String expression;
+
+            int priority = 0;
+            if (types.length > 0) {
+                StringBuilder patterns = new StringBuilder();
+                for (Class<?> type : types) {
+                    if (Request.class.isAssignableFrom(type) || Response.class.isAssignableFrom(type)) continue;
+                    String[] patternWithPriority = this.getPatternForType(type).split(":");
+                    String patternForType = patternWithPriority[0];
+                    priority += Integer.parseInt(patternWithPriority[1]);
+
+                    String pattern = "(" + patternForType + ")";
+                    if (patterns.length() != 0) {
+                        patterns.append("/");
+                    }
+                    patterns.append(pattern);
+                }
+
+                if (patterns.length() > 0) {
+                    expression = patternPrefix + "/" + patterns + "$";
+                } else {
+                    expression = patternPrefix + "$";
+                }
+            } else {
+                expression = patternPrefix + "$";
+            }
+
+            try {
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                MethodHandle handle = lookup.findVirtual(clazz, method.getName(), MethodType.methodType(method.getReturnType(), types));
+                List<Action> actions = patternGroups.getOrDefault(group, new ArrayList<>());
+                Action action = mode == Action.Mode.All ? new Action(actions.size(), app, expression, handle, method.getName(), method.getReturnType(), method.getParameterTypes(), priority) : new Action(actions.size(), app, expression, handle, method.getName(), method.getReturnType(), method.getParameterTypes(), priority, mode);
+                actions.add(action);
+
+                patternGroups.put(group, actions);
+            } catch (IllegalAccessException e) {
+                throw new ApplicationRuntimeException(e);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**
