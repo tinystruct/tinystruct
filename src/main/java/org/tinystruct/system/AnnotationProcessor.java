@@ -67,13 +67,12 @@ public class AnnotationProcessor {
                 // Register the action handler method
                 // Set the action in the action registry
                 if (mode != org.tinystruct.application.Action.Mode.All) {
-                    this.actionRegistry.set(this.app, path, method.getName(), mode);
+                    this.actionRegistry.set(this.app, path, method, mode);
                 } else {
-                    this.actionRegistry.set(this.app, path, method.getName());
+                    this.actionRegistry.set(this.app, path, method);
                 }
             }
         }
-
     }
 
     private static Set<CommandArgument<String, Object>> getCommandArguments(Action actionAnnotation) {
