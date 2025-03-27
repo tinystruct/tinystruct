@@ -26,7 +26,30 @@ public final class ActionRegistry {
     private static final Map<String, List<Action>> patternGroups = new ConcurrentHashMap<>();
     // Map to store URL patterns and their corresponding CommandLine objects
     private static final Map<String, CommandLine> commands = new ConcurrentHashMap<>();
+    // Map of type patterns for URL parameter matching
+    private static final Map<Class<?>, PatternPriority> TYPE_PATTERNS = new HashMap<>();
     private final Set<String> paths = new HashSet<>();
+    
+    static {
+        // Initialize the type pattern mappings
+        TYPE_PATTERNS.put(Integer.TYPE, new PatternPriority("-?\\d+", 2));
+        TYPE_PATTERNS.put(Integer.class, new PatternPriority("-?\\d+", 2));
+        TYPE_PATTERNS.put(Long.TYPE, new PatternPriority("-?\\d+", 2));
+        TYPE_PATTERNS.put(Long.class, new PatternPriority("-?\\d+", 2));
+        TYPE_PATTERNS.put(Float.TYPE, new PatternPriority("-?\\d+(\\.\\d+)?", 3));
+        TYPE_PATTERNS.put(Float.class, new PatternPriority("-?\\d+(\\.\\d+)?", 3));
+        TYPE_PATTERNS.put(Double.TYPE, new PatternPriority("-?\\d+(\\.\\d+)?", 3));
+        TYPE_PATTERNS.put(Double.class, new PatternPriority("-?\\d+(\\.\\d+)?", 3));
+        TYPE_PATTERNS.put(Short.TYPE, new PatternPriority("-?\\d+", 2));
+        TYPE_PATTERNS.put(Short.class, new PatternPriority("-?\\d+", 2));
+        TYPE_PATTERNS.put(Byte.TYPE, new PatternPriority("\\d+", 2));
+        TYPE_PATTERNS.put(Byte.class, new PatternPriority("\\d+", 2));
+        TYPE_PATTERNS.put(Boolean.TYPE, new PatternPriority("true|false", 3));
+        TYPE_PATTERNS.put(Boolean.class, new PatternPriority("true|false", 3));
+        TYPE_PATTERNS.put(Character.TYPE, new PatternPriority(".{1}", 1));
+        TYPE_PATTERNS.put(Character.class, new PatternPriority(".{1}", 1));
+        TYPE_PATTERNS.put(String.class, new PatternPriority("[^/]+", 1));
+    }
 
     // Private constructor to enforce singleton pattern
     private ActionRegistry() {
@@ -55,9 +78,9 @@ public final class ActionRegistry {
     /**
      * Register a method with a specific URL pattern.
      *
-     * @param app        The Application instance
-     * @param path       The URL pattern
-     * @param method The method name
+     * @param app     The Application instance
+     * @param path    The URL pattern
+     * @param method  The method name
      */
     public void set(final Application app, final String path, final Method method) {
         this.set(app, path, method, Action.Mode.All);
@@ -72,12 +95,18 @@ public final class ActionRegistry {
      * @param mode       The mode name
      */
     public void set(final Application app, final String path, final String methodName, final Action.Mode mode) {
-        if (path == null || methodName == null) {
-            throw new IllegalArgumentException("Path or methodName cannot be null.");
-        }
-
+        validateParameters(path, methodName);
         paths.add(path);
-        initializePatterns(app, path, methodName, mode);
+        
+        Class<?> clazz = app.getClass();
+        storeCommandLine(app, path);
+        
+        Method[] methods = getMethods(methodName, clazz);
+        for (Method method : methods) {
+            if (method != null) {
+                initializePattern(app, path, method, mode);
+            }
+        }
     }
 
     /**
@@ -89,11 +118,9 @@ public final class ActionRegistry {
      * @param mode   The mode name
      */
     public void set(final Application app, final String path, final Method method, final Action.Mode mode) {
-        if (path == null || method == null) {
-            throw new IllegalArgumentException("Path or methodName cannot be null.");
-        }
-
+        validateParameters(path, method);
         paths.add(path);
+        storeCommandLine(app, path);
         initializePattern(app, path, method, mode);
     }
 
@@ -225,6 +252,31 @@ public final class ActionRegistry {
     }
 
     /**
+     * Validate required parameters are not null
+     * 
+     * @param path The URL pattern
+     * @param methodObject The method object or name
+     */
+    private void validateParameters(String path, Object methodObject) {
+        if (path == null || methodObject == null) {
+            throw new IllegalArgumentException("Path or method cannot be null.");
+        }
+    }
+
+    /**
+     * Store CommandLine object if available
+     * 
+     * @param app The application instance
+     * @param path The URL pattern
+     */
+    private void storeCommandLine(Application app, String path) {
+        CommandLine cli = app.getCommandLines().get(path);
+        if (cli != null) {
+            commands.put(path, cli);
+        }
+    }
+
+    /**
      * Initialize URL patterns based on the registered methods in the Application class.
      *
      * @param app    The Application instance
@@ -234,143 +286,127 @@ public final class ActionRegistry {
      */
     private synchronized void initializePattern(Application app, String path, Method method, Action.Mode mode) {
         Class<?> clazz = app.getClass();
-        CommandLine cli = app.getCommandLines().get(path);
-        if (cli != null) {
-            commands.put(path, cli);
-        }
         String group = extractGroupFromPath(path);
-        String patternPrefix = "^/?" + path;
-        if (null != method) {
+        
+        if (method != null) {
             Class<?>[] types = method.getParameterTypes();
-            String expression;
-
-            int priority = 0;
-            if (types.length > 0) {
-                StringBuilder patterns = new StringBuilder();
-                for (Class<?> type : types) {
-                    if (Request.class.isAssignableFrom(type) || Response.class.isAssignableFrom(type)) continue;
-                    String[] patternWithPriority = this.getPatternForType(type).split(":");
-                    String patternForType = patternWithPriority[0];
-                    priority += Integer.parseInt(patternWithPriority[1]);
-
-                    String pattern = "(" + patternForType + ")";
-                    if (patterns.length() != 0) {
-                        patterns.append("/");
-                    }
-                    patterns.append(pattern);
-                }
-
-                if (patterns.length() > 0) {
-                    expression = patternPrefix + "/" + patterns + "$";
-                } else {
-                    expression = patternPrefix + "$";
-                }
-            } else {
-                expression = patternPrefix + "$";
-            }
-
+            PatternBuilder patternBuilder = buildPattern(path, types);
+            
             try {
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
-                MethodHandle handle = lookup.findVirtual(clazz, method.getName(), MethodType.methodType(method.getReturnType(), types));
+                MethodHandle handle = lookup.findVirtual(clazz, method.getName(), 
+                        MethodType.methodType(method.getReturnType(), types));
+                
                 List<Action> actions = patternGroups.getOrDefault(group, new ArrayList<>());
-                Action action = mode == Action.Mode.All ? new Action(actions.size(), app, expression, handle, method.getName(), method.getReturnType(), method.getParameterTypes(), priority) : new Action(actions.size(), app, expression, handle, method.getName(), method.getReturnType(), method.getParameterTypes(), priority, mode);
+                Action action = createAction(actions.size(), app, patternBuilder.getExpression(), 
+                        handle, method.getName(), method.getReturnType(), 
+                        method.getParameterTypes(), patternBuilder.getPriority(), mode);
+                
                 actions.add(action);
-
                 patternGroups.put(group, actions);
             } catch (IllegalAccessException e) {
                 throw new ApplicationRuntimeException(e);
             } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
+                throw new ApplicationRuntimeException("Method not found", e);
             }
         }
     }
 
     /**
-     * Initialize URL patterns based on the registered methods in the Application class.
-     *
-     * @param app        The Application instance
-     * @param path       The URL pattern
-     * @param methodName The method name
-     * @param mode       The execution mode
+     * Create an Action object based on provided parameters
      */
-    private synchronized void initializePatterns(Application app, String path, String methodName, Action.Mode mode) {
-        Class<?> clazz = app.getClass();
-        Method[] methods = getMethods(methodName, clazz);
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        CommandLine cli = app.getCommandLines().get(path);
-        if (cli != null) {
-            commands.put(path, cli);
-        }
-        String group = extractGroupFromPath(path);
-        String patternPrefix = "^/?" + path;
-        for (Method m : methods) {
-            if (null != m) {
-                Class<?>[] types = m.getParameterTypes();
-                String expression;
-
-                int priority = 0;
-                if (types.length > 0) {
-                    StringBuilder patterns = new StringBuilder();
-                    for (Class<?> type : types) {
-                        if (Request.class.isAssignableFrom(type) || Response.class.isAssignableFrom(type)) continue;
-                        String[] patternWithPriority = this.getPatternForType(type).split(":");
-                        String patternForType = patternWithPriority[0];
-                        priority += Integer.parseInt(patternWithPriority[1]);
-
-                        String pattern = "(" + patternForType + ")";
-                        if (patterns.length() != 0) {
-                            patterns.append("/");
-                        }
-                        patterns.append(pattern);
-                    }
-
-                    if (patterns.length() > 0) {
-                        expression = patternPrefix + "/" + patterns + "$";
-                    } else {
-                        expression = patternPrefix + "$";
-                    }
-                } else {
-                    expression = patternPrefix + "$";
-                }
-
-                try {
-                    MethodHandle handle = lookup.findVirtual(clazz, methodName, MethodType.methodType(m.getReturnType(), types));
-                    List<Action> actions = patternGroups.getOrDefault(group, new ArrayList<>());
-                    Action action = mode == Action.Mode.All ? new Action(actions.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes(), priority) : new Action(actions.size(), app, expression, handle, m.getName(), m.getReturnType(), m.getParameterTypes(), priority, mode);
-                    actions.add(action);
-
-                    patternGroups.put(group, actions);
-                } catch (IllegalAccessException e) {
-                    throw new ApplicationRuntimeException(e);
-                } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+    private Action createAction(int id, Application app, String expression, MethodHandle handle, 
+                              String methodName, Class<?> returnType, Class<?>[] parameterTypes, 
+                              int priority, Action.Mode mode) {
+        if (mode == Action.Mode.All) {
+            return new Action(id, app, expression, handle, methodName, returnType, parameterTypes, priority);
+        } else {
+            return new Action(id, app, expression, handle, methodName, returnType, parameterTypes, priority, mode);
         }
     }
 
-    private String getPatternForType(Class<?> type) {
-        if (Integer.TYPE.isAssignableFrom(type) || Integer.class.isAssignableFrom(type)) {
-            return "-?\\d+:2";
-        } else if (Long.TYPE.isAssignableFrom(type) || Long.class.isAssignableFrom(type)) {
-            return "-?\\d+:2";
-        } else if (Float.TYPE.isAssignableFrom(type) || Float.class.isAssignableFrom(type)) {
-            return "-?\\d+(\\.\\d+)?:3";
-        } else if (Double.TYPE.isAssignableFrom(type) || Double.class.isAssignableFrom(type)) {
-            return "-?\\d+(\\.\\d+)?:3";
-        } else if (Short.TYPE.isAssignableFrom(type) || Short.class.isAssignableFrom(type)) {
-            return "-?\\d+:2";
-        } else if (Byte.TYPE.isAssignableFrom(type) || Byte.class.isAssignableFrom(type)) {
-            return "\\d+:2";
-        } else if (Boolean.TYPE.isAssignableFrom(type) || Boolean.class.isAssignableFrom(type)) {
-            return "true|false:3";
-        } else if (Character.TYPE.isAssignableFrom(type) || Character.class.isAssignableFrom(type)) {
-            return ".{1}:1";
-        } else if (String.class.isAssignableFrom(type)) {
-            return "[^/]+:1";
+    /**
+     * Build a pattern and calculate priority for method parameters
+     */
+    private PatternBuilder buildPattern(String path, Class<?>[] types) {
+        String patternPrefix = "^/?" + path;
+        StringBuilder patterns = new StringBuilder();
+        int priority = 0;
+        
+        if (types.length > 0) {
+            for (Class<?> type : types) {
+                if (Request.class.isAssignableFrom(type) || Response.class.isAssignableFrom(type)) continue;
+                
+                PatternPriority patternPriority = getPatternForType(type);
+                priority += patternPriority.getPriority();
+                
+                String pattern = "(" + patternPriority.getPattern() + ")";
+                if (patterns.length() != 0) {
+                    patterns.append("/");
+                }
+                patterns.append(pattern);
+            }
+            
+            String expression;
+            if (patterns.length() > 0) {
+                expression = patternPrefix + "/" + patterns + "$";
+            } else {
+                expression = patternPrefix + "$";
+            }
+            
+            return new PatternBuilder(expression, priority);
         } else {
-            return "[^/]+:0";
+            return new PatternBuilder(patternPrefix + "$", 0);
         }
+    }
+
+    /**
+     * Helper class to store pattern and priority together
+     */
+    private static class PatternPriority {
+        private final String pattern;
+        private final int priority;
+        
+        public PatternPriority(String pattern, int priority) {
+            this.pattern = pattern;
+            this.priority = priority;
+        }
+        
+        public String getPattern() {
+            return pattern;
+        }
+        
+        public int getPriority() {
+            return priority;
+        }
+    }
+
+    /**
+     * Helper class to build and store pattern expressions
+     */
+    private static class PatternBuilder {
+        private final String expression;
+        private final int priority;
+        
+        public PatternBuilder(String expression, int priority) {
+            this.expression = expression;
+            this.priority = priority;
+        }
+        
+        public String getExpression() {
+            return expression;
+        }
+        
+        public int getPriority() {
+            return priority;
+        }
+    }
+
+    /**
+     * Gets pattern and priority for a specific parameter type
+     */
+    private PatternPriority getPatternForType(Class<?> type) {
+        return TYPE_PATTERNS.getOrDefault(type, new PatternPriority("[^/]+", 0));
     }
 
     /**
