@@ -193,7 +193,6 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * @param function The action object to be associated with the path.
      * @deprecated Use the {@link org.tinystruct.system.annotation.Action} annotation instead.
      */
-    @Deprecated
     public void setAction(String path, String function) {
         // Set the action in the action registry
         this.actionRegistry.set(this, path, function);
