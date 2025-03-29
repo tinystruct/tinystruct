@@ -10,6 +10,7 @@ import org.tinystruct.net.URLResponse;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -25,7 +26,7 @@ public class HTTPHandlerTest {
     @Test
     public void testGetRequestWithParameters() throws Exception {
         // Use httpbin.org to test a GET request.
-        URL url = new URL("https://httpbin.org/get");
+        URL url = URI.create("https://httpbin.org/get").toURL();
         URLRequest request = new URLRequest(url);
         request.setMethod("GET");
         request.setHeader("Accept", "application/json");
@@ -52,7 +53,7 @@ public class HTTPHandlerTest {
     @Test
     void testHandleRequestAsync() throws InterruptedException, MalformedURLException, ExecutionException {
         // Given
-        URL url = new URL("https://httpbin.org/get");
+        URL url = URI.create("https://httpbin.org/get").toURL();
         URLRequest request = new URLRequest(url);
         HTTPHandler handler = new HTTPHandler();
 
@@ -71,7 +72,7 @@ public class HTTPHandlerTest {
     @Test
     public void testFileUpload() throws Exception {
         // Create a URLRequest for a file upload (POST) to httpbin.org.
-        URL url = new URL("https://httpbin.org/post");
+        URL url = URI.create("https://httpbin.org/post").toURL();
         URLRequest request = new URLRequest(url);
         request.setMethod("POST");
         // Set the header so that HTTPHandler uses the multipart logic.
@@ -106,7 +107,7 @@ public class HTTPHandlerTest {
 
     @Test
     void testHandleSSEAutoDetection() throws Exception {
-        URLRequest request = new URLRequest(new URL("https://httpbin.org/stream/3"));
+        URLRequest request = new URLRequest(URI.create("https://httpbin.org/stream/3").toURL());
         HTTPHandler handler = new HTTPHandler();
 
         AtomicInteger eventCounter = new AtomicInteger();
