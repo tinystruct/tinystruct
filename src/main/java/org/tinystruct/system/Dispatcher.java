@@ -402,24 +402,40 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
         String cmd = getContext().getAttribute("--shell-command").toString();
         try {
-            String line;
-            Process p = Runtime.getRuntime().exec(cmd);
-            if (output) {
-                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream(), Charset.defaultCharset()));
-                while ((line = input.readLine()) != null) {
-                    System.out.println(line);
-                }
-                input.close();
-
-                BufferedReader error = new BufferedReader(new InputStreamReader(p.getErrorStream(), Charset.defaultCharset()));
-                while ((line = error.readLine()) != null) {
-                    System.out.println(line);
-                }
-                error.close();
+            ProcessBuilder processBuilder = new ProcessBuilder();
+            // Use Platform utility class to determine the shell and command
+            if (Platform.isWindows()) {
+                processBuilder.command("cmd", "/c", cmd);
+            } else {
+                processBuilder.command("sh", "-c", cmd);
             }
-            p.onExit().get().destroy();
-        } catch (Exception err) {
-            throw new ApplicationException(err.getMessage(), err);
+
+            // Redirect error stream to standard output
+            processBuilder.redirectErrorStream(true);
+
+            Process process = processBuilder.start();
+
+            if (output) {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), Charset.defaultCharset()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                }
+            }
+            
+            // Wait for the process to complete
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new ApplicationException("Command execution failed with exit code: " + exitCode);
+            }
+            
+        } catch (IOException e) {
+            throw new ApplicationException("Failed to execute command: " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ApplicationException("Command execution was interrupted", e);
         }
     }
 
