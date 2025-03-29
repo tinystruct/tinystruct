@@ -306,7 +306,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         System.out.print("Checking...");
         System.out.println("\rThe current project is based on tinystruct-" + this.color(ApplicationManager.VERSION, FORE_COLOR.green));
         try {
-            URLResourceLoader loader = new URLResourceLoader(new URL("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/maven-metadata.xml"));
+            URLResourceLoader loader = new URLResourceLoader(URI.create("https://repo1.maven.org/maven2/org/tinystruct/tinystruct/maven-metadata.xml").toURL());
             StringBuilder content = loader.getContent();
             String latestVersion = content.substring(content.indexOf("<latest>") + 8, content.indexOf("</latest>"));
 
@@ -336,7 +336,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         if (getContext().getAttribute("--url") != null) {
             URL uri;
             try {
-                uri = new URL(getContext().getAttribute("--url").toString());
+                uri = URI.create(getContext().getAttribute("--url").toString()).toURL();
                 this.download(uri, uri.getFile());
             } catch (MalformedURLException e) {
                 throw new ApplicationException(e.getMessage(), e.getCause());

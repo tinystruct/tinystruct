@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -169,7 +170,7 @@ public class MCPClient {
     private void startEventStream() {
         Thread eventThread = new Thread(() -> {
             try {
-                URL url = new URL(baseUrl + "?q=" + Endpoints.EVENTS + "&" + Http.TOKEN_PARAM + "=" + authToken);
+                URL url = URI.create(baseUrl + "?q=" + Endpoints.EVENTS + "&" + Http.TOKEN_PARAM + "=" + authToken).toURL();
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Accept", Http.CONTENT_TYPE_SSE);
