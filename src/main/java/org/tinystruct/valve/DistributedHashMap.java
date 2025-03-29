@@ -15,7 +15,7 @@ import java.util.logging.Logger;
  *
  * @param <T> The type of elements in the queues stored in this map
  */
-public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> {
+public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> implements AutoCloseable {
     private static final long serialVersionUID = 2329878484809829362L;
     private static final Logger logger = Logger.getLogger(DistributedHashMap.class.getName());
 
@@ -248,15 +248,16 @@ public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> {
     }
 
     @Override
-    protected void finalize() throws Throwable {
+    public void close() throws Exception {
         try {
             if (data != null) {
                 data.close();
             }
             // Delete the data file
             new File(dataFilePath).delete();
-        } finally {
-            super.finalize();
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error during cleanup", e);
+            throw e;
         }
     }
 }
