@@ -13,7 +13,7 @@ Installation and Getting Started
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.6.1</version>
+  <version>1.6.2</version>
   <classifier>jar-with-dependencies</classifier>
 </dependency>
 ```
@@ -69,12 +69,12 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.6.1
+  /  /  /) (/ _)  /  /  (/ (  /  1.6.2
            /
 ```
 ```tcsh
 $ bin/dispatcher --help
-Usage: bin\dispatcher COMMAND [OPTIONS]
+Usage: bin/dispatcher COMMAND [OPTIONS]
 A command line tool for tinystruct framework
 Commands: 
         download        Download a resource from other servers
