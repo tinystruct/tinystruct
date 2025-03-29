@@ -35,7 +35,10 @@ public final class Resource {
     }
 
     private Resource(String language, String country) {
-        this.resource = ResourceBundle.getBundle("languages/lang", new Locale(language, country));
+        this.resource = ResourceBundle.getBundle("languages/lang", new Locale.Builder()
+                .setLanguage(language)
+                .setRegion(country)
+                .build());
     }
 
     public static Resource getInstance(Locale locale) {
