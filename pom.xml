@@ -6,10 +6,10 @@
     <artifactId>tinystruct</artifactId>
     <version>1.6.2</version>
     <name>tinystruct framework</name>
-    <description>A simple framework for Java development. Simplicity is difficult, while complexity is easy. Better
-        thinking leads to better design.
+    <description>A lightweight java framework designed for building efficient and scalable applications. Supports both
+        command-line tools and APIs, enabling developers to create robust solutions with ease.
     </description>
-    <url>http://tinystruct.org</url>
+    <url>https://tinystruct.org</url>
     <licenses>
         <license>
             <name>Apache 2.0</name>
@@ -23,11 +23,10 @@
         <developer>
             <name>James Zhou</name>
             <email>moverinfo@gmail.com</email>
-            <organizationUrl>http://tinystruct.org</organizationUrl>
+            <organizationUrl>https://tinystruct.org</organizationUrl>
         </developer>
     </developers>
     <dependencies>
-        <!-- https://mvnrepository.com/artifact/javax.servlet/javax.servlet-api -->
         <!-- https://mvnrepository.com/artifact/jakarta.servlet/jakarta.servlet-api -->
         <dependency>
             <groupId>jakarta.servlet</groupId>
