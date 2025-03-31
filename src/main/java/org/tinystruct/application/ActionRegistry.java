@@ -29,7 +29,7 @@ public final class ActionRegistry {
     // Map of type patterns for URL parameter matching
     private static final Map<Class<?>, PatternPriority> TYPE_PATTERNS = new HashMap<>();
     private final Set<String> paths = new HashSet<>();
-    
+
     static {
         // Initialize the type pattern mappings
         TYPE_PATTERNS.put(Integer.TYPE, new PatternPriority("-?\\d+", 2));
@@ -78,9 +78,9 @@ public final class ActionRegistry {
     /**
      * Register a method with a specific URL pattern.
      *
-     * @param app     The Application instance
-     * @param path    The URL pattern
-     * @param method  The method name
+     * @param app    The Application instance
+     * @param path   The URL pattern
+     * @param method The method name
      */
     public void set(final Application app, final String path, final Method method) {
         this.set(app, path, method, Action.Mode.All);
@@ -97,10 +97,10 @@ public final class ActionRegistry {
     public void set(final Application app, final String path, final String methodName, final Action.Mode mode) {
         validateParameters(path, methodName);
         paths.add(path);
-        
+
         Class<?> clazz = app.getClass();
         storeCommandLine(app, path);
-        
+
         Method[] methods = getMethods(methodName, clazz);
         for (Method method : methods) {
             if (method != null) {
@@ -156,9 +156,10 @@ public final class ActionRegistry {
      * Retrieve the Action object for a given URL pattern.
      *
      * @param path The URL pattern
+     * @param mode The mode of action
      * @return The corresponding Action object or null if not found
      */
-    public Action get(final String path) {
+    public Action get(final String path, Action.Mode mode) {
         Action bestMatch = null;
         Object[] args = new Object[]{};
         int bestPriority = Integer.MIN_VALUE; // assume lower numbers indicate higher priority
@@ -172,6 +173,12 @@ public final class ActionRegistry {
                     for (int i = 0; i < matcher.groupCount(); i++) {
                         args[i] = matcher.group(i + 1);
                     }
+
+                    if (mode != null && mode == action.getMode()) {
+                        bestMatch = action;
+                        break;
+                    }
+
                     bestMatch = action;
                     bestPriority = action.getPriority();
                 }
@@ -217,20 +224,6 @@ public final class ActionRegistry {
     }
 
     /**
-     * Get the Action object for a given URL pattern (without trailing slash).
-     *
-     * @param path The URL pattern
-     * @return The corresponding Action object or null if not found
-     */
-    public Action getAction(String path) {
-        Action action = this.get(path);
-        if (action == null) {
-            action = this.get(new StringUtilities(path).removeTrailingSlash());
-        }
-        return action;
-    }
-
-    /**
      * Get the CommandLine object for a given URL pattern.
      *
      * @param path The URL pattern
@@ -241,6 +234,21 @@ public final class ActionRegistry {
     }
 
     /**
+     * Get the Action object for a given URL pattern (without trailing slash).
+     *
+     * @param path The URL pattern
+     * @param mode The mode of action
+     * @return The corresponding Action object or null if not found
+     */
+    public Action getAction(String path, Action.Mode mode) {
+        Action action = this.get(path, mode);
+        if (action == null) {
+            action = this.get(new StringUtilities(path).removeTrailingSlash(), mode);
+        }
+        return action;
+    }
+
+    /**
      * Get the Action object for a given URL pattern and HTTP method type.
      *
      * @param path   The URL pattern
@@ -248,13 +256,30 @@ public final class ActionRegistry {
      * @return The corresponding Action object or null if not found
      */
     public Action getAction(String path, String method) {
-        return this.getAction(path);
+        return this.getAction(path, method, Action.Mode.All);
+    }
+
+    /**
+     * Get the Action object for a given URL pattern and HTTP method type.
+     *
+     * @param path   The URL pattern
+     * @param method The HTTP method type
+     * @param mode   The mode of action
+     * @return The corresponding Action object or null if not found
+     */
+    public Action getAction(String path, String method, Action.Mode mode) {
+        Action action = this.get(path, mode);
+        if (action == null) {
+            action = this.get(new StringUtilities(path).removeTrailingSlash(), mode);
+        }
+
+        return action;
     }
 
     /**
      * Validate required parameters are not null
-     * 
-     * @param path The URL pattern
+     *
+     * @param path         The URL pattern
      * @param methodObject The method object or name
      */
     private void validateParameters(String path, Object methodObject) {
@@ -265,8 +290,8 @@ public final class ActionRegistry {
 
     /**
      * Store CommandLine object if available
-     * 
-     * @param app The application instance
+     *
+     * @param app  The application instance
      * @param path The URL pattern
      */
     private void storeCommandLine(Application app, String path) {
@@ -287,21 +312,21 @@ public final class ActionRegistry {
     private synchronized void initializePattern(Application app, String path, Method method, Action.Mode mode) {
         Class<?> clazz = app.getClass();
         String group = extractGroupFromPath(path);
-        
+
         if (method != null) {
             Class<?>[] types = method.getParameterTypes();
             PatternBuilder patternBuilder = buildPattern(path, types);
-            
+
             try {
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
-                MethodHandle handle = lookup.findVirtual(clazz, method.getName(), 
+                MethodHandle handle = lookup.findVirtual(clazz, method.getName(),
                         MethodType.methodType(method.getReturnType(), types));
-                
+
                 List<Action> actions = patternGroups.getOrDefault(group, new ArrayList<>());
-                Action action = createAction(actions.size(), app, patternBuilder.getExpression(), 
-                        handle, method.getName(), method.getReturnType(), 
+                Action action = createAction(actions.size(), app, patternBuilder.getExpression(),
+                        handle, method.getName(), method.getReturnType(),
                         method.getParameterTypes(), patternBuilder.getPriority(), mode);
-                
+
                 actions.add(action);
                 patternGroups.put(group, actions);
             } catch (IllegalAccessException e) {
@@ -315,9 +340,9 @@ public final class ActionRegistry {
     /**
      * Create an Action object based on provided parameters
      */
-    private Action createAction(int id, Application app, String expression, MethodHandle handle, 
-                              String methodName, Class<?> returnType, Class<?>[] parameterTypes, 
-                              int priority, Action.Mode mode) {
+    private Action createAction(int id, Application app, String expression, MethodHandle handle,
+                                String methodName, Class<?> returnType, Class<?>[] parameterTypes,
+                                int priority, Action.Mode mode) {
         if (mode == Action.Mode.All) {
             return new Action(id, app, expression, handle, methodName, returnType, parameterTypes, priority);
         } else {
@@ -332,28 +357,28 @@ public final class ActionRegistry {
         String patternPrefix = "^/?" + path;
         StringBuilder patterns = new StringBuilder();
         int priority = 0;
-        
+
         if (types.length > 0) {
             for (Class<?> type : types) {
                 if (Request.class.isAssignableFrom(type) || Response.class.isAssignableFrom(type)) continue;
-                
+
                 PatternPriority patternPriority = getPatternForType(type);
                 priority += patternPriority.getPriority();
-                
+
                 String pattern = "(" + patternPriority.getPattern() + ")";
                 if (patterns.length() != 0) {
                     patterns.append("/");
                 }
                 patterns.append(pattern);
             }
-            
+
             String expression;
             if (patterns.length() > 0) {
                 expression = patternPrefix + "/" + patterns + "$";
             } else {
                 expression = patternPrefix + "$";
             }
-            
+
             return new PatternBuilder(expression, priority);
         } else {
             return new PatternBuilder(patternPrefix + "$", 0);
@@ -366,16 +391,16 @@ public final class ActionRegistry {
     private static class PatternPriority {
         private final String pattern;
         private final int priority;
-        
+
         public PatternPriority(String pattern, int priority) {
             this.pattern = pattern;
             this.priority = priority;
         }
-        
+
         public String getPattern() {
             return pattern;
         }
-        
+
         public int getPriority() {
             return priority;
         }
@@ -387,16 +412,16 @@ public final class ActionRegistry {
     private static class PatternBuilder {
         private final String expression;
         private final int priority;
-        
+
         public PatternBuilder(String expression, int priority) {
             this.expression = expression;
             this.priority = priority;
         }
-        
+
         public String getExpression() {
             return expression;
         }
-        
+
         public int getPriority() {
             return priority;
         }
