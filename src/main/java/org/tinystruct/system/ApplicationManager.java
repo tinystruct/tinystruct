@@ -235,7 +235,7 @@ public final class ApplicationManager {
                 return command;
         }
 
-        Action action = ROUTE_REGISTRY_INSTANCE.getAction(path, method);
+        Action action = ROUTE_REGISTRY_INSTANCE.getAction(path, method, mode);
         if (action == null) {
             throw new ApplicationException(
                     "No matching function found for path [" + path + "]. Ensure the path is correct and the function is public.", 404);
