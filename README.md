@@ -85,8 +85,8 @@ Commands:
         open            Start a default browser to open the specific URL
         say             Output words
         set             Set system property
-        sql-execute     Executes the given SQL statement
-        sql-query       Executes the given SQL statement
+        sql-execute     Executes the given SQL statement, which may be an INSERT, UPDATE, DELETE, or DDL statement
+        sql-query       Executes the given SQL statement, which returns a single ResultSet object
         update          Update for latest version
 
 Options: 
