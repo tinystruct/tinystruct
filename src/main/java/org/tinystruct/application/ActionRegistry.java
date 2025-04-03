@@ -168,17 +168,17 @@ public final class ActionRegistry {
         for (Action action : actions) {
             Matcher matcher = action.getPattern().matcher(path);
             if (matcher.matches()) {
+                args = new Object[matcher.groupCount()];
+                for (int i = 0; i < matcher.groupCount(); i++) {
+                    args[i] = matcher.group(i + 1);
+                }
+
+                if (mode != null && mode == action.getMode()) {
+                    bestMatch = action;
+                    break;
+                }
+
                 if (action.getPriority() > bestPriority) {
-                    args = new Object[matcher.groupCount()];
-                    for (int i = 0; i < matcher.groupCount(); i++) {
-                        args[i] = matcher.group(i + 1);
-                    }
-
-                    if (mode != null && mode == action.getMode()) {
-                        bestMatch = action;
-                        break;
-                    }
-
                     bestMatch = action;
                     bestPriority = action.getPriority();
                 }
