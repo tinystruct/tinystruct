@@ -440,9 +440,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     /**
-     * Executes the given SQL statement or SQL script file.
+     * Executes the given SQL statement, which may be an INSERT, UPDATE, DELETE, or DDL statement.
      */
-    @Action(value = "sql-execute", description = "Executes the given SQL statement or SQL script file", options = {
+    @Action(value = "sql-execute", description = "Executes the given SQL statement, which may be an INSERT, UPDATE, DELETE, or DDL statement", options = {
             @Argument(key = "sql", description = "an SQL Data Manipulation Language (DML) statement, such as INSERT, UPDATE or DELETE; or an SQL statement that returns nothing, such as a DDL statement."),
             @Argument(key = "sql-file", description = "path to a SQL script file to execute")
     }, mode = org.tinystruct.application.Action.Mode.CLI)
@@ -503,9 +503,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     /**
-     * Executes the given SQL query.
+     * Executes the given SQL statement, which returns a single ResultSet object.
      */
-    @Action(value = "sql-query", description = "Executes the given SQL statement", options = {
+    @Action(value = "sql-query", description = "Executes the given SQL statement, which returns a single ResultSet object", options = {
             @Argument(key = "sql", description = "an SQL statement to be sent to the database, typically a static SQL SELECT statement")
     }, mode = org.tinystruct.application.Action.Mode.CLI)
     public void executeQuery() throws ApplicationException {
