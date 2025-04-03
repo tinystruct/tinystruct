@@ -17,6 +17,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
 import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
@@ -102,8 +103,11 @@ public final class ApplicationManager {
                 }
 
                 path = Paths.get(origin);
-                if (!Files.exists(path))
+                if (!Files.exists(path)) {
                     Files.createFile(path);
+                    if (!Platform.isWindows())
+                        Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rwxr-xr-x"));
+                }
 
                 String cmd = null;
                 try (InputStream in = ApplicationManager.class.getResourceAsStream("/" + scriptName)) {
