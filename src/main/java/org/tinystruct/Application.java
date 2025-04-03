@@ -29,7 +29,7 @@ import java.util.Map;
  * @author James Zhou
  * @since 0.1.0
  */
-public interface Application {
+public interface Application extends Runnable {
     /**
      * Constants for Language code.
      */
