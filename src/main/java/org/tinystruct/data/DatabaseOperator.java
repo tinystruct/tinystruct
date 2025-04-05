@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,6 +20,8 @@ public class DatabaseOperator implements Closeable {
     private static final long RETRY_DELAY_MS = 1000;
     private final ConnectionManager manager;
     private boolean injectionCheckEnabled;
+    private boolean inTransaction;
+    private Savepoint currentSavepoint;
     Connection connection;
     PreparedStatement preparedStatement;
     private ResultSet resultSet;
@@ -32,6 +35,8 @@ public class DatabaseOperator implements Closeable {
         manager = ConnectionManager.getInstance();
         connection = manager.getConnection();
         injectionCheckEnabled = true;
+        inTransaction = false;
+        currentSavepoint = null;
     }
 
     /**
@@ -55,6 +60,8 @@ public class DatabaseOperator implements Closeable {
     public DatabaseOperator(Connection connection) {
         manager = null;
         this.connection = connection;
+        inTransaction = false;
+        currentSavepoint = null;
     }
 
     /**
@@ -271,6 +278,19 @@ public class DatabaseOperator implements Closeable {
             if (preparedStatement != null) {
                 preparedStatement.close();
             }
+
+            // If there's an active transaction, roll it back before closing
+            if (inTransaction && connection != null && !connection.isClosed()) {
+                try {
+                    connection.rollback();
+                    connection.setAutoCommit(true);
+                    logger.warning("Uncommitted transaction rolled back during close");
+                } catch (SQLException ex) {
+                    logger.severe("Error rolling back transaction during close: " + ex.getMessage());
+                }
+                inTransaction = false;
+                currentSavepoint = null;
+            }
         } catch (SQLException e) {
             throw new ApplicationRuntimeException(e.getMessage(), e);
         } finally {
@@ -310,5 +330,158 @@ public class DatabaseOperator implements Closeable {
      */
     public void disableSafeCheck() {
         this.injectionCheckEnabled = false;
+    }
+
+    /**
+     * Begin a database transaction. Sets the connection's auto-commit mode to false.
+     * If a transaction is already in progress, this method will create a savepoint.
+     *
+     * @return A Savepoint object if a transaction was already in progress, null otherwise
+     * @throws ApplicationException If an error occurs while beginning the transaction
+     */
+    public Savepoint beginTransaction() throws ApplicationException {
+        try {
+            if (connection == null) {
+                connection = manager.getConnection();
+            }
+
+            if (inTransaction) {
+                // If already in a transaction, create a savepoint
+                currentSavepoint = connection.setSavepoint("SP_" + System.currentTimeMillis());
+                logger.info("Created savepoint: " + currentSavepoint.getSavepointName());
+                return currentSavepoint;
+            } else {
+                // Start a new transaction
+                connection.setAutoCommit(false);
+                inTransaction = true;
+                logger.info("Transaction started");
+                return null;
+            }
+        } catch (SQLException e) {
+            throw new ApplicationException("Error beginning transaction: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Commit the current transaction. Sets the connection's auto-commit mode back to true.
+     *
+     * @throws ApplicationException If an error occurs while committing the transaction
+     */
+    public void commitTransaction() throws ApplicationException {
+        if (!inTransaction) {
+            logger.warning("No active transaction to commit");
+            return;
+        }
+
+        try {
+            connection.commit();
+            connection.setAutoCommit(true);
+            inTransaction = false;
+            currentSavepoint = null;
+            logger.info("Transaction committed");
+        } catch (SQLException e) {
+            throw new ApplicationException("Error committing transaction: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Rollback the current transaction. If a savepoint is specified, rolls back to that savepoint.
+     * Otherwise, rolls back the entire transaction and sets auto-commit mode back to true.
+     *
+     * @param savepoint The savepoint to roll back to, or null to roll back the entire transaction
+     * @throws ApplicationException If an error occurs while rolling back the transaction
+     */
+    public void rollbackTransaction(Savepoint savepoint) throws ApplicationException {
+        if (!inTransaction) {
+            logger.warning("No active transaction to rollback");
+            return;
+        }
+
+        try {
+            if (savepoint != null) {
+                // Rollback to the specified savepoint
+                connection.rollback(savepoint);
+                logger.info("Transaction rolled back to savepoint: " + savepoint.getSavepointName());
+            } else {
+                // Rollback the entire transaction
+                connection.rollback();
+                connection.setAutoCommit(true);
+                inTransaction = false;
+                currentSavepoint = null;
+                logger.info("Transaction rolled back completely");
+            }
+        } catch (SQLException e) {
+            throw new ApplicationException("Error rolling back transaction: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Rollback the entire current transaction.
+     *
+     * @throws ApplicationException If an error occurs while rolling back the transaction
+     */
+    public void rollbackTransaction() throws ApplicationException {
+        rollbackTransaction(null);
+    }
+
+    /**
+     * Check if a transaction is currently active.
+     *
+     * @return true if a transaction is active, false otherwise
+     */
+    public boolean isInTransaction() {
+        return inTransaction;
+    }
+
+    /**
+     * Get the current savepoint if one exists.
+     *
+     * @return The current savepoint, or null if none exists
+     */
+    public Savepoint getCurrentSavepoint() {
+        return currentSavepoint;
+    }
+
+    /**
+     * Create a new savepoint in the current transaction.
+     *
+     * @param name The name of the savepoint
+     * @return The created savepoint
+     * @throws ApplicationException If an error occurs while creating the savepoint or if no transaction is active
+     */
+    public Savepoint createSavepoint(String name) throws ApplicationException {
+        if (!inTransaction) {
+            throw new ApplicationException("Cannot create savepoint: No active transaction");
+        }
+
+        try {
+            Savepoint savepoint = connection.setSavepoint(name);
+            logger.info("Created savepoint: " + name);
+            return savepoint;
+        } catch (SQLException e) {
+            throw new ApplicationException("Error creating savepoint: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Release a savepoint from the current transaction.
+     *
+     * @param savepoint The savepoint to release
+     * @throws ApplicationException If an error occurs while releasing the savepoint
+     */
+    public void releaseSavepoint(Savepoint savepoint) throws ApplicationException {
+        if (!inTransaction) {
+            throw new ApplicationException("Cannot release savepoint: No active transaction");
+        }
+
+        try {
+            connection.releaseSavepoint(savepoint);
+            if (currentSavepoint != null && currentSavepoint.equals(savepoint)) {
+                currentSavepoint = null;
+            }
+            logger.info("Released savepoint");
+        } catch (SQLException e) {
+            throw new ApplicationException("Error releasing savepoint: " + e.getMessage(), e);
+        }
     }
 }
