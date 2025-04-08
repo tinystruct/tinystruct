@@ -27,7 +27,7 @@ public class LockKey {
                 fixedBytes[i] = idb[i];
             else {
                 try {
-                    fixedBytes[i] = (byte) (alphabetNumbers[SecureRandom.getInstance("NativePRNG").nextInt(alphabetNumbers.length - 1)]);
+                    fixedBytes[i] = (byte) (alphabetNumbers[SecureRandom.getInstance("SHA1PRNG").nextInt(alphabetNumbers.length - 1)]);
                 } catch (NoSuchAlgorithmException e) {
                     throw new ApplicationRuntimeException(e);
                 }
