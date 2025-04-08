@@ -93,7 +93,7 @@ public class MSSQLGenerator implements Generator {
         java_resource.append("   * Auto Generated Serial Version UID\r\n");
         java_resource.append("   */\r\n");
         try {
-            java_resource.append("  private static final long serialVersionUID = ").append(SecureRandom.getInstance("NativePRNG").nextLong()).append("L;\r\n");
+            java_resource.append("  private static final long serialVersionUID = ").append(SecureRandom.getInstance("SHA1PRNG").nextLong()).append("L;\r\n");
         } catch (NoSuchAlgorithmException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
