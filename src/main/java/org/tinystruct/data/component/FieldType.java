@@ -221,7 +221,7 @@ public final class FieldType implements Serializable {
      * @since 1.2
      */
     private final static int _BLOB = Types.BLOB;
-    public final static FieldType BLOB = new FieldType("BLOB", _BLOB, "BLOB");
+    public final static FieldType BLOB = new FieldType("BLOB", _BLOB, "byte[]");
     /**
      * The constant in the Java programming language, sometimes referred to
      * as a type code, that identifies the generic SQL type
