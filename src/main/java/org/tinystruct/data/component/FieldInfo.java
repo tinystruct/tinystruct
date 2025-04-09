@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.tinystruct.data.component;
 
+import java.sql.Blob;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -145,6 +146,8 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
             return FieldType.DATE;
         } else if (object instanceof LocalDateTime) {
             return FieldType.DATETIME;
+        } else if (object instanceof Blob) {
+            return FieldType.BLOB;
         }
 
         return FieldType.STRING;
