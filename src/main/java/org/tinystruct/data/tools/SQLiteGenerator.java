@@ -50,17 +50,17 @@ public class SQLiteGenerator implements Generator {
     }
 
     @Override
-	public void setPath(String path) {
+    public void setPath(String path) {
         this.path = path;
     }
 
     @Override
-	public void setPackageName(String packageName) {
+    public void setPackageName(String packageName) {
         this.packageName = packageName;
     }
 
     @Override
-	public void create(String className, String table) throws ApplicationException {
+    public void create(String className, String table) throws ApplicationException {
         StringBuilder java_resource = new StringBuilder();
         StringBuilder java_member_declaration = new StringBuilder();
         StringBuilder java_method_declaration = new StringBuilder();
@@ -111,8 +111,8 @@ public class SQLiteGenerator implements Generator {
         Row currentRow;
 
         String propertyName;
-		String propertyType;
-		String propertyTypeValue;
+        String propertyType;
+        String propertyTypeValue;
         boolean increment = false;
         while (listRow.hasNext()) {
             currentRow = listRow.next();
@@ -124,7 +124,7 @@ public class SQLiteGenerator implements Generator {
                 currentFields = fields.next();
 
                 propertyName = StringUtilities.setCharToUpper(currentFields.get("name").value().toString(), '_');
-                propertyName = StringUtilities.remove(propertyName,'_');
+                propertyName = StringUtilities.remove(propertyName, '_');
 
                 String propertyNameOfMethod = StringUtilities.setCharToUpper(propertyName, 0);
 
@@ -168,7 +168,12 @@ public class SQLiteGenerator implements Generator {
 
                     java_method_declaration.append("\tpublic void set").append(propertyNameOfMethod).append("(").append(propertyType).append(" ").append(propertyName).append(")\r\n");
                     java_method_declaration.append("\t{\r\n");
-                    java_method_declaration.append("\t\tthis.").append(propertyName).append("=this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType, 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
+                    if (!propertyType.endsWith("[]")) {
+                        java_method_declaration.append("\t\tthis.").append(propertyName).append("=this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType, 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
+                    } else {
+                        java_method_declaration.append("\t\tthis.").append(propertyName).append("=this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType.replace("[]", "Array"), 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
+                    }
+
                     java_method_declaration.append("\t}\r\n\r\n");
 
                     if ("String".equalsIgnoreCase(propertyType) || "Date".equalsIgnoreCase(propertyType))
@@ -190,7 +195,10 @@ public class SQLiteGenerator implements Generator {
                 }
 
                 java_method_setdata.append("\t\tif(row.getFieldInfo(\"").append(currentFields.get("name").value().toString()).append("\")!=null)");
-                java_method_setdata.append("\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("name").value().toString()).append("\").").append(propertyType.toLowerCase()).append("Value());\r\n");
+                if (propertyType.endsWith("[]"))
+                    java_method_setdata.append("\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("name").value().toString()).append("\").").append(propertyType.replace("[]", "Array")).append("Value());\r\n");
+                else
+                    java_method_setdata.append("\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("name").value().toString()).append("\").").append(propertyType.toLowerCase()).append("Value());\r\n");
             }
         }
 
@@ -249,7 +257,7 @@ public class SQLiteGenerator implements Generator {
             ResultSet set = operator.query(SQL);
             int cols = set.getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
-			String[] fieldValue = new String[cols];
+            String[] fieldValue = new String[cols];
 
             for (int i = 0; i < cols; i++) {
                 fieldName[i] = set.getMetaData().getColumnName(i + 1);
@@ -281,7 +289,7 @@ public class SQLiteGenerator implements Generator {
     }
 
     @Override
-	public void importPackages(String packageNameList) {
+    public void importPackages(String packageNameList) {
 
         this.packageList = packageNameList.split(";");
     }
