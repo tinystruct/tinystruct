@@ -736,7 +736,13 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             String packageName;
 
             basePath = basePath.isBlank() ? "src/main/java/custom/objects" : basePath;
-            generator.setPath(basePath);
+            if(basePath.endsWith("/"))
+            {
+                generator.setPath(basePath);
+            }
+            else {
+                generator.setPath(basePath + "/");
+            }
 
             packageName = basePath.replace("src/main/java/", "").replace("/", ".");
             generator.setPackageName(packageName);
