@@ -752,7 +752,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             String[] list = tableNames.split(";");
             for (String tableName : list) {
                 // Convert to camel case
-                String className = StringUtilities.convertToCamelCase(className);
+                String className = StringUtilities.convertToCamelCase(tableName);
                 generator.create(className, tableName);
                 System.out.printf("File(s) for %s has been generated. %n", className);
             }
