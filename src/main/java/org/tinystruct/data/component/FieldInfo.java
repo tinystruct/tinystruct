@@ -129,6 +129,13 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
         return Boolean.parseBoolean(value.toString());
     }
 
+    public byte[] byteArrayValue() {
+        Object value = this.value();
+        if (value == null)
+            return null;
+        return (byte[]) value;
+    }
+
     public FieldType typeOf(Object object) {
         if (object instanceof Integer) {
             return FieldType.INTEGER;

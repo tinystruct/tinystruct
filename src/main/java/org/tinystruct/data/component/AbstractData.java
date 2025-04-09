@@ -280,6 +280,18 @@ public abstract class AbstractData implements Data {
     }
 
     /**
+     * Set field value as byte array type.
+     *
+     * @param fieldName name of field.
+     * @param fieldValue value of field.
+     * @return field value
+     */
+    protected byte[] setFieldAsByteArray(String fieldName, byte[] fieldValue) {
+        this.setField(fieldName, fieldValue);
+        return fieldValue;
+    }
+
+    /**
      * Validate if the table name is set, and throw an exception if not.
      *
      * @throws ApplicationException If the table name is missing.
