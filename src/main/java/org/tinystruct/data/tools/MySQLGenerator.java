@@ -168,13 +168,24 @@ public class MySQLGenerator implements Generator {
 
                     java_method_declaration.append("\tpublic void set").append(propertyNameOfMethod).append("(").append(propertyType).append(" ").append(propertyName).append(")\r\n");
                     java_method_declaration.append("\t{\r\n");
-                    java_method_declaration.append("\t\tthis.").append(propertyName).append(" = this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType, 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
+                    if (!propertyType.endsWith("[]")) {
+                        java_method_declaration.append("\t\tthis.").append(propertyName).append(" = this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType, 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
+                    } else {
+                        java_method_declaration.append("\t\tthis.").append(propertyName).append(" = this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType.replace("[]", "Array"), 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
+                    }
                     java_method_declaration.append("\t}\r\n\r\n");
 
-                    if ("String".equalsIgnoreCase(propertyType) || "Date".equalsIgnoreCase(propertyType))
+                    if ("String".equalsIgnoreCase(propertyType) || "Date".equalsIgnoreCase(propertyType)) {
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
-                    else
+                    } else if ("byte[]".equalsIgnoreCase(propertyType)) {
+                        java_method_tostring.append("\t\tif (this.get").append(propertyNameOfMethod).append("() != null) {\r\n");
+                        java_method_tostring.append("\t\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"binary-data\\\"\");\r\n");
+                        java_method_tostring.append("\t\t} else {\r\n");
+                        java_method_tostring.append("\t\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":null\");\r\n");
+                        java_method_tostring.append("\t\t}\r\n");
+                    } else {
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
+                    }
 
                     Element propertyElement = classElement.addElement("property");
 
@@ -190,7 +201,11 @@ public class MySQLGenerator implements Generator {
                 }
 
                 java_method_setdata.append("\t\tif(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\")!=null)");
-                java_method_setdata.append("\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\").").append(StringUtilities.setCharToLower(propertyType, 0)).append("Value());\r\n");
+                if (propertyType.endsWith("[]")) {
+                    java_method_setdata.append("\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\").").append(propertyType.replace("[]", "Array")).append("Value());\r\n");
+                } else {
+                    java_method_setdata.append("\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\").").append(StringUtilities.setCharToLower(propertyType, 0)).append("Value());\r\n");
+                }
             }
         }
 
