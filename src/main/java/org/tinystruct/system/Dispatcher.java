@@ -750,10 +750,10 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             generator.importPackages(imports.isBlank() ? "java.time.LocalDateTime" : imports);
 
             String[] list = tableNames.split(";");
-            for (String className : list) {
+            for (String tableName : list) {
                 // Convert to camel case
-                className = StringUtilities.convertToCamelCase(className);
-                generator.create(className, className);
+                String className = StringUtilities.convertToCamelCase(className);
+                generator.create(className, tableName);
                 System.out.printf("File(s) for %s has been generated. %n", className);
             }
         } catch (ApplicationException e) {
