@@ -424,13 +424,13 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                     }
                 }
             }
-            
+
             // Wait for the process to complete
             int exitCode = process.waitFor();
             if (exitCode != 0) {
                 throw new ApplicationException("Command execution failed with exit code: " + exitCode);
             }
-            
+
         } catch (IOException e) {
             throw new ApplicationException("Failed to execute command: " + e.getMessage(), e);
         } catch (InterruptedException e) {
@@ -682,76 +682,325 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }
 
     /**
-     * POJO object generator.
+     * POJO object generator with improved error handling, validation, and customization.
      */
-    @Action(value = "generate", description = "POJO object generator", mode = org.tinystruct.application.Action.Mode.CLI)
+    @Action(value = "generate", description = "POJO object generator",
+            options = {
+                @Argument(key = "tables", description = "Table names to generate POJO code (semicolon-separated)"),
+                @Argument(key = "path", description = "Base path to place the Java code files"),
+                @Argument(key = "imports", description = "Packages to be imported (semicolon-separated)"),
+                @Argument(key = "transaction", description = "Enable transaction support (true/false)"),
+                @Argument(key = "verbose", description = "Enable verbose output (true/false)")
+            },
+            mode = org.tinystruct.application.Action.Mode.CLI)
     public void generate() throws ApplicationException {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("To follow up the below steps to generate code for your project. CTRL+C to exit.");
+        // Step 1: Determine if we're in interactive or command-line mode
+        boolean isInteractive = !hasCommandLineOptions();
+        String tableNames = "";
+        String basePath = "";
+        String imports = "";
+        boolean useTransaction = false;
+        boolean verbose = false;
 
-        System.out.print("Please provide table name(s) to generate POJO code and use the delimiter `;` for multiple items:");
-        String tableNames = scanner.nextLine();
-        while (tableNames.isBlank()) {
-            System.out.print("Please provide table name(s) to generate POJO code and use the delimiter `;` for multiple items:");
-            tableNames = scanner.nextLine();
-        }
+        // Initialize scanner for interactive mode
+        Scanner scanner = null;
+        if (isInteractive) {
+            scanner = new Scanner(System.in);
+            System.out.println("POJO Generator - Interactive Mode");
+            System.out.println("=====================================");
+            System.out.println("Follow the steps below to generate code for your project. Press CTRL+C to exit at any time.\n");
+        } else {
+            // Get values from command line options
+            Object tablesObj = getContext().getAttribute("--tables");
+            Object pathObj = getContext().getAttribute("--path");
+            Object importsObj = getContext().getAttribute("--imports");
+            Object transactionObj = getContext().getAttribute("--transaction");
+            Object verboseObj = getContext().getAttribute("--verbose");
 
-        System.out.print("Please specify the base path to place the Java code files. [src/main/java/custom/objects]:");
-        String basePath = scanner.nextLine();
-
-        System.out.print("Please specify the packages to be imported in code and use delimiter `;` for multiple items. [java.time.LocalDateTime]:");
-        String imports = scanner.nextLine();
-
-        scanner.close();
-
-        String driver = getConfiguration().get("driver");
-        if (driver.trim().isEmpty())
-            throw new ApplicationRuntimeException("Database Connection Driver has not been set in application.properties!");
-
-        int index = -1, length = Type.values().length;
-        for (int i = 0; i < length; i++) {
-            if (driver.contains(Type.values()[i].name().toLowerCase())) {
-                index = i;
-                break;
-            }
-        }
-
-        Generator generator;
-        switch (index) {
-            case 1:
-                generator = new MSSQLGenerator();
-                break;
-            case 2:
-                generator = new SQLiteGenerator();
-                break;
-            case 3:
-                generator = new H2Generator();
-                break;
-            default:
-                generator = new MySQLGenerator();
-                break;
+            tableNames = tablesObj != null ? tablesObj.toString() : "";
+            basePath = pathObj != null ? pathObj.toString() : "";
+            imports = importsObj != null ? importsObj.toString() : "";
+            useTransaction = transactionObj != null && Boolean.parseBoolean(transactionObj.toString());
+            verbose = verboseObj != null && Boolean.parseBoolean(verboseObj.toString());
         }
 
         try {
-            String packageName;
+            // Step 2: Get table names (interactive or command line)
+            if (isInteractive) {
+                System.out.print("Please provide table name(s) to generate POJO code and use the delimiter `;` for multiple items: ");
+                tableNames = scanner.nextLine();
+                while (tableNames.isBlank()) {
+                    System.out.print("Table names cannot be empty. Please provide table name(s): ");
+                    tableNames = scanner.nextLine();
+                }
+            } else if (tableNames == null || tableNames.isBlank()) {
+                throw new ApplicationException("Table names must be specified with --tables option");
+            }
 
-            basePath = basePath.isBlank() ? "src/main/java/custom/objects" : basePath;
+            // Step 3: Validate table names for security
+            validateTableNames(tableNames);
+
+            // Step 4: Get base path (interactive or default)
+            if (isInteractive) {
+                System.out.print("Please specify the base path to place the Java code files [src/main/java/custom/objects]: ");
+                basePath = scanner.nextLine();
+            }
+
+            // Default base path if not provided
+            String defaultBasePath = getConfiguration().get("generator.default.path");
+            if (defaultBasePath == null || defaultBasePath.isBlank()) {
+                defaultBasePath = "src/main/java/custom/objects";
+            }
+            basePath = basePath.isBlank() ? defaultBasePath : basePath;
+
+            // Normalize path for cross-platform compatibility
+            basePath = normalizePath(basePath);
+
+            // Step 5: Get imports (interactive or default)
+            if (isInteractive) {
+                System.out.print("Please specify the packages to be imported in code and use delimiter `;` for multiple items [java.time.LocalDateTime]: ");
+                imports = scanner.nextLine();
+            }
+
+            // Default imports if not provided
+            String defaultImports = getConfiguration().get("generator.default.imports");
+            if (defaultImports == null || defaultImports.isBlank()) {
+                defaultImports = "java.time.LocalDateTime";
+            }
+            imports = imports.isBlank() ? defaultImports : imports;
+
+            // Close scanner if in interactive mode
+            if (isInteractive && scanner != null) {
+                scanner.close();
+                scanner = null;
+            }
+
+            // Step 6: Validate database connection before proceeding
+            validateDatabaseConnection();
+
+            // Step 7: Get database driver and determine generator type
+            String driver = getConfiguration().get("driver");
+            if (driver == null || driver.trim().isEmpty()) {
+                throw new ApplicationException("Database Connection Driver has not been set in application.properties!");
+            }
+
+            // Select appropriate generator based on database type
+            Generator generator = createGeneratorForDriver(driver);
+            if (generator == null) {
+                throw new ApplicationException("Unsupported database type for driver: " + driver);
+            }
+
+            // Step 8: Configure generator
             generator.setPath(basePath);
 
-            packageName = basePath.replace("src/main/java/", "").replace("/", ".");
+            // Convert path to package name more robustly
+            String packageName = convertPathToPackage(basePath);
             generator.setPackageName(packageName);
 
-            generator.importPackages(imports.isBlank() ? "java.time.LocalDateTime" : imports);
+            // Set imports
+            generator.importPackages(imports);
 
-            String[] list = tableNames.split(";");
-            for (String className : list) {
-                generator.create(className, className);
-                System.out.printf("File(s) for %s has been generated. %n", className);
+            // Step 9: Split table names and process each one
+            String[] tableList = tableNames.split(";");
+            int totalTables = tableList.length;
+            int processedTables = 0;
+
+            // Step 10: Begin transaction if requested
+            DatabaseOperator operator = null;
+            if (useTransaction) {
+                operator = new DatabaseOperator();
+                operator.beginTransaction();
+                if (verbose) {
+                    System.out.println("Transaction started");
+                }
             }
+
+            try {
+                // Step 11: Process each table
+                for (String tableName : tableList) {
+                    // Convert table name to camel case for class name
+                    String className = StringUtilities.convertToCamelCase(tableName);
+
+                    if (verbose) {
+                        System.out.printf("Generating code for table '%s' as class '%s'...%n", tableName, className);
+                    } else {
+                        // Show progress
+                        processedTables++;
+                        System.out.printf("Generating: [%d/%d] %s -> %s", processedTables, totalTables, tableName, className);
+                        System.out.print("\r");
+                    }
+
+                    // Create the class - use camelCase className but original tableName
+                    generator.create(className, tableName);
+
+                    if (verbose) {
+                        System.out.printf("File(s) for %s have been generated successfully.%n", className);
+                    }
+                }
+
+                // Step 12: Commit transaction if used
+                if (useTransaction && operator != null) {
+                    operator.commitTransaction();
+                    if (verbose) {
+                        System.out.println("Transaction committed");
+                    }
+                }
+
+                // Final success message
+                System.out.println("\nCode generation completed successfully!");
+                System.out.printf("Generated %d class(es) in %s%n", totalTables, basePath);
+
+            } catch (Exception e) {
+                // Rollback transaction on error if used
+                if (useTransaction && operator != null) {
+                    operator.rollbackTransaction();
+                    if (verbose) {
+                        System.out.println("Transaction rolled back due to error");
+                    }
+                }
+                throw e;
+            } finally {
+                // Close database operator if used
+                if (operator != null) {
+                    operator.close();
+                }
+            }
+
         } catch (ApplicationException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+            System.err.println("\nError: " + e.getMessage());
+            logger.log(Level.SEVERE, "Code generation failed", e);
+            throw e;
+        } catch (Exception e) {
+            System.err.println("\nUnexpected error: " + e.getMessage());
+            logger.log(Level.SEVERE, "Unexpected error during code generation", e);
+            throw new ApplicationException("Code generation failed: " + e.getMessage(), e);
+        } finally {
+            // Ensure scanner is closed in case of early exit
+            if (scanner != null) {
+                scanner.close();
+            }
         }
     }
+
+    /**
+     * Checks if command line options are provided for the generate command.
+     *
+     * @return true if any command line options are provided, false otherwise
+     */
+    private boolean hasCommandLineOptions() {
+        return getContext().getAttribute("--tables") != null ||
+               getContext().getAttribute("--path") != null ||
+               getContext().getAttribute("--imports") != null ||
+               getContext().getAttribute("--transaction") != null ||
+               getContext().getAttribute("--verbose") != null;
+    }
+
+    /**
+     * Validates table names for security concerns.
+     *
+     * @param tableNames The table names to validate
+     * @throws ApplicationException if validation fails
+     */
+    private void validateTableNames(String tableNames) throws ApplicationException {
+        if (tableNames == null || tableNames.isBlank()) {
+            throw new ApplicationException("Table names cannot be empty");
+        }
+
+        // Check for SQL injection patterns
+        String[] tables = tableNames.split(";");
+        for (String table : tables) {
+            if (table.contains("'") || table.contains("\"") ||
+                table.contains("--") || table.contains(";") ||
+                table.contains("/*") || table.contains("*/") ||
+                table.contains("=") || table.contains("(") ||
+                table.contains(")")) {
+                throw new ApplicationException("Invalid table name: " + table + ". Table names should not contain special characters.");
+            }
+        }
+    }
+
+    /**
+     * Normalizes a file path for cross-platform compatibility.
+     *
+     * @param path The path to normalize
+     * @return The normalized path
+     */
+    private String normalizePath(String path) {
+        // Replace backslashes with forward slashes
+        path = path.replace("\\", "/");
+
+        // Remove trailing slash if present
+        if (path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+
+        return path;
+    }
+
+    /**
+     * Validates that the database connection is available.
+     *
+     * @throws ApplicationException if database connection fails
+     */
+    private void validateDatabaseConnection() throws ApplicationException {
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            // Try a simple query to validate connection
+            operator.query("SELECT 1");
+        } catch (Exception e) {
+            throw new ApplicationException("Database connection failed. Please check your database settings: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Creates the appropriate generator based on the database driver.
+     *
+     * @param driver The database driver string
+     * @return The appropriate Generator implementation
+     */
+    private Generator createGeneratorForDriver(String driver) {
+        // Check for known database types
+        if (driver.toLowerCase().contains("mysql")) {
+            return new MySQLGenerator();
+        } else if (driver.toLowerCase().contains("sqlserver") || driver.toLowerCase().contains("mssql")) {
+            return new MSSQLGenerator();
+        } else if (driver.toLowerCase().contains("sqlite")) {
+            return new SQLiteGenerator();
+        } else if (driver.toLowerCase().contains("h2")) {
+            return new H2Generator();
+        }
+
+        // Default to MySQL if unknown
+        return new MySQLGenerator();
+    }
+
+    /**
+     * Converts a file path to a Java package name.
+     *
+     * @param path The file path
+     * @return The corresponding package name
+     */
+    private String convertPathToPackage(String path) {
+        // Handle both Unix and Windows paths
+        String normalizedPath = path.replace("\\", "/");
+
+        // Extract package from path
+        String packageName = normalizedPath;
+
+        // Remove src/main/java prefix if present
+        if (packageName.contains("src/main/java/")) {
+            packageName = packageName.substring(packageName.indexOf("src/main/java/") + "src/main/java/".length());
+        }
+
+        // Convert slashes to dots
+        packageName = packageName.replace("/", ".");
+
+        // Remove leading or trailing dots
+        packageName = packageName.replaceAll("^\\.+|\\.+$", "");
+
+        return packageName;
+    }
+
+
 
     @Action(value = "maven-wrapper", description = "Extract Maven Wrapper", arguments = {
             @Argument(key = "--jar-file-path", description = "The jar file path which included maven-wrapper.zip"),

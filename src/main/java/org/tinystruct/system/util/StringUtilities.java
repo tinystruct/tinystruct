@@ -220,6 +220,52 @@ public class StringUtilities implements java.io.Serializable {
         return String.valueOf(charArray);
     }
 
+    /**
+     * Converts a string to a proper camel case Java class name.
+     * For example: "user_profile" becomes "UserProfile"
+     *
+     * @param input The input string to convert
+     * @return A properly formatted camel case Java class name
+     */
+    public static String convertToCamelCase(String input) {
+        // Remove any non-alphanumeric characters except underscores
+        String cleanName = input.replaceAll("[^a-zA-Z0-9_]", "");
+
+        // Handle empty string case
+        if (cleanName.isEmpty()) {
+            return "GeneratedClass";
+        }
+
+        // Split by underscores
+        String[] parts = cleanName.split("_");
+        StringBuilder camelCase = new StringBuilder();
+
+        // Process each part
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+
+            // Capitalize first letter of each part
+            camelCase.append(Character.toUpperCase(part.charAt(0)));
+
+            // Add rest of the part in lowercase
+            if (part.length() > 1) {
+                camelCase.append(part.substring(1).toLowerCase());
+            }
+        }
+
+        // If no camel case was generated (e.g., all parts were empty)
+        if (camelCase.length() == 0) {
+            return "GeneratedClass";
+        }
+
+        // Handle case where the name starts with a number
+        if (Character.isDigit(camelCase.charAt(0))) {
+            camelCase.insert(0, "Class");
+        }
+
+        return camelCase.toString();
+    }
+
     public static Cookie getCookieByName(Cookie[] cookies, String name) {
         int i = 0;
         if (cookies != null)
