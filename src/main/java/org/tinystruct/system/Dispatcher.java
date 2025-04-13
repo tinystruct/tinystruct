@@ -510,7 +510,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     }, mode = org.tinystruct.application.Action.Mode.CLI)
     public void executeQuery() throws ApplicationException {
         if (getContext().getAttribute("--sql") == null) {
-            throw new ApplicationException("Invalid SQL Statement.");
+            throw new ApplicationException("SQL Statement is required, you can specify it with --sql \"SELECT * FROM table\".");
         }
 
         String sql = getContext().getAttribute("--sql").toString();
