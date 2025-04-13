@@ -684,16 +684,23 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     /**
      * POJO object generator.
      */
-    @Action(value = "generate", description = "POJO object generator", mode = org.tinystruct.application.Action.Mode.CLI)
+    @Action(value = "generate", description = "POJO object generator",
+            options = {
+                    @Argument(key = "tables", description = "Table name(s) to be generated")
+            },
+            mode = org.tinystruct.application.Action.Mode.CLI)
     public void generate() throws ApplicationException {
         Scanner scanner = new Scanner(System.in);
-        System.out.println("To follow up the below steps to generate code for your project. CTRL+C to exit.");
+        String tableNames;
+        if (getContext().getAttribute("--tables") == null) {
+            System.out.println("To follow up the below steps to generate code for your project. CTRL+C to exit.");
 
-        System.out.print("Please provide table name(s) to generate POJO code and use the delimiter `;` for multiple items:");
-        String tableNames = scanner.nextLine();
-        while (tableNames.isBlank()) {
-            System.out.print("Please provide table name(s) to generate POJO code and use the delimiter `;` for multiple items:");
-            tableNames = scanner.nextLine();
+            do {
+                System.out.print("Please provide table name(s) to generate POJO code and use the delimiter `;` for multiple items:");
+                tableNames = scanner.nextLine();
+            } while (tableNames.isBlank());
+        } else {
+            tableNames = getContext().getAttribute("--tables").toString();
         }
 
         System.out.print("Please specify the base path to place the Java code files. [src/main/java/custom/objects]:");
@@ -736,11 +743,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             String packageName;
 
             basePath = basePath.isBlank() ? "src/main/java/custom/objects" : basePath;
-            if(basePath.endsWith("/"))
-            {
+            if (basePath.endsWith("/")) {
                 generator.setPath(basePath);
-            }
-            else {
+            } else {
                 generator.setPath(basePath + "/");
             }
 
