@@ -196,7 +196,12 @@ public class H2Generator extends MySQLGenerator {
         }
 
         Path java_src_path = Paths.get(this.path);
-        Path java_resource_path = Paths.get(this.path.replace("main" + File.separator + "java", "main" + File.separator + "resources") + ".map.xml");
+
+        // Replace path separators to handle Windows paths
+        String normalizedPath = this.path.replace("\\", "/");
+        String resourcePath = normalizedPath.replace("main/java", "main/resources");
+        Path java_resource_path = Paths.get(resourcePath + ".map.xml");
+
         try {
             Path parent = java_src_path.getParent();
             if (parent != null)
@@ -210,7 +215,7 @@ public class H2Generator extends MySQLGenerator {
         }
 
         Document document = new Document(rootElement);
-        try (FileOutputStream out = new FileOutputStream(this.path.replace("main" + File.separator + "java", "main" + File.separator + "resources") + ".map.xml")) {
+        try (FileOutputStream out = new FileOutputStream(java_resource_path.toString())) {
             document.save(out);
         } catch (IOException IO) {
             logger.severe(IO.getMessage());
