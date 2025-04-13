@@ -108,7 +108,7 @@ public class Mapping {
                     fieldInfo.append(COLUMN, currentElement.getAttribute(COLUMN));
                     fieldInfo.append(LENGTH, currentElement.getAttribute(LENGTH));
 
-                    if (Boolean.parseBoolean(currentElement.getAttribute(GENERATE))) {
+                    if (Boolean.parseBoolean(currentElement.getAttribute(GENERATE)) && currentElement.getAttribute(TYPE).equalsIgnoreCase("STRING")) {
                         data.setId(java.util.UUID.randomUUID().toString());
                         fieldInfo.append("value", data.getId());
                     }
