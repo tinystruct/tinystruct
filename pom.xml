@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.6.4</version>
+    <version>1.6.5</version>
     <name>tinystruct framework</name>
     <description>A lightweight java framework designed for building efficient and scalable applications. Supports both
         command-line tools and APIs, enabling developers to create robust solutions with ease.
@@ -305,10 +305,19 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.2.0</version>
                 <configuration>
                     <javadocExecutable>${java.home}/bin/javadoc</javadocExecutable>
+                    <encoding>UTF-8</encoding>
+                    <charset>UTF-8</charset>
+                    <docencoding>UTF-8</docencoding>
+                    <additionalJOption>-J-Dfile.encoding=UTF-8 -J-Duser.language=en -J-Duser.country=US</additionalJOption>
+                    <additionalOptions>
+                        <additionalOption>-locale</additionalOption>
+                        <additionalOption>en_US</additionalOption>
+                    </additionalOptions>
+                    <doclint>none</doclint>
                 </configuration>
-                <version>3.2.0</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
