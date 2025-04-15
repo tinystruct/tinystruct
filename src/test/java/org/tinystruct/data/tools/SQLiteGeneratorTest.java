@@ -15,9 +15,9 @@
  *******************************************************************************/
 package org.tinystruct.data.tools;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.system.Configuration;
@@ -29,7 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SQLiteGeneratorTest {
 
@@ -38,7 +38,7 @@ public class SQLiteGeneratorTest {
     private static final String TEST_OUTPUT_DIR = "target/test-classes/generated";
     private static final String TEST_PACKAGE = "org.tinystruct.test.generated";
 
-    @Before
+    @BeforeEach
     public void setUp() throws ApplicationException, SQLException {
         // Create test directory
         Path testDir = Paths.get(TEST_OUTPUT_DIR);
@@ -80,27 +80,27 @@ public class SQLiteGeneratorTest {
         File javaFile = new File(TEST_OUTPUT_DIR + "/" + TEST_CLASS + ".java");
         File xmlFile = new File(TEST_OUTPUT_DIR + "/" + TEST_CLASS + ".map.xml");
 
-        assertTrue("Java file should be generated", javaFile.exists());
-        assertTrue("XML mapping file should be generated", xmlFile.exists());
+        assertTrue(javaFile.exists(), "Java file should be generated");
+        assertTrue(xmlFile.exists(), "XML mapping file should be generated");
 
         // Read the XML file content to verify autoincrement attribute
         try {
             String xmlContent = new String(Files.readAllBytes(xmlFile.toPath()));
-            assertTrue("XML should contain increment=\"true\" for id column", 
-                    xmlContent.contains("increment=\"true\""));
-            assertTrue("XML should contain generate=\"false\" for id column", 
-                    xmlContent.contains("generate=\"false\""));
+            assertTrue(xmlContent.contains("increment=\"true\""),
+                    "XML should contain increment=\"true\" for id column");
+            assertTrue(xmlContent.contains("generate=\"false\""),
+                    "XML should contain generate=\"false\" for id column");
         } catch (IOException e) {
             throw new ApplicationException("Failed to read XML file", e);
         }
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws ApplicationException {
         // Drop test table
         try (DatabaseOperator operator = new DatabaseOperator()) {
             operator.execute("DROP TABLE IF EXISTS " + TEST_TABLE);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             throw new ApplicationException("Failed to drop test table", e);
         }
     }
