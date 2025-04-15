@@ -136,7 +136,13 @@ public class SQLiteGenerator implements Generator {
                 if (java_method_tostring.length() > 0) spliter = ",";
 
                 if (currentFields.get("name").value().toString().equalsIgnoreCase("id")) {
-//					increment=currentFields.get("Extra").stringValue().indexOf("auto_increment")!=-1;
+                    // In SQLite, a column is autoincrement if it's INTEGER PRIMARY KEY
+                    String pkValue = currentFields.get("pk").value().toString();
+                    String typeValue = currentFields.get("type").value().toString().toUpperCase();
+
+                    // Always set increment to true for INTEGER PRIMARY KEY columns
+                    // This is how SQLite handles autoincrement
+                    increment = "1".equals(pkValue) && typeValue.contains("INTEGER");
 
                     if ("String".equalsIgnoreCase(propertyType))
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
