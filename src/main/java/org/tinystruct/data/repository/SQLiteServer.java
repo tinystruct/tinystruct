@@ -19,10 +19,7 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.data.component.*;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -84,7 +81,7 @@ public class SQLiteServer extends AbstractDataRepository {
                     ps.setString(i++, currentField.stringValue());
                 } else if (currentField.getType() == FieldType.DATE
                         || currentField.getType() == FieldType.DATETIME) {
-                    ps.setTimestamp(i++, new Timestamp(currentField.dateValue()
+                    ps.setDate(i++, new Date(currentField.dateValue()
                             .getTime()));
                 } else if (currentField.getType() == FieldType.BIT) {
                     ps.setBoolean(i++, currentField.booleanValue());
@@ -143,7 +140,7 @@ public class SQLiteServer extends AbstractDataRepository {
                     ps.setString(i++, currentField.stringValue());
                 } else if (currentField.getType() == FieldType.DATE
                         || currentField.getType() == FieldType.DATETIME) {
-                    ps.setTimestamp(i++, new Timestamp(currentField.dateValue()
+                    ps.setDate(i++, new Date(currentField.dateValue()
                             .getTime()));
                 } else if (currentField.getType() == FieldType.BIT) {
                     ps.setBoolean(i++, currentField.booleanValue());

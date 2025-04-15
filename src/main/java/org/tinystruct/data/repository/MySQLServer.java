@@ -19,10 +19,7 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.data.component.*;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.Enumeration;
 
 public class MySQLServer extends AbstractDataRepository {
@@ -253,7 +250,7 @@ public class MySQLServer extends AbstractDataRepository {
                 } else if (fieldInfo.getType() == FieldType.TEXT) {
                     ps.setString(i++, fieldInfo.stringValue());
                 } else if (fieldInfo.getType() == FieldType.DATE || fieldInfo.getType() == FieldType.DATETIME) {
-                    ps.setTimestamp(i++, new Timestamp(fieldInfo.dateValue().getTime()));
+                    ps.setDate(i++, new Date(fieldInfo.dateValue().getTime()));
                 } else if (fieldInfo.getType() == FieldType.BIT) {
                     ps.setBoolean(i++, fieldInfo.booleanValue());
                 } else {
