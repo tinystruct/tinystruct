@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Objects;
@@ -127,6 +128,18 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             String tmp;
             if (this.value instanceof String) {
                 tmp = QUOTE + this.value.toString() + QUOTE;
+            } else if (value.getClass().isArray()) {
+                StringBuilder buffer = new StringBuilder();
+                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(LEFT_BRACKETS);
+                int length = Array.getLength(value);
+                for (int i = 0; i < length; i++) {
+                    buffer.append(QUOTE).append(Array.get(value, i).toString().replaceAll(QUOTE + "", ESCAPE_CHAR + QUOTE + "")).append(QUOTE);
+                    if (i < length - 1) {
+                        buffer.append(COMMA);
+                    }
+                }
+                buffer.append(RIGHT_BRACKETS);
+                tmp = buffer.toString();
             } else {
                 tmp = this.value.toString();
             }
@@ -149,7 +162,19 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
 
             if (value instanceof String || value instanceof StringBuffer || value instanceof StringBuilder)
                 buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
-            else buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(value);
+            else if (value != null && value.getClass().isArray()) {
+                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(LEFT_BRACKETS);
+                int length = Array.getLength(value);
+                for (int i = 0; i < length; i++) {
+                    buffer.append(QUOTE).append(Array.get(value, i).toString().replaceAll(QUOTE + "", ESCAPE_CHAR + QUOTE + "")).append(QUOTE);
+                    if (i < length - 1) {
+                        buffer.append(COMMA);
+                    }
+                }
+                buffer.append(RIGHT_BRACKETS);
+            } else {
+                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(value);
+            }
 
             buffer.append(COMMA);
         }
