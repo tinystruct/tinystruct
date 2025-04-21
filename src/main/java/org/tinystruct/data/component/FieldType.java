@@ -255,7 +255,9 @@ public final class FieldType implements Serializable {
      * @since 1.4
      */
     private final static int _BOOLEAN = Types.BOOLEAN;
-    public final static FieldType BOOLEAN = new FieldType("BIT", _BOOLEAN, "boolean");
+    public final static FieldType BOOL = new FieldType("BIT", _BOOLEAN, "boolean");
+    public final static FieldType BOOLEAN = new FieldType("BOOLEAN", _BOOLEAN, "boolean");
+
     /**
      * The constant in the Java programming language, sometimes referred to
      * as a type code, that identifies the generic SQL type
