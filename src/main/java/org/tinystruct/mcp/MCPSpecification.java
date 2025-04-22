@@ -72,14 +72,14 @@ public final class MCPSpecification {
     public static final class Methods {
         public static final String INITIALIZE = "initialize";
         public static final String SHUTDOWN = "shutdown";
-        public static final String GET_STATUS = "getStatus";
-        public static final String GET_CAPABILITIES = "getCapabilities";
-        public static final String LIST_TOOLS = "listTools";
-        public static final String CALL_TOOL = "callTool";
-        public static final String LIST_RESOURCES = "listResources";
-        public static final String READ_RESOURCE = "readResource";
-        public static final String LIST_PROMPTS = "listPrompts";
-        public static final String GET_PROMPT = "getPrompt";
+        public static final String GET_STATUS = "get-status";
+        public static final String GET_CAPABILITIES = "get-capabilities";
+        public static final String LIST_TOOLS = "list-tools";
+        public static final String CALL_TOOL = "call-tool";
+        public static final String LIST_RESOURCES = "list-resources";
+        public static final String READ_RESOURCE = "read-resource";
+        public static final String LIST_PROMPTS = "list-prompts";
+        public static final String GET_PROMPT = "get-prompt";
 
         private Methods() {} // Prevent instantiation
     }
