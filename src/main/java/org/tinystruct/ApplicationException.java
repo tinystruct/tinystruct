@@ -27,6 +27,10 @@ public class ApplicationException extends Exception {
         super();
     }
 
+    public ApplicationException(Throwable ex) {
+        super(ex);
+    }
+
     public ApplicationException(String message) {
         super(message);
     }
