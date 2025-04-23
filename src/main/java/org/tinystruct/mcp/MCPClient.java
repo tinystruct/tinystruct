@@ -49,50 +49,6 @@ public class MCPClient {
     // Cache for discovered resources
     private final Map<String, MCPResource> resourceCache = new ConcurrentHashMap<>();
 
-    // Add client-side session state tracking
-    public enum SessionState {
-        DISCONNECTED,
-        INITIALIZING,
-        READY,
-        ERROR
-    }
-
-    // Add protocol constants
-    private static final class Methods {
-        static final String INITIALIZE = "initialize";
-        static final String SHUTDOWN = "shutdown";
-        static final String GET_STATUS = "getStatus";
-        static final String GET_CAPABILITIES = "getCapabilities";
-        static final String LIST_TOOLS = "listTools";
-        static final String CALL_TOOL = "callTool";
-        static final String LIST_RESOURCES = "listResources";
-        static final String READ_RESOURCE = "readResource";
-        static final String LIST_PROMPTS = "listPrompts";
-        static final String GET_PROMPT = "getPrompt";
-    }
-
-    // Add missing protocol constants
-    private static final class Features {
-        static final String BASE = "base";
-        static final String LIFECYCLE = "lifecycle";
-        static final String RESOURCES = "resources";
-        static final String TOOLS = "tools";
-        static final String PROMPTS = "prompts";
-        static final String SSE = "sse";
-        static final String JSON_RPC = "json-rpc";
-    }
-
-    private static final class ErrorCodes {
-        static final int PARSE_ERROR = -32700;
-        static final int INVALID_REQUEST = -32600;
-        static final int METHOD_NOT_FOUND = -32601;
-        static final int INVALID_PARAMS = -32602;
-        static final int INTERNAL_ERROR = -32603;
-        static final int UNAUTHORIZED = -32001;
-        static final int ALREADY_INITIALIZED = -32002;
-        static final int NOT_INITIALIZED = -32003;
-    }
-
     public MCPClient(String baseUrl, String authToken) {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         this.authToken = authToken;
