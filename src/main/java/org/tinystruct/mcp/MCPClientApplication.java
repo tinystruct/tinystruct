@@ -27,12 +27,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * MCPToolApplication is a tinystruct-based module for interacting with MCP servers.
+ * MCPClientApplication is a tinystruct-based module for interacting with MCP servers.
  * It provides a command-line interface for discovering and executing tools,
  * accessing resources, and managing the MCP client.
  */
-public class MCPToolApplication extends AbstractApplication {
-    private static final Logger LOGGER = Logger.getLogger(MCPToolApplication.class.getName());
+public class MCPClientApplication extends AbstractApplication {
+    private static final Logger LOGGER = Logger.getLogger(MCPClientApplication.class.getName());
 
     private MCPClient client;
 

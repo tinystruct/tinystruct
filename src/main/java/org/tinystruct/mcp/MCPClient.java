@@ -38,8 +38,36 @@ import static org.tinystruct.mcp.MCPSpecification.*;
 /**
  * Client implementation for the Model Context Protocol (MCP).
  * Provides a unified interface for interacting with MCP servers, treating tools as resources.
+ * <p>
+ * This client provides a Java interface for interacting with MCP servers. It handles
+ * connection management, resource discovery, and resource execution.
+ * </p>
+ * <p>
+ * The client uses a unified resource model where tools, data sources, and templates
+ * are all treated as resources that can be discovered and executed.
+ * </p>
+ * <p>
+ * Usage example:
+ * <pre>
+ * MCPClient client = new MCPClient("http://localhost:8080", "auth-token");
+ * client.connect();
+ *
+ * // List available resources
+ * List<MCPResource> resources = client.listResources();
+ *
+ * // Execute a resource
+ * Map<String, Object> params = new HashMap<>();
+ * params.put("param1", "value1");
+ * Object result = client.executeResource("resource-name", params);
+ *
+ * client.disconnect();
+ * </pre>
+ * </p>
  */
 public class MCPClient {
+    //--------------------------------------------------------------------------
+    // Constants and Fields
+    //--------------------------------------------------------------------------
     private static final Logger LOGGER = Logger.getLogger(MCPClient.class.getName());
     private final String baseUrl;
     private final String authToken;
@@ -49,7 +77,21 @@ public class MCPClient {
     // Cache for discovered resources
     private final Map<String, MCPResource> resourceCache = new ConcurrentHashMap<>();
 
+    /**
+     * Constructs a new MCPClient with the specified base URL and authentication token.
+     * <p>
+     * The base URL should point to the root of the MCP server, e.g., "http://localhost:8080".
+     * The authentication token is optional and may be null if the server does not require authentication.
+     * </p>
+     *
+     * @param baseUrl The base URL of the MCP server (must not be null)
+     * @param authToken The authentication token (may be null)
+     * @throws IllegalArgumentException If baseUrl is null
+     */
     public MCPClient(String baseUrl, String authToken) {
+        if (baseUrl == null) {
+            throw new IllegalArgumentException("Base URL must not be null");
+        }
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         this.authToken = authToken;
         this.sessionState = SessionState.DISCONNECTED;
@@ -57,15 +99,30 @@ public class MCPClient {
 
     /**
      * Connects to the MCP server and initializes the session.
+     * <p>
+     * This method performs the following steps:
+     * <ol>
+     *   <li>Initializes the connection with the server</li>
+     *   <li>Gets the server capabilities</li>
+     *   <li>Starts the event stream for server-sent events</li>
+     *   <li>Discovers available resources (tools, data resources, prompts)</li>
+     * </ol>
+     * </p>
+     * <p>
+     * After a successful connection, the client is in the READY state and can be used
+     * to execute resources.
+     * </p>
      *
      * @throws IOException If an error occurs during connection
+     * @throws IllegalStateException If the client is already connected
      */
     public void connect() throws IOException {
         if (sessionState != SessionState.DISCONNECTED) {
-            throw new IllegalStateException("Client already connected");
+            throw new IllegalStateException("Client already connected (state: " + sessionState + ")");
         }
 
         try {
+            LOGGER.info("Connecting to MCP server at " + baseUrl);
             sessionState = SessionState.INITIALIZING;
 
             // Initialize connection
@@ -75,6 +132,10 @@ public class MCPClient {
             }
 
             Builder result = initResponse.getResult();
+            if (result == null || result.get("serverId") == null) {
+                throw new IOException("Invalid initialization response: missing serverId");
+            }
+
             this.clientId = result.get("serverId").toString();
             LOGGER.info("Connected to server. Client ID: " + clientId);
 
@@ -92,32 +153,48 @@ public class MCPClient {
             discoverResources();
 
             sessionState = SessionState.READY;
+            LOGGER.info("MCP client ready");
         } catch (Exception e) {
             sessionState = SessionState.ERROR;
-            throw new IOException("Connection failed", e);
+            LOGGER.log(Level.SEVERE, "Connection failed", e);
+            throw new IOException("Connection failed: " + e.getMessage(), e);
         }
     }
 
     /**
      * Disconnects from the MCP server.
+     * <p>
+     * This method sends a shutdown request to the server and cleans up resources.
+     * After a successful disconnection, the client is in the DISCONNECTED state.
+     * </p>
+     * <p>
+     * If the client is not in the READY state, an IllegalStateException is thrown.
+     * </p>
      *
      * @throws IOException If an error occurs during disconnection
+     * @throws IllegalStateException If the client is not in the READY state
      */
     public void disconnect() throws IOException {
         if (sessionState != SessionState.READY) {
-            throw new IllegalStateException("Client not in READY state");
+            throw new IllegalStateException("Client not in READY state (state: " + sessionState + ")");
         }
 
         try {
+            LOGGER.info("Disconnecting from MCP server");
             JsonRpcResponse response = sendRequest(Methods.SHUTDOWN, null);
             if (response.hasError()) {
                 throw new IOException("Shutdown failed: " + response.getError().getMessage());
             }
+
+            // Clear the resource cache
+            resourceCache.clear();
+
             sessionState = SessionState.DISCONNECTED;
             LOGGER.info("Disconnected from server");
         } catch (Exception e) {
             sessionState = SessionState.ERROR;
-            throw new IOException("Disconnect failed", e);
+            LOGGER.log(Level.SEVERE, "Disconnect failed", e);
+            throw new IOException("Disconnect failed: " + e.getMessage(), e);
         }
     }
 

@@ -10,13 +10,13 @@ The MCP module consists of the following components:
 2. **MCPResource**: Interface representing a resource (tools, data sources, etc.)
 3. **MCPTool**: Implementation of MCPResource for tools
 4. **MCPDataResource**: Implementation of MCPResource for data resources
-5. **MCPToolApplication**: Tinystruct application for interacting with MCP servers via CLI
+5. **MCPClientApplication**: Tinystruct application for interacting with MCP servers via CLI
 
 ## Using the MCP Module
 
 ### Command Line Interface
 
-The MCP module provides a command-line interface through the `MCPToolApplication` class. You can use it as follows:
+The MCP module provides a command-line interface through the `MCPClientApplication` class. You can use it as follows:
 
 ```bash
 # Show help information
@@ -52,9 +52,9 @@ import org.tinystruct.system.Settings;
 import org.tinystruct.mcp.MCPClient;
 import org.tinystruct.mcp.MCPResource;
 
-// Register the MCPToolApplication
+// Register the MCPClientApplication
 Settings settings = new Settings();
-ApplicationManager.install("org.tinystruct.mcp.MCPToolApplication", settings);
+ApplicationManager.install("org.tinystruct.mcp.MCPClientApplication", settings);
 
 // Connect to an MCP server
 ApplicationManager.call("mcp/connect", new Object[] {"http://localhost:8080", "your-auth-token"});
@@ -127,7 +127,7 @@ The MCP module uses a unified resource model where tools are treated as a type o
 You can extend the MCP module by:
 
 1. **Creating Custom Resource Types**: Implement the MCPResource interface for new resource types
-2. **Adding New Actions**: Extend the MCPToolApplication class to add new actions
+2. **Adding New Actions**: Extend the MCPClientApplication class to add new actions
 3. **Implementing Custom Transports**: Create new transport mechanisms for the MCPClient
 
 ## License
