@@ -53,8 +53,6 @@ public class MCPToolApplication extends AbstractApplication {
     /**
      * Connect to an MCP server.
      *
-     * @param url The URL of the MCP server
-     * @param token Optional authentication token
      * @return Connection status message
      */
     @Action(value = "mcp/connect",
@@ -173,8 +171,6 @@ public class MCPToolApplication extends AbstractApplication {
     /**
      * Execute a resource with the given parameters.
      *
-     * @param name The name of the resource
-     * @param params The parameters as a JSON string
      * @return The result of the execution
      */
     @Action(value = "mcp/execute",
