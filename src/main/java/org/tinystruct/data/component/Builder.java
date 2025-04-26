@@ -210,11 +210,18 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             if (resource.charAt(0) == LEFT_BRACE) {
                 // Find the closing position of the JSON structure
                 this.closedPosition = this.seekPosition(resource);
-                // Extract the key-value pairs sequence from the JSON structure
-                String values = resource.substring(1, closedPosition - 1);
 
-                // Parse the key-value pairs
-                this.parseValue(values);
+                // Check if we have a valid JSON structure
+                if (closedPosition > 1) {
+                    // Extract the key-value pairs sequence from the JSON structure
+                    String values = resource.substring(1, closedPosition - 1);
+
+                    // Parse the key-value pairs
+                    this.parseValue(values);
+                } else {
+                    // Empty JSON object or invalid structure
+                    logger.warning("Invalid JSON structure: " + resource + ", closedPosition=" + closedPosition);
+                }
             }
         }
     }
