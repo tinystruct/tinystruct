@@ -311,7 +311,7 @@ public class MCPClient {
         }
     }
 
-    private JsonRpcResponse sendRequest(String method, String params) throws IOException {
+    private JsonRpcResponse sendRequest(String method, Builder params) throws IOException {
         URL url = new URL(baseUrl + "?q=" + Endpoints.RPC);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");  // Changed to POST for JSON-RPC
@@ -327,12 +327,21 @@ public class MCPClient {
         request.setMethod(method);
         request.setId(UUID.randomUUID().toString());
         if (params != null) {
-            request.setParams(new Builder(params));
+            try {
+                request.setParams(params);
+            } catch (Exception e) {
+                LOGGER.severe("Error setting params: " + params + ", error: " + e.getMessage());
+                throw new IOException("Error setting params: " + e.getMessage(), e);
+            }
         }
+
+        // Log the full request
+        String requestString = request.toString();
+        LOGGER.info("Full JSON-RPC request: " + requestString);
 
         // Send request
         try (OutputStream os = conn.getOutputStream()) {
-            os.write(request.toString().getBytes(StandardCharsets.UTF_8));
+            os.write(requestString.getBytes(StandardCharsets.UTF_8));
         }
 
         try {
@@ -348,12 +357,32 @@ public class MCPClient {
                     response.append(line);
                 }
 
+                String responseString = response.toString();
+                LOGGER.info("Raw server response: " + responseString);
+
                 JsonRpcResponse jsonRpcResponse = new JsonRpcResponse();
-                jsonRpcResponse.parse(response.toString());
+                try {
+                    jsonRpcResponse.parse(responseString);
+                } catch (ApplicationException e) {
+                    LOGGER.severe("Error parsing response: " + responseString + ", error: " + e.getMessage());
+                    throw new IOException("Error parsing response: " + e.getMessage(), e);
+                }
+
+                if (jsonRpcResponse.hasError()) {
+                    LOGGER.warning("Server returned error: " + jsonRpcResponse.getError().getMessage() +
+                                  " (code: " + jsonRpcResponse.getError().getCode() + ")");
+                } else {
+                    LOGGER.info("Server returned result: " + jsonRpcResponse.getResult());
+                }
+
                 return jsonRpcResponse;
             }
-        } catch (ApplicationException e) {
-            throw new IOException("Failed to parse response", e);
+        } catch (Exception e) {
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            } else {
+                throw new IOException("Failed to process response", e);
+            }
         } finally {
             conn.disconnect();
         }
@@ -583,7 +612,9 @@ public class MCPClient {
             params.put("name", name);
             params.put("parameters", parameters);
 
-            JsonRpcResponse response = sendRequest(Methods.CALL_TOOL, params.toString());
+            LOGGER.info("Sending JSON-RPC request: method=" + Methods.CALL_TOOL + ", params=" + params);
+
+            JsonRpcResponse response = sendRequest(Methods.CALL_TOOL, params);
             if (response.hasError()) {
                 throw new IOException("Tool execution failed: " + response.getError().getMessage());
             }
@@ -610,7 +641,7 @@ public class MCPClient {
             Builder params = new Builder();
             params.put("uri", uri);
 
-            JsonRpcResponse response = sendRequest(Methods.READ_RESOURCE, params.toString());
+            JsonRpcResponse response = sendRequest(Methods.READ_RESOURCE, params);
             if (response.hasError()) {
                 throw new IOException("Resource read failed: " + response.getError().getMessage());
             }
