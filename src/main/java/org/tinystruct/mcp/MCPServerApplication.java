@@ -44,11 +44,47 @@ public class MCPServerApplication extends MCPApplication {
 
     private final Map<String, MCPTool> tools = new ConcurrentHashMap<>();
     private final Map<String, MCPDataResource> resources = new ConcurrentHashMap<>();
+    private final Map<String, MCPPrompt> prompts = new ConcurrentHashMap<>();
 
     @Override
     public void init() {
         super.init();
         this.registerTool(new CalculatorTool());
+
+        // Register a sample prompt
+        Builder promptSchema = new Builder();
+        Builder properties = new Builder();
+
+        Builder nameParam = new Builder();
+        nameParam.put("type", "string");
+        nameParam.put("description", "The name to greet");
+
+        properties.put("name", nameParam);
+        promptSchema.put("type", "object");
+        promptSchema.put("properties", properties);
+        promptSchema.put("required", new String[]{"name"});
+
+        MCPPrompt greetingPrompt = new MCPPrompt(
+            "greeting",
+            "A simple greeting prompt",
+            "Hello, {{name}}! Welcome to the MCP server.",
+            promptSchema,
+            null
+        ) {
+            @Override
+            protected boolean supportsLocalExecution() {
+                return true;
+            }
+
+            @Override
+            protected Object executeLocally(Builder builder) throws MCPException {
+                String name = builder.get("name").toString();
+                return getTemplate().replace("{{name}}", name);
+            }
+        };
+
+        this.registerPrompt(greetingPrompt);
+
         LOGGER.info("MCPServerApplication initialized");
     }
 
@@ -70,6 +106,16 @@ public class MCPServerApplication extends MCPApplication {
     public void registerResource(MCPDataResource resource) {
         resources.put(resource.getName(), resource);
         LOGGER.info("Registered resource: " + resource.getName());
+    }
+
+    /**
+     * Registers a prompt with the server.
+     *
+     * @param prompt The prompt to register
+     */
+    public void registerPrompt(MCPPrompt prompt) {
+        prompts.put(prompt.getName(), prompt);
+        LOGGER.info("Registered prompt: " + prompt.getName());
     }
 
     /**
@@ -120,6 +166,25 @@ public class MCPServerApplication extends MCPApplication {
         return sb.toString();
     }
 
+    /**
+     * Lists all registered prompts.
+     *
+     * @return A formatted list of prompts
+     */
+    @Action(value = "mcp-server/list-prompts",
+            description = "List all registered prompts",
+            mode = org.tinystruct.application.Action.Mode.CLI)
+    public String listPrompts() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Registered prompts:\n");
+
+        for (MCPPrompt prompt : prompts.values()) {
+            sb.append(String.format("- %s: %s\n", prompt.getName(), prompt.getDescription()));
+        }
+
+        return sb.toString();
+    }
+
     // We can't override the private handleMethod method, so we'll use a different approach
     // by overriding the handleRpcRequest method instead
     @Action(Endpoints.RPC)
@@ -143,6 +208,10 @@ public class MCPServerApplication extends MCPApplication {
                 handleListResources(jsonRpcRequest, jsonRpcResponse);
             } else if (Methods.READ_RESOURCE.equals(method)) {
                 handleReadResource(jsonRpcRequest, jsonRpcResponse);
+            } else if (Methods.LIST_PROMPTS.equals(method)) {
+                handleListPrompts(jsonRpcRequest, jsonRpcResponse);
+            } else if (Methods.GET_PROMPT.equals(method)) {
+                handleGetPrompt(jsonRpcRequest, jsonRpcResponse);
             } else {
                 // Let the parent class handle the standard methods
                 return super.handleRpcRequest(request, response);
@@ -273,6 +342,61 @@ public class MCPServerApplication extends MCPApplication {
         }
     }
 
+    /**
+     * Handles a list prompts request.
+     *
+     * @param request The JSON-RPC request
+     * @param response The JSON-RPC response
+     */
+    protected void handleListPrompts(JsonRpcRequest request, JsonRpcResponse response) {
+        Builder result = new Builder();
+        Builders promptsList = new Builders();
+
+        for (MCPPrompt prompt : prompts.values()) {
+            Builder promptInfo = new Builder();
+            promptInfo.put("name", prompt.getName());
+            promptInfo.put("description", prompt.getDescription());
+            promptInfo.put("schema", prompt.getSchema());
+            promptsList.add(promptInfo);
+        }
+
+        result.put("prompts", promptsList);
+
+        response.setId(request.getId());
+        response.setResult(result);
+    }
+
+    /**
+     * Handles a get prompt request.
+     *
+     * @param request The JSON-RPC request
+     * @param response The JSON-RPC response
+     */
+    protected void handleGetPrompt(JsonRpcRequest request, JsonRpcResponse response) {
+        try {
+            Builder params = request.getParams();
+            String promptName = params.get("name").toString();
+
+            MCPPrompt prompt = prompts.get(promptName);
+            if (prompt == null) {
+                response.setError(new JsonRpcError(ErrorCodes.RESOURCE_NOT_FOUND, "Prompt not found: " + promptName));
+                return;
+            }
+
+            Builder result = new Builder();
+            result.put("name", prompt.getName());
+            result.put("description", prompt.getDescription());
+            result.put("template", prompt.getTemplate());
+            result.put("schema", prompt.getSchema());
+
+            response.setId(request.getId());
+            response.setResult(result);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error getting prompt", e);
+            response.setError(new JsonRpcError(ErrorCodes.INTERNAL_ERROR, "Error getting prompt: " + e.getMessage()));
+        }
+    }
+
     @Override
     protected void handleGetCapabilities(JsonRpcRequest request, JsonRpcResponse response) {
         Builder result = new Builder();
@@ -286,6 +410,7 @@ public class MCPServerApplication extends MCPApplication {
         }
         featuresList.add(Features.TOOLS);
         featuresList.add(Features.RESOURCES);
+        featuresList.add(Features.PROMPTS);
 
         Builders features = new Builders();
         for (String feature : featuresList) {

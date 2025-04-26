@@ -339,6 +339,7 @@ public class MCPClientServerIntegrationTest {
      * It can be enabled for manual testing.
      */
     @Test
+    @org.junit.jupiter.api.Disabled("This test requires a running server on port 8001")
     public void testRealClientServerInteraction() throws Exception {
         // This test uses a real server running on port 8001
         // Start the server with: bin/dispatcher start --import org.tinystruct.system.TomcatServer --import org.tinystruct.mcp.MCPServerApplication --server-port 8001
