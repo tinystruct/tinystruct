@@ -119,35 +119,6 @@ public class MCPServerApplication extends MCPApplication {
     }
 
     /**
-     * Starts the MCP server.
-     *
-     * @return Status message
-     */
-    @Action(value = "mcp-server/start",
-            description = "Start the MCP server",
-            options = {
-                @Argument(key = "port", description = "Server port")
-            },
-            mode = org.tinystruct.application.Action.Mode.CLI)
-    public String start() {
-        LOGGER.info("MCP server started");
-        return "MCP server started";
-    }
-
-    /**
-     * Stops the MCP server.
-     *
-     * @return Status message
-     */
-    @Action(value = "mcp-server/stop",
-            description = "Stop the MCP server",
-            mode = org.tinystruct.application.Action.Mode.CLI)
-    public String stop() {
-        LOGGER.info("MCP server stopped");
-        return "MCP server stopped";
-    }
-
-    /**
      * Lists all registered tools.
      *
      * @return A formatted list of tools
