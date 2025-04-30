@@ -16,8 +16,6 @@
 package org.tinystruct.mcp;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
-import org.mockito.Mockito;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.mcp.tools.CalculatorTool;
 
