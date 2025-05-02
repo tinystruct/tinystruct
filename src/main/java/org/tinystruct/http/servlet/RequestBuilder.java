@@ -39,6 +39,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     private String uri;
     private static final Logger logger = Logger.getLogger(RequestBuilder.class.getName());
     private String bodyCache;
+    private List<FileEntity> list = new ArrayList<>();
 
     public RequestBuilder(HttpServletRequest request, boolean secure) {
         super(request);
@@ -84,6 +85,12 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
         }
 
         this.secure = secure;
+
+        try {
+            parseRequest();
+        } catch (ApplicationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public RequestBuilder(HttpServletRequest request) {
@@ -250,23 +257,68 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
      */
     @Override
     public List<FileEntity> getAttachments() throws ApplicationException {
-        List<FileEntity> list = new ArrayList<>();
-        try {
-            final MultipartFormData iterator = new MultipartFormData(this);
-            ContentDisposition e;
-            while ((e = iterator.getNextPart()) != null) {
-                Attachment attachment = new Attachment();
-                attachment.setContentType(e.getContentType().trim());
-                attachment.setFilename(e.getFileName().trim());
-                attachment.setContent(e.getData());
+        return list;
+    }
 
-                list.add(attachment);
-            }
-        } catch (ServletException e) {
-            throw new ApplicationException(e.getMessage(), e);
+    /**
+     * Gets the character encoding of the request.
+     *
+     * @return the character encoding of the request
+     */
+    public String getCharacterEncoding() {
+        return this.request.getCharacterEncoding();
+    }
+
+    private void parseRequest() throws ApplicationException {
+        // Check if the content type is multipart/form-data
+        String contentType = this.request.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("multipart/form-data")) {
+            return; // Not a multipart form, nothing to parse
         }
 
-        return list;
+        try {
+            final MultipartFormData iterator = new MultipartFormData(this);
+            ContentDisposition part;
+            while ((part = iterator.getNextPart()) != null) {
+                String name = part.getName();
+                if (name == null) continue; // Skip parts without a name
+
+                // Handle file uploads (parts with a content type and filename)
+                if (part.getContentType() != null && part.getFileName() != null && !part.getFileName().isEmpty()) {
+                    Attachment attachment = new Attachment();
+                    attachment.setContentType(part.getContentType().trim());
+                    attachment.setFilename(part.getFileName().trim());
+                    attachment.setContent(part.getData());
+                    attachment.setName(name); // Set the field name for the attachment
+
+                    // Add to the attachments list
+                    list.add(attachment);
+
+                    // Also add the filename as a parameter for easy access
+                    this.request.setAttribute(name, part.getFileName().trim());
+                }
+                // Handle regular form fields (parts without a content type or with empty filename)
+                else {
+                    // Convert the data to a string using the request's character encoding
+                    String charset = this.getCharacterEncoding();
+                    if (charset == null) {
+                        charset = "UTF-8"; // Default to UTF-8 if no encoding specified
+                    }
+
+                    String value = "";
+                    if (part.getData() != null) {
+                        value = new String(part.getData(), charset);
+                    }
+
+                    // Set the parameter
+                    this.request.setAttribute(name, value);
+                }
+            }
+        } catch (ServletException e) {
+            throw new ApplicationException("Error parsing multipart request: " + e.getMessage(), e);
+        } catch (UnsupportedEncodingException e) {
+            throw new ApplicationException("Unsupported character encoding: " + e.getMessage(), e);
+        }
     }
 
     @Override
