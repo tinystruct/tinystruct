@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Savepoint;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -164,6 +165,59 @@ public class DatabaseOperator implements Closeable {
     }
 
     /**
+     * Execute an update query and return the generated keys.
+     *
+     * @param statement The prepared statement to execute.
+     * @return The generated keys as a ResultSet.
+     * @throws ApplicationException If an error occurs while executing the update.
+     */
+    public ResultSet executeUpdateAndGetGeneratedKeys(PreparedStatement statement) throws ApplicationException {
+        try {
+            int effect = statement.executeUpdate();
+            logger.log(Level.INFO, statement + " - Affected rows: " + effect);
+            if (effect > 0) {
+                return statement.getGeneratedKeys();
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Execute an update query and return the generated ID.
+     *
+     * @param statement The prepared statement to execute.
+     * @return The generated ID, or null if no ID was generated.
+     * @throws ApplicationException If an error occurs while executing the update.
+     */
+    public Object executeUpdateAndGetGeneratedId(PreparedStatement statement) throws ApplicationException {
+        ResultSet generatedKeys = null;
+        try {
+            generatedKeys = executeUpdateAndGetGeneratedKeys(statement);
+            if (generatedKeys != null && generatedKeys.next()) {
+                return generatedKeys.getObject(1);
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        } finally {
+            if (generatedKeys != null) {
+                try {
+                    generatedKeys.close();
+                } catch (SQLException e) {
+                    logger.warning("Error closing generated keys ResultSet: " + e.getMessage());
+                }
+            }
+            try {
+                statement.close();
+            } catch (SQLException e) {
+                logger.warning("Error closing PreparedStatement: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
      * Execute a query without returning a result set.
      *
      * @param statement The prepared statement to execute.
@@ -187,6 +241,19 @@ public class DatabaseOperator implements Closeable {
      * @throws ApplicationException If an error occurs while preparing the statement.
      */
     public PreparedStatement createPreparedStatement(String sql, boolean scrollable) throws ApplicationException {
+        return createPreparedStatement(sql, scrollable, false);
+    }
+
+    /**
+     * Create a PreparedStatement with the given SQL, scrollable option, and generated keys option.
+     *
+     * @param sql                The SQL query.
+     * @param scrollable         True if the result set should be scrollable, false otherwise.
+     * @param returnGeneratedKeys True if the statement should return generated keys, false otherwise.
+     * @return The prepared statement.
+     * @throws ApplicationException If an error occurs while preparing the statement.
+     */
+    public PreparedStatement createPreparedStatement(String sql, boolean scrollable, boolean returnGeneratedKeys) throws ApplicationException {
         if (connection == null) {
             connection = manager.getConnection();
         }
@@ -198,9 +265,13 @@ public class DatabaseOperator implements Closeable {
             int resultSetType = scrollable ? ResultSet.TYPE_SCROLL_INSENSITIVE : ResultSet.TYPE_FORWARD_ONLY;
             int resultSetConcurrency = ResultSet.CONCUR_READ_ONLY;
 
-            return connection.prepareStatement(sql,
-                    resultSetType,
-                    resultSetConcurrency);
+            if (returnGeneratedKeys) {
+                return connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            } else {
+                return connection.prepareStatement(sql,
+                        resultSetType,
+                        resultSetConcurrency);
+            }
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
