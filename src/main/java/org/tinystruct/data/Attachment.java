@@ -11,6 +11,7 @@ public class Attachment implements FileEntity {
     private String contentType;
     private byte[] content;
     private String contentTransferEncoding;
+    private String name; // Field name for this attachment
 
     /**
      * Returns the original filename in the client's filesystem,
@@ -115,5 +116,25 @@ public class Attachment implements FileEntity {
 
         Path path = Files.write(Path.of(fileName), this.content);
         return path.toFile();
+    }
+
+    /**
+     * Returns the field name for this file.
+     *
+     * @return the field name for this file
+     */
+    @Override
+    public String getName() {
+        return this.name;
+    }
+
+    /**
+     * Sets the field name for this file.
+     *
+     * @param name the field name for this file
+     */
+    @Override
+    public void setName(String name) {
+        this.name = name;
     }
 }
