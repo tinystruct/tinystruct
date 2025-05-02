@@ -52,14 +52,41 @@ public class RedisServer implements Repository {
      */
     @Override
     public boolean append(Field ready_fields, String table) throws ApplicationException {
+        Object id = appendAndGetId(ready_fields, table);
+        return id != null;
+    }
+
+    /**
+     * Append a new record to the Redis database and return the generated ID.
+     *
+     * @param ready_fields the fields ready for insertion.
+     * @param table        the table to append the record to (not applicable for Redis).
+     * @return the generated ID if the operation is successful, null otherwise.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
+    @Override
+    public Object appendAndGetId(Field ready_fields, String table) throws ApplicationException {
         try {
+            // Generate a unique ID for the record
+            String id = String.valueOf(commands.incr(table + ":id"));
+
+            // Add the ID to the fields
+            ready_fields.get("Id").set("value", id);
+
+            // Create a key for the record
+            String recordKey = table + ":" + id;
+
             // Append record to Redis hash
             // Extract field names and values from the Field object
             for (String fieldName : ready_fields.keySet()) {
                 String value = ready_fields.get(fieldName).toString();
-                commands.hset(table, fieldName, value);
+                commands.hset(recordKey, fieldName, value);
             }
-            return true;
+
+            // Add the record ID to the set of all records for this table
+            commands.sadd(table + ":all", id);
+
+            return id;
         } catch (Exception e) {
             throw new ApplicationException("Failed to append record to Redis: " + e.getMessage());
         }

@@ -96,6 +96,78 @@ public class SQLiteServer extends AbstractDataRepository {
         }
     }
 
+    /**
+     * Append a new record to the database and return the generated ID.
+     *
+     * @param ready_fields the fields ready for insertion.
+     * @param table        the table to append the record to.
+     * @return the generated ID if the operation is successful, null otherwise.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
+    @Override
+    public Object appendAndGetId(Field ready_fields, String table) throws ApplicationException {
+        String dot = ",", currentProperty;
+        StringBuilder expressions = new StringBuilder(), values = new StringBuilder();
+        FieldInfo currentField;
+
+        List<String> fieldNames = new ArrayList<String>();
+        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements(); ) {
+            currentProperty = _field.nextElement();
+
+            currentField = ready_fields.get(currentProperty);
+            if (currentField.autoIncrement()) {
+                continue;
+            }
+
+            fieldNames.add(currentProperty);
+
+            if (expressions.length() == 0)
+                expressions.append("[").append(currentField.getColumnName()).append("]");
+            else
+                expressions.append(dot).append("[").append(currentField.getColumnName()).append("]");
+
+            if (values.length() == 0)
+                values.append('?');
+            else
+                values.append(dot).append('?');
+        }
+
+        String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES("
+                + values + ")";
+
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            // Create a prepared statement that returns generated keys
+            PreparedStatement ps = operator.createPreparedStatement(SQL, false, true);
+
+            Iterator<String> iterator = fieldNames.iterator();
+            int i = 1;
+            while (iterator.hasNext()) {
+                currentField = ready_fields.get(iterator.next());
+
+                if (currentField.autoIncrement()) {
+                    continue;
+                }
+
+                if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
+                    ps.setInt(i++, currentField.intValue());
+                } else if (currentField.getType() == FieldType.TEXT || currentField.getType() == FieldType.LONGTEXT) {
+                    ps.setString(i++, currentField.stringValue());
+                } else if (currentField.getType() == FieldType.DATE || currentField.getType() == FieldType.DATETIME) {
+                    ps.setDate(i++, new Date(currentField.dateValue().getTime()));
+                } else if (currentField.getType() == FieldType.BIT || currentField.getType() == FieldType.BOOLEAN) {
+                    ps.setBoolean(i++, currentField.booleanValue());
+                } else {
+                    ps.setObject(i++, currentField.value());
+                }
+            }
+
+            // Execute the update and get the generated ID
+            return operator.executeUpdateAndGetGeneratedId(ps);
+        } catch (SQLException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        }
+    }
+
     @Override
     public boolean update(Field ready_fields, String table)
             throws ApplicationException {
@@ -104,7 +176,6 @@ public class SQLiteServer extends AbstractDataRepository {
         FieldInfo currentField;
 
         Object Id = null;
-        boolean edited = false;
         List<String> fieldNames = new ArrayList<String>();
         for (Enumeration<String> _field = ready_fields.keys(); _field
                 .hasMoreElements(); ) {

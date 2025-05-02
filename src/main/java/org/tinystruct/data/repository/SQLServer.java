@@ -102,6 +102,93 @@ public class SQLServer extends AbstractDataRepository {
         }
     }
 
+    /**
+     * Append a new record to the database and return the generated ID.
+     *
+     * @param ready_fields the fields ready for insertion.
+     * @param table        the table to append the record to.
+     * @return the generated ID if the operation is successful, null otherwise.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
+    @Override
+    public Object appendAndGetId(Field ready_fields, String table) throws ApplicationException {
+        StringBuilder keys = new StringBuilder();
+        StringBuilder dataKeys = new StringBuilder();
+        StringBuilder values = new StringBuilder();
+        StringBuilder parameters = new StringBuilder();
+        String dot = ",";
+        String currentProperty;
+        FieldInfo currentField;
+
+        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements(); ) {
+            currentProperty = _field.nextElement();
+            currentField = ready_fields.get(currentProperty);
+
+            if (currentField.autoIncrement()) {
+                continue;
+            }
+
+            if ("int".equalsIgnoreCase(currentField.getType().getRealType())
+                    || currentField.getType() == FieldType.TEXT
+                    || currentField.getType() == FieldType.BIT
+                    || currentField.getType() == FieldType.DATE
+                    || currentField.getType() == FieldType.DATETIME) {
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type")).append(dot);
+
+                if (currentField.getType() == FieldType.TEXT) {
+                    values.append("'").append(currentField.stringValue().replaceAll("'", "''")).append("'").append(dot);
+                } else if (currentField.getType() == FieldType.DATE
+                        || currentField.getType() == FieldType.DATETIME) {
+                    SimpleDateFormat format = new SimpleDateFormat(
+                            "yyyy-MM-dd HH:mm:ss");
+                    values.append("'").append(format.format(currentField.value())).append("'").append(dot);
+                } else if (currentField.getType() == FieldType.BIT) {
+                    // 对null未作处理，考虑后面要进行处理
+                    if (currentField.value() != null)
+                        values.append("true".equals(
+                                currentField.value().toString()) ? 1 : 0).append(dot);
+                    else
+                        values.append("0").append(dot);
+                } else
+                    values.append(currentField.value()).append(dot);
+            } else {
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type")).append("(").append(currentField.getLength()).append(")").append(dot);
+                values.append("'").append(currentField.stringValue().replaceAll("'", "''")).append("'").append(dot);
+            }
+
+            dataKeys.append(currentField.getColumnName()).append(dot);
+            keys.append("@").append(currentField.getName()).append(dot);
+        }
+
+        dataKeys = new StringBuilder(dataKeys.substring(0, dataKeys.length() - 1));
+        keys = new StringBuilder(keys.substring(0, keys.length() - 1));
+        values = new StringBuilder(values.substring(0, values.length() - 1));
+        parameters = new StringBuilder(parameters.substring(0, parameters.length() - 1));
+
+        table = table.replaceAll("\\[", "").replaceAll("\\]", "");
+
+        // For SQL Server, we need to modify the stored procedure to return the generated ID
+        String SQL = "if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].["
+                + table
+                + "_APPEND_GET_ID]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)"
+                + "BEGIN exec('CREATE PROCEDURE [dbo].[" + table + "_APPEND_GET_ID] "
+                + parameters + " AS BEGIN INSERT INTO [" + table + "](" + dataKeys
+                + ") VALUES(" + keys + "); SELECT SCOPE_IDENTITY() AS ID; END')"
+                + " DECLARE @OutputID INT; EXEC @OutputID = [" + table + "_APPEND_GET_ID] " + values + "; SELECT @OutputID AS ID; END"
+                + " else BEGIN DECLARE @OutputID INT; EXEC @OutputID = [" + table + "_APPEND_GET_ID] " + values + "; SELECT @OutputID AS ID; END";
+
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            // Execute the SQL and get the result set
+            ResultSet resultSet = operator.query(SQL);
+            if (resultSet != null && resultSet.next()) {
+                return resultSet.getObject("ID");
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new ApplicationException("Error appending record and getting ID: " + e.getMessage(), e);
+        }
+    }
+
     @Override
     public boolean delete(Object Id, String table) throws ApplicationException {
         String SQL = "DELETE FROM [" + table + "] WHERE id=?";

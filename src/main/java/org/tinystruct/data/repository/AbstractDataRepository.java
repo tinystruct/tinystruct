@@ -14,6 +14,20 @@ import java.sql.SQLException;
 public abstract class AbstractDataRepository implements Repository {
 
     /**
+     * Append a new record to the database and return the generated ID.
+     * This default implementation should be overridden by database-specific implementations.
+     *
+     * @param ready_fields the fields ready for insertion.
+     * @param table        the table to append the record to.
+     * @return the generated ID if the operation is successful, null otherwise.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
+    @Override
+    public Object appendAndGetId(Field ready_fields, String table) throws ApplicationException {
+        throw new ApplicationException("appendAndGetId not implemented for this database type");
+    }
+
+    /**
      * Delete records from the MySQL database table.
      *
      * @param Id    The identifier of the record to be deleted.

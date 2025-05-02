@@ -79,6 +79,56 @@ public class MySQLServer extends AbstractDataRepository {
     }
 
     /**
+     * Append a new record to the database and return the generated ID.
+     *
+     * @param ready_fields The fields ready for insertion.
+     * @param table        The table name.
+     * @return The generated ID if the operation is successful, null otherwise.
+     * @throws ApplicationException if there is an error appending the record.
+     */
+    @Override
+    public Object appendAndGetId(Field ready_fields, String table) throws ApplicationException {
+        int i = 0, cols = ready_fields.size();
+        String[] columns = new String[cols];
+        FieldInfo[] fields = new FieldInfo[cols];
+
+        String key;
+        StringBuilder expressions = new StringBuilder(), values = new StringBuilder();
+        Enumeration<String> keys = ready_fields.keys();
+        while (keys.hasMoreElements()) {
+            key = keys.nextElement();
+            if (!ready_fields.get(key).autoIncrement()) {
+                columns[i] = ready_fields.get(key).getColumnName();
+                fields[i] = ready_fields.get(key);
+
+                if (expressions.length() == 0)
+                    expressions.append("`").append(columns[i]).append("`");
+                else
+                    expressions.append(COMMA).append("`").append(columns[i]).append("`");
+
+                if (values.length() == 0)
+                    values.append('?');
+                else
+                    values.append(COMMA).append('?');
+
+                i++;
+            }
+        }
+
+        String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES(" + values + ")";
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            // Create a prepared statement that returns generated keys
+            PreparedStatement ps = operator.createPreparedStatement(SQL, false, true);
+            setParameters(ps, fields);
+
+            // Execute the update and get the generated ID
+            return operator.executeUpdateAndGetGeneratedId(ps);
+        } catch (SQLException e) {
+            throw new ApplicationException("Error appending record: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Update existing records in the MySQL database table.
      *
      * @param ready_fields The fields ready for update.
