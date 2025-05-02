@@ -326,9 +326,9 @@ public abstract class AbstractData implements Data {
         Object generatedId = repository.appendAndGetId(this.readyFields, this.table);
         if (generatedId != null) {
             // Update the Id field with the generated ID
-            this.Id = generatedId;
+            return this.setId(generatedId);
         }
-        return generatedId;
+        return null;
     }
 
     /**
