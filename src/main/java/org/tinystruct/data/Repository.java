@@ -43,6 +43,16 @@ public interface Repository {
     boolean append(Field ready_fields, String table) throws ApplicationException;
 
     /**
+     * Append a new record to the database and return the generated ID.
+     *
+     * @param ready_fields the fields ready for insertion.
+     * @param table        the table to append the record to.
+     * @return the generated ID if the operation is successful, null otherwise.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
+    Object appendAndGetId(Field ready_fields, String table) throws ApplicationException;
+
+    /**
      * Update an existing record in the database.
      *
      * @param ready_fields the fields ready for update.
