@@ -315,6 +315,23 @@ public abstract class AbstractData implements Data {
     }
 
     /**
+     * Append a new record to the database and return the generated ID.
+     *
+     * @return the generated ID if the operation succeeds, null otherwise.
+     * @throws ApplicationException If any error occurs during the operation.
+     */
+    @Override
+    public Object appendAndGetId() throws ApplicationException {
+        validateTableName();
+        Object generatedId = repository.appendAndGetId(this.readyFields, this.table);
+        if (generatedId != null) {
+            // Update the Id field with the generated ID
+            this.Id = generatedId;
+        }
+        return generatedId;
+    }
+
+    /**
      * Update an existing record in the database.
      *
      * @return true if the operation succeeds, false otherwise.
