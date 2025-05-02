@@ -58,6 +58,13 @@ public interface Data {
     boolean append() throws ApplicationException;
 
     /**
+     * Append a new record to the database and return the generated ID.
+     * @return the generated ID if the operation is successful, null otherwise.
+     * @throws ApplicationException if an application-specific error occurs.
+     */
+    Object appendAndGetId() throws ApplicationException;
+
+    /**
      * Update an existing record in the database.
      * @return true if the operation is successful, false otherwise.
      * @throws ApplicationException if an application-specific error occurs.
