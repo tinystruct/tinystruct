@@ -157,18 +157,70 @@ public class MySQLServer extends AbstractDataRepository {
             ResultSet resultSet = operator.executeQuery(preparedStatement);
             int cols = resultSet.getMetaData().getColumnCount();
             String fieldName;
+            String fieldTypeName;
             Object fieldValue;
             while (resultSet.next()) {
                 row = new Row();
                 fields = new Field();
                 for (int i = 0; i < cols; i++) {
-                    fieldValue = resultSet.getObject(i + 1);
                     fieldName = resultSet.getMetaData().getColumnName(i + 1);
+                    fieldTypeName = resultSet.getMetaData().getColumnTypeName(i + 1);
+
+                    // First check if the value is NULL
+                    if (resultSet.getObject(i + 1) == null) {
+                        fieldValue = null;
+                    } else {
+                        // Get the appropriate data type based on fieldTypeName
+                        // MySQL data types: https://dev.mysql.com/doc/refman/8.0/en/data-types.html
+                        String type = fieldTypeName.toUpperCase();
+
+                        try {
+                            if (type.contains("INT") || type.equals("YEAR")) {
+                                // Handle all integer types (TINYINT, SMALLINT, MEDIUMINT, INT, BIGINT, YEAR)
+                                if (type.equals("BIGINT") || type.equals("MEDIUMINT")) {
+                                    fieldValue = resultSet.getLong(i + 1);
+                                } else {
+                                    fieldValue = resultSet.getInt(i + 1);
+                                }
+                            } else if (type.equals("DECIMAL") || type.equals("NUMERIC") ||
+                                      type.contains("FLOAT") || type.contains("DOUBLE")) {
+                                // Handle all floating-point types
+                                if (type.contains("FLOAT")) {
+                                    fieldValue = resultSet.getFloat(i + 1);
+                                } else {
+                                    fieldValue = resultSet.getDouble(i + 1);
+                                }
+                            } else if (type.equals("BIT") || type.equals("BOOLEAN") || type.equals("BOOL")) {
+                                // Handle boolean types
+                                fieldValue = resultSet.getBoolean(i + 1);
+                            } else if (type.contains("DATE") || type.contains("TIME")) {
+                                // Handle date/time types (DATE, DATETIME, TIMESTAMP, TIME)
+                                if (type.equals("DATE")) {
+                                    fieldValue = resultSet.getDate(i + 1);
+                                } else if (type.equals("TIME")) {
+                                    fieldValue = resultSet.getTime(i + 1);
+                                } else {
+                                    fieldValue = resultSet.getTimestamp(i + 1);
+                                }
+                            } else if (type.equals("BLOB") || type.equals("BINARY") ||
+                                      type.equals("VARBINARY") || type.equals("TINYBLOB") ||
+                                      type.equals("MEDIUMBLOB") || type.equals("LONGBLOB")) {
+                                // Handle binary data
+                                fieldValue = resultSet.getBytes(i + 1);
+                            } else {
+                                // Default to getString for TEXT, VARCHAR, CHAR, etc.
+                                fieldValue = resultSet.getString(i + 1);
+                            }
+                        } catch (SQLException e) {
+                            // Fallback to getObject if specific getter fails
+                            fieldValue = resultSet.getObject(i + 1);
+                        }
+                    }
 
                     field = new FieldInfo();
                     field.append("name", fieldName);
                     field.append("value", fieldValue);
-                    field.append("type", field.typeOf(fieldValue).getTypeName());
+                    field.append("type", fieldTypeName);
 
                     fields.append(field.getName(), field);
                 }
@@ -201,16 +253,68 @@ public class MySQLServer extends AbstractDataRepository {
             ResultSet resultSet = operator.executeQuery(preparedStatement);
             int cols = resultSet.getMetaData().getColumnCount();
             String fieldName;
+            String fieldTypeName;
             Object fieldValue;
             if (resultSet.next()) {
                 for (int i = 0; i < cols; i++) {
-                    fieldValue = resultSet.getObject(i + 1);
                     fieldName = resultSet.getMetaData().getColumnName(i + 1);
+                    fieldTypeName = resultSet.getMetaData().getColumnTypeName(i + 1);
+
+                    // First check if the value is NULL
+                    if (resultSet.getObject(i + 1) == null) {
+                        fieldValue = null;
+                    } else {
+                        // Get the appropriate data type based on fieldTypeName
+                        // MySQL data types: https://dev.mysql.com/doc/refman/8.0/en/data-types.html
+                        String type = fieldTypeName.toUpperCase();
+
+                        try {
+                            if (type.contains("INT") || type.equals("YEAR")) {
+                                // Handle all integer types (TINYINT, SMALLINT, MEDIUMINT, INT, BIGINT, YEAR)
+                                if (type.equals("BIGINT") || type.equals("MEDIUMINT")) {
+                                    fieldValue = resultSet.getLong(i + 1);
+                                } else {
+                                    fieldValue = resultSet.getInt(i + 1);
+                                }
+                            } else if (type.equals("DECIMAL") || type.equals("NUMERIC") ||
+                                      type.contains("FLOAT") || type.contains("DOUBLE")) {
+                                // Handle all floating-point types
+                                if (type.contains("FLOAT")) {
+                                    fieldValue = resultSet.getFloat(i + 1);
+                                } else {
+                                    fieldValue = resultSet.getDouble(i + 1);
+                                }
+                            } else if (type.equals("BIT") || type.equals("BOOLEAN") || type.equals("BOOL")) {
+                                // Handle boolean types
+                                fieldValue = resultSet.getBoolean(i + 1);
+                            } else if (type.contains("DATE") || type.contains("TIME")) {
+                                // Handle date/time types (DATE, DATETIME, TIMESTAMP, TIME)
+                                if (type.equals("DATE")) {
+                                    fieldValue = resultSet.getDate(i + 1);
+                                } else if (type.equals("TIME")) {
+                                    fieldValue = resultSet.getTime(i + 1);
+                                } else {
+                                    fieldValue = resultSet.getTimestamp(i + 1);
+                                }
+                            } else if (type.equals("BLOB") || type.equals("BINARY") ||
+                                      type.equals("VARBINARY") || type.equals("TINYBLOB") ||
+                                      type.equals("MEDIUMBLOB") || type.equals("LONGBLOB")) {
+                                // Handle binary data
+                                fieldValue = resultSet.getBytes(i + 1);
+                            } else {
+                                // Default to getString for TEXT, VARCHAR, CHAR, etc.
+                                fieldValue = resultSet.getString(i + 1);
+                            }
+                        } catch (SQLException e) {
+                            // Fallback to getObject if specific getter fails
+                            fieldValue = resultSet.getObject(i + 1);
+                        }
+                    }
 
                     fieldInfo = new FieldInfo();
                     fieldInfo.append("name", fieldName);
                     fieldInfo.append("value", fieldValue);
-                    fieldInfo.append("type", fieldInfo.typeOf(fieldValue));
+                    fieldInfo.append("type", fieldTypeName);
 
                     field.append(fieldInfo.getName(), fieldInfo);
                 }

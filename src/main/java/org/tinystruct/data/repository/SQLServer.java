@@ -216,11 +216,12 @@ public class SQLServer extends AbstractDataRepository {
             ResultSet resultSet = operator.executeQuery(preparedStatement);
             int cols = resultSet.getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
+            String[] fieldType = new String[cols];
             Object[] fieldValue = new Object[cols];
 
             for (int i = 0; i < cols; i++) {
-                fieldName[i] = resultSet.getMetaData()
-                        .getColumnName(i + 1);
+                fieldName[i] = resultSet.getMetaData().getColumnName(i + 1);
+                fieldType[i] = resultSet.getMetaData().getColumnTypeName(i + 1);
             }
 
             Object v_field;
@@ -228,13 +229,70 @@ public class SQLServer extends AbstractDataRepository {
                 row = new Row();
                 fields = new Field();
                 for (int i = 0; i < fieldName.length; i++) {
-                    v_field = resultSet.getObject(i + 1);
+                    // First check if the value is NULL
+                    if (resultSet.getObject(i + 1) == null) {
+                        v_field = null;
+                    } else {
+                        // Get the appropriate data type based on fieldType[i]
+                        // SQL Server data types: https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-types-transact-sql
+                        String type = fieldType[i].toUpperCase();
 
-                    fieldValue[i] = (v_field == null ? "" : v_field);
+                        try {
+                            if (type.contains("INT") || type.equals("SMALLINT") || type.equals("TINYINT")) {
+                                // Handle all integer types (INT, SMALLINT, TINYINT, BIGINT)
+                                if (type.equals("BIGINT")) {
+                                    v_field = resultSet.getLong(i + 1);
+                                } else {
+                                    v_field = resultSet.getInt(i + 1);
+                                }
+                            } else if (type.equals("DECIMAL") || type.equals("NUMERIC") ||
+                                      type.equals("MONEY") || type.equals("SMALLMONEY")) {
+                                // Handle decimal types
+                                v_field = resultSet.getBigDecimal(i + 1);
+                            } else if (type.equals("FLOAT") || type.equals("REAL")) {
+                                // Handle floating-point types
+                                if (type.equals("REAL")) {
+                                    v_field = resultSet.getFloat(i + 1);
+                                } else {
+                                    v_field = resultSet.getDouble(i + 1);
+                                }
+                            } else if (type.equals("BIT")) {
+                                // Handle boolean types
+                                v_field = resultSet.getBoolean(i + 1);
+                            } else if (type.equals("DATE") || type.equals("DATETIME") ||
+                                      type.equals("DATETIME2") || type.equals("SMALLDATETIME") ||
+                                      type.equals("DATETIMEOFFSET")) {
+                                // Handle date/time types
+                                v_field = resultSet.getTimestamp(i + 1);
+                            } else if (type.equals("TIME")) {
+                                // Handle time type
+                                v_field = resultSet.getTime(i + 1);
+                            } else if (type.equals("BINARY") || type.equals("VARBINARY") ||
+                                      type.equals("IMAGE") || type.contains("BLOB")) {
+                                // Handle binary data
+                                v_field = resultSet.getBytes(i + 1);
+                            } else if (type.equals("UNIQUEIDENTIFIER")) {
+                                // Handle GUID/UUID
+                                v_field = resultSet.getString(i + 1);
+                            } else if (type.equals("XML")) {
+                                // Handle XML data
+                                v_field = resultSet.getString(i + 1);
+                            } else {
+                                // Default to getString for CHAR, VARCHAR, NCHAR, NVARCHAR, TEXT, NTEXT, etc.
+                                v_field = resultSet.getString(i + 1);
+                            }
+                        } catch (SQLException e) {
+                            // Fallback to getObject if specific getter fails
+                            v_field = resultSet.getObject(i + 1);
+                        }
+                    }
+
+                    // Keep null values as null instead of converting to empty string
+                    fieldValue[i] = v_field;
                     field = new FieldInfo();
                     field.append("name", fieldName[i]);
                     field.append("value", fieldValue[i]);
-                    field.append("type", field.typeOf(v_field).getTypeName());
+                    field.append("type", fieldType[i]);
 
                     fields.append(field.getName(), field);
                 }

@@ -83,7 +83,7 @@ public class SQLiteServer extends AbstractDataRepository {
                         || currentField.getType() == FieldType.DATETIME) {
                     ps.setDate(i++, new Date(currentField.dateValue()
                             .getTime()));
-                } else if (currentField.getType() == FieldType.BIT) {
+                } else if (currentField.getType() == FieldType.BIT || currentField.getType() == FieldType.BOOLEAN) {
                     ps.setBoolean(i++, currentField.booleanValue());
                 } else {
                     ps.setObject(i++, currentField.value());
@@ -142,7 +142,7 @@ public class SQLiteServer extends AbstractDataRepository {
                         || currentField.getType() == FieldType.DATETIME) {
                     ps.setDate(i++, new Date(currentField.dateValue()
                             .getTime()));
-                } else if (currentField.getType() == FieldType.BIT) {
+                } else if (currentField.getType() == FieldType.BIT || currentField.getType() == FieldType.BOOLEAN) {
                     ps.setBoolean(i++, currentField.booleanValue());
                 } else {
                     ps.setObject(i++, currentField.value());
@@ -174,11 +174,13 @@ public class SQLiteServer extends AbstractDataRepository {
             ResultSet resultSet = operator.executeQuery(preparedStatement);
             int cols = resultSet.getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
+            String[] fieldType = new String[cols];
             Object[] fieldValue = new Object[cols];
 
             for (int i = 0; i < cols; i++) {
                 fieldName[i] = resultSet.getMetaData()
                         .getColumnName(i + 1);
+                fieldType[i] = resultSet.getMetaData().getColumnTypeName(i + 1);
             }
 
             Object v_field;
@@ -186,13 +188,72 @@ public class SQLiteServer extends AbstractDataRepository {
                 row = new Row();
                 fields = new Field();
                 for (int i = 0; i < fieldName.length; i++) {
-                    v_field = resultSet.getObject(i + 1);
+                    // First check if the value is NULL
+                    if (resultSet.getObject(i + 1) == null) {
+                        v_field = null;
+                    } else {
+                        // Get the appropriate data type based on fieldType[i]
+                        // SQLite has 5 main storage classes: NULL, INTEGER, REAL, TEXT, and BLOB
+                        String type = fieldType[i].toUpperCase();
 
-                    fieldValue[i] = (v_field == null ? "" : v_field);
+                        if (type.contains("INT")) {
+                            // Handle all integer types (INTEGER, INT, SMALLINT, TINYINT, BIGINT)
+                            try {
+                                // For larger integers, use getLong to avoid overflow
+                                if (type.equals("BIGINT")) {
+                                    v_field = resultSet.getLong(i + 1);
+                                } else {
+                                    v_field = resultSet.getInt(i + 1);
+                                }
+                            } catch (SQLException e) {
+                                // Fallback to getLong if getInt fails
+                                v_field = resultSet.getLong(i + 1);
+                            }
+                        } else if (type.equals("REAL") ||
+                                  type.contains("FLOAT") ||
+                                  type.contains("DOUBLE") ||
+                                  type.contains("NUMERIC") ||
+                                  type.contains("DECIMAL")) {
+                            // Handle all floating-point types
+                            try {
+                                v_field = resultSet.getDouble(i + 1);
+                            } catch (SQLException e) {
+                                // Fallback to getFloat if getDouble fails
+                                v_field = resultSet.getFloat(i + 1);
+                            }
+                        } else if (type.contains("BOOL") || type.equals("BIT")) {
+                            // Handle boolean types
+                            v_field = resultSet.getBoolean(i + 1);
+                        } else if (type.contains("DATE") ||
+                                  type.contains("TIME")) {
+                            // Handle date/time types
+                            try {
+                                v_field = resultSet.getTimestamp(i + 1);
+                            } catch (SQLException e) {
+                                // Fallback to getString if getTimestamp fails
+                                v_field = resultSet.getString(i + 1);
+                            }
+                        } else if (type.equals("BLOB") ||
+                                  type.contains("BINARY")) {
+                            // Handle binary data
+                            try {
+                                v_field = resultSet.getBytes(i + 1);
+                            } catch (SQLException e) {
+                                // Fallback to getObject if getBytes fails
+                                v_field = resultSet.getObject(i + 1);
+                            }
+                        } else {
+                            // Default to getString for TEXT, VARCHAR, CHAR, etc.
+                            v_field = resultSet.getString(i + 1);
+                        }
+                    }
+
+                    // Keep null values as null instead of converting to empty string
+                    fieldValue[i] = v_field;
                     field = new FieldInfo();
                     field.append("name", fieldName[i]);
                     field.append("value", fieldValue[i]);
-                    field.append("type", field.typeOf(v_field).getTypeName());
+                    field.append("type", fieldType[i]);
 
                     fields.append(field.getName(), field);
                 }
