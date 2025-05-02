@@ -73,4 +73,18 @@ public interface FileEntity {
      * @throws IOException if this data is not represented by a file
      */
     File getFile() throws IOException;
+
+    /**
+     * Returns the field name for this file.
+     *
+     * @return the field name for this file
+     */
+    String getName();
+
+    /**
+     * Sets the field name for this file.
+     *
+     * @param name the field name for this file
+     */
+    void setName(String name);
 }
