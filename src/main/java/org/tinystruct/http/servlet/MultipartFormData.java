@@ -229,14 +229,12 @@ public class MultipartFormData {
             }
 
             String text = textData.toString();
-            //remove the "\r\n" if it's there
-            if (text.endsWith("\r\n")) {
-                textData.setLength(textData.length() - 2);
-            }
 
-            //remove the "\n" if it's there
-            if (text.endsWith("\n")) {
-                textData.setLength(textData.length() - 1);
+            if (text.endsWith("\r\n")) {
+                textData.setLength(textData.length() - 2); //remove the "\r\n" if it's there
+            }
+            else if (text.endsWith("\n")) {
+                textData.setLength(textData.length() - 1); //remove the "\n" if it's there
             }
 
             text = textData.toString();
