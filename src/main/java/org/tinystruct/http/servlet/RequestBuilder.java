@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpSession;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.FileEntity;
-import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.*;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
@@ -40,6 +39,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     private static final Logger logger = Logger.getLogger(RequestBuilder.class.getName());
     private String bodyCache;
     private List<FileEntity> list = new ArrayList<>();
+    private String contentType;
 
     public RequestBuilder(HttpServletRequest request, boolean secure) {
         super(request);
@@ -85,6 +85,7 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
         }
 
         this.secure = secure;
+        this.contentType = request.getContentType();
 
         try {
             parseRequest();
@@ -121,8 +122,11 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
     }
 
     private boolean isJsonRequest() {
-        String contentType = this.request.getContentType();
         return contentType != null && contentType.contains("application/json");
+    }
+
+    private boolean isMultipartRequest() {
+        return contentType != null && contentType.contains("multipart/form-data");
     }
 
     /**
@@ -231,23 +235,32 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
 
     @Override
     public String getParameter(String name) {
+        Object value;
+        if ((value = this.request.getParameter(name)) != null) {
+            return value.toString();
+        }
+
         if (this.isJsonRequest()) {
             String queryString = this.query();
             if (queryString != null && queryString.contains(name + "=")) {
                 // Find the value of the parameter
-                String value = queryString.substring(queryString.indexOf(name + "=") + name.length() + 1);
+                String _value = queryString.substring(queryString.indexOf(name + "=") + name.length() + 1);
                 try {
                     // Decode the value to handle any encoded characters (e.g., '%20' for spaces)
-                    return URLDecoder.decode(value, "UTF-8");
+                    return URLDecoder.decode(_value, "UTF-8");
                 } catch (UnsupportedEncodingException e) {
                     // Log the error and return the raw value if decoding fails
                     logger.log(Level.WARNING, "Failed to decode query parameter: " + name, e);
-                    return value;
+                    return _value;
                 }
             }
             return null;
+        } else if (isMultipartRequest()) {
+            if ((value = request.getAttribute(name)) != null)
+                return value.toString();
         }
-        return this.request.getParameter(name);
+
+        return null;
     }
 
     /**
@@ -271,7 +284,6 @@ public class RequestBuilder extends RequestWrapper<HttpServletRequest, ServletIn
 
     private void parseRequest() throws ApplicationException {
         // Check if the content type is multipart/form-data
-        String contentType = this.request.getContentType();
         if (contentType == null || !contentType.toLowerCase().startsWith("multipart/form-data")) {
             return; // Not a multipart form, nothing to parse
         }
