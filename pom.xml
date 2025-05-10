@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.6.6</version>
+    <version>1.6.7</version>
     <name>tinystruct framework</name>
     <description>A lightweight java framework designed for building efficient and scalable applications. Supports both
         command-line tools and APIs, enabling developers to create robust solutions with ease.
@@ -99,7 +99,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-tcnative</artifactId>
-            <version>2.0.70.Final</version>
+            <version>2.0.71.Final</version>
             <classifier>linux-x86_64</classifier>
             <optional>true</optional>
         </dependency>
@@ -224,14 +224,14 @@
         <jna.version>5.17.0</jna.version>
         <jupiter.version>5.12.2</jupiter.version>
         <kafka.version>4.0.0</kafka.version>
-        <lettuce.version>6.5.5.RELEASE</lettuce.version>
+        <lettuce.version>6.6.0.RELEASE</lettuce.version>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <mqtt.version>1.2.5</mqtt.version>
         <slf4j.version>2.0.16</slf4j.version>
         <sqlite.version>3.49.1.0</sqlite.version>
         <h2.version>2.3.232</h2.version>
-        <netty.version>4.2.0.Final</netty.version>
+        <netty.version>4.2.1.Final</netty.version>
         <mockito.version>5.17.0</mockito.version>
         <nashorn.version>15.6</nashorn.version>
         <tomcat.embed.version>10.1.39</tomcat.embed.version>
