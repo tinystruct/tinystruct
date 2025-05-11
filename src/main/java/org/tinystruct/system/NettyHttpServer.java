@@ -49,6 +49,21 @@ import java.util.logging.Logger;
 import static org.tinystruct.http.Constants.HTTP_REQUEST;
 import static org.tinystruct.http.Constants.HTTP_RESPONSE;
 
+/**
+ * NettyHttpServer is a Netty-based HTTP server implementation for the tinystruct framework.
+ *
+ * <p>Configuration options:</p>
+ * <ul>
+ *   <li>server-port: The port to listen on (default: 8080)</li>
+ *   <li>logging.enabled: Enable Netty channel logging (default: false)</li>
+ *   <li>logging.level: Netty logging level (TRACE, DEBUG, INFO, WARN, ERROR) (default: INFO)</li>
+ * </ul>
+ *
+ * <p>Example usage:</p>
+ * <pre>
+ * bin/dispatcher start --import org.tinystruct.system.NettyHttpServer --server-port 8080 --logging.enabled true --logging.level INFO
+ * </pre>
+ */
 public class NettyHttpServer extends AbstractApplication implements Bootstrap {
     private static final boolean SSL = System.getProperty("ssl") != null;
     private static final int MAX_CONTENT_LENGTH = 1024 * 100;
@@ -82,7 +97,9 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
             @Argument(key = "http.proxyHost", description = "Proxy host for http"),
             @Argument(key = "http.proxyPort", description = "Proxy port for http"),
             @Argument(key = "https.proxyHost", description = "Proxy host for https"),
-            @Argument(key = "https.proxyPort", description = "Proxy port for https")
+            @Argument(key = "https.proxyPort", description = "Proxy port for https"),
+            @Argument(key = "logging.enabled", description = "Enable Netty logging (default: false)"),
+            @Argument(key = "logging.level", description = "Netty logging level (TRACE, DEBUG, INFO, WARN, ERROR) (default: INFO)")
     }, example = "bin/dispatcher start --import org.tinystruct.system.NettyHttpServer --server-port 777", mode = org.tinystruct.application.Action.Mode.CLI)
     @Override
     public void start() throws ApplicationException {
@@ -100,6 +117,15 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
             if (getContext().getAttribute("--https.proxyHost") != null && getContext().getAttribute("--https.proxyPort") != null) {
                 System.setProperty("https.proxyHost", getContext().getAttribute("--https.proxyHost").toString());
                 System.setProperty("https.proxyPort", getContext().getAttribute("--https.proxyPort").toString());
+            }
+
+            // Handle logging configuration from command line arguments
+            if (getContext().getAttribute("--logging.enabled") != null) {
+                getConfiguration().set("logging.enabled", getContext().getAttribute("--logging.enabled").toString());
+            }
+
+            if (getContext().getAttribute("--logging.level") != null) {
+                getConfiguration().set("logging.level", getContext().getAttribute("--logging.level").toString());
             }
         }
 
@@ -135,7 +161,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                 sslCtx = null;
             }
 
-            final int maxContentLength = "".equalsIgnoreCase(getConfiguration().get("default.http.max_content_length")) ? MAX_CONTENT_LENGTH : Integer.parseInt(getConfiguration().get("default.http.max_content_length"));
+            final int maxContentLength = "".equalsIgnoreCase(settings.get("default.http.max_content_length")) ? MAX_CONTENT_LENGTH : Integer.parseInt(getConfiguration().get("default.http.max_content_length"));
             ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup)
                     .channel(Epoll.isAvailable() ? EpollServerSocketChannel.class :
                             NioServerSocketChannel.class)
@@ -146,7 +172,25 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
                             if (sslCtx != null) {
                                 p.addLast(sslCtx.newHandler(ch.alloc()));
                             }
-                            p.addLast(new LoggingHandler(LogLevel.INFO));
+
+                            // Add LoggingHandler only if logging is enabled in configuration
+                            boolean loggingEnabled = Boolean.parseBoolean(settings.getOrDefault("logging.enabled", "false"));
+                            if (loggingEnabled) {
+                                // Get log level from configuration or default to INFO
+                                String logLevelStr = settings.getOrDefault("logging.level", "INFO");
+                                LogLevel logLevel;
+                                try {
+                                    logLevel = LogLevel.valueOf(logLevelStr);
+                                } catch (IllegalArgumentException e) {
+                                    logger.warning("Invalid log level: " + logLevelStr + ", using INFO");
+                                    logLevel = LogLevel.INFO;
+                                }
+                                p.addLast(new LoggingHandler(logLevel));
+                                logger.info("Netty channel logging enabled with level: " + logLevel);
+                            } else {
+                                logger.info("Netty channel logging is disabled. Set logging.enabled=true to enable.");
+                            }
+
                             p.addLast(new HttpServerCodec(), new HttpObjectAggregator(maxContentLength), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration()));
                         }
                     }).option(ChannelOption.SO_BACKLOG, 1024)
