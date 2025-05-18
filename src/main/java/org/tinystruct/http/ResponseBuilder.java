@@ -3,6 +3,7 @@ package org.tinystruct.http;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.tinystruct.ApplicationException;
 
 import java.io.IOException;
 
@@ -90,6 +91,15 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpR
         responseHeaders.add(Header.CONTENT_LENGTH.setInt(0));
         responseHeaders.add(Header.LOCATION.set(url));
         this.setStatus(ResponseStatus.TEMPORARY_REDIRECT);
+    }
+
+    /**
+     * @param bytes
+     * @throws ApplicationException
+     */
+    @Override
+    public void writeAndFlush(byte[] bytes) throws ApplicationException {
+        this.get().content().writeBytes(bytes);
     }
 
 }

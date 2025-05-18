@@ -1,5 +1,7 @@
 package org.tinystruct.http;
 
+import org.tinystruct.ApplicationException;
+
 import java.io.IOException;
 
 public interface Response<T, O> extends Protocol {
@@ -27,6 +29,8 @@ public interface Response<T, O> extends Protocol {
     void addHeader(String header, Object value);
 
     void sendRedirect(String url) throws IOException;
+
+    void writeAndFlush(byte[] bytes) throws ApplicationException;
 
     O get();
 }

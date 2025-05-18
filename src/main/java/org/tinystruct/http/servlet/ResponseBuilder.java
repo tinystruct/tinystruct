@@ -2,6 +2,7 @@ package org.tinystruct.http.servlet;
 
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
+import org.tinystruct.ApplicationException;
 import org.tinystruct.http.*;
 
 import java.io.IOException;
@@ -99,5 +100,19 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
     public void sendRedirect(String url) throws IOException {
         if (!this.response.isCommitted())
             this.response.sendRedirect(url);
+    }
+
+    /**
+     * @param bytes
+     * @throws ApplicationException
+     */
+    @Override
+    public void writeAndFlush(byte[] bytes) throws ApplicationException {
+        try {
+            this.get().write(bytes);
+            this.get().flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
