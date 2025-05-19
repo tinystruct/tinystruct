@@ -6,6 +6,8 @@ The tinystruct framework
 --
 A simple framework for Java development. Simple thinking, Better design, Easy to be used with better performance! 
 
+[![Star History Chart](https://api.star-history.com/svg?repos=tinystruct/tinystruct&type=Date)](https://www.star-history.com/#tinystruct/tinystruct&Date)
+
 Installation and Getting Started
 --
 * Add the dependency into your pom.xml.
