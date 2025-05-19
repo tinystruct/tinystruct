@@ -103,7 +103,7 @@ public class MCPApplication extends AbstractApplication {
                 return jsonRpcHandler.createErrorResponse("Not in ready state", ErrorCodes.NOT_INITIALIZED);
             }
 
-            sseHandler.closeAllConnections();
+            sseHandler.closeAll();
             sessionState = SessionState.DISCONNECTED;
             
             JsonRpcResponse jsonResponse = new JsonRpcResponse();
@@ -131,13 +131,12 @@ public class MCPApplication extends AbstractApplication {
             }
 
             String clientId = UUID.randomUUID().toString();
-            SSEHandler.SSESession session = sseHandler.createSession(clientId);
+            sseHandler.registerClient(clientId, response);
             sseHandler.setupSSEHeaders(response);
-
-            // Send initial connection event
-            session.sendEvent(Events.CONNECTED, "{\"clientId\":\"" + clientId + "\"}");
-            return session.getOutput();
-
+            // 发送初始连接事件
+            sseHandler.sendEvent(clientId, Events.CONNECTED, "{\"clientId\":\"" + clientId + "\"}");
+            // SSE 连接应保持打开，返回空字符串即可
+            return "";
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "SSE connection failed", e);
             response.setStatus(ResponseStatus.INTERNAL_SERVER_ERROR);
@@ -239,7 +238,7 @@ public class MCPApplication extends AbstractApplication {
             return;
         }
 
-        sseHandler.closeAllConnections();
+        sseHandler.closeAll();
         sessionState = SessionState.DISCONNECTED;
         
         response.setId(request.getId());
