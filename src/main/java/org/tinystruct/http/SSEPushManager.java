@@ -1,5 +1,6 @@
 package org.tinystruct.http;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,5 +43,9 @@ public class SSEPushManager {
         if (client != null) {
             client.close();
         }
+    }
+
+    public Set<String> getClientIds() {
+        return clients.keySet();
     }
 }

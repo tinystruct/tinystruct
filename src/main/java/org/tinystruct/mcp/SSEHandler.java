@@ -1,163 +1,94 @@
 package org.tinystruct.mcp;
 
 import org.tinystruct.http.Response;
-import org.tinystruct.data.component.Builder;
-import java.util.concurrent.ConcurrentHashMap;
+import org.tinystruct.http.SSEPushManager;
+
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * Handles Server-Sent Events (SSE) connections and event broadcasting
+ * Handles Server-Sent Events (SSE) connections and event broadcasting using SSEPushManager and SSEClient.
  */
 public class SSEHandler {
     private static final Logger LOGGER = Logger.getLogger(SSEHandler.class.getName());
-    private final ConcurrentHashMap<String, SSESession> sseClients = new ConcurrentHashMap<>();
+    private final SSEPushManager pushManager = SSEPushManager.getInstance();
+    private volatile long firstSessionCreatedAt = -1;
 
     /**
-     * Creates a new SSE session for a client
+     * Registers a new SSE client.
      * @param clientId Unique identifier for the client
-     * @return The created SSE session
+     * @param response HTTP response object
      */
-    public SSESession createSession(String clientId) {
-        SSESession session = new SSESession(clientId);
-        sseClients.put(clientId, session);
-        return session;
-    }
-
-    /**
-     * Broadcasts an event to all connected clients
-     * @param event Event type
-     * @param data Event data
-     */
-    public void broadcastEvent(String event, String data) {
-        sseClients.values().forEach(session -> session.sendEvent(event, data));
-    }
-
-    /**
-     * Broadcasts an event to a specific client
-     * @param clientId Target client ID
-     * @param event Event type
-     * @param data Event data
-     */
-    public void sendEventToClient(String clientId, String event, String data) {
-        SSESession session = sseClients.get(clientId);
-        if (session != null) {
-            session.sendEvent(event, data);
+    public void registerClient(String clientId, Response response) {
+        if (firstSessionCreatedAt == -1) {
+            firstSessionCreatedAt = System.currentTimeMillis();
         }
+        pushManager.register(clientId, response);
     }
 
     /**
-     * Closes all SSE connections
+     * Broadcasts a message to all connected clients.
+     * @param message Message content
      */
-    public void closeAllConnections() {
-        sseClients.values().forEach(SSESession::close);
-        sseClients.clear();
+    public void broadcast(String message) {
+        pushManager.broadcast(message);
     }
 
     /**
-     * Closes a specific client's SSE connection
+     * Sends a message to a specific client.
+     * @param clientId Target client ID
+     * @param message Message content
+     */
+    public void pushToClient(String clientId, String message) {
+        pushManager.push(clientId, message);
+    }
+
+    /**
+     * Sends an SSE event to a specific client.
+     * @param clientId Target client ID
+     * @param event Event name
+     * @param data Event data
+     */
+    public void sendEvent(String clientId, String event, String data) {
+        String payload = "event: " + event + "\n" +
+                "data: " + data.replace("\n", "\ndata: ") + "\n\n";
+        pushToClient(clientId, payload);
+    }
+
+    /**
+     * Closes and removes a specific client connection.
      * @param clientId Client ID to disconnect
      */
-    public void closeConnection(String clientId) {
-        SSESession session = sseClients.remove(clientId);
-        if (session != null) {
-            session.close();
+    public void closeClient(String clientId) {
+        pushManager.remove(clientId);
+    }
+
+    /**
+     * Closes all client connections.
+     */
+    public void closeAll() {
+        Set<String> clientIds = pushManager.getClientIds();
+        for (String clientId : clientIds.toArray(new String[0])) {
+            pushManager.remove(clientId);
         }
     }
 
     /**
-     * Sets up SSE headers for a response
+     * Sets up SSE headers for a response.
      * @param response HTTP response to configure
      */
     public void setupSSEHeaders(Response response) {
-        response.addHeader("Content-Type", MCPSpecification.Http.CONTENT_TYPE_SSE);
+        response.addHeader("Content-Type", "text/event-stream");
         response.addHeader("Cache-Control", "no-cache");
         response.addHeader("Connection", "keep-alive");
     }
 
     /**
-     * Formats an SSE response message
-     * @param event Event type
-     * @param data Event data
-     * @param id Optional event ID
-     * @return Formatted SSE message
-     */
-    public String formatSSEResponse(String event, String data, String id) {
-        StringBuilder response = new StringBuilder();
-        if (event != null) {
-            response.append("event: ").append(event).append("\n");
-        }
-        if (id != null) {
-            response.append("id: ").append(id).append("\n");
-        }
-        response.append("data: ").append(data).append("\n\n");
-        return response.toString();
-    }
-
-    /**
-     * Gets the creation timestamp of the first active session
-     * @return Creation timestamp in milliseconds, or current time if no sessions exist
+     * Gets the timestamp of the first session creation.
+     * @return Timestamp of the first session creation
      */
     public long getFirstSessionCreatedAt() {
-        return sseClients.values().stream()
-                .findFirst()
-                .map(s -> s.createdAt)
-                .orElse(System.currentTimeMillis());
+        return firstSessionCreatedAt == -1 ? System.currentTimeMillis() : firstSessionCreatedAt;
     }
+}
 
-    /**
-     * Represents a Server-Sent Events session
-     */
-    public static class SSESession {
-        private final String id;
-        private final StringBuilder output;
-        private boolean isActive = true;
-        private final long createdAt = System.currentTimeMillis();
-        private long lastActivityAt = System.currentTimeMillis();
-
-        public SSESession(String id) {
-            this.id = id;
-            this.output = new StringBuilder();
-        }
-
-        public String getOutput() {
-            return output.toString();
-        }
-
-        public void sendEvent(String event, String data) {
-            if (isActive) {
-                output.append("event: ").append(event).append("\n");
-                output.append("data: ").append(data).append("\n\n");
-            }
-        }
-
-        public void sendStateChange(MCPSpecification.SessionState newState) {
-            Builder data = new Builder();
-            data.put("type", "state_change");
-            data.put("state", newState.toString());
-            sendEvent(MCPSpecification.Events.STATE, data.toString());
-        }
-
-        public void sendError(String errorMessage, int errorCode) {
-            Builder data = new Builder();
-            data.put("type", "error");
-            data.put("code", errorCode);
-            data.put("message", errorMessage);
-            sendEvent(MCPSpecification.Events.ERROR, data.toString());
-        }
-
-        public void close() {
-            if (isActive) {
-                sendEvent(MCPSpecification.Events.CLOSE, "{\"reason\":\"session_closed\"}");
-                isActive = false;
-            }
-        }
-
-        public void updateActivity() {
-            this.lastActivityAt = System.currentTimeMillis();
-        }
-        
-        public boolean isExpired(long timeoutMs) {
-            return System.currentTimeMillis() - lastActivityAt > timeoutMs;
-        }
-    }
-} 
