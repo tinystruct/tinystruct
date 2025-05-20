@@ -108,11 +108,16 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
      */
     @Override
     public void writeAndFlush(byte[] bytes) throws ApplicationException {
+        ServletOutputStream out = this.get();
+        if (out == null) {
+            logger.log(Level.SEVERE, "ServletOutputStream is null, cannot write response. Possible client disconnect or response already closed.");
+            throw new ApplicationException("ServletOutputStream is null, cannot write response.");
+        }
         try {
-            this.get().write(bytes);
-            this.get().flush();
+            out.write(bytes);
+            out.flush();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new ApplicationException("Failed to write to ServletOutputStream", e);
         }
     }
 }
