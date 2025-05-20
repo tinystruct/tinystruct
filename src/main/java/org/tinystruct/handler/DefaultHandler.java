@@ -30,6 +30,7 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -109,10 +110,15 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             context.setAttribute(METHOD, request.getMethod());
 
             String[] parameterNames = _request.parameterNames();
-            for (String parameter: parameterNames) {
-                if(parameter.startsWith("--")) {
+            for (String parameter : parameterNames) {
+                if (parameter.startsWith("--")) {
                     context.setAttribute(parameter, request.getParameter(parameter));
                 }
+            }
+
+            if (isSSE(request)) {
+                handleSSE(context, _request, _response);
+                return;
             }
 
             String query = _request.getParameter("q");
@@ -130,11 +136,35 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         }
     }
 
+    private void handleSSE(Context context, Request<HttpServletRequest, ServletInputStream> request,
+                           Response<HttpServletResponse, ServletOutputStream> response) throws IOException {
+        response.addHeader(Header.CONTENT_TYPE.name(), "text/event-stream");
+        response.addHeader(Header.CACHE_CONTROL.name(), "no-cache");
+        response.addHeader(Header.CONNECTION.name(), "keep-alive");
+        response.addHeader("X-Accel-Buffering", "no");
+
+        ServletOutputStream out = response.get();
+        try {
+            out.write("event: connect\ndata: Connected\n\n".getBytes(StandardCharsets.UTF_8));
+            out.flush();
+
+            String query = request.getParameter("q");
+            if (query != null) {
+                query = StringUtilities.htmlSpecialChars(query);
+                ApplicationManager.call(query, context);
+            }
+        } catch (IOException e) {
+            logger.warning("SSE Transfer Interrupted: " + e.getMessage());
+        } catch (ApplicationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Handles the HTTP request by processing the query.
      *
-     * @param query     The query string
-     * @param context   The application context
+     * @param query    The query string
+     * @param context  The application context
      * @param response The HTTP response object
      * @throws IOException if an I/O error occurs
      */
@@ -162,7 +192,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     /**
      * Handles the default page request.
      *
-     * @param context   The application context
+     * @param context  The application context
      * @param response The HTTP response object
      * @throws IOException if an I/O error occurs
      */
@@ -261,6 +291,11 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             }
         } else
             this.service(req, resp);
+    }
+
+    private boolean isSSE(HttpServletRequest request) {
+        String acceptHeader = request.getHeader("Accept");
+        return acceptHeader != null && acceptHeader.contains("text/event-stream");
     }
 
     @Override
