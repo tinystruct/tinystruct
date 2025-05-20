@@ -20,6 +20,8 @@ public class SSEClient implements Runnable {
 
     public void close() {
         this.active = false;
+        // 清空消息队列，防止阻塞
+        messageQueue.clear();
     }
 
     @Override
@@ -27,13 +29,22 @@ public class SSEClient implements Runnable {
         try {
             while (active) {
                 String message = messageQueue.poll();
-                if (message != null) {
-                    writeEvent("message", message);
-                } else {
-                    writeEvent("heartbeat", "{\"time\": " + System.currentTimeMillis() + "}");
+                try {
+                    if (message != null) {
+                        writeEvent("message", message);
+                    } else {
+                        writeEvent("heartbeat", "{\"time\": " + System.currentTimeMillis() + "}");
+                    }
+                } catch (ApplicationException e) {
+                    // 写入失败，通常是客户端断开或流已关闭
+                    this.active = false;
+                    break;
                 }
                 Thread.sleep(2000); // 每2秒一次
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            this.active = false;
         } catch (Exception e) {
             this.active = false;
         }
