@@ -1,26 +1,41 @@
 package org.tinystruct.http;
 
-import org.tinystruct.ApplicationException;
+import org.tinystruct.data.component.Builder;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SSEClient implements Runnable {
     private final Response out;
-    private final LinkedBlockingQueue<String> messageQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<Builder> messageQueue;
     private volatile boolean active = true;
+    private static final Logger logger = Logger.getLogger(SSEClient.class.getName());
 
     public SSEClient(Response out) {
-        this.out = out;
+        this(out, new LinkedBlockingQueue<>());
     }
 
-    public void send(String message) {
+    public SSEClient(Response out, BlockingQueue<Builder> messageQueue) {
+        this.out = out;
+        this.messageQueue = messageQueue;
+        // Set SSE headers
+        if (out instanceof ResponseBuilder) {
+            ResponseBuilder builder = (ResponseBuilder) out;
+            builder.setContentType("text/event-stream");
+            builder.addHeader("Cache-Control", "no-cache");
+            builder.addHeader("Connection", "keep-alive");
+        }
+    }
+
+    public void send(Builder message) {
         messageQueue.offer(message);
     }
 
     public void close() {
         this.active = false;
-        // 清空消息队列，防止阻塞
         messageQueue.clear();
     }
 
@@ -28,32 +43,25 @@ public class SSEClient implements Runnable {
     public void run() {
         try {
             while (active) {
-                String message = messageQueue.poll();
-                try {
-                    if (message != null) {
-                        writeEvent("message", message);
-                    } else {
-                        writeEvent("heartbeat", "{\"time\": " + System.currentTimeMillis() + "}");
-                    }
-                } catch (ApplicationException e) {
-                    // 写入失败，通常是客户端断开或流已关闭
-                    this.active = false;
-                    break;
+                Builder message = messageQueue.take();
+                if (message != null) {
+                    String event = formatSSEMessage(message);
+                    out.writeAndFlush(event.getBytes(StandardCharsets.UTF_8));
                 }
-                Thread.sleep(2000); // 每2秒一次
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            this.active = false;
         } catch (Exception e) {
-            this.active = false;
+            logger.log(Level.SEVERE, "Error in SSE client: " + e.getMessage(), e);
+        } finally {
+            close();
         }
     }
 
-    private void writeEvent(String event, String data) throws ApplicationException {
-        String payload = "event: " + event + "\n" +
-                "data: " + data.replace("\n", "\ndata: ") + "\n\n";
-        out.writeAndFlush(payload.getBytes(StandardCharsets.UTF_8));
+    private String formatSSEMessage(Builder message) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("data: ").append(message.toString()).append("\n\n");
+        return sb.toString();
     }
 
     public boolean isActive() {
