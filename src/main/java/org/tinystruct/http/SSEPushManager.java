@@ -3,11 +3,11 @@ package org.tinystruct.http;
 import org.tinystruct.data.component.Builder;
 
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,27 +25,28 @@ public class SSEPushManager {
         return instance;
     }
 
-    public void register(String sessionId, Response out) {
-        register(sessionId, out, null);
+    public SSEClient register(String sessionId, Response out) {
+        return register(sessionId, out, null);
     }
 
-    public void register(String sessionId, Response out, BlockingQueue<Builder> messageQueue) {
+    public SSEClient register(String sessionId, Response out, BlockingQueue<Builder> messageQueue) {
         if (isShutdown.get()) {
             logger.log(Level.WARNING, "SSEPushManager is shutting down, cannot register new client");
-            return;
+            return null;
         }
 
         SSEClient oldClient = clients.get(sessionId);
         if (oldClient != null) {
-            oldClient.close();
+            return oldClient;
         }
 
-        SSEClient client = messageQueue != null ? 
-            new SSEClient(out, messageQueue) : 
-            new SSEClient(out);
-            
+        SSEClient client = messageQueue != null ?
+                new SSEClient(out, messageQueue) :
+                new SSEClient(out);
+
         clients.put(sessionId, client);
         executor.submit(client);
+        return client;
     }
 
     public void push(String sessionId, Builder message) {
@@ -55,13 +56,11 @@ public class SSEPushManager {
         }
 
         SSEClient client = clients.get(sessionId);
-        if (client != null) {
-            if (client.isActive()) {
-                client.send(message);
-            } else {
-                // Clean up inactive client
-                clients.remove(sessionId, client);
-            }
+        if (client != null && client.isActive()) {
+            client.send(message);
+        } else {
+            // Clean up inactive client
+            clients.remove(sessionId, client);
         }
     }
 
@@ -97,7 +96,7 @@ public class SSEPushManager {
             // Close all clients
             clients.forEach((sessionId, client) -> client.close());
             clients.clear();
-            
+
             // Shutdown executor
             executor.shutdown();
         }

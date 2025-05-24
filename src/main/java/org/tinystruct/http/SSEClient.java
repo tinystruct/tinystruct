@@ -36,7 +36,6 @@ public class SSEClient implements Runnable {
 
     public void close() {
         this.active = false;
-        messageQueue.clear();
     }
 
     @Override
@@ -44,17 +43,15 @@ public class SSEClient implements Runnable {
         try {
             while (active) {
                 Builder message = messageQueue.take();
-                if (message != null) {
-                    String event = formatSSEMessage(message);
-                    out.writeAndFlush(event.getBytes(StandardCharsets.UTF_8));
-                }
+                String event = formatSSEMessage(message);
+                out.writeAndFlush(event.getBytes(StandardCharsets.UTF_8));
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            this.active = false;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error in SSE client: " + e.getMessage(), e);
-        } finally {
-            close();
+            this.active = false;
         }
     }
 
