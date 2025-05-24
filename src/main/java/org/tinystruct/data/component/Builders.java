@@ -70,6 +70,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
      * @throws ApplicationException If there is an issue parsing the data.
      */
     public String parse(String value) throws ApplicationException {
+        // Only trim the outer structure for parsing, not the content
         value = value.trim();
         if (value.isEmpty()) {
             return "";
@@ -83,7 +84,8 @@ public class Builders extends ArrayList<Builder> implements Serializable {
             if (end > 1) { // If array is not empty
                 parseArrayContent(value.substring(1, end));
             }
-            return value.substring(Math.min(end + 1, value.length())).trim();
+            // Return remaining content without trimming to preserve whitespace
+            return value.substring(Math.min(end + 1, value.length()));
         }
 
         // Handle single elements
@@ -101,6 +103,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
     }
 
     private void parseArrayContent(String content) throws ApplicationException {
+        // Only trim the outer structure for parsing, not the content
         content = content.trim();
         if (content.isEmpty()) {
             return;
@@ -140,13 +143,14 @@ public class Builders extends ArrayList<Builder> implements Serializable {
     }
 
     private void addElement(String element) throws ApplicationException {
+        // Only trim the outer structure for parsing, not the content
         element = element.trim();
         if (element.isEmpty()) {
             return;
         }
 
         if (element.charAt(0) == QUOTE) {
-            // String value
+            // String value - preserve all whitespace
             String value = element.substring(1, element.length() - 1);
             this.add(new Builder(value));
         } else if (element.charAt(0) == LEFT_BRACE) {

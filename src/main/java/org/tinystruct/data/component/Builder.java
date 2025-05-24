@@ -197,6 +197,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     @Override
     public void parse(String resource) throws ApplicationException {
         // Ensure the input string is a valid JSON format
+        // Only trim the outer structure, not the content
         resource = resource.trim();
         if (!resource.isEmpty()) {
             if (resource.charAt(0) == QUOTE) {
@@ -251,7 +252,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      * @throws ApplicationException If there is an issue parsing the data.
      */
     private void parseValue(String value) throws ApplicationException {
-        // Trim the input value
+        // Trim the input value for structure parsing only
         value = value.trim();
 
         if (!value.isEmpty() && value.charAt(0) == QUOTE) {
@@ -267,13 +268,13 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     keyName = keyName.substring(0, QUOTE_POSITION);
                 }
 
-                String $value = value.substring(start).trim();
+                String $value = value.substring(start);
                 Object keyValue = null;
                 if (!$value.isEmpty()) {
                     if ($value.charAt(0) == QUOTE) {
-                        // Extract the value if it is enclosed in quotes
+                        // Extract the value if it is enclosed in quotes, preserving whitespace
                         int $end = this.next($value, Builder.QUOTE);
-                        keyValue = $value.substring(1, $end - 1).trim();
+                        keyValue = $value.substring(1, $end - 1);
 
                         if ($end + 1 < $value.length()) {
                             $value = $value.substring($end + 1); // COMMA length: 1
@@ -293,7 +294,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     } else if ($value.charAt(0) == LEFT_BRACKETS) {
                         // Handle array
                         Builders builders = new Builders();
-                        String remaining = builders.parse($value).trim();
+                        String remaining = builders.parse($value);
                         keyValue = builders;
                         if (!remaining.isEmpty() && remaining.charAt(0) == COMMA)
                             remaining = remaining.substring(1); // COMMA length: 1
@@ -331,39 +332,41 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      * @return Parsed value of appropriate type
      */
     private Object getValue(String value) {
-        if (value == null || value.trim().isEmpty()) {
+        if (value == null || value.isEmpty()) {
             return null;
         }
 
-        value = value.trim();
-        if (INTEGER.matcher(value).matches()) {
+        // Only trim for type checking, not for the actual value
+        String trimmedValue = value.trim();
+        if (INTEGER.matcher(trimmedValue).matches()) {
             try {
-                return Integer.parseInt(value);
+                return Integer.parseInt(trimmedValue);
             } catch (NumberFormatException e) {
                 try {
-                    return Long.parseLong(value);
+                    return Long.parseLong(trimmedValue);
                 } catch (NumberFormatException ex) {
                     logger.warning("Failed to parse integer value: " + value);
                 }
             }
         }
 
-        if (DOUBLE.matcher(value).matches()) {
+        if (DOUBLE.matcher(trimmedValue).matches()) {
             try {
-                return Double.parseDouble(value);
+                return Double.parseDouble(trimmedValue);
             } catch (NumberFormatException e) {
                 logger.warning("Failed to parse double value: " + value);
             }
         }
 
-        if (BOOLEAN.matcher(value.toLowerCase(Locale.ROOT)).matches()) {
-            return Boolean.parseBoolean(value);
+        if (BOOLEAN.matcher(trimmedValue.toLowerCase(Locale.ROOT)).matches()) {
+            return Boolean.parseBoolean(trimmedValue);
         }
 
-        if ("null".equalsIgnoreCase(value)) {
+        if ("null".equalsIgnoreCase(trimmedValue)) {
             return null;
         }
 
+        // Return original value for strings to preserve whitespace
         return value;
     }
 
