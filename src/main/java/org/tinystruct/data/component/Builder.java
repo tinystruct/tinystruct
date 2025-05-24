@@ -260,15 +260,15 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             int COLON_POSITION = value.indexOf(COLON);
 
             if (COLON_POSITION != -1) {
-                int start = COLON_POSITION + 1;
-
                 String keyName = value.substring(1, COLON_POSITION - 1);
+
+                int start = COLON_POSITION + 1;
                 int QUOTE_POSITION = keyName.lastIndexOf(QUOTE);
                 if (QUOTE_POSITION != -1) {
                     keyName = keyName.substring(0, QUOTE_POSITION);
                 }
 
-                String $value = value.substring(start);
+                String $value = value.substring(start).trim();
                 Object keyValue = null;
                 if (!$value.isEmpty()) {
                     if ($value.charAt(0) == QUOTE) {
