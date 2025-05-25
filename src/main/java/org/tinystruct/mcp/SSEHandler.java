@@ -1,5 +1,6 @@
 package org.tinystruct.mcp;
 
+import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.SSEPushManager;
 
@@ -30,7 +31,7 @@ public class SSEHandler {
      * Broadcasts a message to all connected clients.
      * @param message Message content
      */
-    public void broadcast(String message) {
+    public void broadcast(Builder message) {
         pushManager.broadcast(message);
     }
 
@@ -39,7 +40,7 @@ public class SSEHandler {
      * @param clientId Target client ID
      * @param message Message content
      */
-    public void pushToClient(String clientId, String message) {
+    public void pushToClient(String clientId, Builder message) {
         pushManager.push(clientId, message);
     }
 
@@ -50,9 +51,10 @@ public class SSEHandler {
      * @param data Event data
      */
     public void sendEvent(String clientId, String event, String data) {
-        String payload = "event: " + event + "\n" +
-                "data: " + data.replace("\n", "\ndata: ") + "\n\n";
-        pushToClient(clientId, payload);
+        Builder builder = new Builder();
+        builder.put("event", event);
+        builder.put("data", data);
+        pushToClient(clientId, builder);
     }
 
     /**
