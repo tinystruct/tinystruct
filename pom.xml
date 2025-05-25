@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.6.7</version>
+    <version>1.6.8</version>
     <name>tinystruct framework</name>
     <description>A lightweight java framework designed for building efficient and scalable applications. Supports both
         command-line tools and APIs, enabling developers to create robust solutions with ease.
@@ -99,7 +99,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-tcnative</artifactId>
-            <version>2.0.71.Final</version>
+            <version>2.0.72.Final</version>
             <classifier>linux-x86_64</classifier>
             <optional>true</optional>
         </dependency>
@@ -232,7 +232,7 @@
         <sqlite.version>3.49.1.0</sqlite.version>
         <h2.version>2.3.232</h2.version>
         <netty.version>4.2.1.Final</netty.version>
-        <mockito.version>5.17.0</mockito.version>
+        <mockito.version>5.18.0</mockito.version>
         <nashorn.version>15.6</nashorn.version>
         <tomcat.embed.version>10.1.40</tomcat.embed.version>
         <zxing.version>3.5.3</zxing.version>
