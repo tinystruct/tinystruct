@@ -3,6 +3,7 @@ package org.tinystruct.http.servlet;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.http.*;
 
 import java.io.IOException;
@@ -22,7 +23,8 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
         try {
             this.outputStream = response.getOutputStream();
         } catch (IOException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
+            logger.log(Level.SEVERE, "Failed to get output stream: " + e.getMessage(), e);
+            throw new ApplicationRuntimeException("Failed to get output stream", e);
         }
 
         for (String headerName : this.response.getHeaderNames()) {
@@ -93,19 +95,22 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
 
     @Override
     public ServletOutputStream get() {
+        if (outputStream == null) {
+            try {
+                this.outputStream = response.getOutputStream();
+            } catch (IOException e) {
+                logger.log(Level.SEVERE, "Failed to get output stream: " + e.getMessage(), e);
+                throw new ApplicationRuntimeException("Failed to get output stream", e);
+            }
+        }
         return this.outputStream;
     }
 
     @Override
     public void sendRedirect(String url) throws IOException {
-        if (!this.response.isCommitted())
-            this.response.sendRedirect(url);
+        this.response.sendRedirect(url);
     }
 
-    /**
-     * @param bytes
-     * @throws ApplicationException
-     */
     @Override
     public void writeAndFlush(byte[] bytes) throws ApplicationException {
         ServletOutputStream out = this.get();
@@ -113,10 +118,12 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
             logger.log(Level.SEVERE, "ServletOutputStream is null, cannot write response. Possible client disconnect or response already closed.");
             throw new ApplicationException("ServletOutputStream is null, cannot write response.");
         }
+
         try {
             out.write(bytes);
             out.flush();
         } catch (IOException e) {
+            logger.log(Level.SEVERE, "Failed to write to ServletOutputStream: " + e.getMessage(), e);
             throw new ApplicationException("Failed to write to ServletOutputStream", e);
         }
     }
