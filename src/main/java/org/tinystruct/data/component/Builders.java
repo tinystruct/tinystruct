@@ -82,6 +82,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
                 throw new ApplicationException("Invalid array format: missing closing bracket");
             }
             if (end > 1) { // If array is not empty
+                // Don't trim the array content to preserve whitespace
                 parseArrayContent(value.substring(1, end));
             }
             // Return remaining content without trimming to preserve whitespace
@@ -127,6 +128,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
                     depth--;
                     element.append(c);
                 } else if (c == COMMA && depth == 0) {
+                    // Don't trim the element to preserve whitespace
                     addElement(element.toString());
                     element.setLength(0);
                 } else {
@@ -138,6 +140,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
         }
 
         if (element.length() > 0) {
+            // Don't trim the last element to preserve whitespace
             addElement(element.toString());
         }
     }
@@ -150,7 +153,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
         }
 
         if (element.charAt(0) == QUOTE) {
-            // String value - preserve all whitespace
+            // String value - preserve all whitespace including newlines
             String value = element.substring(1, element.length() - 1);
             this.add(new Builder(value));
         } else if (element.charAt(0) == LEFT_BRACE) {

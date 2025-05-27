@@ -383,19 +383,27 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         int i = 0;
         int n = 0;
         int position = chars.length;
+        boolean inQuotes = false;
 
         while (i < position) {
             char c = chars[i];
-            if (c == LEFT_BRACE) {
-                if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
-                } else n++;
-            } else if (c == RIGHT_BRACE) {
-                if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
-                } else n--;
+            
+            // Handle quotes and escaped characters
+            if (c == QUOTE && (i == 0 || chars[i - 1] != ESCAPE_CHAR)) {
+                inQuotes = !inQuotes;
+            } else if (!inQuotes) {
+                // Only count braces when not inside a string
+                if (c == LEFT_BRACE) {
+                    n++;
+                } else if (c == RIGHT_BRACE) {
+                    n--;
+                    if (n == 0) {
+                        position = i + 1;
+                        break;
+                    }
+                }
             }
-
             i++;
-            if (n == 0) position = i;
         }
 
         return position;
