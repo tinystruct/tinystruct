@@ -272,8 +272,8 @@ public abstract class AbstractData implements Data {
      */
     protected boolean setFieldAsBoolean(String fieldName, boolean fieldValue) {
         Object t = this.setField(fieldName, fieldValue);
-        if (t != null) {
-            return Boolean.parseBoolean(t.toString());
+        if (t instanceof Boolean) {
+            return (Boolean) t;
         }
 
         return false;
