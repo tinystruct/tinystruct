@@ -126,7 +126,14 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
         Object value = this.value();
         if (value == null)
             return false;
-        return Boolean.parseBoolean(value.toString());
+
+        String booleanValue = value.toString();
+        if ("1".equals(booleanValue))
+            return true;
+        else if ("0".equals(booleanValue))
+            return false;
+        else
+            return Boolean.parseBoolean(booleanValue);
     }
 
     public byte[] byteArrayValue() {
