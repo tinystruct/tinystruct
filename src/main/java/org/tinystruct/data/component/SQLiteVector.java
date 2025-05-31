@@ -11,9 +11,7 @@ import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,6 +25,9 @@ import static org.tinystruct.data.tools.CosineSimilarity.cosineSimilarity;
 public class SQLiteVector implements Vector {
     private static final Logger LOGGER = Logger.getLogger(SQLiteVector.class.getName());
     private final DatabaseOperator dbOperator;
+    private static final int NUM_HASH_TABLES = 4;  // Number of hash tables for LSH
+    private static final int NUM_PROJECTIONS = 8;  // Number of random projections per hash table
+    private final double[][] randomProjections;    // Random projection vectors for LSH
 
     public SQLiteVector() {
         try {
@@ -39,12 +40,64 @@ public class SQLiteVector implements Vector {
                     "vector BLOB NOT NULL," +
                     "label TEXT NOT NULL," +
                     "entity_id INTEGER NOT NULL," +
-                    "entity_type TEXT NOT NULL)";
+                    "entity_type TEXT NOT NULL," +
+                    "hash_values TEXT NOT NULL)";  // Store hash values as comma-separated string
             dbOperator.execute(createTableSQL);
+
+            // Initialize random projections for LSH
+            this.randomProjections = new double[NUM_HASH_TABLES][NUM_PROJECTIONS];
+            Random random = new Random(42);  // Fixed seed for reproducibility
+            for (int i = 0; i < NUM_HASH_TABLES; i++) {
+                for (int j = 0; j < NUM_PROJECTIONS; j++) {
+                    randomProjections[i][j] = random.nextGaussian();
+                }
+            }
         } catch (ApplicationException e) {
             LOGGER.log(Level.SEVERE, "Error initializing SQLite database connection", e);
             throw new ApplicationRuntimeException("Failed to initialize SQLite database connection", e);
         }
+    }
+
+    /**
+     * Computes LSH hash values for a vector.
+     *
+     * @param vector The vector to hash
+     * @return Array of hash values, one per hash table
+     */
+    private int[] computeHashValues(double[] vector) {
+        int[] hashValues = new int[NUM_HASH_TABLES];
+        for (int i = 0; i < NUM_HASH_TABLES; i++) {
+            double projection = 0;
+            for (int j = 0; j < NUM_PROJECTIONS; j++) {
+                projection += vector[j] * randomProjections[i][j];
+            }
+            hashValues[i] = projection > 0 ? 1 : 0;
+        }
+        return hashValues;
+    }
+
+    /**
+     * Converts hash values to a string representation for storage.
+     */
+    private String hashValuesToString(int[] hashValues) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < hashValues.length; i++) {
+            if (i > 0) sb.append(",");
+            sb.append(hashValues[i]);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Converts string representation back to hash values.
+     */
+    private int[] stringToHashValues(String hashString) {
+        String[] parts = hashString.split(",");
+        int[] hashValues = new int[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            hashValues[i] = Integer.parseInt(parts[i]);
+        }
+        return hashValues;
     }
 
     /**
@@ -58,10 +111,14 @@ public class SQLiteVector implements Vector {
      */
     @Override
     public void add(double[] vector, String label, int entityId, String entityType) throws ApplicationException {
+        // Compute hash values for the vector
+        int[] hashValues = computeHashValues(vector);
+        String hashString = hashValuesToString(hashValues);
+
         // SQL query to insert a new vector into the database
-        String sql = "INSERT INTO vectors (vector, label, entity_id, entity_type) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO vectors (vector, label, entity_id, entity_type, hash_values) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement statement = dbOperator.preparedStatement(sql, new Object[]{
-                toByteArray(vector), label, entityId, entityType})) {
+                toByteArray(vector), label, entityId, entityType, hashString})) {
             // Execute the SQL statement to add the vector
             dbOperator.execute(statement);
         } catch (SQLException e) {
@@ -81,11 +138,23 @@ public class SQLiteVector implements Vector {
      */
     @Override
     public List<SearchResult> search(double[] queryVector, int topK) throws ApplicationException {
-        String sql = "SELECT * FROM vectors";
-        List<SearchResult> results = new ArrayList<>();
+        // Compute hash values for the query vector
+        int[] queryHashValues = computeHashValues(queryVector);
+        String queryHashString = hashValuesToString(queryHashValues);
 
-        try (ResultSet resultSet = dbOperator.query(sql)) {
+        // Find candidate vectors using LSH
+        String sql = "SELECT * FROM vectors WHERE hash_values = ?";
+        List<SearchResult> results = new ArrayList<>();
+        Set<Integer> processedIds = new HashSet<>();  // Track processed vectors to avoid duplicates
+
+        try (PreparedStatement statement = dbOperator.preparedStatement(sql, new Object[]{queryHashString});
+             ResultSet resultSet = dbOperator.executeQuery(statement)) {
+            
             while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                if (processedIds.contains(id)) continue;
+                processedIds.add(id);
+
                 byte[] vectorBytes = resultSet.getBytes("vector");
                 double[] vector = toDoubleArray(vectorBytes);
                 String label = resultSet.getString("label");
@@ -97,6 +166,25 @@ public class SQLiteVector implements Vector {
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error searching vectors in SQLite", e);
             throw new ApplicationException("Failed to search vectors in SQLite", e);
+        }
+
+        // If we don't have enough results, fall back to exact search
+        if (results.size() < topK) {
+            String fallbackSql = "SELECT * FROM vectors WHERE id NOT IN (" + 
+                String.join(",", processedIds.stream().map(String::valueOf).toArray(String[]::new)) + ")";
+            try (ResultSet resultSet = dbOperator.query(fallbackSql)) {
+                while (resultSet.next() && results.size() < topK) {
+                    byte[] vectorBytes = resultSet.getBytes("vector");
+                    double[] vector = toDoubleArray(vectorBytes);
+                    String label = resultSet.getString("label");
+                    int entityId = resultSet.getInt("entity_id");
+                    String entityType = resultSet.getString("entity_type");
+                    double similarity = cosineSimilarity(queryVector, vector);
+                    results.add(new SearchResult(vector, label, entityId, entityType, similarity));
+                }
+            } catch (SQLException e) {
+                LOGGER.log(Level.SEVERE, "Error in fallback search", e);
+            }
         }
 
         results.sort(Comparator.comparingDouble(SearchResult::getSimilarity).reversed());
