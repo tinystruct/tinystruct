@@ -160,9 +160,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             value = entry.getValue();
             key = entry.getKey();
 
-            if (value instanceof String || value instanceof StringBuffer || value instanceof StringBuilder)
-                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
-            else if (value != null && value.getClass().isArray()) {
+            if (value.getClass().isArray()) {
                 buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(LEFT_BRACKETS);
                 int length = Array.getLength(value);
                 for (int i = 0; i < length; i++) {
@@ -172,8 +170,10 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                     }
                 }
                 buffer.append(RIGHT_BRACKETS);
-            } else {
+            } else if (value instanceof Boolean || value instanceof Number || value instanceof Builder || value instanceof Builders) {
                 buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(value);
+            } else {
+                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
             }
 
             buffer.append(COMMA);
