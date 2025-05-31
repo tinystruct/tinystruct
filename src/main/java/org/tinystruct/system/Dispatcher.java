@@ -36,6 +36,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -373,8 +374,18 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 throw new ApplicationException(e.getMessage(), e.getCause());
             }
 
-            try (FileOutputStream fos = new FileOutputStream(path)) {
-                fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+            // Use buffered streaming for efficient file download
+            try (InputStream inputStream = Channels.newInputStream(rbc);
+                 BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
+                 FileOutputStream fos = new FileOutputStream(path);
+                 BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fos)) {
+                
+                byte[] buffer = new byte[8192]; // 8KB buffer
+                int bytesRead;
+                while ((bytesRead = bufferedInputStream.read(buffer)) != -1) {
+                    bufferedOutputStream.write(buffer, 0, bytesRead);
+                }
+                bufferedOutputStream.flush();
             } catch (IOException e) {
                 throw new ApplicationException(e.getMessage(), e.getCause());
             }

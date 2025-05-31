@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+ROOT="$(pwd)"
+cd "$ROOT" || exit
+# OS specific support.  $var _must_ be set to either true or false.
+darwin=false;
+case "`uname`" in
+  Darwin*) darwin=true
+esac
+
+if $darwin ; then
+  bin/dispatcher download --url https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_macos-x64_bin.tar.gz && tar -zxvf java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_macos-x64_bin.tar.gz && rm -rf java/
+  export JAVA_HOME="$ROOT/jdk-17.0.2.jdk/Contents/Home/"
+  export PATH=$PATH:"$JAVA_HOME/bin"
+  echo "export JAVA_HOME=$ROOT/jdk-17.0.2.jdk/Contents/Home/" >> ~/.bash_profile
+  echo "export PATH=$PATH:$JAVA_HOME/bin" >> ~/.bash_profile
+else
+  bin/dispatcher download --url https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_linux-x64_bin.tar.gz && tar -zxvf java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_linux-x64_bin.tar.gz && rm -rf java/
+  export JAVA_HOME="$ROOT/jdk-17"
+  export PATH=$PATH:"$ROOT/jdk-17/bin"
+  echo "export JAVA_HOME=$ROOT/jdk-17" >> ~/.bash_profile
+  echo "export PATH=$PATH:$JAVA_HOME/bin" >> ~/.bash_profile
+fi
+source ~/.bash_profile
+
+echo OpenJDK17 has installed successfully.
