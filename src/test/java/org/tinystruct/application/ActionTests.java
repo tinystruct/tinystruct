@@ -75,11 +75,11 @@ public class ActionTests {
         public String hi() {
             return "Hi.";
         }
-
+        @org.tinystruct.system.annotation.Action("hi")
         public String hi(int a) {
             return "hi, " + a;
         }
-
+        @org.tinystruct.system.annotation.Action("hi")
         public String hi(String name) {
             return "Hi, " + name;
         }
