@@ -1,8 +1,16 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
 jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -11,6 +19,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build and analyze code
-        run: |
-          ./mvnw clean package -f pom.xml
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+
+      - name: Autobuild
+        run: mvn clean package
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
