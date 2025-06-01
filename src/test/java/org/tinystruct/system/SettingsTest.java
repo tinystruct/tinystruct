@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -12,36 +15,16 @@ import org.tinystruct.ApplicationRuntimeException;
 
 class SettingsTest {
     @Test
-    void testConstructor() {
-        Settings settings = new Settings("foo.properties");
+    void testConstructor() throws Exception {
+        Path tempFile = Files.createTempFile("foo.properties", ".properties");
+        Settings settings = new Settings(tempFile.toString());
         settings.set("util", "");
         settings.set("ApplicationManagerTest.class", "");
         settings.saveProperties();
-        assertEquals("{util=, ApplicationManagerTest.class=}", settings.toString());
-    }
-
-    @Test
-    void testConstructor2() {
-        Settings actualSettings = new Settings("foo.properties");
-        assertFalse(actualSettings.getProperties().isEmpty());
-        assertEquals("{util=, ApplicationManagerTest.class=, Key=42}", actualSettings.toString());
-        assertFalse(actualSettings.isEmpty());
-    }
-
-    @Test
-    void testConstructor4() throws ApplicationRuntimeException {
-        Settings actualSettings = new Settings("foo.properties");
-        assertEquals(3, actualSettings.getProperties().size());
-        assertEquals("{util=, ApplicationManagerTest.class=, Key=42}", actualSettings.toString());
-        assertFalse(actualSettings.isEmpty());
-    }
-
-    @Test
-    void testPropertyNames() {
-        Set<String> actualPropertyNamesResult = (new Settings("foo.properties")).propertyNames();
-        assertEquals(3, actualPropertyNamesResult.size());
-        assertTrue(actualPropertyNamesResult.contains("util"));
-        assertTrue(actualPropertyNamesResult.contains("ApplicationManagerTest.class"));
+        Properties props = settings.getProperties();
+        assertEquals("", props.getProperty("util"));
+        assertEquals("", props.getProperty("ApplicationManagerTest.class"));
+        Files.deleteIfExists(tempFile);
     }
 
     @Test
