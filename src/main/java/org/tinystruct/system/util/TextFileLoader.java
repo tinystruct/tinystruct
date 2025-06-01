@@ -59,8 +59,9 @@ public class TextFileLoader {
             }
         } else if (this.inputStream != null) {
             read(this.inputStream, this.charsetName, content);
+        } else {
+            throw new ApplicationException("No file or input stream specified.");
         }
-
         return content;
     }
 
