@@ -8,6 +8,12 @@ A simple framework for Java development. Simple thinking, Better design, Easy to
 
 [![Star History Chart](https://api.star-history.com/svg?repos=tinystruct/tinystruct&type=Date)](https://www.star-history.com/#tinystruct/tinystruct&Date)
 
+## Prerequisites
+
+- Java Development Kit (JDK) 17 or higher
+- Maven (for dependency management)
+- A text editor or IDE (IntelliJ IDEA, Eclipse, VS Code, etc.)
+
 Installation and Getting Started
 --
 * Add the dependency into your pom.xml.
