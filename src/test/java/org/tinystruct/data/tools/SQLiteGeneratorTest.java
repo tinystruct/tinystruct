@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.DatabaseOperator;
-import org.tinystruct.system.Configuration;
+import org.tinystruct.system.Settings;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +37,7 @@ public class SQLiteGeneratorTest {
     private static final String TEST_CLASS = "TestAutoincrement";
     private static final String TEST_OUTPUT_DIR = "target/test-classes/generated";
     private static final String TEST_PACKAGE = "org.tinystruct.test.generated";
+    private static final String TEST_DB = "target/test-classes/test.db";
 
     @BeforeEach
     public void setUp() throws ApplicationException, SQLException {
@@ -48,8 +49,16 @@ public class SQLiteGeneratorTest {
             throw new ApplicationException("Failed to create test directory", e);
         }
 
-        // Create test table with INTEGER PRIMARY KEY for autoincrement
+        // Configure SQLite database
+        System.setProperty("driver", "org.sqlite.JDBC");
+        System.setProperty("database.url", "jdbc:sqlite:" + TEST_DB);
+        System.setProperty("database.user", "");
+        System.setProperty("database.password", "");
+        System.setProperty("database.connections.max", "1");
+
+        // Create test table with INTEGER PRIMARY KEY AUTOINCREMENT
         try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.disableSafeCheck();
             // Drop table if exists
             try {
                 operator.execute("DROP TABLE IF EXISTS " + TEST_TABLE);
@@ -57,9 +66,9 @@ public class SQLiteGeneratorTest {
                 // Ignore if table doesn't exist
             }
 
-            // Create table with INTEGER PRIMARY KEY for autoincrement
+            // Create table with INTEGER PRIMARY KEY AUTOINCREMENT
             String createTableSQL = "CREATE TABLE " + TEST_TABLE + " (" +
-                    "id INTEGER PRIMARY KEY, " +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "name TEXT, " +
                     "age INTEGER)";
             operator.execute(createTableSQL);
@@ -97,11 +106,26 @@ public class SQLiteGeneratorTest {
 
     @AfterEach
     public void tearDown() throws ApplicationException {
-        // Drop test table
+        // Drop test table and delete database file
         try (DatabaseOperator operator = new DatabaseOperator()) {
+            operator.disableSafeCheck();
             operator.execute("DROP TABLE IF EXISTS " + TEST_TABLE);
         } catch (Exception e) {
             throw new ApplicationException("Failed to drop test table", e);
         }
+
+        // Delete the test database file
+/*        try {
+            Files.deleteIfExists(Paths.get(TEST_DB));
+        } catch (IOException e) {
+            throw new ApplicationException("Failed to delete test database file", e);
+        }*/
+
+        // Clear system properties
+        System.clearProperty("driver");
+        System.clearProperty("database.url");
+        System.clearProperty("database.user");
+        System.clearProperty("database.password");
+        System.clearProperty("database.connections.max");
     }
 }
