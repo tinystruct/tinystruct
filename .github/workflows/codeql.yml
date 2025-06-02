@@ -25,7 +25,7 @@ jobs:
           languages: java
 
       - name: Autobuild
-        run: mvn clean package
+        run: mvn clean package -DskipTests=true
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
