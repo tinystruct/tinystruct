@@ -311,7 +311,11 @@
                     <encoding>UTF-8</encoding>
                     <charset>UTF-8</charset>
                     <docencoding>UTF-8</docencoding>
-                    <additionalJOption>-J-Dfile.encoding=UTF-8 -J-Duser.language=en -J-Duser.country=US</additionalJOption>
+                    <additionalJOptions>
+                        <additionalJOption>-J-Dfile.encoding=UTF-8</additionalJOption>
+                        <additionalJOption>-J-Duser.language=en</additionalJOption>
+                        <additionalJOption>-J-Duser.country=US</additionalJOption>
+                    </additionalJOptions>
                     <additionalOptions>
                         <additionalOption>-locale</additionalOption>
                         <additionalOption>en_US</additionalOption>
