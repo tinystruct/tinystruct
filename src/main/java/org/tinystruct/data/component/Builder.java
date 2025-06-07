@@ -160,7 +160,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             value = entry.getValue();
             key = entry.getKey();
             if (value == null) {
-                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(QUOTE).append("null").append(QUOTE);
+                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append("null");
             } else if (value.getClass().isArray()) {
                 buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(LEFT_BRACKETS);
                 int length = Array.getLength(value);
