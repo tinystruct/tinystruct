@@ -159,8 +159,9 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         for (Entry<String, Object> entry : keys) {
             value = entry.getValue();
             key = entry.getKey();
-
-            if (value.getClass().isArray()) {
+            if (value == null) {
+                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(QUOTE).append("null").append(QUOTE);
+            } else if (value.getClass().isArray()) {
                 buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(LEFT_BRACKETS);
                 int length = Array.getLength(value);
                 for (int i = 0; i < length; i++) {
