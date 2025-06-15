@@ -21,7 +21,7 @@ Installation and Getting Started
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.6.9</version>
+  <version>1.7.0</version>
   <classifier>jar-with-dependencies</classifier>
 </dependency>
 ```
@@ -77,7 +77,7 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.6.9
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.0
            /
 ```
 ```tcsh
