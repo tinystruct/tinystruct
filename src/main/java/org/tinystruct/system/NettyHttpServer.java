@@ -83,7 +83,7 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
     }
 
     @Override
-	public void init() {
+    public void init() {
 
     }
 
@@ -133,15 +133,12 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
 
         String charsetName = null;
         Settings settings = new Settings();
-        if (settings.get("default.file.encoding") != null)
-            charsetName = settings.get("default.file.encoding");
+        if (settings.get("default.file.encoding") != null) charsetName = settings.get("default.file.encoding");
 
-        if (charsetName != null && !charsetName.trim().isEmpty())
-            System.setProperty("file.encoding", charsetName);
+        if (charsetName != null && !charsetName.trim().isEmpty()) System.setProperty("file.encoding", charsetName);
 
         settings.set("language", "zh_CN");
-        if (settings.get("system.directory") == null)
-            settings.set("system.directory", System.getProperty("user.dir"));
+        if (settings.get("system.directory") == null) settings.set("system.directory", System.getProperty("user.dir"));
 
         try {
             // Initialize the application manager with the configuration.
@@ -149,7 +146,11 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
         } catch (ApplicationException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
-
+        // Add LoggingHandler only if logging is enabled in configuration
+        final boolean loggingEnabled = Boolean.parseBoolean(settings.getOrDefault("logging.enabled", "false"));
+        if (!loggingEnabled) {
+            logger.info("Netty channel logging is disabled. Set logging.enabled=true to enable.");
+        }
         long start = System.currentTimeMillis();
         try {
             // Configure SSL.
@@ -162,41 +163,31 @@ public class NettyHttpServer extends AbstractApplication implements Bootstrap {
             }
 
             final int maxContentLength = "".equalsIgnoreCase(settings.get("default.http.max_content_length")) ? MAX_CONTENT_LENGTH : Integer.parseInt(getConfiguration().get("default.http.max_content_length"));
-            ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup)
-                    .channel(Epoll.isAvailable() ? EpollServerSocketChannel.class :
-                            NioServerSocketChannel.class)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
-                        @Override
-                        public void initChannel(SocketChannel ch) {
-                            ChannelPipeline p = ch.pipeline();
-                            if (sslCtx != null) {
-                                p.addLast(sslCtx.newHandler(ch.alloc()));
-                            }
+            ServerBootstrap bootstrap = new ServerBootstrap().group(bossgroup, workgroup).channel(Epoll.isAvailable() ? EpollServerSocketChannel.class : NioServerSocketChannel.class).childHandler(new ChannelInitializer<SocketChannel>() {
+                @Override
+                public void initChannel(SocketChannel ch) {
+                    ChannelPipeline p = ch.pipeline();
+                    if (sslCtx != null) {
+                        p.addLast(sslCtx.newHandler(ch.alloc()));
+                    }
 
-                            // Add LoggingHandler only if logging is enabled in configuration
-                            boolean loggingEnabled = Boolean.parseBoolean(settings.getOrDefault("logging.enabled", "false"));
-                            if (loggingEnabled) {
-                                // Get log level from configuration or default to INFO
-                                String logLevelStr = settings.getOrDefault("logging.level", "INFO");
-                                LogLevel logLevel;
-                                try {
-                                    logLevel = LogLevel.valueOf(logLevelStr);
-                                } catch (IllegalArgumentException e) {
-                                    logger.warning("Invalid log level: " + logLevelStr + ", using INFO");
-                                    logLevel = LogLevel.INFO;
-                                }
-                                p.addLast(new LoggingHandler(logLevel));
-                                logger.info("Netty channel logging enabled with level: " + logLevel);
-                            } else {
-                                logger.info("Netty channel logging is disabled. Set logging.enabled=true to enable.");
-                            }
-
-                            p.addLast(new HttpServerCodec(), new HttpObjectAggregator(maxContentLength), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration()));
+                    // Add LoggingHandler only if logging is enabled in configuration
+                    if (loggingEnabled) {
+                        // Get log level from configuration or default to INFO
+                        String logLevelStr = settings.getOrDefault("logging.level", "INFO");
+                        LogLevel logLevel;
+                        try {
+                            logLevel = LogLevel.valueOf(logLevelStr);
+                        } catch (IllegalArgumentException e) {
+                            logger.warning("Invalid log level: " + logLevelStr + ", using INFO");
+                            logLevel = LogLevel.INFO;
                         }
-                    }).option(ChannelOption.SO_BACKLOG, 1024)
-                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000)
-                    .childOption(ChannelOption.SO_KEEPALIVE, false)
-                    .childOption(ChannelOption.TCP_NODELAY, true);
+                        p.addLast(new LoggingHandler(logLevel));
+                    }
+
+                    p.addLast(new HttpServerCodec(), new HttpObjectAggregator(maxContentLength), new ChunkedWriteHandler(), new HttpStaticFileHandler(), new HttpRequestHandler(getConfiguration()));
+                }
+            }).option(ChannelOption.SO_BACKLOG, 1024).option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000).childOption(ChannelOption.SO_KEEPALIVE, false).childOption(ChannelOption.TCP_NODELAY, true);
 
             // Bind and start to accept incoming connections.
             ChannelFuture future = bootstrap.bind(port).sync();
