@@ -127,6 +127,26 @@ You can access the below URLs:
 * <a href="http://localhost:8080/?q=say/Praise%20to%20the%20Lord!">http://localhost:8080/?q=say/Praise%20to%20the%20Lord! </a>
 * <a href="http://localhost:8080/?q=praise">http://localhost:8080/?q=praise</a>
 
+Performance Test
+--
+```tcsh 
+$ wrk -t12 -c400 -d30s "http://127.0.0.1:8000/?q=say/Praise the Lord!"
+
+Running 30s test @ http://127.0.0.1:8000/?q=say/Praise the Lord!
+12 threads and 400 connections
+
+Thread Stats   Avg      Stdev     Max       +/- Stdev
+Latency        17.44ms  33.42ms   377.73ms  88.98%
+Req/Sec        7.27k    1.66k     13.55k    69.94%
+
+2604473 requests in 30.02s, 524.09MB read
+
+Requests/sec:  86753.98
+Transfer/sec:  17.46MB
+
+```
+Handling over **86,000** requests per second with low average latency (~17.44ms), indicating the endpoint is highly efficient under heavy load.
+
 Architecture
 --
 ![tinystruct-framework-architecture](https://github.com/tinystruct/tinystruct/assets/3631818/288049b7-cefd-4442-b6d8-8624ae75cdc2)
