@@ -130,9 +130,9 @@ You can access the below URLs:
 Performance Test
 --
 ```tcsh 
-$ wrk -t12 -c400 -d30s "http://127.0.0.1:8000/?q=say/Praise the Lord!"
+$ wrk -t12 -c400 -d30s "http://127.0.0.1:8080/?q=say/Praise the Lord!"
 
-Running 30s test @ http://127.0.0.1:8000/?q=say/Praise the Lord!
+Running 30s test @ http://127.0.0.1:8080/?q=say/Praise the Lord!
 12 threads and 400 connections
 
 Thread Stats   Avg      Stdev     Max       +/- Stdev
