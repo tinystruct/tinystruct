@@ -22,6 +22,7 @@ import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Language;
 import org.tinystruct.system.util.StringUtilities;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
@@ -70,6 +71,12 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             if(parameter.startsWith("--")) {
                 context.setAttribute(parameter, request.getParameter(parameter));
             }
+        }
+
+        // Check if this is an SSE request
+        if (isSSE(request)) {
+            handleSSE(ctx, request, context, keepAlive);
+            return;
         }
 
         HttpResponseStatus status = HttpResponseStatus.OK;
@@ -213,6 +220,47 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             }
         }
         return true; // Allow requests without a token
+    }
+
+    private boolean isSSE(Request<FullHttpRequest, Object> request) {
+        Object acceptHeader = request.headers().get(Header.ACCEPT);
+        return acceptHeader != null && acceptHeader.toString().contains("text/event-stream");
+    }
+
+    private void handleSSE(final ChannelHandlerContext ctx, final Request<FullHttpRequest, Object> request, 
+                          final Context context, boolean keepAlive) {
+        HttpResponseStatus status = HttpResponseStatus.OK;
+        ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
+        ResponseHeaders responseHeaders = new ResponseHeaders(response);
+        
+        // Set SSE headers
+        responseHeaders.add(Header.CONTENT_TYPE.set("text/event-stream"));
+        responseHeaders.add(Header.CACHE_CONTROL.set("no-cache"));
+        responseHeaders.add(Header.CONNECTION.set("keep-alive"));
+        responseHeaders.add(new Header("X-Accel-Buffering").set("no"));
+
+        // Send initial connection event
+        ByteBuf initialData = copiedBuffer("event: connect\ndata: Connected\n\n", StandardCharsets.UTF_8);
+        FullHttpResponse initialResponse = response.get().replace(initialData);
+        responseHeaders.add(Header.CONTENT_LENGTH.setInt(initialData.readableBytes()));
+        
+        ChannelFuture future = ctx.writeAndFlush(initialResponse);
+        
+        try {
+            String query = request.query();
+            if (query != null && query.length() > 1) {
+                query = StringUtilities.htmlSpecialChars(query);
+                ApplicationManager.call(query, context);
+            }
+        } catch (ApplicationException e) {
+            // Log the exception but don't close the connection for SSE
+            System.err.println("SSE Application Exception: " + e.getMessage());
+        }
+        
+        // For SSE, we keep the connection alive
+        if (!keepAlive) {
+            future.addListener(ChannelFutureListener.CLOSE);
+        }
     }
 
     private void sendErrorResponse(ChannelHandlerContext ctx, HttpResponseStatus status, String message) {
