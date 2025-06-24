@@ -73,12 +73,6 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             }
         }
 
-        // Check if this is an SSE request
-        if (isSSE(request)) {
-            handleSSE(ctx, request, context, keepAlive);
-            return;
-        }
-
         HttpResponseStatus status = HttpResponseStatus.OK;
         ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
         String host = request.headers().get(Header.HOST).toString();
@@ -116,6 +110,12 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             context.setAttribute(METHOD, request.method());
             context.setAttribute(HTTP_REQUEST, request);
             context.setAttribute(HTTP_RESPONSE, response);
+
+            // Check if this is an SSE request
+            if (isSSE(request)) {
+                handleSSE(ctx, request, response, context, keepAlive);
+                return;
+            }
 
             String query = request.query();
             if (query != null && query.length() > 1) {
@@ -227,25 +227,38 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         return acceptHeader != null && acceptHeader.toString().contains("text/event-stream");
     }
 
-    private void handleSSE(final ChannelHandlerContext ctx, final Request<FullHttpRequest, Object> request, 
-                          final Context context, boolean keepAlive) {
-        HttpResponseStatus status = HttpResponseStatus.OK;
-        ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
+    private void handleSSE(final ChannelHandlerContext ctx, final Request<FullHttpRequest, Object> request,
+                           Response<FullHttpResponse, FullHttpResponse> response, final Context context, boolean keepAlive) {
+        // Use the existing response parameter and configure it for SSE
         ResponseHeaders responseHeaders = new ResponseHeaders(response);
-        
-        // Set SSE headers
+
+        // Set SSE headers using the existing response infrastructure
         responseHeaders.add(Header.CONTENT_TYPE.set("text/event-stream"));
         responseHeaders.add(Header.CACHE_CONTROL.set("no-cache"));
         responseHeaders.add(Header.CONNECTION.set("keep-alive"));
+        responseHeaders.add(Header.TRANSFER_ENCODING.set("chunked"));
         responseHeaders.add(new Header("X-Accel-Buffering").set("no"));
 
+        // Handle CORS if needed
+        Object origin = request.headers().get(Header.ORIGIN);
+        if (origin != null) {
+            responseHeaders.add(new Header("Access-Control-Allow-Origin").set(origin.toString()));
+            responseHeaders.add(new Header("Access-Control-Allow-Credentials").set("true"));
+        }
+
+        // CRITICAL: Write the SSE response headers first
+        HttpResponse initialResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        // Copy headers from our response to the initial response
+        FullHttpResponse fullResponse = response.get();
+        initialResponse.headers().setAll(fullResponse.headers());
+        ctx.writeAndFlush(initialResponse);
+
         // Send initial connection event
-        ByteBuf initialData = copiedBuffer("event: connect\ndata: Connected\n\n", StandardCharsets.UTF_8);
-        FullHttpResponse initialResponse = response.get().replace(initialData);
-        responseHeaders.add(Header.CONTENT_LENGTH.setInt(initialData.readableBytes()));
-        
-        ChannelFuture future = ctx.writeAndFlush(initialResponse);
-        
+        String connectEvent = "event: connect\ndata: Connected\n\n";
+        ByteBuf connectData = copiedBuffer(connectEvent, StandardCharsets.UTF_8);
+        DefaultHttpContent connectContent = new DefaultHttpContent(connectData);
+        ChannelFuture future = ctx.writeAndFlush(connectContent);
+
         try {
             String query = request.query();
             if (query != null && query.length() > 1) {
@@ -253,6 +266,12 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                 ApplicationManager.call(query, context);
             }
         } catch (ApplicationException e) {
+            // Send error event to client
+            String errorEvent = "event: error\ndata: " + e.getMessage() + "\n\n";
+            ByteBuf errorData = copiedBuffer(errorEvent, StandardCharsets.UTF_8);
+            DefaultHttpContent errorContent = new DefaultHttpContent(errorData);
+            ctx.writeAndFlush(errorContent);
+
             // Log the exception but don't close the connection for SSE
             System.err.println("SSE Application Exception: " + e.getMessage());
         }
