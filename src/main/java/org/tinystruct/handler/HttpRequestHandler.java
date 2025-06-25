@@ -74,7 +74,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         }
 
         HttpResponseStatus status = HttpResponseStatus.OK;
-        ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
+        ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status), ctx);
         String host = request.headers().get(Header.HOST).toString();
         Object message;
         try {
@@ -156,7 +156,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         }
 
         FullHttpResponse replacement = response.get().replace(resp);
-        response = new ResponseBuilder(replacement);
+        response = new ResponseBuilder(replacement, ctx);
         ResponseHeaders responseHeaders = new ResponseHeaders(response);
         boolean sessionCookieExists = false;
         for (Cookie cookie : request.cookies()) {
