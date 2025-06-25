@@ -127,4 +127,15 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
             throw new ApplicationException("Failed to write to ServletOutputStream", e);
         }
     }
+
+    public void close() {
+        try {
+            if (outputStream != null) {
+                outputStream.close();
+            }
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Failed to close ServletOutputStream: " + e.getMessage(), e);
+            throw new ApplicationRuntimeException("Failed to close ServletOutputStream", e);
+        }
+    }
 }

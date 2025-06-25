@@ -7,4 +7,8 @@ public abstract class ResponseWrapper<T, O> implements Response<T, O> {
     public ResponseWrapper(T response) {
         this.response = response;
     }
+
+    public void close() {
+        // Default implementation does nothing, can be overridden
+    }
 }

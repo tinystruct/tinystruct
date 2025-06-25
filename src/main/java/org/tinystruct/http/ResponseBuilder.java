@@ -1,5 +1,8 @@
 package org.tinystruct.http;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.DefaultHttpContent;
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -11,17 +14,17 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpR
     private ResponseStatus status;
     private Version version;
     private final Headers headers = new Headers();
+    private final ChannelHandlerContext ctx; // Netty context for immediate flush
 
-    public ResponseBuilder(FullHttpResponse response) {
+    public ResponseBuilder(FullHttpResponse response, ChannelHandlerContext ctx) {
         super(response);
-
+        this.ctx = ctx;
         HttpHeaders headers = response.headers();
         Object[] names = headers.names().toArray();
         for (Object o : names) {
             String name = o.toString();
             this.headers.add(Header.value0f(name).set(headers.get(name)));
         }
-
         this.status = ResponseStatus.valueOf(response.status().code());
     }
 
@@ -94,12 +97,17 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpR
     }
 
     /**
-     * @param bytes
-     * @throws ApplicationException
+     * Write and flush bytes immediately to the client using Netty's channel.
+     * This is critical for SSE streaming.
      */
     @Override
     public void writeAndFlush(byte[] bytes) throws ApplicationException {
-        this.get().content().writeBytes(bytes);
+        // Netty: Write as a new chunk and flush immediately for SSE
+        ctx.writeAndFlush(new DefaultHttpContent(Unpooled.wrappedBuffer(bytes)));
     }
 
+    @Override
+    public void close() {
+        ctx.close();
+    }
 }

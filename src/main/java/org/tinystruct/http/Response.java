@@ -33,4 +33,6 @@ public interface Response<T, O> extends Protocol {
     void writeAndFlush(byte[] bytes) throws ApplicationException;
 
     O get();
+
+    void close() throws IOException;
 }
