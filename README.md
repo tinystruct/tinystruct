@@ -22,7 +22,7 @@ Installation and Getting Started
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
   <version>1.7.1</version>
-  <classifier>jar-with-dependencies</classifier>
+  <classifier>jar-with-dependencies</classifier> <!-- Optional -->
 </dependency>
 ```
 
