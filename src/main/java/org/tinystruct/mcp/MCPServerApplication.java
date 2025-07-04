@@ -21,9 +21,7 @@ import org.tinystruct.data.component.Builders;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.ResponseStatus;
-import org.tinystruct.mcp.tools.CalculatorTool;
 import org.tinystruct.system.annotation.Action;
-import org.tinystruct.system.annotation.Argument;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,46 +43,21 @@ public class MCPServerApplication extends MCPApplication {
     private final Map<String, MCPTool> tools = new ConcurrentHashMap<>();
     private final Map<String, MCPDataResource> resources = new ConcurrentHashMap<>();
     private final Map<String, MCPPrompt> prompts = new ConcurrentHashMap<>();
+    /**
+     * Registry for custom RPC method handlers.
+     */
+    private final Map<String, RpcMethodHandler> rpcHandlers = new ConcurrentHashMap<>();
 
     @Override
     public void init() {
         super.init();
-        this.registerTool(new CalculatorTool());
-
-        // Register a sample prompt
-        Builder promptSchema = new Builder();
-        Builder properties = new Builder();
-
-        Builder nameParam = new Builder();
-        nameParam.put("type", "string");
-        nameParam.put("description", "The name to greet");
-
-        properties.put("name", nameParam);
-        promptSchema.put("type", "object");
-        promptSchema.put("properties", properties);
-        promptSchema.put("required", new String[]{"name"});
-
-        MCPPrompt greetingPrompt = new MCPPrompt(
-            "greeting",
-            "A simple greeting prompt",
-            "Hello, {{name}}! Welcome to the MCP server.",
-            promptSchema,
-            null
-        ) {
-            @Override
-            protected boolean supportsLocalExecution() {
-                return true;
-            }
-
-            @Override
-            protected Object executeLocally(Builder builder) throws MCPException {
-                String name = builder.get("name").toString();
-                return getTemplate().replace("{{name}}", name);
-            }
-        };
-
-        this.registerPrompt(greetingPrompt);
-
+        // Register built-in handlers
+        this.registerRpcHandler(Methods.LIST_TOOLS, (req, res, app) -> app.handleListTools(req, res));
+        this.registerRpcHandler(Methods.CALL_TOOL, (req, res, app) -> app.handleCallTool(req, res));
+        this.registerRpcHandler(Methods.LIST_RESOURCES, (req, res, app) -> app.handleListResources(req, res));
+        this.registerRpcHandler(Methods.READ_RESOURCE, (req, res, app) -> app.handleReadResource(req, res));
+        this.registerRpcHandler(Methods.LIST_PROMPTS, (req, res, app) -> app.handleListPrompts(req, res));
+        this.registerRpcHandler(Methods.GET_PROMPT, (req, res, app) -> app.handleGetPrompt(req, res));
         LOGGER.info("MCPServerApplication initialized");
     }
 
@@ -116,6 +89,17 @@ public class MCPServerApplication extends MCPApplication {
     public void registerPrompt(MCPPrompt prompt) {
         prompts.put(prompt.getName(), prompt);
         LOGGER.info("Registered prompt: " + prompt.getName());
+    }
+
+    /**
+     * Registers a custom RPC method handler.
+     *
+     * @param method  the method name
+     * @param handler the handler implementation
+     */
+    public void registerRpcHandler(String method, RpcMethodHandler handler) {
+        rpcHandlers.put(method, handler);
+        LOGGER.info("Registered RPC handler: " + method);
     }
 
     /**
@@ -156,8 +140,6 @@ public class MCPServerApplication extends MCPApplication {
         return sb.toString();
     }
 
-    // We can't override the private handleMethod method, so we'll use a different approach
-    // by overriding the handleRpcRequest method instead
     @Action(Endpoints.RPC)
     @Override
     public String handleRpcRequest(Request request, Response response) throws ApplicationException {
@@ -170,19 +152,9 @@ public class MCPServerApplication extends MCPApplication {
             JsonRpcResponse jsonRpcResponse = new JsonRpcResponse();
             jsonRpcResponse.setId(jsonRpcRequest.getId());
 
-            // Handle our custom methods
-            if (Methods.LIST_TOOLS.equals(method)) {
-                handleListTools(jsonRpcRequest, jsonRpcResponse);
-            } else if (Methods.CALL_TOOL.equals(method)) {
-                handleCallTool(jsonRpcRequest, jsonRpcResponse);
-            } else if (Methods.LIST_RESOURCES.equals(method)) {
-                handleListResources(jsonRpcRequest, jsonRpcResponse);
-            } else if (Methods.READ_RESOURCE.equals(method)) {
-                handleReadResource(jsonRpcRequest, jsonRpcResponse);
-            } else if (Methods.LIST_PROMPTS.equals(method)) {
-                handleListPrompts(jsonRpcRequest, jsonRpcResponse);
-            } else if (Methods.GET_PROMPT.equals(method)) {
-                handleGetPrompt(jsonRpcRequest, jsonRpcResponse);
+            RpcMethodHandler handler = rpcHandlers.get(method);
+            if (handler != null) {
+                handler.handle(jsonRpcRequest, jsonRpcResponse, this);
             } else {
                 // Let the parent class handle the standard methods
                 return super.handleRpcRequest(request, response);
