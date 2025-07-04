@@ -22,7 +22,7 @@ Installation and Getting Started
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
   <version>1.7.1</version>
-  <classifier>jar-with-dependencies</classifier>
+  <classifier>jar-with-dependencies</classifier> <!-- Optional -->
 </dependency>
 ```
 
@@ -145,7 +145,32 @@ Requests/sec:  86753.98
 Transfer/sec:  17.46MB
 
 ```
-Handling over **86,000** requests per second with low average latency (~17.44ms), indicating the endpoint is highly efficient under heavy load.
+Handling over **86,000** requests per second with low average latency (~17.44ms), indicating the endpoint is highly efficient under heavy load. this shows the raw power and efficiency of the **tinystruct framework**. But it's not just about the performance numbers. It's about the **philosophy** behind it.
+
+### What makes tinystruct framework modern?
+
+1. **No `main()` method required**
+   Applications can be started directly using CLI commands like `bin/dispatcher`, with no boilerplate code needed. This removes unnecessary ceremony from the development lifecycle.
+
+2. **Unified design for CLI and Web**
+   Unlike Spring Boot which is primarily web-centric, **tinystruct** treats CLI and Web as equal citizens. This makes it perfect for AI tasks, script automation, and hybrid applications — all from the same codebase.
+
+3. **Built-in lightweight HTTP server**
+   Whether it’s Netty or Tomcat, tinystruct integrates the server lifecycle inside the framework. There's no need for separate containers or complicated configuration files. Just import what you need and run.
+
+4. **Minimal configuration philosophy**
+   Configuration is minimized to the essentials. You don't need to wire up hundreds of beans, and there's no excessive XML or YAML involved. This improves developer productivity and reduces bugs.
+
+5. **Annotation-based routing**
+   The framework provides a clean and intuitive routing mechanism using `@Action`, eliminating the need for overly complex controller hierarchies.
+
+6. **Performance-first architecture**
+   There’s almost zero overhead. No reflection-based bean scanning, no auto-wiring maze, no unnecessary interceptors unless explicitly enabled. This translates into faster response times and smaller memory footprint.
+
+7. **Developer empowerment without complexity**
+   With tinystruct, developers are free to focus on **real business logic** rather than fighting with framework mechanics. It's designed to be **transparent**, **predictable**, and **extensible** — all without sacrificing control or performance.
+
+---
 
 Architecture
 --
