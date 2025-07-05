@@ -9,8 +9,7 @@ import java.lang.annotation.Target;
 @Target({})
 public @interface Argument {
     String key(); // Argument key
-
+    String type() default "string"; // Argument type (e.g., string, number, boolean)
     String description(); // Argument description
-
     boolean optional() default false; // Whether the argument is optional
 }
