@@ -22,7 +22,9 @@ import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.ResponseStatus;
 import org.tinystruct.system.annotation.Action;
+import org.tinystruct.system.annotation.Argument;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +69,9 @@ public class MCPServerApplication extends MCPApplication {
      * @param tool The tool to register
      */
     public void registerTool(MCPTool tool) {
+        // Generate schema for the tool using the SchemaGenerator utility
+        Builder builder = SchemaGenerator.generateSchema(tool.getClass());
+        tool.setSchema(builder);
         tools.put(tool.getName(), tool);
         LOGGER.info("Registered tool: " + tool.getName());
     }
@@ -363,5 +368,41 @@ public class MCPServerApplication extends MCPApplication {
 
         response.setId(request.getId());
         response.setResult(result);
+    }
+}
+
+class SchemaGenerator {
+    /**
+     * Generates a schema Builder for a tool class by inspecting @Action and @Argument annotations.
+     *
+     * @param toolClass The tool class to inspect
+     * @return The generated schema as a Builder
+     */
+    public static Builder generateSchema(Class<?> toolClass) {
+        Builder schema = new Builder();
+        Builder properties = new Builder();
+        List<String> required = new ArrayList<>();
+
+        for (Method method : toolClass.getDeclaredMethods()) {
+            Action action = method.getAnnotation(Action.class);
+            if (action != null) {
+                for (Argument arg : action.arguments()) {
+                    Builder argSchema = new Builder();
+                    argSchema.put("type", arg.type());
+                    argSchema.put("description", arg.description());
+                    properties.put(arg.key(), argSchema);
+                    if (!arg.optional()) {
+                        required.add(arg.key());
+                    }
+                }
+            }
+        }
+
+        schema.put("type", "object");
+        schema.put("properties", properties);
+        if (!required.isEmpty()) {
+            schema.put("required", required.toArray(new String[0]));
+        }
+        return schema;
     }
 }
