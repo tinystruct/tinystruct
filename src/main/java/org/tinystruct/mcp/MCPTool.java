@@ -32,7 +32,7 @@ import java.util.logging.Logger;
  */
 public class MCPTool extends AbstractMCPResource {
     private static final Logger LOGGER = Logger.getLogger(MCPTool.class.getName());
-    private final Builder schema;
+    private Builder schema;
     private final boolean supportsLocalExecution;
 
     /**
@@ -44,12 +44,11 @@ public class MCPTool extends AbstractMCPResource {
      *
      * @param name The name of the tool (must not be null or empty)
      * @param description The description of the tool
-     * @param schema The JSON schema of the tool parameters
      * @param client The MCP client to use for execution (may be null for local tools)
      * @throws IllegalArgumentException If name is null or empty
      */
-    public MCPTool(String name, String description, Builder schema, MCPClient client) {
-        this(name, description, schema, client, false);
+    public MCPTool(String name, String description, MCPClient client) {
+        this(name, description, null, client, false);
     }
 
     /**
@@ -61,7 +60,6 @@ public class MCPTool extends AbstractMCPResource {
      *
      * @param name The name of the tool (must not be null or empty)
      * @param description The description of the tool
-     * @param schema The JSON schema of the tool parameters
      * @param client The MCP client to use for execution (may be null for local tools)
      * @param supportsLocalExecution Whether this tool supports local execution
      * @throws IllegalArgumentException If name is null or empty
@@ -70,6 +68,12 @@ public class MCPTool extends AbstractMCPResource {
         super(name, description, client);
         this.schema = schema;
         this.supportsLocalExecution = supportsLocalExecution;
+    }
+
+    public MCPTool(String calculator, String aTestCalculator, Builder testSchema, MCPClient mockClient) {
+        super(calculator, aTestCalculator, mockClient);
+        this.schema = testSchema;
+        this.supportsLocalExecution = true; // Default to true for test tools
     }
 
     // getName() and getDescription() are inherited from AbstractMCPResource
@@ -90,6 +94,22 @@ public class MCPTool extends AbstractMCPResource {
      */
     public Builder getSchema() {
         return schema;
+    }
+
+    /**
+     * Set the JSON schema of the tool parameters.
+     * <p>
+     * This method allows updating the schema after the tool has been created.
+     * </p>
+     *
+     * @param schema The new schema to set (must not be null)
+     * @throws IllegalArgumentException If the schema is null
+     */
+    public void setSchema(Builder schema) {
+        if (schema == null) {
+            throw new IllegalArgumentException("Schema cannot be null");
+        }
+        this.schema = schema;
     }
 
     /**
