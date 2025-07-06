@@ -28,6 +28,8 @@ public class SSEPushManager {
     private final AtomicBoolean isShutdown = new AtomicBoolean(false);
     // True if running in Netty environment
     private final boolean isNetty;
+    //
+    private String identifier = "";
 
     private static final SSEPushManager instance = new SSEPushManager();
 
@@ -43,14 +45,20 @@ public class SSEPushManager {
 
     /**
      * Get the singleton instance of SSEPushManager.
+     *
      * @return The singleton instance
      */
     public static SSEPushManager getInstance() {
         return instance;
     }
 
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
+    }
+
     /**
      * Detect if running in Netty environment by checking for Netty classes in the classpath and stack trace.
+     *
      * @return true if Netty is detected, false otherwise
      */
     private boolean isNettyEnvironment() {
@@ -72,8 +80,9 @@ public class SSEPushManager {
     /**
      * Register a new SSE client with a session ID and response object.
      * For Netty, stores the response directly. For Servlet, creates and starts an SSEClient thread.
+     *
      * @param sessionId Unique session identifier
-     * @param out Response object for sending data
+     * @param out       Response object for sending data
      * @return The SSEClient instance (Servlet) or null (Netty)
      */
     public SSEClient register(String sessionId, Response out) {
@@ -82,8 +91,9 @@ public class SSEPushManager {
 
     /**
      * Register a new SSE client with a custom message queue (Servlet only).
-     * @param sessionId Unique session identifier
-     * @param out Response object for sending data
+     *
+     * @param sessionId    Unique session identifier
+     * @param out          Response object for sending data
      * @param messageQueue Custom message queue (optional)
      * @return The SSEClient instance (Servlet) or null (Netty)
      */
@@ -93,6 +103,7 @@ public class SSEPushManager {
             return null;
         }
 
+        sessionId = identifier + sessionId;
         if (isNetty) {
             // Netty: just store the response directly
             clients.put(sessionId, out);
@@ -119,8 +130,9 @@ public class SSEPushManager {
     /**
      * Push a message to a specific client by session ID.
      * For Netty, writes and flushes immediately. For Servlet, enqueues the message.
+     *
      * @param sessionId The target client session ID
-     * @param message The message to send
+     * @param message   The message to send
      */
     public void push(String sessionId, Builder message) {
         if (isShutdown.get()) {
@@ -128,6 +140,7 @@ public class SSEPushManager {
             return;
         }
 
+        sessionId = identifier + sessionId;
         if (isNetty) {
             // Netty: write and flush immediately
             Response out = (Response) clients.get(sessionId);
@@ -160,6 +173,7 @@ public class SSEPushManager {
     /**
      * Broadcast a message to all connected clients.
      * For Netty, writes and flushes to all. For Servlet, enqueues for all active clients.
+     *
      * @param message The message to broadcast
      */
     public void broadcast(Builder message) {
@@ -196,9 +210,11 @@ public class SSEPushManager {
 
     /**
      * Remove and close a client connection by session ID.
+     *
      * @param sessionId The client session ID to remove
      */
     public void remove(String sessionId) {
+        sessionId = identifier + sessionId;
         Object clientObj = clients.remove(sessionId);
         if (clientObj != null) {
             if (isNetty) {
@@ -220,6 +236,7 @@ public class SSEPushManager {
 
     /**
      * Get the set of all connected client session IDs.
+     *
      * @return Set of session IDs
      */
     public Set<String> getClientIds() {
@@ -260,6 +277,7 @@ public class SSEPushManager {
 
     /**
      * Format a message as an SSE event string.
+     *
      * @param message The message to format
      * @return The formatted SSE event string
      */
