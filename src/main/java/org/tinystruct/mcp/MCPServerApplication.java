@@ -21,6 +21,7 @@ import org.tinystruct.data.component.Builders;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.ResponseStatus;
+import org.tinystruct.http.SSEPushManager;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 
@@ -60,6 +61,8 @@ public class MCPServerApplication extends MCPApplication {
         this.registerRpcHandler(Methods.READ_RESOURCE, (req, res, app) -> app.handleReadResource(req, res));
         this.registerRpcHandler(Methods.LIST_PROMPTS, (req, res, app) -> app.handleListPrompts(req, res));
         this.registerRpcHandler(Methods.GET_PROMPT, (req, res, app) -> app.handleGetPrompt(req, res));
+        this.registerRpcHandler(Methods.GET_CAPABILITIES, (req, res, app) -> app.handleGetCapabilities(req, res));
+        this.registerRpcHandler("", (req, res, app) -> app.handleInitialize(req, res));
         LOGGER.info("MCPServerApplication initialized");
     }
 
@@ -107,45 +110,7 @@ public class MCPServerApplication extends MCPApplication {
         LOGGER.info("Registered RPC handler: " + method);
     }
 
-    /**
-     * Lists all registered tools.
-     *
-     * @return A formatted list of tools
-     */
-    @Action(value = "mcp-server/list-tools",
-            description = "List all registered tools",
-            mode = org.tinystruct.application.Action.Mode.CLI)
-    public String listTools() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Registered tools:\n");
-
-        for (MCPTool tool : tools.values()) {
-            sb.append(String.format("- %s: %s\n", tool.getName(), tool.getDescription()));
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * Lists all registered prompts.
-     *
-     * @return A formatted list of prompts
-     */
-    @Action(value = "mcp-server/list-prompts",
-            description = "List all registered prompts",
-            mode = org.tinystruct.application.Action.Mode.CLI)
-    public String listPrompts() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Registered prompts:\n");
-
-        for (MCPPrompt prompt : prompts.values()) {
-            sb.append(String.format("- %s: %s\n", prompt.getName(), prompt.getDescription()));
-        }
-
-        return sb.toString();
-    }
-
-    @Action(Endpoints.RPC)
+    @Action(Endpoints.SSE)
     @Override
     public String handleRpcRequest(Request request, Response response) throws ApplicationException {
         try {
@@ -153,7 +118,7 @@ public class MCPServerApplication extends MCPApplication {
             JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
             jsonRpcRequest.parse(body);
 
-            String method = jsonRpcRequest.getMethod();
+            String method = jsonRpcRequest.getMethod() == null ? "" : jsonRpcRequest.getMethod();
             JsonRpcResponse jsonRpcResponse = new JsonRpcResponse();
             jsonRpcResponse.setId(jsonRpcRequest.getId());
 
@@ -165,7 +130,8 @@ public class MCPServerApplication extends MCPApplication {
                 return super.handleRpcRequest(request, response);
             }
 
-            response.addHeader("Content-Type", Http.CONTENT_TYPE_JSON);
+            String sessionId = request.getSession().getId();
+            SSEPushManager.getInstance().push(sessionId, jsonRpcResponse.getResult());
             return jsonRpcResponse.toString();
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error handling RPC request", e);
@@ -177,7 +143,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a list tools request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleListTools(JsonRpcRequest request, JsonRpcResponse response) {
@@ -201,7 +167,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a call tool request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleCallTool(JsonRpcRequest request, JsonRpcResponse response) {
@@ -229,7 +195,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a list resources request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleListResources(JsonRpcRequest request, JsonRpcResponse response) {
@@ -253,7 +219,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a read resource request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleReadResource(JsonRpcRequest request, JsonRpcResponse response) {
@@ -293,7 +259,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a list prompts request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleListPrompts(JsonRpcRequest request, JsonRpcResponse response) {
@@ -317,7 +283,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a get prompt request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleGetPrompt(JsonRpcRequest request, JsonRpcResponse response) {

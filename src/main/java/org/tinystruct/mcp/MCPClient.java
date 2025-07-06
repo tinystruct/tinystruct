@@ -312,7 +312,7 @@ public class MCPClient {
     }
 
     private JsonRpcResponse sendRequest(String method, Builder params) throws IOException {
-        URL url = new URL(baseUrl + "?q=" + Endpoints.RPC);
+        URL url = new URL(baseUrl + "?q=" + Endpoints.SSE);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");  // Changed to POST for JSON-RPC
         conn.setRequestProperty("Content-Type", Http.CONTENT_TYPE_JSON);

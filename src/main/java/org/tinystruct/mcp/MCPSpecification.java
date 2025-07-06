@@ -392,7 +392,7 @@ public final class MCPSpecification {
         public static final String CAPABILITIES = "mcp/capabilities";
         public static final String SHUTDOWN = "mcp/shutdown";
         public static final String EVENTS = "mcp/events";
-        public static final String RPC = "mcp/rpc";
+        public static final String SSE = "sse";
 
         private Endpoints() {} // Prevent instantiation
     }

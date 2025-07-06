@@ -7,6 +7,7 @@ import org.tinystruct.data.component.Builders;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.ResponseStatus;
+import org.tinystruct.http.SSEPushManager;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 
@@ -144,7 +145,7 @@ public class MCPApplication extends AbstractApplication {
         }
     }
     
-    @Action(Endpoints.RPC)
+    @Action(Endpoints.SSE)
     public String handleRpcRequest(Request request, Response response) throws ApplicationException {
         try {
             // Validate authentication
@@ -156,7 +157,7 @@ public class MCPApplication extends AbstractApplication {
             
             // Add batch request support
             if (jsonStr.trim().startsWith("[")) {
-                return jsonRpcHandler.handleBatchRequest(jsonStr, response, this::handleMethod);
+                return jsonRpcHandler.handleBatchRequest(jsonStr, this::handleMethod);
             }
             
             if (!jsonRpcHandler.validateJsonRpcRequest(jsonStr)) {
@@ -169,10 +170,10 @@ public class MCPApplication extends AbstractApplication {
             
             JsonRpcResponse jsonResponse = new JsonRpcResponse();
             handleMethod(rpcRequest, jsonResponse);
-            
-            response.addHeader("Content-Type", Http.CONTENT_TYPE_JSON);
+            String sessionId = request.getSession().getId();
+            SSEPushManager.getInstance().push(sessionId, jsonResponse.getResult());
+
             return jsonResponse.toString();
-            
         } catch (SecurityException e) {
             response.setStatus(ResponseStatus.UNAUTHORIZED);
             return jsonRpcHandler.createErrorResponse("Unauthorized", ErrorCodes.UNAUTHORIZED);
