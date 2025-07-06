@@ -36,7 +36,7 @@ public class AnnotationProcessor {
             this.app.getCommandLines().get(annotation.value()).setOptions(options);
         }
 
-        for (java.lang.reflect.Method method : this.app.getClass().getDeclaredMethods()) {
+        for (java.lang.reflect.Method method : this.app.getClass().getMethods()) {
             Action actionAnnotation = method.getAnnotation(Action.class);
             if (actionAnnotation != null) {
                 String commandName = actionAnnotation.value();
