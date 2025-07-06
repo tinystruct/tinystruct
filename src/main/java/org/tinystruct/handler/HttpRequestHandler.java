@@ -1,5 +1,6 @@
 package org.tinystruct.handler;
 
+import com.fasterxml.jackson.databind.jsonFormatVisitors.JsonValueFormatVisitor;
 import io.jsonwebtoken.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
@@ -13,6 +14,7 @@ import io.netty.util.CharsetUtil;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
+import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.Cookie;
 import org.tinystruct.http.Header;
 import org.tinystruct.http.*;
@@ -23,6 +25,8 @@ import org.tinystruct.system.Language;
 import org.tinystruct.system.util.StringUtilities;
 
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Objects;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
@@ -43,6 +47,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     }
 
     private final Configuration<String> configuration;
+    private static final String DATE_FORMAT_PATTERN = "yyyy-M-d h:m:s";
+    private static final SimpleDateFormat format = new SimpleDateFormat(DATE_FORMAT_PATTERN);
 
     public HttpRequestHandler(Configuration<String> configuration) {
         this.configuration = configuration;
@@ -275,7 +281,16 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             // Log the exception but don't close the connection for SSE
             System.err.println("SSE Application Exception: " + e.getMessage());
         }
-        
+        // Get the session ID
+        String sessionId = request.getSession().getId();
+        SSEPushManager.getInstance().register(sessionId, response);
+
+        // Send initial heartbeat to establish connection
+        Builder heartbeat = new Builder();
+        heartbeat.put("type", "heartbeat");
+        heartbeat.put("time", format.format(new Date()));
+
+        SSEPushManager.getInstance().push(sessionId, heartbeat);
         // For SSE, we keep the connection alive
         if (!keepAlive) {
             future.addListener(ChannelFutureListener.CLOSE);
