@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
+import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.*;
 import org.tinystruct.http.servlet.RequestBuilder;
 import org.tinystruct.http.servlet.ResponseBuilder;
@@ -31,6 +32,8 @@ import org.tinystruct.system.util.StringUtilities;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,6 +47,8 @@ import static org.tinystruct.http.Constants.*;
 public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
     private static final Logger logger = Logger.getLogger(DefaultHandler.class.getName());
     private static final long serialVersionUID = 0;
+    private static final String DATE_FORMAT_PATTERN = "yyyy-M-d h:m:s";
+    private static final SimpleDateFormat format = new SimpleDateFormat(DATE_FORMAT_PATTERN);
     private String charsetName;
     private Configuration<String> settings;
     private String path;
@@ -151,7 +156,45 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
             String query = request.getParameter("q");
             if (query != null) {
                 query = StringUtilities.htmlSpecialChars(query);
-                ApplicationManager.call(query, context);
+
+                Object call = ApplicationManager.call(query, context);
+
+                // Get the session ID
+                String sessionId = context.getId();
+
+                // Register with SSE manager using sessionId and response only
+                // For Netty: returns null, for Servlet: returns SSEClient
+                SSEClient client = SSEPushManager.getInstance().register(sessionId, response);
+
+                if(call instanceof Builder) {
+                    SSEPushManager.getInstance().push(sessionId, (Builder) call);
+                }
+                else if(call instanceof String) {
+                    Builder builder = new Builder();
+                    builder.parse((String)call);
+                    SSEPushManager.getInstance().push(sessionId, builder);
+                }
+
+                // For Servlet: The SSEClient runs in its own thread and handles the connection, Keep the connection open and monitor for completion
+                // Cleanup is handled by connection close events elsewhere
+                // Keep the connection open and monitor for completion
+                if (client != null) {
+                    try {
+                        while (client.isActive()) {
+                            // Sleep briefly to prevent tight loop
+                            Thread.sleep(1000);
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new ApplicationException("Stream interrupted: " + e.getMessage(), e);
+                    } catch (Exception e) {
+                        throw new ApplicationException("Error in stream: " + e.getMessage(), e);
+                    } finally {
+                        // Clean up when the connection is closed
+                        client.close();
+                        SSEPushManager.getInstance().remove(sessionId);
+                    }
+                }
             }
         } catch (IOException e) {
             logger.warning("SSE Transfer Interrupted: " + e.getMessage());
