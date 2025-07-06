@@ -2,7 +2,7 @@ package org.tinystruct.mcp;
 
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.data.component.Builders;
-import org.tinystruct.http.Response;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -69,24 +69,24 @@ public class JsonRpcHandler {
 
     /**
      * Processes a batch of JSON-RPC requests
-     * @param jsonStr JSON string containing batch requests
-     * @param response HTTP response
+     *
+     * @param jsonStr       JSON string containing batch requests
      * @param methodHandler Handler for processing individual methods
      * @return JSON-RPC batch response
      */
-    public String handleBatchRequest(String jsonStr, Response response, MethodHandler methodHandler) {
+    public String handleBatchRequest(String jsonStr, MethodHandler methodHandler) {
         try {
             Builders requests = new Builders();
             requests.parse(jsonStr);
-            JsonRpcResponse[] responses = new JsonRpcResponse[requests.size()];
-            
+
+            Builders responses = new Builders();
             for (int i = 0; i < requests.size(); i++) {
                 JsonRpcRequest rpcRequest = new JsonRpcRequest();
                 rpcRequest.parse(requests.get(i).toString());
                 
                 JsonRpcResponse jsonResponse = new JsonRpcResponse();
                 methodHandler.handleMethod(rpcRequest, jsonResponse);
-                responses[i] = jsonResponse;
+                responses.add(jsonResponse.getResult());
             }
             
             return responses.toString();
