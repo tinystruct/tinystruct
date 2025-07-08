@@ -10,6 +10,7 @@ import org.tinystruct.http.ResponseStatus;
 import org.tinystruct.http.SSEPushManager;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
+import org.tinystruct.http.Header;
 
 import java.util.UUID;
 import java.util.logging.Level;
@@ -27,13 +28,12 @@ import static org.tinystruct.mcp.MCPSpecification.*;
 public abstract class MCPApplication extends AbstractApplication {
     private static final Logger LOGGER = Logger.getLogger(MCPApplication.class.getName());
     
-    protected SSEHandler sseHandler;
     protected JsonRpcHandler jsonRpcHandler;
     protected AuthorizationHandler authHandler;
     
     private boolean initialized = false;
     protected SessionState sessionState = SessionState.DISCONNECTED;
-    private final String sessionId = UUID.randomUUID().toString();
+    protected final Map<String, Object> sessionMap = new ConcurrentHashMap<>(); // sessionId -> user info or state
 
     // Generic registries for tools, resources, prompts, and custom RPC handlers
     protected final Map<String, MCPTool> tools = new java.util.concurrent.ConcurrentHashMap<>();
@@ -41,12 +41,13 @@ public abstract class MCPApplication extends AbstractApplication {
     protected final Map<String, MCPPrompt> prompts = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, RpcMethodHandler> rpcHandlers = new java.util.concurrent.ConcurrentHashMap<>();
 
-    @Override
+
     /**
      * Initializes the MCP application, setting up authentication, SSE, JSON-RPC handler,
      * and registering core protocol handlers. Subclasses should call super.init() and
      * may register additional handlers for custom protocol extensions.
      */
+    @Override
     public void init() {
         this.setTemplateRequired(false);
         // Generate a random auth token if not configured
@@ -56,7 +57,6 @@ public abstract class MCPApplication extends AbstractApplication {
             LOGGER.info("Generated new MCP auth token: " + token);
         }
         this.authHandler = new AuthorizationHandler(getConfiguration().get(Config.AUTH_TOKEN));
-        this.sseHandler = new SSEHandler();
         this.jsonRpcHandler = new JsonRpcHandler();
 
         // Register core protocol handlers
@@ -92,7 +92,7 @@ public abstract class MCPApplication extends AbstractApplication {
     }
 
     /**
-     * Main entry point for handling JSON-RPC requests.
+     * Main entry point for handling JSON-RPC requests via Streamable HTTP POST.
      * Authenticates, parses, dispatches, and returns the response.
      *
      * @param request  The HTTP request
@@ -105,11 +105,23 @@ public abstract class MCPApplication extends AbstractApplication {
         try {
             // Validate authentication
             authHandler.validateAuthHeader(request);
-            
+            // Session management: extract or assign sessionId
+            String sessionId = (String) request.headers().get(Header.value0f("Mcp-Session-Id"));
+            if (sessionId == null || sessionId.isEmpty()) {
+                // If this is an initialize request, assign a new sessionId
+                String jsonStr = request.body();
+                if (jsonStr.contains("\"method\":\"initialize\"")) {
+                    sessionId = request.getSession().getId();
+                    response.addHeader("Mcp-Session-Id", sessionId);
+                    sessionMap.put(sessionId, System.currentTimeMillis()); // Store session state as needed
+                } else {
+                    response.setStatus(ResponseStatus.UNAUTHORIZED);
+                    return jsonRpcHandler.createErrorResponse("Missing session ID", ErrorCodes.UNAUTHORIZED);
+                }
+            }
             // Parse the JSON-RPC request
             String jsonStr = request.body();
             LOGGER.fine("Received JSON: " + jsonStr);
-            
             // Add batch request support
             if (jsonStr.trim().startsWith("[")) {
                 return jsonRpcHandler.handleBatchRequest(jsonStr, (rpcReq, rpcRes) -> {
@@ -121,15 +133,12 @@ public abstract class MCPApplication extends AbstractApplication {
                     }
                 });
             }
-            
             if (!jsonRpcHandler.validateJsonRpcRequest(jsonStr)) {
                 response.setStatus(ResponseStatus.BAD_REQUEST);
                 return jsonRpcHandler.createErrorResponse("Invalid JSON-RPC request", ErrorCodes.INVALID_REQUEST);
             }
-            
             JsonRpcRequest rpcRequest = new JsonRpcRequest();
             rpcRequest.parse(jsonStr);
-            
             JsonRpcResponse jsonResponse = new JsonRpcResponse();
             // Restrict methods before READY
             String method = rpcRequest.getMethod();
@@ -143,6 +152,8 @@ public abstract class MCPApplication extends AbstractApplication {
                     jsonResponse.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND, "Method not found: " + method));
                 }
             }
+            // For now, always return JSON. SSE streaming support to be added in GET endpoint.
+//            response.addHeader("Content-Type", "application/json");
             return jsonResponse.toString();
         } catch (SecurityException e) {
             response.setStatus(ResponseStatus.UNAUTHORIZED);
@@ -235,7 +246,6 @@ public abstract class MCPApplication extends AbstractApplication {
             return;
         }
 
-        sseHandler.closeAll();
         sessionState = SessionState.DISCONNECTED;
         
         response.setId(request.getId());
@@ -250,11 +260,28 @@ public abstract class MCPApplication extends AbstractApplication {
      * @param response The JSON-RPC response to populate
      */
     protected void handleGetStatus(JsonRpcRequest request, JsonRpcResponse response) {
+        String sessionId = null;
+        if (request.getParams() != null && request.getParams().get("sessionId") != null) {
+            sessionId = request.getParams().get("sessionId").toString();
+        }
         Builder result = new Builder();
+        if (sessionId == null || !sessionMap.containsKey(sessionId)) {
+            response.setError(new JsonRpcError(ErrorCodes.UNAUTHORIZED, "Invalid or missing sessionId"));
+            return;
+        }
+        Object sessionStartObj = sessionMap.get(sessionId);
+        long sessionStart;
+        if (sessionStartObj instanceof Long) {
+            sessionStart = (Long) sessionStartObj;
+        } else if (sessionStartObj instanceof Number) {
+            sessionStart = ((Number) sessionStartObj).longValue();
+        } else {
+            response.setError(new JsonRpcError(ErrorCodes.INTERNAL_ERROR, "Session start time invalid"));
+            return;
+        }
         result.put("state", sessionState.toString());
         result.put("sessionId", sessionId);
-        result.put("uptime", System.currentTimeMillis() - sseHandler.getFirstSessionCreatedAt());
-        
+        result.put("uptime", System.currentTimeMillis() - sessionStart);
         response.setId(request.getId());
         response.setResult(result);
     }
