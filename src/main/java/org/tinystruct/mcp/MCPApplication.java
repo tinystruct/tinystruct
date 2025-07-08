@@ -103,16 +103,6 @@ public abstract class MCPApplication extends AbstractApplication {
     @Action(Endpoints.SSE)
     public String handleRpcRequest(Request request, Response response) throws ApplicationException {
         try {
-            // If HTTP method is GET, return initialize handler response
-            if (request.method().name().equalsIgnoreCase("GET")) {
-                JsonRpcRequest initReq = new JsonRpcRequest();
-                initReq.setId("1");
-                JsonRpcResponse initRes = new JsonRpcResponse();
-                handleInitialize(initReq, initRes);
-
-                return initRes.toString();
-            }
-
             // Validate authentication
             authHandler.validateAuthHeader(request);
             
@@ -153,13 +143,7 @@ public abstract class MCPApplication extends AbstractApplication {
                     jsonResponse.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND, "Method not found: " + method));
                 }
             }
-            String sessionId = request.getSession().getId();
-            String rpcResponse = jsonResponse.toString();
-            Builder message = new Builder();
-            message.parse(rpcResponse);
-            SSEPushManager.getInstance().push(sessionId,message);
-
-            return rpcResponse;
+            return jsonResponse.toString();
         } catch (SecurityException e) {
             response.setStatus(ResponseStatus.UNAUTHORIZED);
             return jsonRpcHandler.createErrorResponse("Unauthorized", ErrorCodes.UNAUTHORIZED);
@@ -178,25 +162,39 @@ public abstract class MCPApplication extends AbstractApplication {
      * @param response The JSON-RPC response to populate
      */
     protected void handleInitialize(JsonRpcRequest request, JsonRpcResponse response) {
-        // Parse protocolVersion from request if present, else use MCP spec version
-        String protocolVersion = MCPSpecification.PROTOCOL_VERSION; // e.g., "2025-06-18"
+        // Set protocolVersion as required
+        String protocolVersion = "2024-11-05";
 
         // Build capabilities object as required by MCP
         Builder capabilities = new Builder();
-        for (String feature : getFeatures()) {
-            capabilities.put(feature, new Builder());
-        }
+        // logging capability
+        capabilities.put("logging", new Builder());
+        // prompts capability
+        Builder prompts = new Builder();
+        prompts.put("listChanged", true);
+        capabilities.put("prompts", prompts);
+        // resources capability
+        Builder resources = new Builder();
+        resources.put("subscribe", true);
+        resources.put("listChanged", true);
+        capabilities.put("resources", resources);
+        // tools capability
+        Builder tools = new Builder();
+        tools.put("listChanged", true);
+        capabilities.put("tools", tools);
 
-        // Build serverInfo with only name and version
+        // Build serverInfo with name, title, and version
         Builder serverInfo = new Builder()
             .put("name", "TinyStructMCP")
+            .put("title", "TinyStruct MCP Server")
             .put("version", version());
 
         // Build result object
         Builder result = new Builder()
             .put("protocolVersion", protocolVersion)
             .put("capabilities", capabilities)
-            .put("serverInfo", serverInfo);
+            .put("serverInfo", serverInfo)
+            .put("instructions", "Welcome to TinyStruct MCP.");
 
         response.setId(request.getId());
         response.setResult(result);
