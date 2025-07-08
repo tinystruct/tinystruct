@@ -148,11 +148,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         response.addHeader(Header.CONNECTION.name(), "keep-alive");
         response.addHeader("X-Accel-Buffering", "no");
 
-        ServletOutputStream out = response.get();
         try {
-//            out.write("event: connect\ndata: Connected\n\n".getBytes(StandardCharsets.UTF_8));
-//            out.flush();
-
             String query = request.getParameter("q");
             if (query != null) {
                 query = StringUtilities.htmlSpecialChars(query);
