@@ -150,15 +150,12 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
 
         ServletOutputStream out = response.get();
         try {
-            out.write("event: connect\ndata: Connected\n\n".getBytes(StandardCharsets.UTF_8));
-            out.flush();
+//            out.write("event: connect\ndata: Connected\n\n".getBytes(StandardCharsets.UTF_8));
+//            out.flush();
 
             String query = request.getParameter("q");
             if (query != null) {
                 query = StringUtilities.htmlSpecialChars(query);
-
-                Object call = ApplicationManager.call(query, context);
-
                 // Get the session ID
                 String sessionId = context.getId();
 
@@ -166,6 +163,7 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                 // For Netty: returns null, for Servlet: returns SSEClient
                 SSEClient client = SSEPushManager.getInstance().register(sessionId, response);
 
+                Object call = ApplicationManager.call(query, context);
                 if(call instanceof Builder) {
                     SSEPushManager.getInstance().push(sessionId, (Builder) call);
                 }
@@ -196,8 +194,6 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                     }
                 }
             }
-        } catch (IOException e) {
-            logger.warning("SSE Transfer Interrupted: " + e.getMessage());
         } catch (ApplicationException e) {
             throw new RuntimeException(e);
         }
