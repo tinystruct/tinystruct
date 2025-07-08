@@ -88,7 +88,7 @@ public class SSEClient implements Runnable {
      */
     private String formatSSEMessage(Builder message) {
         StringBuilder sb = new StringBuilder();
-        sb.append("event: message\ndata: ").append(message.toString()).append("\n\n");
+        sb.append("data: ").append(message.toString()).append("\n\n");
         return sb.toString();
     }
 
