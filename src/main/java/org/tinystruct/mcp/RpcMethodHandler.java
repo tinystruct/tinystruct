@@ -13,5 +13,5 @@ public interface RpcMethodHandler {
      * @param response the JSON-RPC response to populate
      * @param app      the MCPServerApplication instance (for access to tools/resources)
      */
-    void handle(JsonRpcRequest request, JsonRpcResponse response, MCPServerApplication app);
+    void handle(JsonRpcRequest request, JsonRpcResponse response, MCPApplication app);
 } 

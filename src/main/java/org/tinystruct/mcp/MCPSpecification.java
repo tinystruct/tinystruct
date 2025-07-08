@@ -54,7 +54,7 @@ public final class MCPSpecification {
     /**
      * Protocol version
      */
-    public static final String PROTOCOL_VERSION = "1.0.0";
+    public static final String PROTOCOL_VERSION = "2025-06-18";
 
     /**
      * Protocol identifier string
@@ -233,6 +233,14 @@ public final class MCPSpecification {
          */
         public static final String GET_PROMPT = "get-prompt";
 
+        /**
+         * Notification event for initialized state.
+         * <p>
+         * Sent when the server is initialized.
+         * </p>
+         */
+        public static final String INITIALIZED_NOTIFICATION = "notifications/initialized";
+
         private Methods() {} // Prevent instantiation
     }
 
@@ -393,6 +401,12 @@ public final class MCPSpecification {
         public static final String SHUTDOWN = "mcp/shutdown";
         public static final String EVENTS = "mcp/events";
         public static final String SSE = "sse";
+
+        // Protocol-compliant endpoint paths for JSON-RPC methods
+        public static final String TOOLS_LIST = "tools/list";
+        public static final String TOOLS_CALL = "tools/call";
+        public static final String PING = "ping";
+        public static final String INITIALIZED = "initialized";
 
         private Endpoints() {} // Prevent instantiation
     }

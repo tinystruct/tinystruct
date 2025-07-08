@@ -21,7 +21,6 @@ import org.tinystruct.data.component.Builders;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.ResponseStatus;
-import org.tinystruct.http.SSEPushManager;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 
@@ -43,107 +42,17 @@ import static org.tinystruct.mcp.MCPSpecification.*;
 public class MCPServerApplication extends MCPApplication {
     private static final Logger LOGGER = Logger.getLogger(MCPServerApplication.class.getName());
 
-    private final Map<String, MCPTool> tools = new ConcurrentHashMap<>();
-    private final Map<String, MCPDataResource> resources = new ConcurrentHashMap<>();
-    private final Map<String, MCPPrompt> prompts = new ConcurrentHashMap<>();
-    /**
-     * Registry for custom RPC method handlers.
-     */
-    private final Map<String, RpcMethodHandler> rpcHandlers = new ConcurrentHashMap<>();
-
     @Override
     public void init() {
         super.init();
-        // Register built-in handlers
-        this.registerRpcHandler(Methods.LIST_TOOLS, (req, res, app) -> app.handleListTools(req, res));
-        this.registerRpcHandler(Methods.CALL_TOOL, (req, res, app) -> app.handleCallTool(req, res));
-        this.registerRpcHandler(Methods.LIST_RESOURCES, (req, res, app) -> app.handleListResources(req, res));
-        this.registerRpcHandler(Methods.READ_RESOURCE, (req, res, app) -> app.handleReadResource(req, res));
-        this.registerRpcHandler(Methods.LIST_PROMPTS, (req, res, app) -> app.handleListPrompts(req, res));
-        this.registerRpcHandler(Methods.GET_PROMPT, (req, res, app) -> app.handleGetPrompt(req, res));
-        this.registerRpcHandler(Methods.GET_CAPABILITIES, (req, res, app) -> app.handleGetCapabilities(req, res));
-        this.registerRpcHandler("", (req, res, app) -> app.handleInitialize(req, res));
+
         LOGGER.info("MCPServerApplication initialized");
-    }
-
-    /**
-     * Registers a tool with the server.
-     *
-     * @param tool The tool to register
-     */
-    public void registerTool(MCPTool tool) {
-        // Generate schema for the tool using the SchemaGenerator utility
-        Builder builder = SchemaGenerator.generateSchema(tool.getClass());
-        tool.setSchema(builder);
-        tools.put(tool.getName(), tool);
-        LOGGER.info("Registered tool: " + tool.getName());
-    }
-
-    /**
-     * Registers a resource with the server.
-     *
-     * @param resource The resource to register
-     */
-    public void registerResource(MCPDataResource resource) {
-        resources.put(resource.getName(), resource);
-        LOGGER.info("Registered resource: " + resource.getName());
-    }
-
-    /**
-     * Registers a prompt with the server.
-     *
-     * @param prompt The prompt to register
-     */
-    public void registerPrompt(MCPPrompt prompt) {
-        prompts.put(prompt.getName(), prompt);
-        LOGGER.info("Registered prompt: " + prompt.getName());
-    }
-
-    /**
-     * Registers a custom RPC method handler.
-     *
-     * @param method  the method name
-     * @param handler the handler implementation
-     */
-    public void registerRpcHandler(String method, RpcMethodHandler handler) {
-        rpcHandlers.put(method, handler);
-        LOGGER.info("Registered RPC handler: " + method);
-    }
-
-    @Action(Endpoints.SSE)
-    @Override
-    public String handleRpcRequest(Request request, Response response) throws ApplicationException {
-        try {
-            String body = request.body();
-            JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
-            jsonRpcRequest.parse(body);
-
-            String method = jsonRpcRequest.getMethod() == null ? "" : jsonRpcRequest.getMethod();
-            JsonRpcResponse jsonRpcResponse = new JsonRpcResponse();
-            jsonRpcResponse.setId(jsonRpcRequest.getId());
-
-            RpcMethodHandler handler = rpcHandlers.get(method);
-            if (handler != null) {
-                handler.handle(jsonRpcRequest, jsonRpcResponse, this);
-            } else {
-                // Let the parent class handle the standard methods
-                return super.handleRpcRequest(request, response);
-            }
-
-            String sessionId = request.getSession().getId();
-            SSEPushManager.getInstance().push(sessionId, jsonRpcResponse.getResult());
-            return jsonRpcResponse.toString();
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error handling RPC request", e);
-            response.setStatus(ResponseStatus.INTERNAL_SERVER_ERROR);
-            return jsonRpcHandler.createErrorResponse("Internal server error", ErrorCodes.INTERNAL_ERROR);
-        }
     }
 
     /**
      * Handles a list tools request.
      *
-     * @param request  The JSON-RPC request
+     * @param request The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleListTools(JsonRpcRequest request, JsonRpcResponse response) {
@@ -167,7 +76,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a call tool request.
      *
-     * @param request  The JSON-RPC request
+     * @param request The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleCallTool(JsonRpcRequest request, JsonRpcResponse response) {
@@ -195,7 +104,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a list resources request.
      *
-     * @param request  The JSON-RPC request
+     * @param request The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleListResources(JsonRpcRequest request, JsonRpcResponse response) {
@@ -219,7 +128,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a read resource request.
      *
-     * @param request  The JSON-RPC request
+     * @param request The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleReadResource(JsonRpcRequest request, JsonRpcResponse response) {
@@ -259,7 +168,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a list prompts request.
      *
-     * @param request  The JSON-RPC request
+     * @param request The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleListPrompts(JsonRpcRequest request, JsonRpcResponse response) {
@@ -283,7 +192,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a get prompt request.
      *
-     * @param request  The JSON-RPC request
+     * @param request The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleGetPrompt(JsonRpcRequest request, JsonRpcResponse response) {
@@ -312,28 +221,9 @@ public class MCPServerApplication extends MCPApplication {
     }
 
     @Override
-    protected void handleGetCapabilities(JsonRpcRequest request, JsonRpcResponse response) {
-        Builder result = new Builder();
-        result.put("version", version());
-        result.put("protocol", PROTOCOL_ID);
-
-        // Add tools and resources capabilities
-        List<String> featuresList = new ArrayList<>();
-        for (String feature : Features.CORE_FEATURES) {
-            featuresList.add(feature);
-        }
-        featuresList.add(Features.TOOLS);
-        featuresList.add(Features.RESOURCES);
-        featuresList.add(Features.PROMPTS);
-
-        Builders features = new Builders();
-        for (String feature : featuresList) {
-            features.add(new Builder(feature));
-        }
-        result.put("features", features);
-
-        response.setId(request.getId());
-        response.setResult(result);
+    protected String[] getFeatures() {
+        // Example: server supports core, tools, resources, prompts
+        return new String[] { "core", "tools", "resources", "prompts" };
     }
 }
 
