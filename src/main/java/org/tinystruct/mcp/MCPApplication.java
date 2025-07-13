@@ -4,19 +4,17 @@ import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.data.component.Builders;
+import org.tinystruct.http.Header;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.ResponseStatus;
-import org.tinystruct.http.SSEPushManager;
 import org.tinystruct.system.annotation.Action;
-import org.tinystruct.system.annotation.Argument;
-import org.tinystruct.http.Header;
 
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static org.tinystruct.mcp.MCPSpecification.*;
 
@@ -27,20 +25,20 @@ import static org.tinystruct.mcp.MCPSpecification.*;
  */
 public abstract class MCPApplication extends AbstractApplication {
     private static final Logger LOGGER = Logger.getLogger(MCPApplication.class.getName());
-    
+
     protected JsonRpcHandler jsonRpcHandler;
     protected AuthorizationHandler authHandler;
-    
+
     private boolean initialized = false;
     protected SessionState sessionState = SessionState.DISCONNECTED;
     protected final Map<String, Object> sessionMap = new ConcurrentHashMap<>(); // sessionId -> user info or state
 
     // Generic registries for tools, resources, prompts, and custom RPC handlers
     protected final Map<String, MCPTool> tools = new java.util.concurrent.ConcurrentHashMap<>();
+    protected final Map<String, MCPTool.MCPToolMethod> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, MCPDataResource> resources = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, MCPPrompt> prompts = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, RpcMethodHandler> rpcHandlers = new java.util.concurrent.ConcurrentHashMap<>();
-
 
     /**
      * Initializes the MCP application, setting up authentication, SSE, JSON-RPC handler,
@@ -81,17 +79,6 @@ public abstract class MCPApplication extends AbstractApplication {
     }
 
     /**
-     * Checks if a method is allowed before initialization is complete.
-     * Only 'initialize' and 'ping' are allowed before the session is READY.
-     *
-     * @param method The JSON-RPC method name
-     * @return true if allowed, false otherwise
-     */
-    private boolean isAllowedPreInitialization(String method) {
-        return Methods.INITIALIZE.equals(method) || "ping".equals(method);
-    }
-
-    /**
      * Main entry point for handling JSON-RPC requests via Streamable HTTP POST.
      * Authenticates, parses, dispatches, and returns the response.
      *
@@ -114,6 +101,7 @@ public abstract class MCPApplication extends AbstractApplication {
                     sessionId = request.getSession().getId();
                     response.addHeader("Mcp-Session-Id", sessionId);
                     sessionMap.put(sessionId, System.currentTimeMillis()); // Store session state as needed
+                    sessionState = SessionState.INITIALIZING; // Set initial state
                 } else {
                     response.setStatus(ResponseStatus.UNAUTHORIZED);
                     return jsonRpcHandler.createErrorResponse("Missing session ID", ErrorCodes.UNAUTHORIZED);
@@ -142,16 +130,13 @@ public abstract class MCPApplication extends AbstractApplication {
             JsonRpcResponse jsonResponse = new JsonRpcResponse();
             // Restrict methods before READY
             String method = rpcRequest.getMethod();
-            if (sessionState != SessionState.READY && !isAllowedPreInitialization(method)) {
-                jsonResponse.setError(new JsonRpcError(ErrorCodes.NOT_INITIALIZED, "Server not initialized. Only 'initialize' and 'ping' allowed."));
+            RpcMethodHandler handler = rpcHandlers.get(method);
+            if (handler != null) {
+                handler.handle(rpcRequest, jsonResponse, this);
             } else {
-                RpcMethodHandler handler = rpcHandlers.get(method);
-                if (handler != null) {
-                    handler.handle(rpcRequest, jsonResponse, this);
-                } else {
-                    jsonResponse.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND, "Method not found: " + method));
-                }
+                jsonResponse.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND, "Method not found: " + method));
             }
+
             // For now, always return JSON. SSE streaming support to be added in GET endpoint.
 //            response.addHeader("Content-Type", "application/json");
             return jsonResponse.toString();
@@ -164,7 +149,7 @@ public abstract class MCPApplication extends AbstractApplication {
             return jsonRpcHandler.createErrorResponse("Internal server error: " + e.getMessage(), ErrorCodes.INTERNAL_ERROR);
         }
     }
-    
+
     /**
      * Handles the 'initialize' JSON-RPC method.
      * Subclasses may override to customize initialization behavior.
@@ -196,21 +181,23 @@ public abstract class MCPApplication extends AbstractApplication {
 
         // Build serverInfo with name, title, and version
         Builder serverInfo = new Builder()
-            .put("name", "TinyStructMCP")
-            .put("title", "TinyStruct MCP Server")
-            .put("version", version());
+                .put("name", "TinyStructMCP")
+                .put("title", "TinyStruct MCP Server")
+                .put("version", version());
 
         // Build result object
         Builder result = new Builder()
-            .put("protocolVersion", protocolVersion)
-            .put("capabilities", capabilities)
-            .put("serverInfo", serverInfo)
-            .put("instructions", "Welcome to TinyStruct MCP.");
+                .put("protocolVersion", protocolVersion)
+                .put("capabilities", capabilities)
+                .put("serverInfo", serverInfo)
+                .put("instructions", "Welcome to TinyStruct MCP.");
 
         response.setId(request.getId());
         response.setResult(result);
+        // Set session state to READY
+        sessionState = SessionState.READY;
     }
-    
+
     /**
      * Handles the 'get-capabilities' JSON-RPC method.
      * Returns the protocol version, protocol ID, and supported features.
@@ -228,11 +215,11 @@ public abstract class MCPApplication extends AbstractApplication {
             features.add(new Builder(feature));
         }
         result.put("features", features);
-        
+
         response.setId(request.getId());
         response.setResult(result);
     }
-    
+
     /**
      * Handles the 'shutdown' JSON-RPC method.
      * Closes all SSE connections and sets the session state to DISCONNECTED.
@@ -247,11 +234,11 @@ public abstract class MCPApplication extends AbstractApplication {
         }
 
         sessionState = SessionState.DISCONNECTED;
-        
+
         response.setId(request.getId());
         response.setResult(new Builder().put("status", "shutdown_complete"));
     }
-    
+
     /**
      * Handles the 'get-status' JSON-RPC method.
      * Returns the current session state, session ID, and uptime.
@@ -286,12 +273,12 @@ public abstract class MCPApplication extends AbstractApplication {
         response.setResult(result);
     }
 
-    @Override
     /**
      * Returns the protocol version implemented by this application.
      *
      * @return The protocol version string
      */
+    @Override
     public String version() {
         return PROTOCOL_VERSION;
     }
@@ -317,6 +304,26 @@ public abstract class MCPApplication extends AbstractApplication {
         tool.setSchema(builder);
         tools.put(tool.getName(), tool);
         LOGGER.info("Registered tool: " + tool.getName());
+    }
+
+    /**
+     * Registers a tool class and extracts all its methods as individual tools.
+     * This method scans the tool class for methods annotated with @Action and
+     * registers each method as a separate tool method.
+     *
+     * @param toolInstance The tool instance to register
+     */
+    public void registerToolMethods(Object toolInstance) {
+        Class<?> toolClass = toolInstance.getClass();
+        
+        for (Method method : toolClass.getDeclaredMethods()) {
+            Action action = method.getAnnotation(Action.class);
+            if (action != null) {
+                MCPTool.MCPToolMethod toolMethod = new MCPTool.MCPToolMethod(method, action, toolInstance);
+                toolMethods.put(toolMethod.getName(), toolMethod);
+                LOGGER.info("Registered tool method: " + toolMethod.getName());
+            }
+        }
     }
 
     /**
@@ -347,7 +354,7 @@ public abstract class MCPApplication extends AbstractApplication {
      * @param method  The JSON-RPC method name
      * @param handler The handler implementation
      */
-    public void registerRpcHandler(String method, RpcMethodHandler handler) {
+    protected void registerRpcHandler(String method, RpcMethodHandler handler) {
         rpcHandlers.put(method, handler);
         LOGGER.info("Registered RPC handler: " + method);
     }
@@ -396,7 +403,7 @@ public abstract class MCPApplication extends AbstractApplication {
      * @param response The JSON-RPC response to populate
      */
     abstract void handleListPrompts(JsonRpcRequest request, JsonRpcResponse response);
-    
+
     /**
      * Handles the 'get-prompt' JSON-RPC method.
      * Subclasses should override to provide prompt retrieval functionality.
@@ -405,4 +412,47 @@ public abstract class MCPApplication extends AbstractApplication {
      * @param response The JSON-RPC response to populate
      */
     abstract void handleGetPrompt(JsonRpcRequest request, JsonRpcResponse response);
+
+    /**
+     * GET endpoint for SSE streaming (Streamable HTTP server-to-client notifications).
+     * Validates session and streams events using StreamablePushManager.
+     *
+     * @param request  The HTTP request
+     * @param response The HTTP response
+     * @throws ApplicationException if an error occurs
+     */
+    @Action("mcp/sse")
+    public void handleSseStream(Request request, Response response) throws ApplicationException {
+        String sessionId = (String) request.headers().get(Header.value0f("Mcp-Session-Id"));
+        if (sessionId == null || sessionId.isEmpty() || !sessionMap.containsKey(sessionId)) {
+            response.setStatus(ResponseStatus.UNAUTHORIZED);
+            return;
+        }
+        // Register session for streaming if not already present
+        StreamablePushManager.getInstance().registerSession(sessionId);
+        response.addHeader("Content-Type", "text/event-stream");
+        // Support resumability via Last-Event-ID header
+        String lastEventIdStr = (String) request.headers().get(Header.value0f("Last-Event-ID"));
+        long lastEventId = 0;
+        if (lastEventIdStr != null) {
+            try {
+                lastEventId = Long.parseLong(lastEventIdStr);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        // Get missed events (if any)
+        for (StreamablePushManager.StreamableEvent evt : StreamablePushManager.getInstance().getMissedEvents(sessionId, lastEventId)) {
+            StringBuilder sse = new StringBuilder();
+            sse.append("id: ").append(evt.id).append("\n");
+            sse.append("event: ").append(evt.event).append("\n");
+            sse.append("data: ").append(evt.data.replace("\n", "\\n")).append("\n\n");
+            try {
+                response.writeAndFlush(sse.toString().getBytes());
+            } catch (Exception e) {
+                throw new ApplicationException("Failed to write SSE event", e);
+            }
+        }
+        // TODO: Implement a loop or async mechanism to push new events as they arrive (if your framework supports it)
+        // For now, this sends only missed events and returns.
+    }
 }

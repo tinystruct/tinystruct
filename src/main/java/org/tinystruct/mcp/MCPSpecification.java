@@ -52,7 +52,7 @@ public final class MCPSpecification {
     //--------------------------------------------------------------------------
 
     /**
-     * Protocol version
+     * Protocol version - Updated to match current MCP specification
      */
     public static final String PROTOCOL_VERSION = "2025-06-18";
 
@@ -186,7 +186,7 @@ public final class MCPSpecification {
          * including their names, descriptions, and schemas.
          * </p>
          */
-        public static final String LIST_TOOLS = "list-tools";
+        public static final String LIST_TOOLS = "tools/list";
 
         /**
          * Call a tool with parameters.
@@ -195,7 +195,7 @@ public final class MCPSpecification {
          * and returns the result.
          * </p>
          */
-        public static final String CALL_TOOL = "call-tool";
+        public static final String CALL_TOOL = "tools/call";
 
         /**
          * List available resources.
@@ -204,7 +204,7 @@ public final class MCPSpecification {
          * including their names, descriptions, and URI templates.
          * </p>
          */
-        public static final String LIST_RESOURCES = "list-resources";
+        public static final String LIST_RESOURCES = "resources/list";
 
         /**
          * Read a resource with the specified URI.
@@ -213,7 +213,7 @@ public final class MCPSpecification {
          * the specified URI.
          * </p>
          */
-        public static final String READ_RESOURCE = "read-resource";
+        public static final String READ_RESOURCE = "resources/read";
 
         /**
          * List available prompts.
@@ -222,7 +222,7 @@ public final class MCPSpecification {
          * including their names and descriptions.
          * </p>
          */
-        public static final String LIST_PROMPTS = "list-prompts";
+        public static final String LIST_PROMPTS = "prompts/list";
 
         /**
          * Get a prompt template by name.
@@ -231,7 +231,7 @@ public final class MCPSpecification {
          * specified name.
          * </p>
          */
-        public static final String GET_PROMPT = "get-prompt";
+        public static final String GET_PROMPT = "prompts/get";
 
         /**
          * Notification event for initialized state.

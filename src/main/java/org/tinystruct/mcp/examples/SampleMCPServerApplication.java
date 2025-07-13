@@ -8,7 +8,7 @@ import org.tinystruct.mcp.tools.CalculatorTool;
 
 /**
  * Sample MCP Server Application that demonstrates how to use MCPServerApplication
- * with sample tools and prompts.
+ * with sample tools and prompts using the new tool method registration system.
  */
 public class SampleMCPServerApplication extends MCPServerApplication {
 
@@ -16,8 +16,9 @@ public class SampleMCPServerApplication extends MCPServerApplication {
     public void init() {
         super.init();
         
-        // Register sample tools
-        this.registerTool(new CalculatorTool());
+        // Register calculator tool methods as individual tools
+        CalculatorTool calculator = new CalculatorTool();
+        this.registerToolMethods(calculator);
 
         // Register a sample prompt
         Builder promptSchema = new Builder();
@@ -42,12 +43,6 @@ public class SampleMCPServerApplication extends MCPServerApplication {
             @Override
             protected boolean supportsLocalExecution() {
                 return true;
-            }
-
-            @Override
-            protected Object executeLocally(Builder builder) throws MCPException {
-                String name = builder.get("name").toString();
-                return getTemplate().replace("{{name}}", name);
             }
         };
 

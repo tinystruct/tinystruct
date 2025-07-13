@@ -16,6 +16,8 @@
 package org.tinystruct.mcp;
 
 import org.tinystruct.data.component.Builder;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of MCPResource for prompt templates.
@@ -114,7 +116,8 @@ public class MCPPrompt extends AbstractMCPResource {
      * @throws MCPException If an error occurs during execution
      */
     protected Object executeLocally(Builder builder) throws MCPException {
-        throw new MCPException("Local execution not implemented for prompt: " + name);
+        // Default implementation processes the template with parameters
+        return processTemplate(template, builder);
     }
 
     /**
@@ -142,7 +145,121 @@ public class MCPPrompt extends AbstractMCPResource {
      */
     @Override
     protected void validateParameters(Builder builder) throws MCPException {
-        // Default implementation does no validation
-        // Subclasses should override this method to provide custom validation logic
+        if (schema == null) {
+            // No schema to validate against
+            return;
+        }
+
+        List<String> validationErrors = new ArrayList<>();
+
+        // Check required parameters
+        if (schema.containsKey("required")) {
+            Object requiredObj = schema.get("required");
+            if (requiredObj instanceof String[]) {
+                String[] required = (String[]) requiredObj;
+                for (String param : required) {
+                    if (!builder.containsKey(param) || builder.get(param) == null) {
+                        validationErrors.add("Missing required parameter: " + param);
+                    }
+                }
+            }
+        }
+
+        // Check parameter types and constraints
+        if (schema.containsKey("properties") && !builder.isEmpty()) {
+            Builder properties = (Builder) schema.get("properties");
+
+            for (String paramName : builder.keySet()) {
+                if (properties.containsKey(paramName)) {
+                    Builder paramSchema = (Builder) properties.get(paramName);
+                    Object paramValue = builder.get(paramName);
+
+                    // Skip null values (already checked in required validation)
+                    if (paramValue == null) {
+                        continue;
+                    }
+
+                    // Type validation
+                    if (paramSchema.containsKey("type")) {
+                        String expectedType = paramSchema.get("type").toString();
+                        if (!validateType(paramValue, expectedType)) {
+                            validationErrors.add("Parameter '" + paramName + "' has invalid type. Expected: " +
+                                                expectedType + ", Got: " + paramValue.getClass().getSimpleName());
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!validationErrors.isEmpty()) {
+            throw new MCPException("Parameter validation failed: " + String.join(", ", validationErrors));
+        }
+    }
+
+    /**
+     * Validates that a parameter value matches the expected type.
+     *
+     * @param value The parameter value to validate
+     * @param expectedType The expected type from the schema
+     * @return true if the value matches the expected type, false otherwise
+     */
+    private boolean validateType(Object value, String expectedType) {
+        switch (expectedType) {
+            case "string":
+                return value instanceof String;
+            case "number":
+                return value instanceof Number;
+            case "integer":
+                return value instanceof Integer || value instanceof Long;
+            case "boolean":
+                return value instanceof Boolean;
+            case "array":
+                return value instanceof List || value instanceof Object[] || value.getClass().isArray();
+            case "object":
+                return value instanceof Builder;
+            default:
+                return true; // Unknown type, assume valid
+        }
+    }
+
+    /**
+     * Processes the template with the given parameters.
+     * <p>
+     * This method replaces placeholders in the template with parameter values.
+     * It supports both {{param}} and {param} syntax for backward compatibility.
+     * </p>
+     *
+     * @param template The template text
+     * @param parameters The parameters to use for processing
+     * @return The processed template
+     */
+    protected String processTemplate(String template, Builder parameters) {
+        String result = template;
+        
+        // Process {{param}} placeholders
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\{\\{([^}]+)\\}\\}");
+        java.util.regex.Matcher matcher = pattern.matcher(template);
+        
+        while (matcher.find()) {
+            String paramName = matcher.group(1);
+            if (parameters.containsKey(paramName)) {
+                String paramValue = String.valueOf(parameters.get(paramName));
+                result = result.replace("{{" + paramName + "}}", paramValue);
+            }
+        }
+        
+        // Process {param} placeholders for backward compatibility
+        pattern = java.util.regex.Pattern.compile("\\{([^}]+)\\}");
+        matcher = pattern.matcher(result);
+        
+        while (matcher.find()) {
+            String paramName = matcher.group(1);
+            if (parameters.containsKey(paramName)) {
+                String paramValue = String.valueOf(parameters.get(paramName));
+                result = result.replace("{" + paramName + "}", paramValue);
+            }
+        }
+        
+        return result;
     }
 }

@@ -16,10 +16,13 @@
 package org.tinystruct.mcp;
 
 import org.tinystruct.data.component.Builder;
+import org.tinystruct.system.annotation.Action;
+import org.tinystruct.system.annotation.Argument;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.lang.reflect.Method;
 
 /**
  * Implementation of MCPResource for tools.
@@ -257,6 +260,170 @@ public class MCPTool extends AbstractMCPResource {
             throw e; // Re-throw MCPException as is
         } catch (Exception e) {
             throw new MCPException("Error executing tool: " + name + " - " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Inner static class representing an individual tool method for MCP.
+     */
+    public static class MCPToolMethod {
+        private static final Logger LOGGER = Logger.getLogger(MCPToolMethod.class.getName());
+        
+        private final String name;
+        private final String description;
+        private final Builder schema;
+        private final Method method;
+        private final Object toolInstance;
+        private final List<ParameterInfo> parameters;
+
+        /**
+         * Information about a tool method parameter.
+         */
+        public static class ParameterInfo {
+            private final String name;
+            private final String type;
+            private final String description;
+            private final boolean required;
+            private final String[] enumValues;
+
+            public ParameterInfo(String name, String type, String description, boolean required, String[] enumValues) {
+                this.name = name;
+                this.type = type;
+                this.description = description;
+                this.required = required;
+                this.enumValues = enumValues;
+            }
+
+            public String getName() { return name; }
+            public String getType() { return type; }
+            public String getDescription() { return description; }
+            public boolean isRequired() { return required; }
+            public String[] getEnumValues() { return enumValues; }
+        }
+
+        /**
+         * Constructs a new MCPToolMethod from a method and its Action annotation.
+         *
+         * @param method The Java method
+         * @param action The Action annotation
+         * @param toolInstance The tool instance that contains this method
+         */
+        public MCPToolMethod(Method method, Action action, Object toolInstance) {
+            this.method = method;
+            this.toolInstance = toolInstance;
+            this.name = action.value();
+            this.description = action.description();
+            this.parameters = new ArrayList<>();
+            
+            // Extract parameter information from the Action annotation
+            for (Argument arg : action.arguments()) {
+                ParameterInfo paramInfo = new ParameterInfo(
+                    arg.key(),
+                    arg.type(),
+                    arg.description(),
+                    !arg.optional(),
+                    null // No enum values support in current Argument annotation
+                );
+                this.parameters.add(paramInfo);
+            }
+            
+            // Generate schema from parameters
+            this.schema = generateSchema();
+        }
+
+        public String getName() { return name; }
+        public String getDescription() { return description; }
+        public Builder getSchema() { return schema; }
+        public List<ParameterInfo> getParameters() { return parameters; }
+
+        public Object execute(Builder parameters) throws MCPException {
+            try {
+                Object[] args = convertParametersToArguments(parameters);
+                Object result = method.invoke(toolInstance, args);
+                return result;
+            } catch (Exception e) {
+                LOGGER.severe("Error executing tool method " + name + ": " + e.getMessage());
+                throw new MCPException("Error executing tool method " + name + ": " + e.getMessage(), e);
+            }
+        }
+
+        private Object[] convertParametersToArguments(Builder parameters) throws MCPException {
+            Class<?>[] paramTypes = method.getParameterTypes();
+            Object[] args = new Object[paramTypes.length];
+            for (int i = 0; i < this.parameters.size(); i++) {
+                ParameterInfo paramInfo = this.parameters.get(i);
+                String paramName = paramInfo.getName();
+                Object value = parameters.get(paramName);
+                if (value == null && paramInfo.isRequired()) {
+                    throw new MCPException("Missing required parameter: " + paramName);
+                }
+                if (i < paramTypes.length) {
+                    Class<?> paramType = paramTypes[i];
+                    args[i] = convertValue(value, paramType);
+                }
+            }
+            return args;
+        }
+
+        private Object convertValue(Object value, Class<?> targetType) throws MCPException {
+            try {
+                if (targetType == String.class) {
+                    return value.toString();
+                } else if (targetType == int.class || targetType == Integer.class) {
+                    if (value instanceof Number) {
+                        return ((Number) value).intValue();
+                    }
+                    return Integer.parseInt(value.toString());
+                } else if (targetType == long.class || targetType == Long.class) {
+                    if (value instanceof Number) {
+                        return ((Number) value).longValue();
+                    }
+                    return Long.parseLong(value.toString());
+                } else if (targetType == double.class || targetType == Double.class) {
+                    if (value instanceof Number) {
+                        return ((Number) value).doubleValue();
+                    }
+                    return Double.parseDouble(value.toString());
+                } else if (targetType == float.class || targetType == Float.class) {
+                    if (value instanceof Number) {
+                        return ((Number) value).floatValue();
+                    }
+                    return Float.parseFloat(value.toString());
+                } else if (targetType == boolean.class || targetType == Boolean.class) {
+                    if (value instanceof Boolean) {
+                        return value;
+                    }
+                    return Boolean.parseBoolean(value.toString());
+                } else {
+                    throw new MCPException("Unsupported parameter type: " + targetType.getName());
+                }
+            } catch (NumberFormatException e) {
+                throw new MCPException("Invalid number format for parameter: " + e.getMessage());
+            }
+        }
+
+        private Builder generateSchema() {
+            Builder schema = new Builder();
+            Builder properties = new Builder();
+            List<String> required = new ArrayList<>();
+            for (ParameterInfo param : parameters) {
+                Builder paramSchema = new Builder();
+                paramSchema.put("type", param.getType());
+                paramSchema.put("description", param.getDescription());
+                if (param.getEnumValues() != null && param.getEnumValues().length > 0) {
+                    paramSchema.put("enum", param.getEnumValues());
+                }
+                properties.put(param.getName(), paramSchema);
+                if (param.isRequired()) {
+                    required.add(param.getName());
+                }
+            }
+            schema.put("type", "object");
+            schema.put("properties", properties);
+            if (!required.isEmpty()) {
+                schema.put("required", required.toArray(new String[0]));
+            }
+            return schema;
         }
     }
 }

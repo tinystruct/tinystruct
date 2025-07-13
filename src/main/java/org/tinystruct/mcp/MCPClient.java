@@ -239,7 +239,7 @@ public class MCPClient {
             for (Builder toolData : tools) {
                 String name = (String) toolData.get("name");
                 String description = (String) toolData.get("description");
-                Builder schema = (Builder) toolData.get("schema");
+                Builder schema = (Builder) toolData.get("inputSchema");
 
                 MCPTool tool = new MCPTool(name, description, schema, this);
                 resourceCache.put(name, tool);
@@ -269,9 +269,10 @@ public class MCPClient {
             for (Builder resourceData : resources) {
                 String name = (String) resourceData.get("name");
                 String description = (String) resourceData.get("description");
-                String uriTemplate = (String) resourceData.get("uriTemplate");
+                String uri = (String) resourceData.get("uri");
+                String mimeType = (String) resourceData.get("mimeType");
 
-                MCPDataResource resource = new MCPDataResource(name, description, uriTemplate, this);
+                MCPDataResource resource = new MCPDataResource(name, description, uri, this);
                 resourceCache.put(name, resource);
             }
 
@@ -299,10 +300,45 @@ public class MCPClient {
             for (Builder promptData : prompts) {
                 String name = (String) promptData.get("name");
                 String description = (String) promptData.get("description");
+                Builders arguments = (Builders) promptData.get("arguments");
 
-                // Create a prompt resource (implementation not shown)
-                // MCPPromptResource prompt = new MCPPromptResource(name, description, this);
-                // resourceCache.put(name, prompt);
+                // Create a prompt resource with the correct structure
+                // For now, we'll create a basic MCPPrompt with a simple schema
+                Builder promptSchema = new Builder();
+                if (arguments != null && !arguments.isEmpty()) {
+                    Builder properties = new Builder();
+                    List<String> required = new ArrayList<>();
+                    
+                    for (Builder argument : arguments) {
+                        String argName = (String) argument.get("name");
+                        String argDescription = (String) argument.get("description");
+                        Boolean isRequired = (Boolean) argument.get("required");
+                        
+                        Builder property = new Builder();
+                        property.put("type", "string"); // Default type
+                        property.put("description", argDescription);
+                        properties.put(argName, property);
+                        
+                        if (isRequired != null && isRequired) {
+                            required.add(argName);
+                        }
+                    }
+                    
+                    promptSchema.put("type", "object");
+                    promptSchema.put("properties", properties);
+                    if (!required.isEmpty()) {
+                        promptSchema.put("required", required.toArray(new String[0]));
+                    }
+                }
+
+                // Create a basic prompt template
+                String template = "Prompt: " + name;
+                if (description != null && !description.isEmpty()) {
+                    template += " - " + description;
+                }
+
+                MCPPrompt prompt = new MCPPrompt(name, description, template, promptSchema, this);
+                resourceCache.put(name, prompt);
             }
 
             LOGGER.info("Discovered " + prompts.size() + " prompts");
@@ -610,7 +646,7 @@ public class MCPClient {
         try {
             Builder params = new Builder();
             params.put("name", name);
-            params.put("parameters", parameters);
+            params.put("arguments", parameters);
 
             LOGGER.info("Sending JSON-RPC request: method=" + Methods.CALL_TOOL + ", params=" + params);
 
@@ -619,7 +655,18 @@ public class MCPClient {
                 throw new IOException("Tool execution failed: " + response.getError().getMessage());
             }
 
-            return response.getResult();
+            Builder result = response.getResult();
+            if (result != null && result.containsKey("content")) {
+                Builders contentArray = (Builders) result.get("content");
+                if (contentArray != null && !contentArray.isEmpty()) {
+                    Builder firstContent = contentArray.get(0);
+                    if (firstContent.containsKey("text")) {
+                        return firstContent.get("text");
+                    }
+                }
+            }
+            
+            return result;
         } catch (Exception e) {
             throw new IOException("Tool execution failed", e);
         }
@@ -646,7 +693,18 @@ public class MCPClient {
                 throw new IOException("Resource read failed: " + response.getError().getMessage());
             }
 
-            return response.getResult();
+            Builder result = response.getResult();
+            if (result != null && result.containsKey("contents")) {
+                Builders contents = (Builders) result.get("contents");
+                if (contents != null && !contents.isEmpty()) {
+                    Builder firstContent = contents.get(0);
+                    if (firstContent.containsKey("text")) {
+                        return firstContent.get("text");
+                    }
+                }
+            }
+            
+            return result;
         } catch (Exception e) {
             throw new IOException("Resource read failed", e);
         }

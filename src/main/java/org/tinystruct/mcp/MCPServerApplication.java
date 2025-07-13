@@ -15,12 +15,8 @@
  *******************************************************************************/
 package org.tinystruct.mcp;
 
-import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.data.component.Builders;
-import org.tinystruct.http.Request;
-import org.tinystruct.http.Response;
-import org.tinystruct.http.ResponseStatus;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 
@@ -29,11 +25,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.tinystruct.mcp.MCPSpecification.*;
+import static org.tinystruct.mcp.MCPSpecification.ErrorCodes;
 
 /**
  * MCP Server Application that extends the base MCPApplication
@@ -52,18 +47,19 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a list tools request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleListTools(JsonRpcRequest request, JsonRpcResponse response) {
         Builder result = new Builder();
         Builders toolsList = new Builders();
 
-        for (MCPTool tool : tools.values()) {
+        // Add individual tool methods
+        for (MCPTool.MCPToolMethod toolMethod : toolMethods.values()) {
             Builder toolInfo = new Builder();
-            toolInfo.put("name", tool.getName());
-            toolInfo.put("description", tool.getDescription());
-            toolInfo.put("schema", tool.getSchema());
+            toolInfo.put("name", toolMethod.getName());
+            toolInfo.put("description", toolMethod.getDescription());
+            toolInfo.put("inputSchema", toolMethod.getSchema());
             toolsList.add(toolInfo);
         }
 
@@ -76,25 +72,34 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a call tool request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleCallTool(JsonRpcRequest request, JsonRpcResponse response) {
         try {
             Builder params = request.getParams();
             String toolName = params.get("name").toString();
-            Builder toolParams = (Builder) params.get("parameters");
+            Builder toolParams = (Builder) params.get("arguments");
 
-            MCPTool tool = tools.get(toolName);
-            if (tool == null) {
-                response.setError(new JsonRpcError(ErrorCodes.RESOURCE_NOT_FOUND, "Tool not found: " + toolName));
-                return;
+            // First try to find the tool method
+            MCPTool.MCPToolMethod toolMethod = toolMethods.get(toolName);
+            if (toolMethod != null) {
+                Object result = toolMethod.execute(toolParams);
+                response.setId(request.getId());
+
+                // Create the correct MCP response format
+                Builder resultBuilder = new Builder();
+                Builders contentArray = new Builders();
+                Builder contentItem = new Builder();
+                contentItem.put("type", "text");
+                contentItem.put("text", String.valueOf(result));
+                contentArray.add(contentItem);
+                resultBuilder.put("content", contentArray);
+
+                response.setResult(resultBuilder);
+            } else {
+                response.setError(new JsonRpcError(ErrorCodes.INTERNAL_ERROR, "Tool not exists"));
             }
-
-            Object result = tool.execute(toolParams);
-
-            response.setId(request.getId());
-            response.setResult(new Builder().put("result", result));
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error calling tool", e);
             response.setError(new JsonRpcError(ErrorCodes.INTERNAL_ERROR, "Error calling tool: " + e.getMessage()));
@@ -104,18 +109,20 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a list resources request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleListResources(JsonRpcRequest request, JsonRpcResponse response) {
         Builder result = new Builder();
-        List<Map<String, Object>> resourcesList = new ArrayList<>();
+        Builders resourcesList = new Builders();
 
         for (MCPDataResource resource : resources.values()) {
-            Map<String, Object> resourceInfo = new HashMap<>();
+            Builder resourceInfo = new Builder();
+            resourceInfo.put("uri", resource.getName()); // Use name as URI for now
             resourceInfo.put("name", resource.getName());
             resourceInfo.put("description", resource.getDescription());
-            resourceInfo.put("uriTemplate", resource.getUriTemplate());
+            resourceInfo.put("mimeType", "text/plain"); // Default MIME type
+            // annotations field is optional, so we can omit it
             resourcesList.add(resourceInfo);
         }
 
@@ -128,7 +135,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a read resource request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleReadResource(JsonRpcRequest request, JsonRpcResponse response) {
@@ -157,8 +164,18 @@ public class MCPServerApplication extends MCPApplication {
 
             Object result = resource.execute(resourceParams);
 
+            // Create the correct MCP response format with contents array
+            Builder responseResult = new Builder();
+            Builders contents = new Builders();
+            Builder content = new Builder();
+            content.put("uri", uri);
+            content.put("mimeType", "text/plain");
+            content.put("text", String.valueOf(result));
+            contents.add(content);
+            responseResult.put("contents", contents);
+
             response.setId(request.getId());
-            response.setResult(new Builder().put("result", result));
+            response.setResult(responseResult);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error reading resource", e);
             response.setError(new JsonRpcError(ErrorCodes.INTERNAL_ERROR, "Error reading resource: " + e.getMessage()));
@@ -168,7 +185,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a list prompts request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleListPrompts(JsonRpcRequest request, JsonRpcResponse response) {
@@ -179,7 +196,36 @@ public class MCPServerApplication extends MCPApplication {
             Builder promptInfo = new Builder();
             promptInfo.put("name", prompt.getName());
             promptInfo.put("description", prompt.getDescription());
-            promptInfo.put("schema", prompt.getSchema());
+            
+            // Create arguments array as required by MCP Prompt schema
+            Builders arguments = new Builders();
+            if (prompt.getSchema() != null && prompt.getSchema().containsKey("properties")) {
+                Builder properties = (Builder) prompt.getSchema().get("properties");
+                for (String propName : properties.keySet()) {
+                    Builder property = (Builder) properties.get(propName);
+                    Builder argument = new Builder();
+                    argument.put("name", propName);
+                    argument.put("description", property.get("description"));
+                    
+                    // Check if this argument is required
+                    boolean required = false;
+                    if (prompt.getSchema().containsKey("required")) {
+                        Object requiredObj = prompt.getSchema().get("required");
+                        if (requiredObj instanceof String[]) {
+                            String[] requiredArray = (String[]) requiredObj;
+                            for (String req : requiredArray) {
+                                if (req.equals(propName)) {
+                                    required = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    argument.put("required", required);
+                    arguments.add(argument);
+                }
+            }
+            promptInfo.put("arguments", arguments);
             promptsList.add(promptInfo);
         }
 
@@ -192,7 +238,7 @@ public class MCPServerApplication extends MCPApplication {
     /**
      * Handles a get prompt request.
      *
-     * @param request The JSON-RPC request
+     * @param request  The JSON-RPC request
      * @param response The JSON-RPC response
      */
     protected void handleGetPrompt(JsonRpcRequest request, JsonRpcResponse response) {
@@ -206,11 +252,21 @@ public class MCPServerApplication extends MCPApplication {
                 return;
             }
 
+            // Create the correct MCP response format according to GetPromptResult
             Builder result = new Builder();
-            result.put("name", prompt.getName());
             result.put("description", prompt.getDescription());
-            result.put("template", prompt.getTemplate());
-            result.put("schema", prompt.getSchema());
+            
+            // Create messages array as required by MCP specification
+            Builders messages = new Builders();
+            Builder message = new Builder();
+            message.put("role", "user"); // Default role for prompt messages
+            Builder content = new Builder();
+            content.put("type", "text");
+            content.put("text", prompt.getTemplate());
+            message.put("content", content);
+            messages.add(message);
+            
+            result.put("messages", messages);
 
             response.setId(request.getId());
             response.setResult(result);
@@ -223,7 +279,7 @@ public class MCPServerApplication extends MCPApplication {
     @Override
     protected String[] getFeatures() {
         // Example: server supports core, tools, resources, prompts
-        return new String[] { "core", "tools", "resources", "prompts" };
+        return new String[]{"core", "tools", "resources", "prompts"};
     }
 }
 

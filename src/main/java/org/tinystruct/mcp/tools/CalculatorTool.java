@@ -24,7 +24,7 @@ import org.tinystruct.system.annotation.Argument;
 
 /**
  * A calculator tool that can perform arithmetic operations.
- * This tool demonstrates the use of local execution support in MCPTool.
+ * This tool demonstrates the use of individual method registration for MCP tools.
  */
 public class CalculatorTool extends MCPTool {
 
@@ -137,6 +137,7 @@ public class CalculatorTool extends MCPTool {
     /**
      * Executes the tool locally.
      * This method is called when the tool is executed with a null client.
+     * This is kept for backward compatibility with the old system.
      *
      * @param builder The parameters to use for execution
      * @return The result of the execution
