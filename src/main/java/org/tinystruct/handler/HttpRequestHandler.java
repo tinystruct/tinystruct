@@ -19,6 +19,8 @@ import org.tinystruct.http.Cookie;
 import org.tinystruct.http.Header;
 import org.tinystruct.http.*;
 import org.tinystruct.http.security.JWTManager;
+import org.tinystruct.mcp.MCPPushManager;
+import org.tinystruct.mcp.MCPSpecification;
 import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Language;
@@ -233,6 +235,13 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
         return acceptHeader != null && acceptHeader.toString().contains("text/event-stream");
     }
 
+    /**
+     * Helper to select the appropriate push manager based on isMCP flag.
+     */
+    private SSEPushManager getAppropriatePushManager(boolean isMCP) {
+        return isMCP ? MCPPushManager.getInstance() : SSEPushManager.getInstance();
+    }
+
     private void handleSSE(final ChannelHandlerContext ctx, final Request<FullHttpRequest, Object> request,
                            Response<FullHttpResponse, FullHttpResponse> response, final Context context, boolean keepAlive) {
         // Use the existing response parameter and configure it for SSE
@@ -267,9 +276,29 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
         try {
             String query = request.query();
+            boolean isMCP = false;
+            if (query.equals(MCPSpecification.Endpoints.SSE)) {
+                isMCP = true;
+            }
             if (query != null && query.length() > 1) {
                 query = StringUtilities.htmlSpecialChars(query);
-                ApplicationManager.call(query, context);
+                Object call = ApplicationManager.call(query, context);
+
+                FullHttpResponse httpResponse = response.get();
+                initialResponse.headers().set(httpResponse.headers());
+                ctx.writeAndFlush(initialResponse);
+
+                String sessionId = context.getId();
+                SSEPushManager pushManager = getAppropriatePushManager(isMCP);
+                pushManager.register(sessionId, response);
+                if(call instanceof Builder) {
+                    pushManager.push(sessionId, (Builder) call);
+                }
+                else if(call instanceof String) {
+                    Builder builder = new Builder();
+                    builder.parse((String)call);
+                    pushManager.push(sessionId, builder);
+                }
             }
         } catch (ApplicationException e) {
             // Send error event to client
@@ -281,16 +310,6 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             // Log the exception but don't close the connection for SSE
             System.err.println("SSE Application Exception: " + e.getMessage());
         }
-        // Get the session ID
-        String sessionId = request.getSession().getId();
-        SSEPushManager.getInstance().register(sessionId, response);
-
-        // Send initial heartbeat to establish connection
-        Builder heartbeat = new Builder();
-        heartbeat.put("type", "heartbeat");
-        heartbeat.put("time", format.format(new Date()));
-
-        SSEPushManager.getInstance().push(sessionId, heartbeat);
         // For SSE, we keep the connection alive
         if (!keepAlive) {
             future.addListener(ChannelFutureListener.CLOSE);

@@ -28,6 +28,8 @@ import org.tinystruct.http.servlet.RequestBuilder;
 import org.tinystruct.http.servlet.ResponseBuilder;
 import org.tinystruct.system.*;
 import org.tinystruct.system.util.StringUtilities;
+import org.tinystruct.mcp.MCPPushManager;
+import org.tinystruct.mcp.MCPSpecification;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -141,6 +143,13 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         }
     }
 
+    /**
+     * Helper to select the appropriate push manager based on isMCP flag.
+     */
+    private SSEPushManager getAppropriatePushManager(boolean isMCP) {
+        return isMCP ? MCPPushManager.getInstance() : SSEPushManager.getInstance();
+    }
+
     private void handleSSE(Context context, Request<HttpServletRequest, ServletInputStream> request,
                            Response<HttpServletResponse, ServletOutputStream> response) throws IOException {
         response.addHeader(Header.CONTENT_TYPE.name(), "text/event-stream");
@@ -150,32 +159,30 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
 
         try {
             String query = request.getParameter("q");
+            boolean isMCP = false;
             if (query != null) {
                 query = StringUtilities.htmlSpecialChars(query);
-                // Get the session ID
-                String sessionId = context.getId();
-
-                // Register with SSE manager using sessionId and response only
-                // For Netty: returns null, for Servlet: returns SSEClient
-                SSEClient client = SSEPushManager.getInstance().register(sessionId, response);
+                if (query.equals(MCPSpecification.Endpoints.SSE)) {
+                    isMCP = true;
+                }
 
                 Object call = ApplicationManager.call(query, context);
+                String sessionId = context.getId();
+                SSEPushManager pushManager = getAppropriatePushManager(isMCP);
+                SSEClient client = pushManager.register(sessionId, response);
+
                 if(call instanceof Builder) {
-                    SSEPushManager.getInstance().push(sessionId, (Builder) call);
+                    pushManager.push(sessionId, (Builder) call);
                 }
                 else if(call instanceof String) {
                     Builder builder = new Builder();
                     builder.parse((String)call);
-                    SSEPushManager.getInstance().push(sessionId, builder);
+                    pushManager.push(sessionId, builder);
                 }
 
-                // For Servlet: The SSEClient runs in its own thread and handles the connection, Keep the connection open and monitor for completion
-                // Cleanup is handled by connection close events elsewhere
-                // Keep the connection open and monitor for completion
                 if (client != null) {
                     try {
                         while (client.isActive()) {
-                            // Sleep briefly to prevent tight loop
                             Thread.sleep(1000);
                         }
                     } catch (InterruptedException e) {
@@ -184,9 +191,8 @@ public class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
                     } catch (Exception e) {
                         throw new ApplicationException("Error in stream: " + e.getMessage(), e);
                     } finally {
-                        // Clean up when the connection is closed
                         client.close();
-                        SSEPushManager.getInstance().remove(sessionId);
+                        pushManager.remove(sessionId);
                     }
                 }
             }
