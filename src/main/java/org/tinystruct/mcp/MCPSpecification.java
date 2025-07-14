@@ -400,7 +400,7 @@ public final class MCPSpecification {
         public static final String CAPABILITIES = "mcp/capabilities";
         public static final String SHUTDOWN = "mcp/shutdown";
         public static final String EVENTS = "mcp/events";
-        public static final String SSE = "sse";
+        public static final String SSE = "mcp/sse";
 
         // Protocol-compliant endpoint paths for JSON-RPC methods
         public static final String TOOLS_LIST = "tools/list";
