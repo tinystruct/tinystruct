@@ -97,7 +97,7 @@ public abstract class MCPApplication extends AbstractApplication {
             if (sessionId == null || sessionId.isEmpty()) {
                 // If this is an initialize request, assign a new sessionId
                 String jsonStr = request.body();
-                if (jsonStr.contains("\"method\":\"initialize\"")) {
+                if (jsonStr != null && jsonStr.contains("\"method\":\"initialize\"")) {
                     sessionId = request.getSession().getId();
                     response.addHeader("Mcp-Session-Id", sessionId);
                     sessionMap.put(sessionId, System.currentTimeMillis()); // Store session state as needed
@@ -413,46 +413,4 @@ public abstract class MCPApplication extends AbstractApplication {
      */
     abstract void handleGetPrompt(JsonRpcRequest request, JsonRpcResponse response);
 
-    /**
-     * GET endpoint for SSE streaming (Streamable HTTP server-to-client notifications).
-     * Validates session and streams events using StreamablePushManager.
-     *
-     * @param request  The HTTP request
-     * @param response The HTTP response
-     * @throws ApplicationException if an error occurs
-     */
-    @Action("mcp/sse")
-    public void handleSseStream(Request request, Response response) throws ApplicationException {
-        String sessionId = (String) request.headers().get(Header.value0f("Mcp-Session-Id"));
-        if (sessionId == null || sessionId.isEmpty() || !sessionMap.containsKey(sessionId)) {
-            response.setStatus(ResponseStatus.UNAUTHORIZED);
-            return;
-        }
-        // Register session for streaming if not already present
-        StreamablePushManager.getInstance().registerSession(sessionId);
-        response.addHeader("Content-Type", "text/event-stream");
-        // Support resumability via Last-Event-ID header
-        String lastEventIdStr = (String) request.headers().get(Header.value0f("Last-Event-ID"));
-        long lastEventId = 0;
-        if (lastEventIdStr != null) {
-            try {
-                lastEventId = Long.parseLong(lastEventIdStr);
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        // Get missed events (if any)
-        for (StreamablePushManager.StreamableEvent evt : StreamablePushManager.getInstance().getMissedEvents(sessionId, lastEventId)) {
-            StringBuilder sse = new StringBuilder();
-            sse.append("id: ").append(evt.id).append("\n");
-            sse.append("event: ").append(evt.event).append("\n");
-            sse.append("data: ").append(evt.data.replace("\n", "\\n")).append("\n\n");
-            try {
-                response.writeAndFlush(sse.toString().getBytes());
-            } catch (Exception e) {
-                throw new ApplicationException("Failed to write SSE event", e);
-            }
-        }
-        // TODO: Implement a loop or async mechanism to push new events as they arrive (if your framework supports it)
-        // For now, this sends only missed events and returns.
-    }
 }

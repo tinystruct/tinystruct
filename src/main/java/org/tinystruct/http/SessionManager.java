@@ -1,4 +1,4 @@
-package org.tinystruct.http;
+package org.tinystruct.mcp;
 
 import org.tinystruct.system.scheduling.Scheduler;
 import org.tinystruct.system.scheduling.TimeIterator;
