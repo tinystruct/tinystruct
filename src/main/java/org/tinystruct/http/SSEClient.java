@@ -87,8 +87,12 @@ public class SSEClient implements Runnable {
      * @return The formatted SSE event string
      */
     private String formatSSEMessage(Builder message) {
+        String type = message.get("type") != null ? message.get("type").toString() : null;
+        if ("connect".equals(type)) {
+            return "event: connect\ndata: Connected\n\n";
+        }
         StringBuilder sb = new StringBuilder();
-        sb.append("data: ").append(message.toString()).append("\n\n");
+        sb.append("data: ").append(message).append("\n\n");
         return sb.toString();
     }
 
