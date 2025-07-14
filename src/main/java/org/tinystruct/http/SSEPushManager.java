@@ -28,7 +28,7 @@ public class SSEPushManager {
     private final AtomicBoolean isShutdown = new AtomicBoolean(false);
     // True if running in Netty environment
     private final boolean isNetty;
-    //
+    // Identifier for push management, useful for distinguishing clients
     private String identifier = "";
 
     private static final SSEPushManager instance = new SSEPushManager();
@@ -37,7 +37,7 @@ public class SSEPushManager {
      * Private constructor for singleton pattern.
      * Detects environment and initializes executor if needed.
      */
-    private SSEPushManager() {
+    protected SSEPushManager() {
         this.isNetty = isNettyEnvironment();
         this.executor = isNetty ? null : Executors.newCachedThreadPool();
         logger.info("SSEPushManager initialized for " + (isNetty ? "Netty" : "Servlet/Tomcat") + " environment");
