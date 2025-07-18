@@ -50,7 +50,13 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
         if (value == null) {
             _cookies = Collections.emptySet();
         } else {
-            _cookies = ServerCookieDecoder.STRICT.decode(value);
+            try {
+                // Use LAX decoder to be more lenient with cookie parsing
+                _cookies = ServerCookieDecoder.LAX.decode(value);
+            } catch (Exception e) {
+                logger.warning("Failed to parse cookies: " + value + ", error: " + e.getMessage());
+                _cookies = Collections.emptySet();
+            }
         }
 
         int i = _cookies.size();
