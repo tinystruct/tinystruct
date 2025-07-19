@@ -189,7 +189,7 @@ public class RequestBuilder extends RequestWrapper<FullHttpRequest, Object> {
             return getSession(sessionId, true);
         }
 
-        sessionId = UUID.randomUUID().toString().replaceAll("-", "");
+        sessionId = UUID.randomUUID().toString().replaceAll("-", "").toUpperCase();
         return getSession(sessionId, true);
     }
 
