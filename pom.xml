@@ -222,14 +222,14 @@
         <java.version>17</java.version>
         <jjwt.version>0.12.6</jjwt.version>
         <jna.version>5.17.0</jna.version>
-        <jupiter.version>5.13.1</jupiter.version>
+        <jupiter.version>5.13.3</jupiter.version>
         <kafka.version>4.0.0</kafka.version>
         <lettuce.version>6.7.1.RELEASE</lettuce.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <mqtt.version>1.2.5</mqtt.version>
         <slf4j.version>2.0.16</slf4j.version>
-        <sqlite.version>3.50.1.0</sqlite.version>
+        <sqlite.version>3.50.2.0</sqlite.version>
         <h2.version>2.3.232</h2.version>
         <netty.version>4.2.2.Final</netty.version>
         <mockito.version>5.18.0</mockito.version>
