@@ -339,11 +339,10 @@ public class MCPTool extends AbstractMCPResource {
         public Object execute(Builder parameters) throws MCPException {
             try {
                 Object[] args = convertParametersToArguments(parameters);
-                Object result = method.invoke(toolInstance, args);
-                return result;
+                return method.invoke(toolInstance, args);
             } catch (Exception e) {
-                LOGGER.severe("Error executing tool method " + name + ": " + e.getMessage());
-                throw new MCPException("Error executing tool method " + name + ": " + e.getMessage(), e);
+                LOGGER.severe("Error executing tool method " + name + ": " + e.getCause().getMessage());
+                throw new MCPException("Error executing tool method " + name + ": " + e.getCause().getMessage(), e);
             }
         }
 
