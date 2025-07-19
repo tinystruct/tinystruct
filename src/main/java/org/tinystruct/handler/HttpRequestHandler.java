@@ -1,8 +1,8 @@
 package org.tinystruct.handler;
 
-import com.fasterxml.jackson.databind.jsonFormatVisitors.JsonValueFormatVisitor;
 import io.jsonwebtoken.*;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -28,13 +28,15 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Objects;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 import static org.tinystruct.Application.LANGUAGE;
 import static org.tinystruct.Application.METHOD;
 import static org.tinystruct.http.Constants.*;
+import static org.tinystruct.http.Header.SET_COOKIE;
 
 public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
@@ -57,12 +59,12 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) {
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest original) {
         // Decide whether to close the connection or not.
-        boolean keepAlive = HttpUtil.isKeepAlive(msg);
+        boolean keepAlive = HttpUtil.isKeepAlive(original);
         boolean ssl = Boolean.parseBoolean(configuration.getOrDefault("ssl.enabled", "false"));
 
-        Request<FullHttpRequest, Object> request = new RequestBuilder(msg, ssl);
+        Request<FullHttpRequest, Object> request = new RequestBuilder(original, ssl);
         Context context = new ApplicationContext();
         context.setId(request.getSession().getId());
         this.service(ctx, request, context, keepAlive);
@@ -81,8 +83,8 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             }
         }
 
-        HttpResponseStatus status = HttpResponseStatus.OK;
-        ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status), ctx);
+        HttpResponseStatus status = OK;
+        ResponseBuilder response = new ResponseBuilder(new DefaultFullHttpResponse(HTTP_1_1, status), ctx);
         String host = request.headers().get(Header.HOST).toString();
         Object message;
         try {
@@ -165,7 +167,6 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
         FullHttpResponse replacement = response.get().replace(resp);
         response = new ResponseBuilder(replacement, ctx);
-        ResponseHeaders responseHeaders = new ResponseHeaders(response);
         boolean sessionCookieExists = false;
         for (Cookie cookie : request.cookies()) {
             if (cookie.name().equalsIgnoreCase(JSESSIONID)) {
@@ -183,10 +184,10 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             cookie.setPath("/");
             cookie.setMaxAge(-1);
 
-            responseHeaders.add(Header.SET_COOKIE.set(cookie));
+            response.addHeader(SET_COOKIE.name(), cookie);
         }
 
-        if (!responseHeaders.contains(Header.CONTENT_TYPE))
+        if (!response.headers().contains(Header.CONTENT_TYPE))
             response.setContentType("text/html; charset=UTF-8");
 
         switch (response.status()) {
@@ -196,7 +197,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
                 keepAlive = false;
                 break;
             default:
-                responseHeaders.add(Header.CONTENT_LENGTH.setInt(resp.readableBytes()));
+                response.addHeader(Header.CONTENT_LENGTH.name(), resp.readableBytes());
                 break;
         }
 
@@ -244,35 +245,19 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
     private void handleSSE(final ChannelHandlerContext ctx, final Request<FullHttpRequest, Object> request,
                            Response<FullHttpResponse, FullHttpResponse> response, final Context context, boolean keepAlive) {
-        // Use the existing response parameter and configure it for SSE
-        ResponseHeaders responseHeaders = new ResponseHeaders(response);
-
         // Set SSE headers using the existing response infrastructure
-        responseHeaders.add(Header.CONTENT_TYPE.set("text/event-stream"));
-        responseHeaders.add(Header.CACHE_CONTROL.set("no-cache"));
-        responseHeaders.add(Header.CONNECTION.set("keep-alive"));
-        responseHeaders.add(Header.TRANSFER_ENCODING.set("chunked"));
-        responseHeaders.add(new Header("X-Accel-Buffering").set("no"));
-
-        // Handle CORS if needed
-        Object origin = request.headers().get(Header.ORIGIN);
-        if (origin != null) {
-            responseHeaders.add(new Header("Access-Control-Allow-Origin").set(origin.toString()));
-            responseHeaders.add(new Header("Access-Control-Allow-Credentials").set("true"));
-        }
+        response.addHeader(Header.CONTENT_TYPE.name(), "text/event-stream, application/json");
+        response.addHeader(Header.CACHE_CONTROL.name(), "no-cache");
+        response.addHeader(Header.CONNECTION.name(), "keep-alive");
+        response.addHeader(Header.TRANSFER_ENCODING.name(), "chunked");
+        response.addHeader("X-Accel-Buffering", "no");
 
         // CRITICAL: Write the SSE response headers first
-        HttpResponse initialResponse = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        HttpResponse initialResponse = new DefaultHttpResponse(HTTP_1_1, OK);
         // Copy headers from our response to the initial response
         FullHttpResponse fullResponse = response.get();
         initialResponse.headers().setAll(fullResponse.headers());
-        ctx.writeAndFlush(initialResponse);
-
-        // Send initial connection event
-        String connectEvent = "event: connect\ndata: Connected\n\n";
-        ByteBuf connectData = copiedBuffer(connectEvent, StandardCharsets.UTF_8);
-        DefaultHttpContent connectContent = new DefaultHttpContent(connectData);
-        ChannelFuture future = ctx.writeAndFlush(connectContent);
+        ChannelFuture future = ctx.writeAndFlush(initialResponse);
 
         try {
             String query = request.query();
@@ -283,10 +268,6 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
             if (query != null && query.length() > 1) {
                 query = StringUtilities.htmlSpecialChars(query);
                 Object call = ApplicationManager.call(query, context);
-
-                FullHttpResponse httpResponse = response.get();
-                initialResponse.headers().set(httpResponse.headers());
-                ctx.writeAndFlush(initialResponse);
 
                 String sessionId = context.getId();
                 SSEPushManager pushManager = getAppropriatePushManager(isMCP);
@@ -318,7 +299,7 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
     private void sendErrorResponse(ChannelHandlerContext ctx, HttpResponseStatus status, String message) {
         ByteBuf content = copiedBuffer(message, CharsetUtil.UTF_8);
-        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, content);
+        FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, status, content);
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
         response.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
