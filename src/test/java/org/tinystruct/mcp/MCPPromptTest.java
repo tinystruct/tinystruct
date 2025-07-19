@@ -49,12 +49,6 @@ public class MCPPromptTest {
             protected boolean supportsLocalExecution() {
                 return true;
             }
-
-            @Override
-            protected Object executeLocally(Builder builder) throws MCPException {
-                String name = builder.get("name").toString();
-                return getTemplate().replace("{{name}}", name);
-            }
         };
 
         // Execute the prompt
@@ -120,12 +114,6 @@ public class MCPPromptTest {
             protected boolean supportsLocalExecution() {
                 return true;
             }
-
-            @Override
-            protected Object executeLocally(Builder builder) throws MCPException {
-                String name = builder.get("name").toString();
-                return getTemplate().replace("{{name}}", name);
-            }
         };
 
         // Execute the greeting prompt
@@ -139,5 +127,100 @@ public class MCPPromptTest {
         // This test is successful if we can create and execute a prompt locally
         // that matches the functionality of the server's prompt
         assertTrue(true, "Local prompt execution works correctly");
+    }
+
+    /**
+     * Test that template processing works with different placeholder formats.
+     */
+    @Test
+    public void testTemplateProcessing() throws MCPException {
+        // Create a prompt with mixed placeholder formats
+        MCPPrompt prompt = new MCPPrompt(
+            "mixed",
+            "A prompt with mixed placeholder formats",
+            "Hello {{name}}, your ID is {id} and status is {{status}}.",
+            null,
+            null
+        ) {
+            @Override
+            protected boolean supportsLocalExecution() {
+                return true;
+            }
+        };
+
+        // Execute the prompt
+        Builder params = new Builder();
+        params.put("name", "John");
+        params.put("id", "12345");
+        params.put("status", "active");
+        Object result = prompt.execute(params);
+
+        // Verify the result
+        assertEquals("Hello John, your ID is 12345 and status is active.", result, 
+                    "Should process both {{param}} and {param} formats");
+    }
+
+    /**
+     * Test that parameter validation works correctly with a schema.
+     */
+    @Test
+    public void testParameterValidation() throws MCPException {
+        // Create a schema for the prompt
+        Builder promptSchema = new Builder();
+        Builder properties = new Builder();
+
+        Builder nameParam = new Builder();
+        nameParam.put("type", "string");
+        nameParam.put("description", "The name to greet");
+
+        Builder ageParam = new Builder();
+        ageParam.put("type", "integer");
+        ageParam.put("description", "The age of the person");
+
+        properties.put("name", nameParam);
+        properties.put("age", ageParam);
+        promptSchema.put("type", "object");
+        promptSchema.put("properties", properties);
+        promptSchema.put("required", new String[]{"name"});
+
+        // Create a prompt with schema
+        MCPPrompt prompt = new MCPPrompt(
+            "greeting",
+            "A greeting prompt with validation",
+            "Hello, {{name}}! You are {{age}} years old.",
+            promptSchema,
+            null
+        ) {
+            @Override
+            protected boolean supportsLocalExecution() {
+                return true;
+            }
+        };
+
+        // Test with valid parameters
+        Builder validParams = new Builder();
+        validParams.put("name", "John");
+        validParams.put("age", 25);
+        Object result = prompt.execute(validParams);
+        assertEquals("Hello, John! You are 25 years old.", result, "Should process valid parameters");
+
+        // Test with missing required parameter
+        Builder invalidParams = new Builder();
+        invalidParams.put("age", 25);
+        MCPException exception = assertThrows(MCPException.class, () -> {
+            prompt.execute(invalidParams);
+        });
+        assertTrue(exception.getMessage().contains("Missing required parameter: name"),
+                   "Should throw exception for missing required parameter");
+
+        // Test with wrong type
+        Builder wrongTypeParams = new Builder();
+        wrongTypeParams.put("name", "John");
+        wrongTypeParams.put("age", "twenty-five"); // Should be integer
+        exception = assertThrows(MCPException.class, () -> {
+            prompt.execute(wrongTypeParams);
+        });
+        assertTrue(exception.getMessage().contains("has invalid type"),
+                   "Should throw exception for wrong parameter type");
     }
 }

@@ -99,7 +99,8 @@ public class SimpleCalculatorToolTest {
     public void testErrorHandling() {
         // Create a calculator tool
         CalculatorTool calculator = new CalculatorTool();
-
+        Builder builder = SchemaGenerator.generateSchema(calculator.getClass());
+        calculator.setSchema(builder);
         // Test division by zero
         Builder divideByZeroParams = new Builder();
         divideByZeroParams.put("operation", "divide");
@@ -141,5 +142,72 @@ public class SimpleCalculatorToolTest {
         assertTrue(exception.getMessage().contains("Missing required parameter") ||
                    exception.getMessage().contains("Parameter validation failed"),
                    "Exception should mention missing parameter");
+    }
+
+    /**
+     * Test that the calculator tool's @Action methods work correctly when called directly.
+     */
+    @Test
+    public void testActionMethods() throws MCPException {
+        CalculatorTool calculator = new CalculatorTool();
+
+        // Test direct method calls
+        assertEquals(8.0, calculator.add(5, 3), "5 + 3 should equal 8");
+        assertEquals(6.0, calculator.subtract(10, 4), "10 - 4 should equal 6");
+        assertEquals(42.0, calculator.multiply(6, 7), "6 * 7 should equal 42");
+        assertEquals(5.0, calculator.divide(20, 4), "20 / 4 should equal 5");
+        assertEquals(8.0, calculator.power(2, 3), "2^3 should equal 8");
+        assertEquals(1.0, calculator.modulo(10, 3), "10 % 3 should equal 1");
+    }
+
+    /**
+     * Test that the calculator tool handles division by zero correctly in direct method calls.
+     */
+    @Test
+    public void testDivisionByZeroInDirectMethod() throws MCPException {
+        CalculatorTool calculator = new CalculatorTool();
+
+        MCPException exception = assertThrows(MCPException.class, () -> {
+            calculator.divide(10, 0);
+        });
+
+        assertTrue(exception.getMessage().contains("Division by zero"),
+                   "Exception should mention division by zero");
+    }
+
+    /**
+     * Test that the schema is generated correctly from annotations.
+     */
+    @Test
+    public void testSchemaGeneration() {
+        Builder schema = SchemaGenerator.generateSchema(CalculatorTool.class);
+        
+        // Verify schema structure
+        assertEquals("object", schema.get("type"), "Schema type should be 'object'");
+        
+        Builder properties = (Builder) schema.get("properties");
+        assertNotNull(properties, "Schema should have properties");
+        
+        // Verify that 'a' and 'b' parameters are present with correct types
+        Builder paramA = (Builder) properties.get("a");
+        assertNotNull(paramA, "Parameter 'a' should be present");
+        assertEquals("number", paramA.get("type"), "Parameter 'a' should be of type 'number'");
+        
+        Builder paramB = (Builder) properties.get("b");
+        assertNotNull(paramB, "Parameter 'b' should be present");
+        assertEquals("number", paramB.get("type"), "Parameter 'b' should be of type 'number'");
+        
+        // Verify required parameters
+        String[] required = (String[]) schema.get("required");
+        assertNotNull(required, "Schema should have required parameters");
+        assertTrue(required.length >= 2, "Should have at least 2 required parameters");
+        
+        boolean hasA = false, hasB = false;
+        for (String param : required) {
+            if ("a".equals(param)) hasA = true;
+            if ("b".equals(param)) hasB = true;
+        }
+        assertTrue(hasA, "Parameter 'a' should be required");
+        assertTrue(hasB, "Parameter 'b' should be required");
     }
 }

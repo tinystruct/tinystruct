@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.7.1</version>
+    <version>1.7.2</version>
     <name>tinystruct framework</name>
     <description>A lightweight java framework designed for building efficient and scalable applications. Supports both
         command-line tools and APIs, enabling developers to create robust solutions with ease.
