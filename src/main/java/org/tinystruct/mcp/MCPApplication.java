@@ -29,7 +29,6 @@ public abstract class MCPApplication extends AbstractApplication {
     protected JsonRpcHandler jsonRpcHandler;
     protected AuthorizationHandler authHandler;
 
-    private boolean initialized = false;
     protected SessionState sessionState = SessionState.DISCONNECTED;
     protected final Map<String, Object> sessionMap = new ConcurrentHashMap<>(); // sessionId -> user info or state
 
@@ -92,27 +91,29 @@ public abstract class MCPApplication extends AbstractApplication {
         try {
             // Validate authentication
             authHandler.validateAuthHeader(request);
-            // Session management: extract or assign sessionId
-            String sessionId = (String) request.headers().get(Header.value0f("Mcp-Session-Id"));
-            if (sessionId == null || sessionId.isEmpty()) {
-                // If this is an initialize request, assign a new sessionId
-                String jsonStr = request.body();
-                if (jsonStr != null && jsonStr.contains("\"method\":\"initialize\"")) {
-                    sessionId = request.getSession().getId();
-                    response.addHeader("Mcp-Session-Id", sessionId);
-                    sessionMap.put(sessionId, System.currentTimeMillis()); // Store session state as needed
-                    sessionState = SessionState.INITIALIZING; // Set initial state
-                } else {
-                    response.setStatus(ResponseStatus.UNAUTHORIZED);
-                    return jsonRpcHandler.createErrorResponse("Missing session ID", ErrorCodes.UNAUTHORIZED);
-                }
-            }
+
             // Parse the JSON-RPC request
-            String jsonStr = request.body();
-            LOGGER.fine("Received JSON: " + jsonStr);
+            String requestBody = request.body();
+            assert requestBody != null;
+            LOGGER.fine("Received JSON: " + requestBody);
+            if (!jsonRpcHandler.validateJsonRpcRequest(requestBody)) {
+                response.setStatus(ResponseStatus.BAD_REQUEST);
+                return jsonRpcHandler.createErrorResponse("Invalid JSON-RPC request", ErrorCodes.INVALID_REQUEST);
+            }
+
+            if (requestBody.contains("\"method\":\"initialize\"")) {
+                // Session management: extract or assign sessionId
+                String sessionId = (String) request.headers().get(Header.value0f("Mcp-Session-Id"));
+                if (sessionId == null || sessionId.isEmpty()) {
+                    sessionId = request.getSession().getId();
+                }
+                response.addHeader("Mcp-Session-Id", sessionId);
+                sessionMap.put(sessionId, System.currentTimeMillis()); // Store session state as needed
+                sessionState = SessionState.INITIALIZING; // Set initial state
+            }
             // Add batch request support
-            if (jsonStr.trim().startsWith("[")) {
-                return jsonRpcHandler.handleBatchRequest(jsonStr, (rpcReq, rpcRes) -> {
+            else if (requestBody.trim().startsWith("[")) {
+                return jsonRpcHandler.handleBatchRequest(requestBody, (rpcReq, rpcRes) -> {
                     RpcMethodHandler handler = rpcHandlers.get(rpcReq.getMethod());
                     if (handler != null) {
                         handler.handle(rpcReq, rpcRes, this);
@@ -121,12 +122,9 @@ public abstract class MCPApplication extends AbstractApplication {
                     }
                 });
             }
-            if (!jsonRpcHandler.validateJsonRpcRequest(jsonStr)) {
-                response.setStatus(ResponseStatus.BAD_REQUEST);
-                return jsonRpcHandler.createErrorResponse("Invalid JSON-RPC request", ErrorCodes.INVALID_REQUEST);
-            }
+
             JsonRpcRequest rpcRequest = new JsonRpcRequest();
-            rpcRequest.parse(jsonStr);
+            rpcRequest.parse(requestBody);
             JsonRpcResponse jsonResponse = new JsonRpcResponse();
             // Restrict methods before READY
             String method = rpcRequest.getMethod();
@@ -137,8 +135,6 @@ public abstract class MCPApplication extends AbstractApplication {
                 jsonResponse.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND, "Method not found: " + method));
             }
 
-            // For now, always return JSON. SSE streaming support to be added in GET endpoint.
-//            response.addHeader("Content-Type", "application/json");
             return jsonResponse.toString();
         } catch (SecurityException e) {
             response.setStatus(ResponseStatus.UNAUTHORIZED);
@@ -315,7 +311,7 @@ public abstract class MCPApplication extends AbstractApplication {
      */
     public void registerToolMethods(Object toolInstance) {
         Class<?> toolClass = toolInstance.getClass();
-        
+
         for (Method method : toolClass.getDeclaredMethods()) {
             Action action = method.getAnnotation(Action.class);
             if (action != null) {
