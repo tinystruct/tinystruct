@@ -132,12 +132,9 @@ public class MCPClient {
             }
 
             Builder result = initResponse.getResult();
-            if (result == null || result.get("serverId") == null) {
+            if (result == null || result.get("instructions") == null) {
                 throw new IOException("Invalid initialization response: missing serverId");
             }
-
-            this.clientId = result.get("serverId").toString();
-            LOGGER.info("Connected to server. Client ID: " + clientId);
 
             // Get capabilities
             JsonRpcResponse capabilitiesResponse = sendRequest(Methods.GET_CAPABILITIES, null);
