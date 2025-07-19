@@ -15,11 +15,21 @@
  *******************************************************************************/
 package org.tinystruct.mcp;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.tinystruct.ApplicationContext;
+import org.tinystruct.ApplicationException;
+import org.tinystruct.application.Context;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.mcp.tools.CalculatorTool;
+import org.tinystruct.system.ApplicationManager;
+import org.tinystruct.system.Dispatcher;
+import org.tinystruct.system.Settings;
+import org.tinystruct.system.TomcatServer;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -31,6 +41,67 @@ import static org.mockito.Mockito.*;
  * This test verifies the end-to-end flow from client to server, including tool execution.
  */
 public class MCPClientServerIntegrationTest {
+
+    private static final Logger LOGGER = Logger.getLogger(MCPClientServerIntegrationTest.class.getName());
+    private static final String SERVER_URL = "http://localhost:8001";
+    private static MCPServerApplication serverApp;
+    private static Thread serverThread;
+    
+    @BeforeAll
+    public static void setUp() throws Exception {
+        serverThread = new Thread(() -> {
+            try {
+                Settings settings = new Settings();
+                settings.set("default.base_url", "/?q=");
+                settings.set("default.language", "en_US");
+                settings.set("charset", "utf-8");
+
+                serverApp = new MCPServerApplication();
+                ApplicationManager.install(serverApp, settings);
+                serverApp.registerTool(new CalculatorTool());
+
+                Context serverContext = new ApplicationContext();
+                serverContext.setAttribute("--server-port", "8001");
+                ApplicationManager.install(new Dispatcher());
+                ApplicationManager.install(new TomcatServer());
+                ApplicationManager.call("start", serverContext, org.tinystruct.application.Action.Mode.CLI);
+
+                // Keep the thread alive as long as the server is running
+                while (!Thread.currentThread().isInterrupted()) {
+                    Thread.sleep(1000);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        serverThread.setDaemon(true);
+        serverThread.start();
+
+        // Wait for the server to be ready (poll the port)
+        boolean started = false;
+        for (int i = 0; i < 30; i++) { // wait up to 30 seconds
+            try (Socket socket = new Socket("localhost", 8001)) {
+                started = true;
+                break;
+            } catch (IOException e) {
+                Thread.sleep(1000);
+            }
+        }
+        if (!started) {
+            throw new RuntimeException("Server did not start in time");
+        }
+    }
+    
+    @AfterAll
+    public static void tearDown() throws Exception {
+        if (serverThread != null) {
+            serverThread.interrupt();
+            serverThread = null;
+        }
+        // Optionally, call your server's shutdown logic here as well
+        Context serverContext = new ApplicationContext();
+        ApplicationManager.call("stop", serverContext);
+    }
 
     /**
      * Test that a calculator tool with local execution support works correctly.
@@ -133,7 +204,7 @@ public class MCPClientServerIntegrationTest {
     @Test
     public void testParameterValidation() {
         // Create a direct instance of MCPTool for validation testing
-        MCPTool tool = new MCPTool("test-tool", "A test tool", createTestSchema(), null);
+        MCPTool tool = new MCPTool("test-tool", "A test tool", createTestSchema(), null, false);
 
         // Test with missing required parameter
         Builder invalidParams = new Builder();
@@ -328,255 +399,61 @@ public class MCPClientServerIntegrationTest {
                    "Exception should mention local execution not implemented");
     }
 
-    // Client for remote server tests
-    private MCPClient client;
-
-    /**
-     * Test a real client-server interaction with a running server.
-     * This test requires a running server on port 8000.
-     * It can be enabled for manual testing.
-     */
     @Test
-    @org.junit.jupiter.api.Disabled("This test requires a running server on port 8001")
     public void testRealClientServerInteraction() throws Exception {
-        // This test uses a real server running on port 8001
-        // Start the server with: bin/dispatcher start --import org.tinystruct.system.TomcatServer --import org.tinystruct.mcp.MCPServerApplication --server-port 8001
-
-        final String SERVER_URL = "http://localhost:8001";
-        final Logger LOGGER = Logger.getLogger(MCPClientServerIntegrationTest.class.getName());
-
-        try {
-            // Connect to the server
-            LOGGER.info("Connecting to server at " + SERVER_URL);
-            client = new MCPClient(SERVER_URL, null);
-            client.connect();
-            LOGGER.info("Client connected to server at " + SERVER_URL);
-
-            // List available resources
-            LOGGER.info("Listing available resources...");
-            List<MCPResource> resources = client.listResources();
-            LOGGER.info("Found " + resources.size() + " resources");
-
-            // Check if the calculator tool is available
-            boolean foundCalculator = false;
-            for (MCPResource resource : resources) {
-                LOGGER.info("Found resource: " + resource.getName() + " (" + resource.getType() + ")");
-                if ("calculator".equals(resource.getName()) && resource.getType() == MCPResource.ResourceType.TOOL) {
-                    foundCalculator = true;
-                    LOGGER.info("Found calculator tool: " + resource.getDescription());
-                }
-            }
-
-            // Verify that the calculator tool is available
-            assertTrue(foundCalculator, "Calculator tool should be available on the server");
-
-            // Test remote execution of the calculator tool
-            LOGGER.info("Testing remote execution of calculator tool");
-
-            // Create a calculator tool with the client
-            MCPTool remoteCalculator = new MCPTool("calculator", "A calculator tool", null, client);
-
-            // Test addition with remote execution
-            Builder remoteAddParams = new Builder();
-            remoteAddParams.put("operation", "add");
-            remoteAddParams.put("a", 5);
-            remoteAddParams.put("b", 3);
-            LOGGER.info("Executing remote calculator tool with parameters: " + remoteAddParams);
-
-            // Log the request details
-            LOGGER.info("Request details: tool name = 'calculator', parameters = " + remoteAddParams);
-
-            try {
-                Object remoteAddResult = remoteCalculator.execute(remoteAddParams);
-                LOGGER.info("Remote result: " + remoteAddResult);
-
-                // Extract the result value from the JSON object
-                double actualResult;
-                if (remoteAddResult instanceof Builder) {
-                    Builder resultBuilder = (Builder) remoteAddResult;
-                    actualResult = Double.parseDouble(resultBuilder.get("result").toString());
-                } else {
-                    actualResult = Double.parseDouble(remoteAddResult.toString());
-                }
-
-                assertEquals(8.0, actualResult, "Remote: 5 + 3 should equal 8");
-
-                // Test subtraction with remote execution
-                Builder remoteSubtractParams = new Builder();
-                remoteSubtractParams.put("operation", "subtract");
-                remoteSubtractParams.put("a", 10);
-                remoteSubtractParams.put("b", 4);
-                LOGGER.info("Executing remote calculator tool with parameters: " + remoteSubtractParams);
-
-                Object remoteSubtractResult = remoteCalculator.execute(remoteSubtractParams);
-                LOGGER.info("Remote result: " + remoteSubtractResult);
-
-                // Extract the result value
-                double subtractResult;
-                if (remoteSubtractResult instanceof Builder) {
-                    Builder resultBuilder = (Builder) remoteSubtractResult;
-                    subtractResult = Double.parseDouble(resultBuilder.get("result").toString());
-                } else {
-                    subtractResult = Double.parseDouble(remoteSubtractResult.toString());
-                }
-
-                assertEquals(6.0, subtractResult, "Remote: 10 - 4 should equal 6");
-
-                // Test multiplication with remote execution
-                Builder remoteMultiplyParams = new Builder();
-                remoteMultiplyParams.put("operation", "multiply");
-                remoteMultiplyParams.put("a", 6);
-                remoteMultiplyParams.put("b", 7);
-                LOGGER.info("Executing remote calculator tool with parameters: " + remoteMultiplyParams);
-
-                Object remoteMultiplyResult = remoteCalculator.execute(remoteMultiplyParams);
-                LOGGER.info("Remote result: " + remoteMultiplyResult);
-
-                // Extract the result value
-                double multiplyResult;
-                if (remoteMultiplyResult instanceof Builder) {
-                    Builder resultBuilder = (Builder) remoteMultiplyResult;
-                    multiplyResult = Double.parseDouble(resultBuilder.get("result").toString());
-                } else {
-                    multiplyResult = Double.parseDouble(remoteMultiplyResult.toString());
-                }
-
-                assertEquals(42.0, multiplyResult, "Remote: 6 * 7 should equal 42");
-
-                // Test division with remote execution
-                Builder remoteDivideParams = new Builder();
-                remoteDivideParams.put("operation", "divide");
-                remoteDivideParams.put("a", 20);
-                remoteDivideParams.put("b", 4);
-                LOGGER.info("Executing remote calculator tool with parameters: " + remoteDivideParams);
-
-                Object remoteDivideResult = remoteCalculator.execute(remoteDivideParams);
-                LOGGER.info("Remote result: " + remoteDivideResult);
-
-                // Extract the result value
-                double divideResult;
-                if (remoteDivideResult instanceof Builder) {
-                    Builder resultBuilder = (Builder) remoteDivideResult;
-                    divideResult = Double.parseDouble(resultBuilder.get("result").toString());
-                } else {
-                    divideResult = Double.parseDouble(remoteDivideResult.toString());
-                }
-
-                assertEquals(5.0, divideResult, "Remote: 20 / 4 should equal 5");
-            } catch (Exception e) {
-                LOGGER.severe("Error executing remote calculator: " + e.getMessage());
-                throw e;
-            }
-
-            // Now test local execution with our enhanced CalculatorTool
-            LOGGER.info("Testing CalculatorTool with local execution");
-
-            // Create a calculator tool with local execution support
-            CalculatorTool calculator = new CalculatorTool();
-
-            // Test addition
-            Builder addParams = new Builder();
-            addParams.put("operation", "add");
-            addParams.put("a", 5);
-            addParams.put("b", 3);
-            LOGGER.info("Executing calculator tool with parameters: " + addParams);
-            Object addResult = calculator.execute(addParams);
-            LOGGER.info("Result: " + addResult);
-            assertEquals(8.0, addResult, "5 + 3 should equal 8");
-
-            // Test subtraction
-            Builder subtractParams = new Builder();
-            subtractParams.put("operation", "subtract");
-            subtractParams.put("a", 10);
-            subtractParams.put("b", 4);
-            LOGGER.info("Executing calculator tool with parameters: " + subtractParams);
-            Object subtractResult = calculator.execute(subtractParams);
-            LOGGER.info("Result: " + subtractResult);
-            assertEquals(6.0, subtractResult, "10 - 4 should equal 6");
-
-            // Test multiplication
-            Builder multiplyParams = new Builder();
-            multiplyParams.put("operation", "multiply");
-            multiplyParams.put("a", 6);
-            multiplyParams.put("b", 7);
-            LOGGER.info("Executing calculator tool with parameters: " + multiplyParams);
-            Object multiplyResult = calculator.execute(multiplyParams);
-            LOGGER.info("Result: " + multiplyResult);
-            assertEquals(42.0, multiplyResult, "6 * 7 should equal 42");
-
-            // Test division
-            Builder divideParams = new Builder();
-            divideParams.put("operation", "divide");
-            divideParams.put("a", 20);
-            divideParams.put("b", 4);
-            LOGGER.info("Executing calculator tool with parameters: " + divideParams);
-            Object divideResult = calculator.execute(divideParams);
-            LOGGER.info("Result: " + divideResult);
-            assertEquals(5.0, divideResult, "20 / 4 should equal 5");
-
-            // Test power operation (custom operation)
-            Builder powerParams = new Builder();
-            powerParams.put("operation", "power");
-            powerParams.put("a", 2);
-            powerParams.put("b", 3);
-            LOGGER.info("Executing calculator tool with parameters: " + powerParams);
-            Object powerResult = calculator.execute(powerParams);
-            LOGGER.info("Result: " + powerResult);
-            assertEquals(8.0, powerResult, "2^3 should equal 8");
-
-            // Test modulo operation (custom operation)
-            Builder moduloParams = new Builder();
-            moduloParams.put("operation", "modulo");
-            moduloParams.put("a", 10);
-            moduloParams.put("b", 3);
-            LOGGER.info("Executing calculator tool with parameters: " + moduloParams);
-            Object moduloResult = calculator.execute(moduloParams);
-            LOGGER.info("Result: " + moduloResult);
-            assertEquals(1.0, moduloResult, "10 % 3 should equal 1");
-
-            // Test the greeting prompt
-            // Create a mock prompt with the same functionality as the server's greeting prompt
-            MCPPrompt greetingPrompt = new MCPPrompt(
-                "greeting",
-                "A simple greeting prompt",
-                "Hello, {{name}}! Welcome to the MCP server.",
-                null,
-                null
-            ) {
-                @Override
-                protected boolean supportsLocalExecution() {
-                    return true;
-                }
-
-                @Override
-                protected Object executeLocally(Builder builder) throws MCPException {
-                    String name = builder.get("name").toString();
-                    return getTemplate().replace("{{name}}", name);
-                }
-            };
-
-            // Execute the greeting prompt
-            Builder greetingParams = new Builder();
-            greetingParams.put("name", "John");
-            LOGGER.info("Executing greeting prompt with parameters: " + greetingParams);
-            Object greetingResult = greetingPrompt.execute(greetingParams);
-            LOGGER.info("Result: " + greetingResult);
-            assertEquals("Hello, John! Welcome to the MCP server.", greetingResult, "Greeting should be personalized");
-
-            LOGGER.info("All tests passed successfully");
-        } catch (Exception e) {
-            LOGGER.severe("Error during test: " + e.getMessage());
-            throw e;
-        } finally {
-            // Disconnect from the server if we're connected
-            try {
-                if (client != null) {
-                    client.disconnect();
-                    LOGGER.info("Disconnected from server");
-                }
-            } catch (Exception e) {
-                LOGGER.warning("Error disconnecting from server: " + e.getMessage());
+        LOGGER.info("Connecting to server at " + SERVER_URL);
+        
+        // Create a client and connect to the server
+        MCPClient client = new MCPClient(SERVER_URL, null);
+        client.connect();
+        
+        // List available resources
+        List<MCPResource> resources = client.listResources();
+        assertFalse(resources.isEmpty(), "Should have at least one resource");
+        
+        // Find the calculator tool
+        MCPResource calculator = null;
+        for (MCPResource resource : resources) {
+            if (resource.getName().equals("calculator")) {
+                calculator = resource;
+                break;
             }
         }
+        assertNotNull(calculator, "Should find the calculator tool");
+        
+        // Test addition
+        Builder addParams = new Builder();
+        addParams.put("operation", "add");
+        addParams.put("a", 5);
+        addParams.put("b", 3);
+        Object addResult = client.executeResource("calculator", addParams);
+        assertEquals(8.0, addResult, "5 + 3 should equal 8");
+        
+        // Test subtraction
+        Builder subtractParams = new Builder();
+        subtractParams.put("operation", "subtract");
+        subtractParams.put("a", 10);
+        subtractParams.put("b", 4);
+        Object subtractResult = client.executeResource("calculator", subtractParams);
+        assertEquals(6.0, subtractResult, "10 - 4 should equal 6");
+        
+        // Test multiplication
+        Builder multiplyParams = new Builder();
+        multiplyParams.put("operation", "multiply");
+        multiplyParams.put("a", 6);
+        multiplyParams.put("b", 7);
+        Object multiplyResult = client.executeResource("calculator", multiplyParams);
+        assertEquals(42.0, multiplyResult, "6 * 7 should equal 42");
+        
+        // Test division
+        Builder divideParams = new Builder();
+        divideParams.put("operation", "divide");
+        divideParams.put("a", 20);
+        divideParams.put("b", 4);
+        Object divideResult = client.executeResource("calculator", divideParams);
+        assertEquals(5.0, divideResult, "20 / 4 should equal 5");
+        
+        // Disconnect from the server
+        client.disconnect();
     }
 }

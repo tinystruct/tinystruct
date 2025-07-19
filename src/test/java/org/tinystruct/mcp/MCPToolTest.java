@@ -209,4 +209,40 @@ public class MCPToolTest {
         // Check that the exception message mentions local execution not implemented
         assertTrue(exception.getMessage().contains("Local execution not implemented"));
     }
+
+    @Test
+    public void testGetAndSetSchema() {
+        MCPTool tool = new MCPTool("calculator", "desc", null, null, true) {
+            @Override
+            protected Object executeLocally(Builder builder) { return null; }
+        };
+        Builder schema = new Builder();
+        tool.setSchema(schema);
+        assertEquals(schema, tool.getSchema());
+        Exception ex = assertThrows(IllegalArgumentException.class, () -> tool.setSchema(null));
+        assertTrue(ex.getMessage().contains("Schema cannot be null"));
+    }
+
+    @Test
+    public void testMCPToolMethodReflection() throws Exception {
+        class Dummy {
+            @org.tinystruct.system.annotation.Action(value = "dummy/add", description = "Add", arguments = {
+                @org.tinystruct.system.annotation.Argument(key = "a", type = "number", description = "A"),
+                @org.tinystruct.system.annotation.Argument(key = "b", type = "number", description = "B")
+            })
+            public double add(double a, double b) { return a + b; }
+        }
+        Dummy dummy = new Dummy();
+        java.lang.reflect.Method m = Dummy.class.getDeclaredMethod("add", double.class, double.class);
+        org.tinystruct.system.annotation.Action action = m.getAnnotation(org.tinystruct.system.annotation.Action.class);
+        MCPTool.MCPToolMethod method = new MCPTool.MCPToolMethod(m, action, dummy);
+        Builder params = new Builder();
+        params.put("a", 2.0);
+        params.put("b", 3.0);
+        assertEquals(5.0, method.execute(params));
+        assertEquals("dummy/add", method.getName());
+        assertEquals("Add", method.getDescription());
+        assertNotNull(method.getSchema());
+        assertEquals(2, method.getParameters().size());
+    }
 }

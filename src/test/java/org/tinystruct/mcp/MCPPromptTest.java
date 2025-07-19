@@ -223,4 +223,12 @@ public class MCPPromptTest {
         assertTrue(exception.getMessage().contains("has invalid type"),
                    "Should throw exception for wrong parameter type");
     }
+
+    @Test
+    public void testGetTemplateAndSchema() {
+        Builder schema = new Builder();
+        MCPPrompt prompt = new MCPPrompt("test", "desc", "Hello, {{name}}!", schema, null);
+        assertEquals("Hello, {{name}}!", prompt.getTemplate());
+        assertEquals(schema, prompt.getSchema());
+    }
 }

@@ -210,4 +210,14 @@ public class SimpleCalculatorToolTest {
         assertTrue(hasA, "Parameter 'a' should be required");
         assertTrue(hasB, "Parameter 'b' should be required");
     }
+
+    @Test
+    public void testGetAndSetSchema() {
+        CalculatorTool calculator = new CalculatorTool();
+        Builder schema = new Builder();
+        calculator.setSchema(schema);
+        assertEquals(schema, calculator.getSchema());
+        Exception ex = assertThrows(IllegalArgumentException.class, () -> calculator.setSchema(null));
+        assertTrue(ex.getMessage().contains("Schema cannot be null"));
+    }
 }
