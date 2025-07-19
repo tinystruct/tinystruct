@@ -276,12 +276,17 @@ public class SSEPushManager {
     }
 
     /**
-     * Format a message as an SSE event string.
-     *
+     * Formats a message as an SSE event string.
      * @param message The message to format
      * @return The formatted SSE event string
      */
     private String formatSSEMessage(Builder message) {
-        return "data: " + message.toString() + "\n\n";
+        String type = message.get("type") != null ? message.get("type").toString() : null;
+        if ("connect".equals(type)) {
+            return "event: connect\ndata: Connected\n\n";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("data: ").append(message).append("\n\n");
+        return sb.toString();
     }
 }
