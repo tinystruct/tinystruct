@@ -6,8 +6,9 @@
     <artifactId>tinystruct</artifactId>
     <version>1.7.2</version>
     <name>tinystruct framework</name>
-    <description>A lightweight java framework designed for building efficient and scalable applications. Supports both
-        command-line tools and APIs, enabling developers to create robust solutions with ease.
+    <description>A lightweight, modular Java application framework for web and CLI development,
+        designed for AI integration and plugin-based architecture.
+        Enabling developers to create robust solutions with ease for building efficient and scalable applications.
     </description>
     <url>https://tinystruct.org</url>
     <licenses>
