@@ -33,7 +33,7 @@ public class CalculatorTool extends MCPTool {
      */
     public CalculatorTool() {
         // Note the true parameter at the end to enable local execution
-        super("calculator", "A calculator that performs arithmetic operations", null, null,true);
+        super("calculator", "A calculator that performs arithmetic operations");
     }
 
     /**
