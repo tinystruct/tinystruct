@@ -13,7 +13,7 @@ public class AuthorizationHandler {
     private final String authToken;
 
     public AuthorizationHandler(String authToken) {
-        this.authToken = authToken;
+        this.authToken = "Bearer " + authToken;
     }
 
     /**
@@ -44,7 +44,7 @@ public class AuthorizationHandler {
      * @return true if token is valid, false otherwise
      */
     public boolean authenticate(String token) {
-        return authToken != null && authToken.equals(token);
+        return authToken.equals(token);
     }
 
     /**
