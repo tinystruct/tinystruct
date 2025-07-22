@@ -39,33 +39,59 @@ public class MCPTool extends AbstractMCPResource {
     private final boolean supportsLocalExecution;
 
     /**
-     * Constructs a new MCPTool.
-     * <p>
-     * The tool can be executed locally if the client is null, or remotely through
-     * the provided MCP client.
-     * </p>
+     * Constructs a new MCPTool for local execution with no schema.
      *
      * @param name The name of the tool (must not be null or empty)
      * @param description The description of the tool
-     * @param client The MCP client to use for execution (may be null for local tools)
-     * @throws IllegalArgumentException If name is null or empty
+     */
+    public MCPTool(String name, String description) {
+        this(name, description, null, null, true);
+    }
+
+    /**
+     * Constructs a new MCPTool for local execution with a schema.
+     *
+     * @param name The name of the tool (must not be null or empty)
+     * @param description The description of the tool
+     * @param schema The schema for the tool parameters
+     */
+    public MCPTool(String name, String description, Builder schema) {
+        this(name, description, schema, null, true);
+    }
+
+    /**
+     * Constructs a new MCPTool for remote or local execution, without schema.
+     *
+     * @param name The name of the tool (must not be null or empty)
+     * @param description The description of the tool
+     * @param client The MCP client to use for execution (maybe null for local tools)
      */
     public MCPTool(String name, String description, MCPClient client) {
         this(name, description, null, client, false);
     }
 
     /**
-     * Constructs a new MCPTool with explicit local execution support.
-     * <p>
-     * The tool can be executed locally if the client is null and supportsLocalExecution is true,
-     * or remotely through the provided MCP client.
-     * </p>
+     * Constructs a new MCPTool for remote or local execution, with schema and explicit local execution flag.
      *
      * @param name The name of the tool (must not be null or empty)
      * @param description The description of the tool
-     * @param client The MCP client to use for execution (may be null for local tools)
+     * @param schema The schema for the tool parameters (maybe null)
+     * @param client The MCP client to use for execution (maybe null for local tools)
+     */
+    public MCPTool(String name, String description, Builder schema, MCPClient client) {
+        super(name, description, client);
+        this.schema = schema;
+        this.supportsLocalExecution = true; // Default to true for test tools
+    }
+
+    /**
+     * Constructs a new MCPTool for remote or local execution, with schema and explicit local execution flag.
+     *
+     * @param name The name of the tool (must not be null or empty)
+     * @param description The description of the tool
+     * @param schema The schema for the tool parameters (maybe null)
+     * @param client The MCP client to use for execution (maybe null for local tools)
      * @param supportsLocalExecution Whether this tool supports local execution
-     * @throws IllegalArgumentException If name is null or empty
      */
     public MCPTool(String name, String description, Builder schema, MCPClient client, boolean supportsLocalExecution) {
         super(name, description, client);
@@ -73,14 +99,14 @@ public class MCPTool extends AbstractMCPResource {
         this.supportsLocalExecution = supportsLocalExecution;
     }
 
-    public MCPTool(String calculator, String aTestCalculator, Builder testSchema, MCPClient mockClient) {
-        super(calculator, aTestCalculator, mockClient);
-        this.schema = testSchema;
-        this.supportsLocalExecution = true; // Default to true for test tools
-    }
-
-    // getName() and getDescription() are inherited from AbstractMCPResource
-
+    /**
+     * Returns the type of this resource.
+     * <p>
+     * This method indicates that this resource is a tool.
+     * </p>
+     *
+     * @return The resource type, which is always {@link ResourceType#TOOL}
+     */
     @Override
     public ResourceType getType() {
         return ResourceType.TOOL;
@@ -93,7 +119,7 @@ public class MCPTool extends AbstractMCPResource {
      * types, constraints, and descriptions.
      * </p>
      *
-     * @return The schema as a Builder object (may be null)
+     * @return The schema as a Builder object (maybe null)
      */
     public Builder getSchema() {
         return schema;
@@ -247,12 +273,12 @@ public class MCPTool extends AbstractMCPResource {
             validateParameters(builder);
 
             // Execute the tool
-            if (client != null) {
-                // Remote execution through MCP client
-                return client.callTool(name, builder);
-            } else if (supportsLocalExecution()) {
+            if (supportsLocalExecution()) {
                 // Local execution
                 return executeLocally(builder);
+            } else if (client != null) {
+                // Remote execution through MCP client
+                return client.callTool(name, builder);
             } else {
                 throw new MCPException("Local execution not implemented for tool: " + name);
             }
