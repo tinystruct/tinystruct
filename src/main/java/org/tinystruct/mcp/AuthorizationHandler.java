@@ -24,7 +24,11 @@ public class AuthorizationHandler {
      * @throws SecurityException if authentication fails
      */
     public String validateAuthHeader(Request request) throws SecurityException {
-        if (request.headers().get(Header.AUTHORIZATION) != null) {
+        if (this.authToken != null && !this.authToken.isEmpty()) {
+            // Check if the request has an Authorization header
+            if (!request.headers().contains(Header.AUTHORIZATION)) {
+                throw new SecurityException("Authorization header is missing");
+            }
             String auth = request.headers().get(Header.AUTHORIZATION).toString();
             if (auth == null || !authenticate(auth)) {
                 throw new SecurityException("Invalid authorization");
