@@ -34,10 +34,10 @@ public abstract class MCPApplication extends AbstractApplication {
 
     // Generic registries for tools, resources, prompts, and custom RPC handlers
     protected final Map<String, MCPTool> tools = new java.util.concurrent.ConcurrentHashMap<>();
-    protected final Map<String, MCPTool.MCPToolMethod> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, MCPDataResource> resources = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, MCPPrompt> prompts = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, RpcMethodHandler> rpcHandlers = new java.util.concurrent.ConcurrentHashMap<>();
+    protected static final Map<String, MCPTool.MCPToolMethod> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Initializes the MCP application, setting up authentication, SSE, JSON-RPC handler,
