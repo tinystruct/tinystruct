@@ -25,7 +25,6 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -55,7 +54,6 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     public static final Pattern DOUBLE = Pattern.compile("^-?\\d+(\\.\\d+)$");
     public static final Pattern BOOLEAN = Pattern.compile("^(true|false)$");
     private int closedPosition = 0;
-    private String key = null;
     private Object value = null;
 
     /**
@@ -83,15 +81,12 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     /**
-     * Constructor that initializes with a key-value pair.
+     * Constructor that initializes with an array value.
      *
-     * @param key   The key for the value
-     * @param value The value to associate with the key
+     * @param value The array value to initialize with
      */
-    public Builder(String key, Object value) {
-        this.key = key;
+    public Builder(Object[] value) {
         this.value = value;
-        this.put(key, value);
     }
 
     /**
@@ -108,11 +103,25 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     /**
+     * Check if the Builder represents a single value (not a map).
+     *
+     * @return true if the Builder represents a single value, false if it's a map
+     */
+    public boolean isSingleValue() {
+        return this.isEmpty() && this.value != null;
+    }
+
+    /**
      * Get the current value of the Builder.
+     * This method is only available when the Builder represents a single value (not a map).
      *
      * @return The current value
+     * @throws IllegalStateException if the Builder is being used as a map (has key-value pairs)
      */
     public Object getValue() {
+        if (!this.isEmpty()) {
+            throw new IllegalStateException("getValue() is only available when Builder represents a single value, not a map");
+        }
         return this.value;
     }
 
@@ -124,34 +133,33 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      */
     @Override
     public String toString() {
-        if (this.value != null) {
-            String tmp;
+        // If this Builder represents a single value (not a map), return the value
+        if (this.value != null && this.isEmpty()) {
             if (this.value instanceof String) {
-                tmp = QUOTE + this.value.toString() + QUOTE;
-            } else if (value.getClass().isArray()) {
+                return QUOTE + this.value.toString() + QUOTE;
+            } else if (this.value.getClass().isArray()) {
                 StringBuilder buffer = new StringBuilder();
-                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(LEFT_BRACKETS);
-                int length = Array.getLength(value);
+                buffer.append(LEFT_BRACKETS);
+                int length = Array.getLength(this.value);
                 for (int i = 0; i < length; i++) {
-                    buffer.append(QUOTE).append(Array.get(value, i).toString().replaceAll(QUOTE + "", ESCAPE_CHAR + QUOTE + "")).append(QUOTE);
+                    Object element = Array.get(this.value, i);
+                    if (element instanceof String) {
+                        buffer.append(QUOTE).append(element.toString().replaceAll(QUOTE + "", ESCAPE_CHAR + QUOTE + "")).append(QUOTE);
+                    } else {
+                        buffer.append(element.toString());
+                    }
                     if (i < length - 1) {
                         buffer.append(COMMA);
                     }
                 }
                 buffer.append(RIGHT_BRACKETS);
-                tmp = buffer.toString();
+                return buffer.toString();
             } else {
-                tmp = this.value.toString();
+                return this.value.toString();
             }
-
-            if (this.key != null) {
-                return QUOTE + this.key + QUOTE + ":" + tmp;
-            }
-
-            return tmp;
         }
 
-        // Build a string representation of the data
+        // Build a string representation of the key-value pairs
         StringBuilder buffer = new StringBuilder();
         Set<Entry<String, Object>> keys = this.entrySet();
         Object value;
@@ -202,7 +210,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         resource = resource.trim();
         if (!resource.isEmpty()) {
             if (resource.charAt(0) == QUOTE) {
-                this.parseValue(resource);
+                this.parseValue(new CharSequenceView(resource, 0, resource.length()));
             }
 
             if (resource.charAt(0) != LEFT_BRACE && resource.charAt(resource.length() - 1) != RIGHT_BRACE) {
@@ -216,7 +224,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                 // Check if we have a valid JSON structure
                 if (closedPosition > 1) {
                     // Extract the key-value pairs sequence from the JSON structure
-                    String values = resource.substring(1, closedPosition - 1);
+                    CharSequenceView values = new CharSequenceView(resource, 1, closedPosition - 1);
 
                     // Parse the key-value pairs
                     this.parseValue(values);
@@ -247,74 +255,100 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     /**
-     * Parse the key-value pairs from the input string and populate the Builder object.
+     * Parse the key-value pairs from the input CharSequenceView and populate the Builder object.
      *
-     * @param value Key-value pairs string.
+     * @param value Key-value pairs CharSequenceView.
      * @throws ApplicationException If there is an issue parsing the data.
      */
-    private void parseValue(String value) throws ApplicationException {
+    private void parseValue(CharSequence value) throws ApplicationException {
         // Trim the input value for structure parsing only
-        value = value.trim();
+        int start = 0;
+        int end = value.length();
 
-        if (!value.isEmpty() && value.charAt(0) == QUOTE) {
+        // Skip leading whitespace
+        while (start < end && Character.isWhitespace(value.charAt(start))) {
+            start++;
+        }
+
+        // Skip trailing whitespace
+        while (end > start && Character.isWhitespace(value.charAt(end - 1))) {
+            end--;
+        }
+
+        if (start >= end) {
+            return;
+        }
+
+        CharSequenceView trimmedValue = new CharSequenceView(value, start, end);
+
+        if (trimmedValue.charAt(0) == QUOTE) {
             // Handle key-value pair starting with a quoted key
-            int COLON_POSITION = value.indexOf(COLON);
+            int COLON_POSITION = indexOf(trimmedValue, COLON);
 
             if (COLON_POSITION != -1) {
-                String keyName = value.substring(1, COLON_POSITION - 1);
+                CharSequenceView keyNameView = new CharSequenceView(trimmedValue, 1, COLON_POSITION - 1);
+                String keyName = keyNameView.toString();
 
-                int start = COLON_POSITION + 1;
-                int QUOTE_POSITION = keyName.lastIndexOf(QUOTE);
+                int startValue = COLON_POSITION + 1;
+                int QUOTE_POSITION = lastIndexOf(keyNameView, QUOTE);
                 if (QUOTE_POSITION != -1) {
-                    keyName = keyName.substring(0, QUOTE_POSITION);
+                    keyName = keyNameView.subSequence(0, QUOTE_POSITION).toString();
                 }
 
-                String $value = value.substring(start).trim();
+                CharSequenceView $value = new CharSequenceView(trimmedValue, startValue, trimmedValue.length());
                 Object keyValue = null;
                 if (!$value.isEmpty()) {
+                    // Skip leading whitespace
+                    int startIndex = 0;
+                    while (startIndex < $value.length() && Character.isWhitespace($value.charAt(startIndex))) {
+                        startIndex++;
+                    }
+                    $value = new CharSequenceView($value, startIndex, $value.length());
+
                     if ($value.charAt(0) == QUOTE) {
                         // Extract the value if it is enclosed in quotes, preserving whitespace
                         int $end = this.next($value, Builder.QUOTE);
-                        keyValue = $value.substring(1, $end - 1);
+                        keyValue = $value.subSequence(1, $end - 1).toString();
 
                         if ($end + 1 < $value.length()) {
-                            $value = $value.substring($end + 1); // COMMA length: 1
-                            this.parseValue($value);
+                            CharSequenceView remaining = new CharSequenceView($value, $end + 1, $value.length()); // COMMA length: 1
+                            this.parseValue(remaining);
                         }
                     } else if ($value.charAt(0) == LEFT_BRACE) {
                         // Handle nested JSON structure
                         int closedPosition = this.seekPosition($value);
-                        String _$value = $value.substring(0, closedPosition);
+                        CharSequenceView _$value = new CharSequenceView($value, 0, closedPosition);
                         Builder builder = new Builder();
-                        builder.parse(_$value);
+                        builder.parse(_$value.toString());
                         keyValue = builder;
                         if (closedPosition < $value.length()) {
-                            _$value = $value.substring(closedPosition + 1); // COMMA length: 1
-                            this.parseValue(_$value);
+                            CharSequenceView remaining = new CharSequenceView($value, closedPosition + 1, $value.length()); // COMMA length: 1
+                            this.parseValue(remaining);
                         }
                     } else if ($value.charAt(0) == LEFT_BRACKETS) {
                         // Handle array
                         Builders builders = new Builders();
-                        String remaining = builders.parse($value);
+                        CharSequenceView remaining = builders.parse($value);
                         keyValue = builders;
-                        if (!remaining.isEmpty() && remaining.charAt(0) == COMMA)
-                            remaining = remaining.substring(1); // COMMA length: 1
+                        if (remaining.length() > 0 && remaining.charAt(0) == COMMA)
+                            remaining = new CharSequenceView(remaining, 1, remaining.length()); // COMMA length: 1
                         this.parseValue(remaining);
                     } else {
-                        if ($value.indexOf(COMMA) != -1) {
+                        int commaIndex = indexOf($value, COMMA);
+                        if (commaIndex != -1) {
                             // Extract and parse a single value if there are more values in the sequence
-                            String _value = $value.substring(0, $value.indexOf(COMMA));
-                            if (!_value.isEmpty()) {
-                                keyValue = getValue(_value);
+                            CharSequenceView _value = new CharSequenceView($value, 0, commaIndex);
+                            if (_value.length() > 0) {
+                                keyValue = getValue(_value.toString());
                             } else {
-                                keyValue = _value;
+                                keyValue = _value.toString();
                             }
 
-                            $value = $value.substring($value.indexOf(COMMA) + 1);
-                            this.parseValue($value);
+                            CharSequenceView remaining = new CharSequenceView($value, commaIndex + 1, $value.length());
+                            this.parseValue(remaining);
                         } else {
                             // Parse the last value in the sequence
-                            keyValue = getValue($value);
+                            keyValue = getValue($value.toString());
                         }
                     }
                 }
@@ -323,6 +357,38 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
                 this.put(keyName, keyValue);
             }
         }
+    }
+
+    /**
+     * Find the index of a character in a CharSequenceView.
+     *
+     * @param sequence The CharSequenceView to search
+     * @param ch       The character to find
+     * @return The index of the character, or -1 if not found
+     */
+    private int indexOf(CharSequenceView sequence, char ch) {
+        for (int i = 0; i < sequence.length(); i++) {
+            if (sequence.charAt(i) == ch) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Find the last index of a character in a CharSequenceView.
+     *
+     * @param sequence The CharSequenceView to search
+     * @param ch       The character to find
+     * @return The last index of the character, or -1 if not found
+     */
+    private int lastIndexOf(CharSequenceView sequence, char ch) {
+        for (int i = sequence.length() - 1; i >= 0; i--) {
+            if (sequence.charAt(i) == ch) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     /**
@@ -379,18 +445,28 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      * @return Closing position of the JSON structure
      */
     private int seekPosition(String value) {
+        return seekPosition(new CharSequenceView(value, 0, value.length()));
+    }
+
+    /**
+     * Find the closing position of the JSON structure.
+     * Handles nested structures and escaped characters.
+     *
+     * @param value JSON structure CharSequenceView
+     * @return Closing position of the JSON structure
+     */
+    private int seekPosition(CharSequenceView value) {
         // Find the closing position of the JSON structure
-        char[] chars = value.toCharArray();
         int i = 0;
         int n = 0;
-        int position = chars.length;
+        int position = value.length();
         boolean inQuotes = false;
 
         while (i < position) {
-            char c = chars[i];
-            
+            char c = value.charAt(i);
+
             // Handle quotes and escaped characters
-            if (c == QUOTE && (i == 0 || chars[i - 1] != ESCAPE_CHAR)) {
+            if (c == QUOTE && (i == 0 || value.charAt(i - 1) != ESCAPE_CHAR)) {
                 inQuotes = !inQuotes;
             } else if (!inQuotes) {
                 // Only count braces when not inside a string
@@ -419,16 +495,27 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      * @return Position of the next occurrence of the character
      */
     private int next(String value, char character) {
-        // Find the position of the next occurrence of a character in a string
-        char[] chars = value.toCharArray();
+        return next(new CharSequenceView(value, 0, value.length()), character);
+    }
+
+    /**
+     * Find the position of the next occurrence of a character in a CharSequenceView.
+     * Handles escaped characters and nested structures.
+     *
+     * @param value     CharSequenceView to search
+     * @param character The character to look for
+     * @return Position of the next occurrence of the character
+     */
+    private int next(CharSequenceView value, char character) {
+        // Find the position of the next occurrence of a character in a CharSequenceView
         int i = 0;
         int n = 0;
-        int position = chars.length;
+        int position = value.length();
 
         while (i < position) {
-            char c = chars[i];
+            char c = value.charAt(i);
             if (c == character) {
-                if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
+                if (i - 1 >= 0 && value.charAt(i - 1) == ESCAPE_CHAR) {
                 } else n++;
             }
 
