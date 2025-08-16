@@ -18,7 +18,6 @@ package org.tinystruct.mail;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.mail.Connection.PROTOCOL;
 import org.tinystruct.system.Configuration;
-import org.tinystruct.system.Settings;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
@@ -37,7 +36,7 @@ import java.time.Instant;
  */
 public final class ConnectionManager implements AutoCloseable {
     private static final Logger logger = Logger.getLogger(ConnectionManager.class.getName());
-    
+
     private final ConcurrentLinkedQueue<PooledConnection> idleConnections;
     private final ConcurrentHashMap<Connection, Instant> activeConnections;
     private final ScheduledExecutorService cleanupExecutor;
@@ -65,8 +64,8 @@ public final class ConnectionManager implements AutoCloseable {
 
         // Schedule periodic cleanup
         this.cleanupExecutor.scheduleAtFixedRate(
-            this::cleanup,
-            1, 1, TimeUnit.MINUTES
+                this::cleanup,
+                1, 1, TimeUnit.MINUTES
         );
     }
 
@@ -77,7 +76,7 @@ public final class ConnectionManager implements AutoCloseable {
     /**
      * Gets a connection from the pool or creates a new one if needed.
      *
-     * @param config Configuration for creating new connections
+     * @param config   Configuration for creating new connections
      * @param protocol Mail protocol to use
      * @return A connection from the pool
      * @throws ApplicationException if connection creation fails
@@ -123,7 +122,7 @@ public final class ConnectionManager implements AutoCloseable {
         if (connection instanceof PooledConnection) {
             PooledConnection pooledConnection = (PooledConnection) connection;
             activeConnections.remove(connection);
-            
+
             if (isConnectionValid(pooledConnection)) {
                 idleConnections.offer(pooledConnection);
             } else {
@@ -136,7 +135,7 @@ public final class ConnectionManager implements AutoCloseable {
     public void close() {
         isShutdown = true;
         cleanupExecutor.shutdown();
-        
+
         try {
             if (!cleanupExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
                 cleanupExecutor.shutdownNow();
@@ -176,16 +175,16 @@ public final class ConnectionManager implements AutoCloseable {
     }
 
     private boolean isConnectionValid(PooledConnection connection) {
-        return connection != null && 
-               connection.getCreationTime() != null && 
-               connection.getLastUsedTime() != null &&
-               Duration.between(connection.getCreationTime(), Instant.now()).compareTo(maxLifetime) <= 0 &&
-               Duration.between(connection.getLastUsedTime(), Instant.now()).compareTo(maxIdleTime) <= 0;
+        return connection != null &&
+                connection.getCreationTime() != null &&
+                connection.getLastUsedTime() != null &&
+                Duration.between(connection.getCreationTime(), Instant.now()).compareTo(maxLifetime) <= 0 &&
+                Duration.between(connection.getLastUsedTime(), Instant.now()).compareTo(maxIdleTime) <= 0;
     }
 
     private boolean isConnectionExpired(PooledConnection connection, Instant now) {
         return Duration.between(connection.getLastUsedTime(), now).compareTo(maxIdleTime) > 0 ||
-               Duration.between(connection.getCreationTime(), now).compareTo(maxLifetime) > 0;
+                Duration.between(connection.getCreationTime(), now).compareTo(maxLifetime) > 0;
     }
 
     private void closeConnection(Connection connection) {
@@ -201,14 +200,14 @@ public final class ConnectionManager implements AutoCloseable {
         activeConnections.put(connection, Instant.now());
     }
 
-    private PooledConnection createNewConnection(Configuration<String> config, PROTOCOL protocol) 
+    private PooledConnection createNewConnection(Configuration<String> config, PROTOCOL protocol)
             throws ApplicationException {
-        Connection baseConnection = protocol == PROTOCOL.SMTP ? 
-            new SMTPConnection(config) : new POP3Connection(config);
+        Connection baseConnection = protocol == PROTOCOL.SMTP ?
+                new SMTPConnection(config) : new POP3Connection(config);
         return new PooledConnection(baseConnection);
     }
 
-    private Connection waitForConnection(Configuration<String> config, PROTOCOL protocol) 
+    private Connection waitForConnection(Configuration<String> config, PROTOCOL protocol)
             throws InterruptedException, ApplicationException {
         int attempts = 0;
         while (attempts < 3) {
@@ -217,7 +216,7 @@ public final class ConnectionManager implements AutoCloseable {
                 markConnectionActive(connection);
                 return connection;
             }
-            
+
             Thread.sleep(1000);
             attempts++;
         }

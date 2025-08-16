@@ -15,15 +15,16 @@
  *******************************************************************************/
 package org.tinystruct.mail;
 
-import jakarta.mail.*;
+import jakarta.mail.Message;
+import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.mail.Connection.PROTOCOL;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
-import org.tinystruct.mail.Connection.PROTOCOL;
 
 import java.io.File;
 import java.util.ArrayList;
