@@ -17,7 +17,9 @@
 package org.tinystruct.data;
 
 import org.tinystruct.ApplicationException;
-import org.tinystruct.data.component.*;
+import org.tinystruct.data.component.Field;
+import org.tinystruct.data.component.Row;
+import org.tinystruct.data.component.Table;
 import org.tinystruct.data.repository.Type;
 
 /**

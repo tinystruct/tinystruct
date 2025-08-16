@@ -24,7 +24,6 @@ import org.tinystruct.dom.Element;
 import org.tinystruct.system.util.FileGenerator;
 import org.tinystruct.system.util.StringUtilities;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
