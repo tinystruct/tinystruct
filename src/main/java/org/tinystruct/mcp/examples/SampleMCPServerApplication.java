@@ -1,7 +1,6 @@
 package org.tinystruct.mcp.examples;
 
 import org.tinystruct.data.component.Builder;
-import org.tinystruct.mcp.MCPException;
 import org.tinystruct.mcp.MCPPrompt;
 import org.tinystruct.mcp.MCPServerApplication;
 import org.tinystruct.mcp.tools.CalculatorTool;

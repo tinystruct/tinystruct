@@ -19,10 +19,10 @@ import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-import java.lang.reflect.Method;
 
 /**
  * Implementation of MCPResource for tools.

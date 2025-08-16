@@ -16,6 +16,7 @@
 package org.tinystruct.mcp;
 
 import org.tinystruct.data.component.Builder;
+
 import java.util.ArrayList;
 import java.util.List;
 

@@ -1,7 +1,8 @@
 package org.tinystruct.mcp;
 
 import org.tinystruct.data.component.Builder;
-import static org.tinystruct.mcp.MCPSpecification.*;
+
+import static org.tinystruct.mcp.MCPSpecification.Methods;
 
 /**
  * Utility class for constructing standard JSON-RPC requests and responses for MCP lifecycle methods.

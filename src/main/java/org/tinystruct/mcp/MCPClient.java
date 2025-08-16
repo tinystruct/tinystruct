@@ -24,10 +24,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -345,7 +348,7 @@ public class MCPClient {
     }
 
     private JsonRpcResponse sendRequest(String method, Builder params) throws IOException {
-        URL url = new URL(baseUrl + "?q=" + Endpoints.SSE);
+        URL url = URI.create(baseUrl + "?q=" + Endpoints.SSE).toURL();
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");  // Changed to POST for JSON-RPC
         conn.setRequestProperty("Content-Type", Http.CONTENT_TYPE_JSON);

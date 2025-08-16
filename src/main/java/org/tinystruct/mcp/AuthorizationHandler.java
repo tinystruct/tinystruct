@@ -3,7 +3,6 @@ package org.tinystruct.mcp;
 import org.tinystruct.http.Header;
 import org.tinystruct.http.Request;
 
-import java.lang.SecurityException;
 import java.util.UUID;
 
 /**
