@@ -17,11 +17,8 @@ package org.tinystruct.mcp;
 
 import org.junit.jupiter.api.Test;
 import org.tinystruct.data.component.Builder;
-import org.tinystruct.data.component.Builders;
-import org.tinystruct.mcp.MCPSpecification.Methods;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;

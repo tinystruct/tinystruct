@@ -1,11 +1,5 @@
 package org.tinystruct.system;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.Test;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
@@ -13,6 +7,8 @@ import org.tinystruct.application.Action;
 
 import java.time.Duration;
 import java.time.Instant;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class ApplicationManagerTest {
     @Test

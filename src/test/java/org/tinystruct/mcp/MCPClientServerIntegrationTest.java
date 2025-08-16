@@ -19,7 +19,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.tinystruct.ApplicationContext;
-import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.mcp.tools.CalculatorTool;

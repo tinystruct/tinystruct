@@ -245,4 +245,28 @@ public class MCPToolTest {
         assertNotNull(method.getSchema());
         assertEquals(2, method.getParameters().size());
     }
+
+    @Test
+    public void testConstructorWithoutClient() {
+        // No schema
+        MCPTool tool1 = new MCPTool("localTool", "A local tool") {
+            @Override
+            protected Object executeLocally(Builder builder) { return "executed"; }
+        };
+        assertEquals("localTool", tool1.getName());
+        assertEquals("A local tool", tool1.getDescription());
+        assertNull(tool1.getSchema());
+        assertTrue(tool1.supportsLocalExecution());
+
+        // With schema
+        Builder schema = createTestSchema();
+        MCPTool tool2 = new MCPTool("localToolWithSchema", "A local tool with schema", schema) {
+            @Override
+            protected Object executeLocally(Builder builder) { return "executed"; }
+        };
+        assertEquals("localToolWithSchema", tool2.getName());
+        assertEquals("A local tool with schema", tool2.getDescription());
+        assertEquals(schema, tool2.getSchema());
+        assertTrue(tool2.supportsLocalExecution());
+    }
 }

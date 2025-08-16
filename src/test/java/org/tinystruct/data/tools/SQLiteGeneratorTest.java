@@ -20,7 +20,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.DatabaseOperator;
-import org.tinystruct.system.Settings;
 
 import java.io.File;
 import java.io.IOException;

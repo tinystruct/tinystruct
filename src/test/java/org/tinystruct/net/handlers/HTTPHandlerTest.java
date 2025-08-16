@@ -1,22 +1,18 @@
 package org.tinystruct.net.handlers;
 
 import org.junit.jupiter.api.Test;
-import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.Attachments;
 import org.tinystruct.net.URLRequest;
 import org.tinystruct.net.URLResponse;
 
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
