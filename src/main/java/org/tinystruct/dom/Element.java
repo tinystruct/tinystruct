@@ -18,7 +18,6 @@ package org.tinystruct.dom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
@@ -60,8 +59,8 @@ public class Element implements Cloneable {
     /**
      * Constructor
      *
-     * @param  name name
-     * @param  attributes list of attribute
+     * @param name       name
+     * @param attributes list of attribute
      */
     public Element(String name, List<Attribute> attributes) {
         this.name = name;
@@ -75,8 +74,8 @@ public class Element implements Cloneable {
     /**
      * Constructor
      *
-     * @param  name name
-     * @param  data data
+     * @param name name
+     * @param data data
      */
     public Element(String name, String data) {
         this.name = name;
@@ -254,7 +253,7 @@ public class Element implements Cloneable {
     /**
      * Insert element to a specific position
      *
-     * @param e element
+     * @param e     element
      * @param index index
      */
     public void insertElement(Element e, int index) {
@@ -413,7 +412,7 @@ public class Element implements Cloneable {
     }
 
     @Override
-	public String toString() {
+    public String toString() {
         if (this.elementType == ElementType.TEXT) {
             return this.name;
         }
@@ -424,7 +423,7 @@ public class Element implements Cloneable {
             return "Invalid Tag Name";
 
         StringBuffer buffer = new StringBuffer();
-		StringBuffer nodes = new StringBuffer();
+        StringBuffer nodes = new StringBuffer();
         buffer.append(this.getSpace());
         buffer.append("<");
         buffer.append(this.name);
@@ -601,7 +600,8 @@ public class Element implements Cloneable {
 
     /**
      * Convert the element to HTML format
-     * @param docType The HTML document type
+     *
+     * @param docType      The HTML document type
      * @param voidElements Set of void elements that don't need closing tags
      * @return HTML string representation
      */
@@ -611,13 +611,13 @@ public class Element implements Cloneable {
 
         // Opening tag
         buffer.append('<').append(tagName);
-        
+
         // Attributes
         if (!attributes.isEmpty()) {
             for (Attribute attr : attributes) {
                 String attrName = attr.name.toLowerCase();
                 String attrValue = attr.value;
-                
+
                 buffer.append(' ').append(attrName);
                 if (attrValue != null && !attrValue.isEmpty()) {
                     buffer.append("=\"").append(escapeHtml(attrValue)).append('"');
@@ -627,8 +627,8 @@ public class Element implements Cloneable {
 
         // Handle void elements
         if (voidElements.contains(tagName)) {
-            if (docType == Document.DocumentType.XHTML1_STRICT || 
-                docType == Document.DocumentType.XHTML1_TRANSITIONAL) {
+            if (docType == Document.DocumentType.XHTML1_STRICT ||
+                    docType == Document.DocumentType.XHTML1_TRANSITIONAL) {
                 buffer.append(" />");
             } else {
                 buffer.append('>');
@@ -658,6 +658,7 @@ public class Element implements Cloneable {
 
     /**
      * Escape special characters for HTML output
+     *
      * @param text The text to escape
      * @return Escaped HTML text
      */
@@ -666,10 +667,10 @@ public class Element implements Cloneable {
             return "";
         }
         return text.replace("&", "&amp;")
-                  .replace("<", "&lt;")
-                  .replace(">", "&gt;")
-                  .replace("\"", "&quot;")
-                  .replace("'", "&#39;");
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
 }
