@@ -318,6 +318,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
      * @param targetType The target type to convert to.
      * @return The converted argument.
      */
+    @SuppressWarnings("unchecked")
     private Object convertArgument(Object arg, Class<?> targetType) {
         if (arg == null) {
             return null; // Return null if the input argument is null.
