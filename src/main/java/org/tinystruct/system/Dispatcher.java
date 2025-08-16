@@ -81,139 +81,217 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
      */
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws RemoteException {
-        // Process the system.directory.
-        Settings config = new Settings();
-        if (config.get("system.directory") == null || "".equals(config.get("system.directory"))) {
-            config.set("system.directory", System.getProperty("user.dir"));
+        try {
+            DispatcherRunner runner = new DispatcherRunner();
+            runner.run(args);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Fatal error in dispatcher: " + e.getMessage(), e);
+            System.exit(1);
+        }
+    }
+
+    /**
+     * Internal runner class to encapsulate the main method logic.
+     */
+    private static class DispatcherRunner {
+        private final Settings config;
+        private final Context context;
+        private final Dispatcher dispatcher;
+        private final List<String> commands = new ArrayList<>();
+        private boolean remote = false;
+        private RemoteDispatcher remoteDispatcher = null;
+        private boolean disableHelper = false;
+
+        public DispatcherRunner() {
+            this.config = initializeConfiguration();
+            this.context = new ApplicationContext();
+            this.dispatcher = new Dispatcher();
+            ApplicationManager.install(dispatcher, config);
         }
 
-        // Initialize the context.
-        Context context = new ApplicationContext();
+        public void run(String[] args) throws RemoteException {
+            if (args.length == 0) {
+                System.out.println(dispatcher.help());
+                return;
+            }
 
-        // Initialize the dispatcher.
-        Dispatcher dispatcher = new Dispatcher();
+            parseArguments(args);
+            handleRemoteAccess();
+            handleRemoteConnection();
+            installApplications();
+            executeCommands();
+        }
 
-        // Install Dispatcher.
-        ApplicationManager.install(dispatcher, config);
+        private Settings initializeConfiguration() {
+            Settings config = new Settings();
+            if (config.get("system.directory") == null || "".equals(config.get("system.directory"))) {
+                config.set("system.directory", System.getProperty("user.dir"));
+            }
+            return config;
+        }
 
-        if (args.length > 0) {
-            // Detect the command.
-            List<String> commands = new ArrayList<>();
+        private void parseArguments(String[] args) {
+            int start = extractCommands(args);
+            parseOptions(args, start);
+        }
+
+        private int extractCommands(String[] args) {
             int start = 0;
             if (!args[0].startsWith("--") && !args[0].startsWith("-")) {
                 commands.add(args[0]);
                 start = 1;
             }
+            return start;
+        }
 
-            // Process attributes / options.
-            String arg;
+        private void parseOptions(String[] args, int start) {
             for (int i = start; i < args.length; i++) {
-                arg = args[i];
+                String arg = args[i];
                 if (arg.startsWith("--")) {
-                    if ((i + 1) < args.length) {
-                        String value = args[++i].trim();
-                        if (!value.isEmpty() && !value.startsWith("--")) {
-                            if (context.getAttribute(arg) != null) {
-                                List<String> list;
-                                Object attribute = context.getAttribute(arg);
-                                if (attribute instanceof List) {
-                                    list = (List<String>) attribute;
-                                } else {
-                                    list = new ArrayList<>();
-                                    list.add(Objects.requireNonNull(context.getAttribute(arg)).toString());
-                                }
-                                list.add(value);
-                                context.setAttribute(arg, list);
-                            } else
-                                context.setAttribute(arg, value);
-                        } else {
-                            i--;
-                            context.setAttribute(arg, true);
-                        }
-                    } else {
-                        context.setAttribute(arg, true);
+                    parseLongOption(args, i);
+                    if (i < args.length - 1 && !args[i + 1].startsWith("--")) {
+                        i++; // Skip the value in next iteration
                     }
                 } else if (arg.startsWith("-D")) {
-                    String[] args0 = arg.substring(2).split("=");
-                    System.setProperty(args0[0], args0[1]);
-                } else
+                    parseSystemProperty(arg);
+                } else {
                     commands.add(arg);
-            }
-
-            boolean remote = false;
-            RemoteDispatcher remoteDispatcher = null;
-            if (context.getAttribute("--host") != null) {
-                Registry registry;
-                try {
-                    registry = LocateRegistry.getRegistry(Objects.requireNonNull(context.getAttribute("--host")).toString());
-                    remoteDispatcher = (RemoteDispatcher) registry.lookup("Dispatcher");
-                    if (remoteDispatcher != null) {
-                        remote = true;
-                    }
-                } catch (RemoteException e) {
-                    System.err.println(e.getCause().getMessage());
-                    System.exit(0);
-                } catch (NotBoundException e) {
-                    System.err.println(e.getCause().getMessage());
-                    System.exit(0);
                 }
             }
+        }
 
-            boolean disableHelper = false;
+        private void parseLongOption(String[] args, int index) {
+            String arg = args[index];
+            String value = null;
+            
+            if (index + 1 < args.length && !args[index + 1].startsWith("--")) {
+                value = args[index + 1].trim();
+            }
+
+            if (value != null && !value.isEmpty()) {
+                setContextAttribute(arg, value);
+            } else {
+                context.setAttribute(arg, true);
+            }
+        }
+
+        private void setContextAttribute(String key, String value) {
+            Object existing = context.getAttribute(key);
+            if (existing != null) {
+                List<String> list;
+                if (existing instanceof List) {
+                    list = (List<String>) existing;
+                } else {
+                    list = new ArrayList<>();
+                    list.add(existing.toString());
+                }
+                list.add(value);
+                context.setAttribute(key, list);
+            } else {
+                context.setAttribute(key, value);
+            }
+        }
+
+        private void parseSystemProperty(String arg) {
+            try {
+                String[] parts = arg.substring(2).split("=", 2);
+                if (parts.length == 2) {
+                    System.setProperty(parts[0], parts[1]);
+                } else {
+                    logger.warning("Invalid system property format: " + arg);
+                }
+            } catch (Exception e) {
+                logger.warning("Failed to set system property: " + arg + " - " + e.getMessage());
+            }
+        }
+
+        private void handleRemoteAccess() {
             if (context.getAttribute("--allow-remote-access") != null) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        dispatcher.bind(dispatcher);
-                    }
-                }).start();
-
+                startRemoteAccessThread();
                 disableHelper = true;
             }
+        }
 
-            // Load the packages from import attribute.
-            if (context.getAttribute("--import") != null && !Boolean.parseBoolean(Objects.requireNonNull(context.getAttribute("--import")).toString())) {
-                List<String> list;
-                if (context.getAttribute("--import") instanceof List) {
-                    list = (List<String>) context.getAttribute("--import");
-                } else {
-                    list = List.of(Objects.requireNonNull(context.getAttribute("--import")).toString());
+        private void startRemoteAccessThread() {
+            Thread remoteThread = new Thread(() -> {
+                try {
+                    dispatcher.bind(dispatcher);
+                } catch (Exception e) {
+                    logger.log(Level.SEVERE, "Failed to start remote access: " + e.getMessage(), e);
                 }
+            });
+            remoteThread.setDaemon(true);
+            remoteThread.start();
+        }
 
+        private void handleRemoteConnection() {
+            String host = (String) context.getAttribute("--host");
+            if (host != null) {
+                try {
+                    Registry registry = LocateRegistry.getRegistry(host);
+                    remoteDispatcher = (RemoteDispatcher) registry.lookup("Dispatcher");
+                    remote = true;
+                } catch (RemoteException e) {
+                    logger.severe("Remote connection failed: " + e.getMessage());
+                    System.exit(1);
+                } catch (NotBoundException e) {
+                    logger.severe("Remote dispatcher not found: " + e.getMessage());
+                    System.exit(1);
+                }
+            }
+        }
+
+        private void installApplications() throws RemoteException {
+            Object importValue = context.getAttribute("--import");
+            if (importValue != null && !Boolean.parseBoolean(importValue.toString())) {
+                List<String> applications = getApplicationList(importValue);
                 if (remote) {
-                    remoteDispatcher.install(config, list);
-                } else
-                    dispatcher.install(config, list);
+                    remoteDispatcher.install(config, applications);
+                } else {
+                    dispatcher.install(config, applications);
+                }
             } else {
                 dispatcher.install(config, null);
             }
+        }
 
-            if (remote) {
-                if (!commands.isEmpty()) {
-                    for (String command : commands) {
-                        System.out.print(remoteDispatcher.execute(command, context));
-                    }
-                } else {
-                    System.out.print(remoteDispatcher.execute(null, context));
-                }
-                System.exit(0);
+        private List<String> getApplicationList(Object importValue) {
+            if (importValue instanceof List) {
+                return (List<String>) importValue;
+            } else {
+                return List.of(importValue.toString());
             }
+        }
 
+        private void executeCommands() throws RemoteException {
+            if (remote) {
+                executeRemoteCommands();
+                System.exit(0);
+            } else {
+                executeLocalCommands();
+            }
+        }
+
+        private void executeRemoteCommands() throws RemoteException {
+            if (!commands.isEmpty()) {
+                for (String command : commands) {
+                    System.out.print(remoteDispatcher.execute(command, context));
+                }
+            } else {
+                System.out.print(remoteDispatcher.execute(null, context));
+            }
+        }
+
+        private void executeLocalCommands() throws RemoteException {
             if (!commands.isEmpty()) {
                 for (String command : commands) {
                     if (!disableHelper || command != null) {
-                        // Execute a local method.
                         dispatcher.execute(command, context);
                     }
                 }
-            } else {
-                if (!disableHelper) {
-                    // Execute a local method.
-                    dispatcher.execute(null, context);
-                }
+            } else if (!disableHelper) {
+                dispatcher.execute(null, context);
             }
-        } else {
-            System.out.println(dispatcher.help());
         }
     }
 
