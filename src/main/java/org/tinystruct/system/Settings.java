@@ -15,7 +15,6 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
-import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
 
 import java.io.*;
@@ -23,7 +22,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Logger;
