@@ -49,11 +49,11 @@ public class SMTPConnection implements Connection {
          */
         Properties props = System.getProperties();
 
-        boolean isSSL = Boolean.parseBoolean(this.config.get("mail.ssl.on"));
+        boolean isSSL = Boolean.parseBoolean(this.config.get("mail.smtp.starttls.enable"));
         String socketFactoryPort = this.config.get("mail.smtp.socketFactory.port");
 
-        this.username = this.config.get("smtp.auth.user");
-        this.password = this.config.get("smtp.auth.pwd");
+        this.username = this.config.get("mail.smtp.username");
+        this.password = this.config.get("mail.smtp.password");
 
         if (isSSL) {
 //            Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());

@@ -58,12 +58,12 @@ public class POP3Connection implements Connection {
          */
         Properties props = System.getProperties();
 
-        boolean isSSL = Boolean.valueOf(this.config.get("mail.ssl.on"));
+        boolean isSSL = Boolean.valueOf(this.config.get("mail.smtp.starttls.enable"));
 
         String POP3_SOCKETFACTORY_PORT = this.config.get("mail.pop3.socketFactory.port");
 
-        this.username = this.config.get("smtp.auth.user");
-        this.password = this.config.get("smtp.auth.pwd");
+        this.username = this.config.get("mail.smtp.username");
+        this.password = this.config.get("mail.smtp.password");
 
         props.setProperty("mail.store.protocol", this.config.get("mail.store.protocol"));
         if (isSSL) {
