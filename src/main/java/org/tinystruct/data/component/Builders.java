@@ -82,7 +82,7 @@ public class Builders extends ArrayList<Builder> implements Serializable {
             }
             if (end > 1) { // If array is not empty
                 // Don't trim the array content to preserve whitespace
-                parseArrayContent(new CharSequenceView(value, 1, end));
+                parseArrayContent(value.substring(1, end));
             }
             // Return remaining content without trimming to preserve whitespace
             return value.substring(Math.min(end + 1, value.length()));
@@ -102,52 +102,10 @@ public class Builders extends ArrayList<Builder> implements Serializable {
         return value;
     }
 
-    /**
-     * Parse the input CharSequenceView and populate the Builders object with Builder objects.
-     *
-     * @param value JSON CharSequenceView to parse.
-     * @return Remaining CharSequenceView after parsing.
-     * @throws ApplicationException If there is an issue parsing the data.
-     */
-    public CharSequenceView parse(CharSequenceView value) throws ApplicationException {
+    private void parseArrayContent(String content) throws ApplicationException {
         // Only trim the outer structure for parsing, not the content
-        CharSequenceView trimmedValue = trimWhitespace(value);
-        if (trimmedValue.length() == 0) {
-            return new CharSequenceView(value, value.length(), value.length());
-        }
-
-        if (trimmedValue.charAt(0) == LEFT_BRACKETS) {
-            int end = findClosingBracket(trimmedValue);
-            if (end == -1) {
-                throw new ApplicationException("Invalid array format: missing closing bracket");
-            }
-            if (end > 1) { // If array is not empty
-                // Don't trim the array content to preserve whitespace
-                parseArrayContent(new CharSequenceView(trimmedValue, 1, end));
-            }
-            // Return remaining content without trimming to preserve whitespace
-            int remainingStart = Math.min(end + 1, trimmedValue.length());
-            return new CharSequenceView(trimmedValue, remainingStart, trimmedValue.length());
-        }
-
-        // Handle single elements
-        if (trimmedValue.charAt(0) == LEFT_BRACE) {
-            Builder builder = new Builder();
-            builder.parse(trimmedValue.toString());
-            this.add(builder);
-            int p = builder.getClosedPosition();
-            if (p < trimmedValue.length() && trimmedValue.charAt(p) == COMMA) {
-                return parse(new CharSequenceView(trimmedValue, p + 1, trimmedValue.length()));
-            }
-        }
-
-        return new CharSequenceView(value, value.length(), value.length());
-    }
-
-    private void parseArrayContent(CharSequenceView content) throws ApplicationException {
-        // Only trim the outer structure for parsing, not the content
-        CharSequenceView trimmedContent = trimWhitespace(content);
-        if (trimmedContent.length() == 0) {
+        content = content.trim();
+        if (content.isEmpty()) {
             return;
         }
 
@@ -155,10 +113,10 @@ public class Builders extends ArrayList<Builder> implements Serializable {
         int depth = 0;
         boolean inQuotes = false;
 
-        for (int i = 0; i < trimmedContent.length(); i++) {
-            char c = trimmedContent.charAt(i);
+        for (int i = 0; i < content.length(); i++) {
+            char c = content.charAt(i);
 
-            if (c == QUOTE && (i == 0 || trimmedContent.charAt(i - 1) != ESCAPE_CHAR)) {
+            if (c == QUOTE && (i == 0 || content.charAt(i - 1) != ESCAPE_CHAR)) {
                 inQuotes = !inQuotes;
                 element.append(c);
             } else if (!inQuotes) {
@@ -242,52 +200,6 @@ public class Builders extends ArrayList<Builder> implements Serializable {
             }
         }
         return -1;
-    }
-
-    private int findClosingBracket(CharSequenceView value) {
-        int depth = 0;
-        boolean inQuotes = false;
-
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-
-            if (c == QUOTE && (i == 0 || value.charAt(i - 1) != ESCAPE_CHAR)) {
-                inQuotes = !inQuotes;
-            } else if (!inQuotes) {
-                if (c == LEFT_BRACKETS) {
-                    depth++;
-                } else if (c == RIGHT_BRACKETS) {
-                    depth--;
-                    if (depth == 0) {
-                        return i;
-                    }
-                }
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Trim whitespace from a CharSequenceView.
-     *
-     * @param sequence The CharSequenceView to trim
-     * @return A new CharSequenceView with leading and trailing whitespace removed
-     */
-    private CharSequenceView trimWhitespace(CharSequenceView sequence) {
-        int start = 0;
-        int end = sequence.length();
-        
-        // Skip leading whitespace
-        while (start < end && Character.isWhitespace(sequence.charAt(start))) {
-            start++;
-        }
-        
-        // Skip trailing whitespace
-        while (end > start && Character.isWhitespace(sequence.charAt(end - 1))) {
-            end--;
-        }
-        
-        return new CharSequenceView(sequence, start, end);
     }
 
     /**
