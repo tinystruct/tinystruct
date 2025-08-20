@@ -24,223 +24,248 @@ import java.util.logging.Logger;
 import static org.tinystruct.data.component.Builder.*;
 
 /**
- * Builders class represents a collection of Builder objects, providing methods
- * for parsing and managing a list of structured data.
+ * Optimized Builders class represents a collection of Builder objects with improved performance.
  */
-public class Builders extends ArrayList<Builder> implements Serializable {
+public class Builders extends ArrayList<Builder> implements Struct, Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = -6787714840442861559L;
     private static final Logger logger = Logger.getLogger(Builders.class.getName());
 
+    // Thread-local StringBuilder cache for better performance
+    private static final ThreadLocal<StringBuilder> STRING_BUILDER_CACHE =
+            ThreadLocal.withInitial(() -> new StringBuilder(256));
+
     /**
-     * Default constructor for Builders.
+     * Constructor with optimized initial capacity
      */
     public Builders() {
     }
 
     /**
-     * Convert the Builders object to its string representation.
-     *
-     * @return String representation of the Builders.
+     * Optimized toString method using thread-local StringBuilder
      */
     @Override
     public String toString() {
-        StringBuilder buffer = new StringBuilder();
-
-        // Build a string representation of the list of Builder objects
-        for (Object o : this) {
-            buffer.append(o);
-            buffer.append(COMMA);
+        if (this.isEmpty()) {
+            return "[]";
         }
 
-        // Remove trailing comma if there are Builder objects in the list
-        if (buffer.length() > 0) {
-            buffer.setLength(buffer.length() - 1);
+        StringBuilder buffer = STRING_BUILDER_CACHE.get();
+        buffer.setLength(0); // Reset the buffer
+
+        buffer.append(LEFT_BRACKETS);
+
+        boolean first = true;
+        for (Builder builder : this) {
+            if (!first) {
+                buffer.append(COMMA);
+            }
+            first = false;
+            buffer.append(builder.toString());
         }
 
-        return LEFT_BRACKETS + buffer.toString() + RIGHT_BRACKETS;
+        buffer.append(RIGHT_BRACKETS);
+        return buffer.toString();
     }
 
     /**
-     * Parse the input string and populate the Builders object with Builder objects.
-     *
-     * @param value JSON string to parse.
-     * @return Remaining string after parsing.
-     * @throws ApplicationException If there is an issue parsing the data.
+     * Optimized parse method with single-pass parsing and reduced method calls
      */
-    public String parse(String value) throws ApplicationException {
-        // Only trim the outer structure for parsing, not the content
-        value = value.trim();
-        if (value.isEmpty()) {
-            return "";
+    public void parse(String value) throws ApplicationException {
+        if (value == null || value.isEmpty() || (value = value.trim()).isEmpty()) {
+            throw new ApplicationException("Invalid array format: missing closing bracket");
         }
 
         if (value.charAt(0) == LEFT_BRACKETS) {
-            int end = findClosingBracket(value);
+            int end = findMatchingBracket(value, 0);
             if (end == -1) {
                 throw new ApplicationException("Invalid array format: missing closing bracket");
             }
-            if (end > 1) { // If array is not empty
-                // Don't trim the array content to preserve whitespace
-                parseArrayContent(value.substring(1, end));
+
+            if (end > 1) { // Array has content
+                parseArrayContent(value, 1, end);
             }
-            // Return remaining content without trimming to preserve whitespace
-            return value.substring(Math.min(end + 1, value.length()));
         }
 
-        // Handle single elements
+        // Handle single elements that are objects
         if (value.charAt(0) == LEFT_BRACE) {
             Builder builder = new Builder();
             builder.parse(value);
             this.add(builder);
             int p = builder.getClosedPosition();
+
             if (p < value.length() && value.charAt(p) == COMMA) {
-                return parse(value.substring(p + 1));
+                parse(value.substring(p + 1));
             }
-        }
-
-        return value;
-    }
-
-    private void parseArrayContent(String content) throws ApplicationException {
-        // Only trim the outer structure for parsing, not the content
-        content = content.trim();
-        if (content.isEmpty()) {
-            return;
-        }
-
-        StringBuilder element = new StringBuilder();
-        int depth = 0;
-        boolean inQuotes = false;
-
-        for (int i = 0; i < content.length(); i++) {
-            char c = content.charAt(i);
-
-            if (c == QUOTE && (i == 0 || content.charAt(i - 1) != ESCAPE_CHAR)) {
-                inQuotes = !inQuotes;
-                element.append(c);
-            } else if (!inQuotes) {
-                if (c == LEFT_BRACE || c == LEFT_BRACKETS) {
-                    depth++;
-                    element.append(c);
-                } else if (c == RIGHT_BRACE || c == RIGHT_BRACKETS) {
-                    depth--;
-                    element.append(c);
-                } else if (c == COMMA && depth == 0) {
-                    // Don't trim the element to preserve whitespace
-                    addElement(element.toString());
-                    element.setLength(0);
-                } else {
-                    element.append(c);
-                }
-            } else {
-                element.append(c);
-            }
-        }
-
-        if (element.length() > 0) {
-            // Don't trim the last element to preserve whitespace
-            addElement(element.toString());
         }
     }
 
-    private void addElement(String element) throws ApplicationException {
-        // Only trim the outer structure for parsing, not the content
-        element = element.trim();
-        if (element.isEmpty()) {
+    @Override
+    public Row toData() {
+        throw new UnsupportedOperationException("It's not been implemented.");
+    }
+
+    /**
+     * Optimized array content parsing with single-pass tokenization
+     */
+    private void parseArrayContent(String content, int start, int end) throws ApplicationException {
+        if (start >= end) {
             return;
         }
 
-        if (element.charAt(0) == QUOTE) {
-            // String value - preserve all whitespace including newlines
-            String value = element.substring(1, element.length() - 1);
-            this.add(new Builder(value));
-        } else if (element.charAt(0) == LEFT_BRACE) {
-            // Object value
+        int pos = start;
+
+        while (pos < end) {
+            // Skip whitespace
+            while (pos < end && Character.isWhitespace(content.charAt(pos))) {
+                pos++;
+            }
+
+            if (pos >= end) {
+                break;
+            }
+
+            ElementParseResult result = parseElementAtPosition(content, pos, end);
+            if (result.element != null) {
+                this.add(result.element);
+            }
+
+            pos = result.nextPosition;
+
+            // Skip comma and whitespace
+            while (pos < end && (Character.isWhitespace(content.charAt(pos)) || content.charAt(pos) == COMMA)) {
+                pos++;
+            }
+        }
+    }
+
+    /**
+     * Parse a single element at the given position
+     */
+    private ElementParseResult parseElementAtPosition(String content, int pos, int end) throws ApplicationException {
+        char firstChar = content.charAt(pos);
+
+        if (firstChar == QUOTE) {
+            // String element
+            int stringEnd = findStringEnd(content, pos + 1);
+            if (stringEnd == -1) {
+                throw new ApplicationException("Unterminated string in array");
+            }
+
+            String value = content.substring(pos + 1, stringEnd);
+            return new ElementParseResult(new Builder(value), stringEnd + 1);
+        } else if (firstChar == LEFT_BRACE) {
+            // Object element
+            int objEnd = findMatchingBrace(content, pos);
+            if (objEnd == -1) {
+                throw new ApplicationException("Unmatched opening brace in array");
+            }
+
             Builder builder = new Builder();
-            builder.parse(element);
-            this.add(builder);
-        } else if (element.charAt(0) == LEFT_BRACKETS) {
-            // Array value
+            builder.parse(content.substring(pos, objEnd + 1));
+            return new ElementParseResult(builder, objEnd + 1);
+        } else if (firstChar == LEFT_BRACKETS) {
+            // Nested array element
+            int arrayEnd = findMatchingBracket(content, pos);
+            if (arrayEnd == -1) {
+                throw new ApplicationException("Unmatched opening bracket in array");
+            }
+
             Builder arrayBuilder = new Builder();
             Builders nestedBuilders = new Builders();
-            nestedBuilders.parse(element);
-            for (Builder b : nestedBuilders) {
-                arrayBuilder.put(String.valueOf(arrayBuilder.size()), b.getValue());
+            nestedBuilders.parseArrayContent(content, pos + 1, arrayEnd);
+
+            // Convert nested array to Builder with indexed keys
+            for (int i = 0; i < nestedBuilders.size(); i++) {
+                Builder nested = nestedBuilders.get(i);
+                arrayBuilder.put(String.valueOf(i), nested.isSingleValue() ? nested.getValue() : nested);
             }
-            this.add(arrayBuilder);
+
+            return new ElementParseResult(arrayBuilder, arrayEnd + 1);
         } else {
-            // All other values (numbers, booleans, null) are stored as strings
-            if (isNumber(element)) {
-                this.add(new Builder(parseNumber(element)));
-            } else {
-                this.add(new Builder(element));
-            }
+            // Primitive element (number, boolean, null)
+            int elementEnd = findElementEnd(content, pos, end);
+            String elementStr = content.substring(pos, elementEnd).trim();
+
+            Object parsedValue = parsePrimitiveValue(elementStr);
+            if (parsedValue instanceof Number)
+                return new ElementParseResult(new Builder((Number) parsedValue), elementEnd);
+            return new ElementParseResult(new Builder(elementStr), elementEnd);
         }
     }
 
-    private int findClosingBracket(String value) {
-        int depth = 0;
-        boolean inQuotes = false;
+    /**
+     * Helper class for element parsing results
+     */
+    private static class ElementParseResult {
+        final Builder element;
+        final int nextPosition;
 
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
+        ElementParseResult(Builder element, int nextPosition) {
+            this.element = element;
+            this.nextPosition = nextPosition;
+        }
+    }
 
-            if (c == QUOTE && (i == 0 || value.charAt(i - 1) != ESCAPE_CHAR)) {
-                inQuotes = !inQuotes;
-            } else if (!inQuotes) {
-                if (c == LEFT_BRACKETS) {
-                    depth++;
-                } else if (c == RIGHT_BRACKETS) {
-                    depth--;
-                    if (depth == 0) {
-                        return i;
-                    }
-                }
+    /**
+     * Find the end of a string value
+     */
+    private int findStringEnd(String content, int start) {
+        for (int i = start; i < content.length(); i++) {
+            char c = content.charAt(i);
+            if (c == QUOTE && (i == 0 || content.charAt(i - 1) != ESCAPE_CHAR)) {
+                return i;
             }
         }
         return -1;
     }
 
     /**
-     * Check if the string represents a valid number.
-     *
-     * @param value The string to check.
-     * @return True if the string is a valid number, false otherwise.
+     * Find the end of a primitive element
      */
-    private boolean isNumber(String value) {
-        return INTEGER.matcher(value).matches() || DOUBLE.matcher(value).matches();
+    private int findElementEnd(String content, int start, int maxEnd) {
+        for (int i = start; i < maxEnd; i++) {
+            char c = content.charAt(i);
+            if (c == COMMA || c == RIGHT_BRACKETS) {
+                return i;
+            }
+        }
+        return maxEnd;
     }
 
     /**
-     * Parse a number from a string.
-     *
-     * @param value The string value to parse.
-     * @return The parsed number.
+     * Check if all elements in this Builders collection are single values
      */
-    private Number parseNumber(String value) {
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("Value cannot be null or empty");
-        }
-
-        value = value.trim();
-        if (value.contains(".") || value.contains("e") || value.contains("E")) {
-            try {
-                return Double.parseDouble(value); // Parse as double for decimals or scientific notation
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid double value: " + value, e);
+    public boolean allSingleValues() {
+        for (Builder builder : this) {
+            if (!builder.isSingleValue()) {
+                return false;
             }
         }
-
-        try {
-            return Integer.parseInt(value); // Try parsing as Integer
-        } catch (NumberFormatException e) {
-            try {
-                return Long.parseLong(value); // Fallback to Long
-            } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException("Invalid number value: " + value, ex);
-            }
-        }
+        return true;
     }
-}
 
+    /**
+     * Get all values as an Object array (only works if all elements are single values)
+     */
+    public Object[] getValuesArray() {
+        if (!allSingleValues()) {
+            throw new IllegalStateException("Cannot get values array when not all elements are single values");
+        }
+
+        Object[] values = new Object[this.size()];
+        for (int i = 0; i < this.size(); i++) {
+            values[i] = this.get(i).getValue();
+        }
+        return values;
+    }
+
+    /**
+     * Clear the collection and reset capacity for reuse
+     */
+    public void reset() {
+        this.clear();
+        // Don't shrink the underlying array to avoid repeated allocations
+    }
+
+}

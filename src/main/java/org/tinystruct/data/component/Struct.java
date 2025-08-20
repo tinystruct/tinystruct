@@ -23,51 +23,25 @@ import org.tinystruct.ApplicationException;
  * and converted to different representations.
  */
 public interface Struct {
+
     /**
      * Defines the tokens used in parsing structured data.
      * These tokens represent the basic elements found in JSON-like structures.
      */
-    enum TOKEN {
-        /** Represents no token or initial state */
-        NONE(""),
-        /** Opening curly brace '{' */
-        CURLY_OPEN("{"),
-        /** Closing curly brace '}' */
-        CURLY_CLOSE("}"),
-        /** Opening square bracket '[' */
-        SQUARED_OPEN("["),
-        /** Closing square bracket ']' */
-        SQUARED_CLOSE("]"),
-        /** Colon separator ':' */
-        COLON(":"),
-        /** Comma separator ',' */
-        COMMA(","),
-        /** String value */
-        STRING("\""),
-        /** Numeric value */
-        NUMBER("0-9"),
-        /** Boolean true value */
-        TRUE("true"),
-        /** Boolean false value */
-        FALSE("false"),
-        /** Null value */
-        NULL("null");
+    // JSON parsing constants
+    char QUOTE = '"';
+    char COMMA = ',';
+    char COLON = ':';
+    char LEFT_BRACE = '{';
+    char RIGHT_BRACE = '}';
+    char LEFT_BRACKETS = '[';
+    char RIGHT_BRACKETS = ']';
+    char ESCAPE_CHAR = '\\';
 
-        private final String symbol;
-
-        TOKEN(String symbol) {
-            this.symbol = symbol;
-        }
-
-        /**
-         * Gets the string representation of this token.
-         *
-         * @return The symbol associated with this token
-         */
-        public String getSymbol() {
-            return symbol;
-        }
-    }
+    // String constants for faster comparison
+    String NULL_STRING = "null";
+    String TRUE_STRING = "true";
+    String FALSE_STRING = "false";
 
     /**
      * Parses a JSON-formatted string into the implementing structure.

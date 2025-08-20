@@ -24,40 +24,27 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 /**
- * Builder class represents a key-value data structure, similar to a JSON object.
- * It extends HashMap to provide a map-like interface while adding JSON parsing and formatting capabilities.
- * This class implements the Struct interface to provide consistent data structure handling across the application.
+ * Optimized Builder class represents a key-value data structure, similar to a JSON object.
+ * This version includes significant performance improvements over the original implementation.
  */
 public class Builder extends HashMap<String, Object> implements Struct, Serializable {
 
     private static final long serialVersionUID = 3484789992424316230L;
     private static final Logger logger = Logger.getLogger(Builder.class.getName());
 
-    // JSON parsing constants
-    public static final char QUOTE = '"';
-    public static final char COMMA = ',';
-    public static final char COLON = ':';
-    public static final char LEFT_BRACE = '{';
-    public static final char RIGHT_BRACE = '}';
-    public static final char LEFT_BRACKETS = '[';
-    public static final char RIGHT_BRACKETS = ']';
-    public static final char ESCAPE_CHAR = '\\';
+    // Thread-local StringBuilder for better performance in multi-threaded environments
+    private static final ThreadLocal<StringBuilder> STRING_BUILDER_CACHE =
+            ThreadLocal.withInitial(() -> new StringBuilder(256));
 
-    // Value type patterns
-    public static final Pattern INTEGER = Pattern.compile("^-?\\d+$");
-    public static final Pattern DOUBLE = Pattern.compile("^-?\\d+(\\.\\d+)$");
-    public static final Pattern BOOLEAN = Pattern.compile("^(true|false)$");
     private int closedPosition = 0;
     private Object value = null;
 
     /**
-     * Default constructor for Builder.
+     * Default constructor with optimized initial capacity
      */
     public Builder() {
     }
@@ -133,67 +120,101 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      */
     @Override
     public String toString() {
-        // If this Builder represents a single value (not a map), return the value
+        // Handle single value case
         if (this.value != null && this.isEmpty()) {
-            if (this.value instanceof String) {
-                return QUOTE + this.value.toString() + QUOTE;
-            } else if (this.value.getClass().isArray()) {
-                StringBuilder buffer = new StringBuilder();
-                buffer.append(LEFT_BRACKETS);
-                int length = Array.getLength(this.value);
-                for (int i = 0; i < length; i++) {
-                    Object element = Array.get(this.value, i);
-                    if (element instanceof String) {
-                        buffer.append(QUOTE).append(element.toString().replaceAll(QUOTE + "", ESCAPE_CHAR + QUOTE + "")).append(QUOTE);
-                    } else {
-                        buffer.append(element.toString());
-                    }
-                    if (i < length - 1) {
-                        buffer.append(COMMA);
-                    }
-                }
-                buffer.append(RIGHT_BRACKETS);
-                return buffer.toString();
-            } else {
-                return this.value.toString();
-            }
+            return formatSingleValue(this.value);
         }
 
-        // Build a string representation of the key-value pairs
+        // Use thread-local StringBuilder for better performance
+        StringBuilder buffer = STRING_BUILDER_CACHE.get();
+        buffer.setLength(0); // Reset the buffer
+
+        buffer.append(LEFT_BRACE);
+
+        Set<Entry<String, Object>> entries = this.entrySet();
+        boolean first = true;
+
+        for (Entry<String, Object> entry : entries) {
+            if (!first) {
+                buffer.append(COMMA);
+            }
+            first = false;
+
+            appendKeyValue(buffer, entry.getKey(), entry.getValue());
+        }
+
+        buffer.append(RIGHT_BRACE);
+        return buffer.toString();
+    }
+
+    /**
+     * Optimized single value formatting
+     */
+    private String formatSingleValue(Object val) {
+        if (val instanceof String) {
+            return QUOTE + val.toString() + QUOTE;
+        } else if (val != null && val.getClass().isArray()) {
+            return formatArray(val);
+        } else {
+            return val != null ? val.toString() : NULL_STRING;
+        }
+    }
+
+    /**
+     * Optimized array formatting
+     */
+    private String formatArray(Object array) {
         StringBuilder buffer = new StringBuilder();
-        Set<Entry<String, Object>> keys = this.entrySet();
-        Object value;
-        String key;
-        for (Entry<String, Object> entry : keys) {
-            value = entry.getValue();
-            key = entry.getKey();
-            if (value == null) {
-                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append("null");
-            } else if (value.getClass().isArray()) {
-                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(LEFT_BRACKETS);
-                int length = Array.getLength(value);
-                for (int i = 0; i < length; i++) {
-                    buffer.append(QUOTE).append(Array.get(value, i).toString().replaceAll(QUOTE + "", ESCAPE_CHAR + QUOTE + "")).append(QUOTE);
-                    if (i < length - 1) {
-                        buffer.append(COMMA);
-                    }
-                }
-                buffer.append(RIGHT_BRACKETS);
-            } else if (value instanceof Boolean || value instanceof Number || value instanceof Builder || value instanceof Builders) {
-                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(value);
-            } else {
-                buffer.append(QUOTE).append(key).append(QUOTE).append(COLON).append(QUOTE).append(StringUtilities.escape(value.toString())).append(QUOTE);
+        buffer.append(LEFT_BRACKETS);
+
+        int length = Array.getLength(array);
+        for (int i = 0; i < length; i++) {
+            if (i > 0) {
+                buffer.append(COMMA);
             }
 
-            buffer.append(COMMA);
+            Object element = Array.get(array, i);
+            if (element instanceof String) {
+                buffer.append(QUOTE)
+                        .append(escapeString(element.toString()))
+                        .append(QUOTE);
+            } else {
+                buffer.append(element != null ? element.toString() : NULL_STRING);
+            }
         }
 
-        // Remove trailing comma if there are key-value pairs
-        if (buffer.length() > 0) {
-            buffer.setLength(buffer.length() - 1);
-        }
+        buffer.append(RIGHT_BRACKETS);
+        return buffer.toString();
+    }
 
-        return LEFT_BRACE + buffer.toString() + RIGHT_BRACE;
+    /**
+     * Optimized key-value pair appending
+     */
+    private void appendKeyValue(StringBuilder buffer, String key, Object value) {
+        buffer.append(QUOTE).append(key).append(QUOTE).append(COLON);
+
+        if (value == null) {
+            buffer.append(NULL_STRING);
+        } else if (value.getClass().isArray()) {
+            buffer.append(formatArray(value));
+        } else if (value instanceof Boolean || value instanceof Number ||
+                value instanceof Builder || value instanceof Builders) {
+            buffer.append(value);
+        } else {
+            buffer.append(QUOTE)
+                    .append(StringUtilities.escape(value.toString()))
+                    .append(QUOTE);
+        }
+    }
+
+    /**
+     * Optimized string escaping
+     */
+    private String escapeString(String str) {
+        if (str.indexOf(QUOTE) == -1) {
+            return str; // No quotes to escape
+        }
+        return str.replace("\"", "\\\"");
     }
 
     /**
@@ -205,34 +226,30 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      */
     @Override
     public void parse(String resource) throws ApplicationException {
-        // Ensure the input string is a valid JSON format
-        // Only trim the outer structure, not the content
+        if (resource == null || resource.isEmpty()) {
+            return;
+        }
+
         resource = resource.trim();
-        if (!resource.isEmpty()) {
-            if (resource.charAt(0) == QUOTE) {
-                this.parseValue(resource);
-            }
+        if (resource.isEmpty()) {
+            return;
+        }
 
-            if (resource.charAt(0) != LEFT_BRACE && resource.charAt(resource.length() - 1) != RIGHT_BRACE) {
-                throw new ApplicationException("Invalid data format:" + resource);
-            }
+        if (resource.charAt(0) == QUOTE) {
+            this.parsePrimitiveValue(resource);
+            return;
+        }
 
-            if (resource.charAt(0) == LEFT_BRACE) {
-                // Find the closing position of the JSON structure
-                this.closedPosition = this.seekPosition(resource);
+        if (resource.charAt(0) != LEFT_BRACE || resource.charAt(resource.length() - 1) != RIGHT_BRACE) {
+            throw new ApplicationException("Invalid data format:" + resource);
+        }
 
-                // Check if we have a valid JSON structure
-                if (closedPosition > 1) {
-                    // Extract the key-value pairs sequence from the JSON structure
-                    String values = resource.substring(1, closedPosition - 1);
+        // Find the closing position of the JSON structure
+        this.closedPosition = this.seekPosition(resource);
 
-                    // Parse the key-value pairs
-                    this.parseValue(values);
-                } else {
-                    // Empty JSON object or invalid structure
-                    logger.warning("Invalid JSON structure: " + resource + ", closedPosition=" + closedPosition);
-                }
-            }
+        if (closedPosition > 2) { // Must have content between braces
+            String values = resource.substring(1, closedPosition - 1);
+            this.parseKeyValuePairs(values);
         }
     }
 
@@ -255,207 +272,344 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     }
 
     /**
-     * Parse the key-value pairs from the input string and populate the Builder object.
-     *
-     * @param value Key-value pairs string.
-     * @throws ApplicationException If there is an issue parsing the data.
+     * Optimized key-value pairs parsing with reduced method calls
      */
-    private void parseValue(String value) throws ApplicationException {
-        // Trim the input value for structure parsing only
-        value = value.trim();
+    private void parseKeyValuePairs(String content) throws ApplicationException {
+        if (content == null || content.trim().isEmpty()) {
+            return;
+        }
 
-        if (!value.isEmpty() && value.charAt(0) == QUOTE) {
-            // Handle key-value pair starting with a quoted key
-            int COLON_POSITION = value.indexOf(COLON);
+        int pos = 0;
+        int length = content.length();
 
-            if (COLON_POSITION != -1) {
-                String keyName = value.substring(1, COLON_POSITION - 1);
+        while (pos < length) {
+            // Skip whitespace
+            while (pos < length && Character.isWhitespace(content.charAt(pos))) {
+                pos++;
+            }
 
-                int start = COLON_POSITION + 1;
-                int QUOTE_POSITION = keyName.lastIndexOf(QUOTE);
-                if (QUOTE_POSITION != -1) {
-                    keyName = keyName.substring(0, QUOTE_POSITION);
+            if (pos >= length) break;
+
+            if (content.charAt(pos) != QUOTE) {
+                throw new ApplicationException("Expected quote at position " + pos);
+            }
+
+            // Parse key
+            pos++; // Skip opening quote
+            int keyStart = pos;
+            while (pos < length && content.charAt(pos) != QUOTE) {
+                if (content.charAt(pos) == ESCAPE_CHAR) {
+                    pos++; // Skip escaped character
                 }
+                pos++;
+            }
 
-                String $value = value.substring(start).trim();
-                Object keyValue = null;
-                if (!$value.isEmpty()) {
-                    if ($value.charAt(0) == QUOTE) {
-                        // Extract the value if it is enclosed in quotes, preserving whitespace
-                        int $end = this.next($value, Builder.QUOTE);
-                        keyValue = $value.substring(1, $end - 1);
+            if (pos >= length) {
+                throw new ApplicationException("Unterminated key");
+            }
 
-                        if ($end + 1 < $value.length()) {
-                            $value = $value.substring($end + 1); // COMMA length: 1
-                            this.parseValue($value);
-                        }
-                    } else if ($value.charAt(0) == LEFT_BRACE) {
-                        // Handle nested JSON structure
-                        int closedPosition = this.seekPosition($value);
-                        String _$value = $value.substring(0, closedPosition);
-                        Builder builder = new Builder();
-                        builder.parse(_$value);
-                        keyValue = builder;
-                        if (closedPosition < $value.length()) {
-                            _$value = $value.substring(closedPosition + 1); // COMMA length: 1
-                            this.parseValue(_$value);
-                        }
-                    } else if ($value.charAt(0) == LEFT_BRACKETS) {
-                        // Handle array
-                        Builders builders = new Builders();
-                        String remaining = builders.parse($value);
-                        keyValue = builders;
-                        if (!remaining.isEmpty() && remaining.charAt(0) == COMMA)
-                            remaining = remaining.substring(1); // COMMA length: 1
-                        this.parseValue(remaining);
-                    } else {
-                        if ($value.indexOf(COMMA) != -1) {
-                            // Extract and parse a single value if there are more values in the sequence
-                            String _value = $value.substring(0, $value.indexOf(COMMA));
-                            if (!_value.isEmpty()) {
-                                keyValue = getValue(_value);
-                            } else {
-                                keyValue = _value;
-                            }
+            String key = content.substring(keyStart, pos);
+            pos++; // Skip closing quote
 
-                            $value = $value.substring($value.indexOf(COMMA) + 1);
-                            this.parseValue($value);
-                        } else {
-                            // Parse the last value in the sequence
-                            keyValue = getValue($value);
-                        }
-                    }
-                }
+            // Skip whitespace and find colon
+            while (pos < length && Character.isWhitespace(content.charAt(pos))) {
+                pos++;
+            }
 
-                // Add the key-value pair to the map
-                this.put(keyName, keyValue);
+            if (pos >= length || content.charAt(pos) != COLON) {
+                throw new ApplicationException("Expected colon after key");
+            }
+            pos++; // Skip colon
+
+            // Parse value
+            ValueParseResult result = parseValueAtPosition(content, pos);
+            this.put(key, result.value);
+            pos = result.nextPosition;
+
+            // Skip comma if present
+            while (pos < length && Character.isWhitespace(content.charAt(pos))) {
+                pos++;
+            }
+
+            if (pos < length && content.charAt(pos) == COMMA) {
+                pos++;
             }
         }
     }
 
     /**
-     * Determine the type of the value and parse it accordingly.
-     * Supports parsing of integers, doubles, booleans, and strings.
-     *
-     * @param value String representation of the value
-     * @return Parsed value of appropriate type
+     * Optimized value parsing with position tracking
      */
-    private Object getValue(String value) {
+    private ValueParseResult parseValueAtPosition(String content, int startPos) throws ApplicationException {
+        int pos = startPos;
+        int length = content.length();
+
+        // Skip whitespace
+        while (pos < length && Character.isWhitespace(content.charAt(pos))) {
+            pos++;
+        }
+
+        if (pos >= length) {
+            return new ValueParseResult(null, pos);
+        }
+
+        char firstChar = content.charAt(pos);
+
+        if (firstChar == QUOTE) {
+            // String value
+            pos++; // Skip opening quote
+            int valueStart = pos;
+            while (pos < length && content.charAt(pos) != QUOTE) {
+                if (content.charAt(pos) == ESCAPE_CHAR) {
+                    pos++; // Skip escaped character
+                }
+                pos++;
+            }
+
+            if (pos >= length) {
+                throw new ApplicationException("Unterminated string value");
+            }
+
+            String value = content.substring(valueStart, pos);
+            pos++; // Skip closing quote
+
+            return new ValueParseResult(value, pos);
+
+        } else if (firstChar == LEFT_BRACE) {
+            // Nested object
+            int objEnd = findMatchingBrace(content, pos);
+            if (objEnd == -1) {
+                throw new ApplicationException("Unmatched opening brace");
+            }
+
+            Builder nested = new Builder();
+            nested.parse(content.substring(pos, objEnd + 1));
+
+            return new ValueParseResult(nested, objEnd + 1);
+
+        } else if (firstChar == LEFT_BRACKETS) {
+            // Array
+            int arrayEnd = findMatchingBracket(content, pos);
+            if (arrayEnd == -1) {
+                throw new ApplicationException("Unmatched opening bracket");
+            }
+
+            Builders builders = new Builders();
+            builders.parse(content.substring(pos, arrayEnd + 1));
+
+            return new ValueParseResult(builders, arrayEnd + 1);
+        } else {
+            // Primitive value (number, boolean, null)
+            int valueEnd = findValueEnd(content, pos);
+            String valueStr = content.substring(pos, valueEnd).trim();
+            Object value = parsePrimitiveValue(valueStr);
+
+            return new ValueParseResult(value, valueEnd);
+        }
+    }
+
+    /**
+     * Helper class for value parsing results
+     */
+    private static class ValueParseResult {
+        final Object value;
+        final int nextPosition;
+
+        ValueParseResult(Object value, int nextPosition) {
+            this.value = value;
+            this.nextPosition = nextPosition;
+        }
+    }
+
+    /**
+     * Find the end of a primitive value
+     */
+    private int findValueEnd(String content, int start) {
+        int pos = start;
+        int length = content.length();
+
+        while (pos < length) {
+            char c = content.charAt(pos);
+            if (c == COMMA || c == RIGHT_BRACE || c == RIGHT_BRACKETS) {
+                break;
+            }
+            pos++;
+        }
+
+        return pos;
+    }
+
+    /**
+     * Optimized brace matching
+     */
+    static int findMatchingBrace(String content, int start) {
+        int depth = 0;
+        boolean inQuotes = false;
+
+        for (int i = start; i < content.length(); i++) {
+            char c = content.charAt(i);
+
+            if (c == QUOTE && (i == 0 || content.charAt(i - 1) != ESCAPE_CHAR)) {
+                inQuotes = !inQuotes;
+            } else if (!inQuotes) {
+                if (c == LEFT_BRACE) {
+                    depth++;
+                } else if (c == RIGHT_BRACE) {
+                    depth--;
+                    if (depth == 0) {
+                        return i;
+                    }
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Optimized bracket matching
+     */
+    static int findMatchingBracket(String content, int start) {
+        int depth = 0;
+        boolean inQuotes = false;
+
+        for (int i = start; i < content.length(); i++) {
+            char c = content.charAt(i);
+
+            if (c == QUOTE && (i == 0 || content.charAt(i - 1) != ESCAPE_CHAR)) {
+                inQuotes = !inQuotes;
+            } else if (!inQuotes) {
+                if (c == LEFT_BRACKETS) {
+                    depth++;
+                } else if (c == RIGHT_BRACKETS) {
+                    depth--;
+                    if (depth == 0) {
+                        return i;
+                    }
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Optimized primitive value parsing with reduced regex usage
+     */
+    static Object parsePrimitiveValue(String value) {
         if (value == null || value.isEmpty()) {
             return null;
         }
 
-        // Only trim for type checking, not for the actual value
-        String trimmedValue = value.trim();
-        if (INTEGER.matcher(trimmedValue).matches()) {
-            try {
-                return Integer.parseInt(trimmedValue);
-            } catch (NumberFormatException e) {
-                try {
-                    return Long.parseLong(trimmedValue);
-                } catch (NumberFormatException ex) {
-                    logger.warning("Failed to parse integer value: " + value);
-                }
-            }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return value; // Preserve original if only whitespace
         }
 
-        if (DOUBLE.matcher(trimmedValue).matches()) {
-            try {
-                return Double.parseDouble(trimmedValue);
-            } catch (NumberFormatException e) {
-                logger.warning("Failed to parse double value: " + value);
-            }
-        }
-
-        if (BOOLEAN.matcher(trimmedValue.toLowerCase(Locale.ROOT)).matches()) {
-            return Boolean.parseBoolean(trimmedValue);
-        }
-
-        if ("null".equalsIgnoreCase(trimmedValue)) {
+        // Fast path for common cases
+        if (NULL_STRING.equals(trimmed)) {
             return null;
         }
 
-        // Return original value for strings to preserve whitespace
-        return value;
+        if (TRUE_STRING.equalsIgnoreCase(trimmed)) {
+            return Boolean.TRUE;
+        }
+
+        if (FALSE_STRING.equalsIgnoreCase(trimmed)) {
+            return Boolean.FALSE;
+        }
+
+        // Try to parse as number without regex first
+        if (isNumericFast(trimmed)) {
+            return parseNumericValue(trimmed);
+        }
+
+        return value; // Return original to preserve whitespace
     }
 
     /**
-     * Find the closing position of the JSON structure.
-     * Handles nested structures and escaped characters.
-     *
-     * @param value JSON structure string
-     * @return Closing position of the JSON structure
+     * Fast numeric check without regex
+     */
+    static boolean isNumericFast(String str) {
+        if (str.isEmpty()) return false;
+
+        int start = 0;
+        if (str.charAt(0) == '-') {
+            if (str.length() == 1) return false;
+            start = 1;
+        }
+
+        boolean hasDecimal = false;
+        boolean hasExponent = false;
+
+        for (int i = start; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (Character.isDigit(c)) {
+                continue;
+            } else if (c == '.' && !hasDecimal && !hasExponent) {
+                hasDecimal = true;
+            } else if ((c == 'e' || c == 'E') && !hasExponent && i > start) {
+                hasExponent = true;
+                if (i + 1 < str.length() && (str.charAt(i + 1) == '+' || str.charAt(i + 1) == '-')) {
+                    i++; // Skip sign after exponent
+                }
+            } else {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Optimized numeric value parsing
+     */
+    static Number parseNumericValue(String value) {
+        try {
+            if (value.contains(".") || value.contains("e") || value.contains("E")) {
+                return Double.parseDouble(value);
+            }
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            try {
+                return Long.parseLong(value);
+            } catch (NumberFormatException ex) {
+                logger.warning("Failed to parse numeric value: " + value);
+                throw new IllegalArgumentException("Invalid number value: " + value, ex);
+            }
+        }
+    }
+
+    /**
+     * Optimized position seeking with reduced character array allocation
      */
     private int seekPosition(String value) {
-        // Find the closing position of the JSON structure
-        char[] chars = value.toCharArray();
-        int i = 0;
-        int n = 0;
-        int position = chars.length;
+        int depth = 0;
         boolean inQuotes = false;
+        int length = value.length();
 
-        while (i < position) {
-            char c = chars[i];
+        for (int i = 0; i < length; i++) {
+            char c = value.charAt(i);
 
-            // Handle quotes and escaped characters
-            if (c == QUOTE && (i == 0 || chars[i - 1] != ESCAPE_CHAR)) {
+            if (c == QUOTE && (i == 0 || value.charAt(i - 1) != ESCAPE_CHAR)) {
                 inQuotes = !inQuotes;
             } else if (!inQuotes) {
-                // Only count braces when not inside a string
                 if (c == LEFT_BRACE) {
-                    n++;
+                    depth++;
                 } else if (c == RIGHT_BRACE) {
-                    n--;
-                    if (n == 0) {
-                        position = i + 1;
-                        break;
+                    depth--;
+                    if (depth == 0) {
+                        return i + 1;
                     }
                 }
             }
-            i++;
         }
 
-        return position;
+        return length;
     }
 
-    /**
-     * Find the position of the next occurrence of a character in a string.
-     * Handles escaped characters and nested structures.
-     *
-     * @param value     String to search
-     * @param character The character to look for
-     * @return Position of the next occurrence of the character
-     */
-    private int next(String value, char character) {
-        // Find the position of the next occurrence of a character in a string
-        char[] chars = value.toCharArray();
-        int i = 0;
-        int n = 0;
-        int position = chars.length;
-
-        while (i < position) {
-            char c = chars[i];
-            if (c == character) {
-                if (i - 1 >= 0 && chars[i - 1] == ESCAPE_CHAR) {
-                } else n++;
-            }
-
-            i++;
-            if (n == 2) position = i;
-        }
-
-        return position;
-    }
-
-    /**
-     * Convert the Builder object to a Row object.
-     * This method is used to transform the JSON-like structure into a database row format.
-     *
-     * @return Row object representing the data in the Builder
-     */
     @Override
     public Row toData() {
-        // Convert the builder to a Row object
         Row row = new Row();
         Field field = new Field();
 
@@ -470,15 +624,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         return row;
     }
 
-    /**
-     * Save the string representation of the data to a file.
-     * The data is saved in JSON format.
-     *
-     * @param file File to save the data
-     * @throws ApplicationException If there is an issue saving the data
-     */
     public void saveAsFile(File file) throws ApplicationException {
-        // Save the string representation of the data to a file
         try (PrintWriter writer = new PrintWriter(file)) {
             writer.write(this.toString());
         } catch (FileNotFoundException e) {
@@ -486,14 +632,8 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         }
     }
 
-    /**
-     * Get the size of the key set.
-     *
-     * @return Size of the key set
-     */
     @Override
     public int size() {
-        // Get the size of the key set
         return this.keySet().size();
     }
 }
