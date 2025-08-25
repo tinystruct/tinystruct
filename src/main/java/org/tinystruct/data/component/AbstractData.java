@@ -100,7 +100,7 @@ public abstract class AbstractData implements Data {
      * @throws ApplicationException If the repository cannot be initialized.
      */
     private static Repository initializeRepository() throws ApplicationException {
-        Configuration<String> properties = new Settings("/application.properties");
+        Configuration<String> properties = new Settings();
         String driver = properties.get("driver");
 
         if (driver == null || driver.trim().isEmpty()) {
