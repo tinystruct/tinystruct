@@ -181,7 +181,7 @@ public class SQLiteGenerator implements Generator {
 
                     java_method_declaration.append("\t}\r\n\r\n");
 
-                    if ("String".equalsIgnoreCase(propertyType) || "Date".equalsIgnoreCase(propertyType))
+                    if ("String".equalsIgnoreCase(propertyType) || "Date".equalsIgnoreCase(propertyType) || "LocalDateTime".equalsIgnoreCase(propertyType))
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
                     else
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
