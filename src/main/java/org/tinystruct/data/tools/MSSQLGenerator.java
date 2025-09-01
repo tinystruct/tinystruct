@@ -44,7 +44,7 @@ public class MSSQLGenerator implements Generator {
     private String[] packageList;
 
     public MSSQLGenerator() {
-        this.path = "resources/org/tinystruct/custom/object";
+        this.path = "src/main/java/org/tinystruct/custom/object";
         this.packageList = new String[]{};
     }
 

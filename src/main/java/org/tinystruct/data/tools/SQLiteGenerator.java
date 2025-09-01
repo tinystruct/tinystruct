@@ -44,7 +44,7 @@ public class SQLiteGenerator implements Generator {
     private String[] packageList;
 
     public SQLiteGenerator() {
-        this.path = "resources/org/tinystruct/customer/object";
+        this.path = "src/main/java/org/tinystruct/custom/object";
         this.packageList = new String[]{};
     }
 

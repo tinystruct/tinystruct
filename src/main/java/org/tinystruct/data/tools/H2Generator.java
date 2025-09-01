@@ -30,7 +30,7 @@ public class H2Generator extends MySQLGenerator {
     private String[] packageList;
 
     public H2Generator() {
-        this.path = "src/main/java/org/tinystruct/customer/object";
+        this.path = "src/main/java/org/tinystruct/custom/object";
         this.packageList = new String[]{};
     }
 
