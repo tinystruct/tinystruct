@@ -2,7 +2,6 @@ package org.tinystruct.http;
 
 import org.tinystruct.data.component.Builder;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -222,7 +221,7 @@ public class SSEPushManager {
                 Response out = (Response) clientObj;
                 try {
                     out.close();
-                } catch (IOException e) {
+                } catch (org.tinystruct.ApplicationException e) {
                     throw new RuntimeException(e);
                 }
             } else {
@@ -254,7 +253,7 @@ public class SSEPushManager {
                     Response out = (Response) clientObj;
                     try {
                         out.close();
-                    } catch (IOException e) {
+                    } catch (org.tinystruct.ApplicationException e) {
                         throw new RuntimeException(e);
                     }
                 });
