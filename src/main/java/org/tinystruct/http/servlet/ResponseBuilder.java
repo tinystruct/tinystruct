@@ -107,8 +107,12 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
     }
 
     @Override
-    public void sendRedirect(String url) throws IOException {
-        this.response.sendRedirect(url);
+    public void sendRedirect(String url) throws ApplicationException {
+        try {
+            this.response.sendRedirect(url);
+        } catch (IOException e) {
+            throw new ApplicationException(e);
+        }
     }
 
     @Override
@@ -128,7 +132,7 @@ public class ResponseBuilder extends ResponseWrapper<HttpServletResponse, Servle
         }
     }
 
-    public void close() {
+    public void close() throws ApplicationException {
         try {
             if (outputStream != null) {
                 outputStream.close();

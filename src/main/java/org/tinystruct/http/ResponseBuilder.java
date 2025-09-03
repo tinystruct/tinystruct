@@ -8,8 +8,6 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.tinystruct.ApplicationException;
 
-import java.io.IOException;
-
 public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpResponse> {
     private ResponseStatus status;
     private Version version;
@@ -87,7 +85,7 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpR
     }
 
     @Override
-    public void sendRedirect(String url) throws IOException {
+    public void sendRedirect(String url) throws ApplicationException {
         this.response.content().clear();
 
         ResponseHeaders responseHeaders = new ResponseHeaders(this);
@@ -107,7 +105,7 @@ public class ResponseBuilder extends ResponseWrapper<FullHttpResponse, FullHttpR
     }
 
     @Override
-    public void close() {
+    public void close() throws ApplicationException {
         ctx.close();
     }
 }

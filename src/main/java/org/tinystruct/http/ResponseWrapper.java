@@ -1,5 +1,7 @@
 package org.tinystruct.http;
 
+import org.tinystruct.ApplicationException;
+
 public abstract class ResponseWrapper<T, O> implements Response<T, O> {
 
     protected final T response;
@@ -8,7 +10,7 @@ public abstract class ResponseWrapper<T, O> implements Response<T, O> {
         this.response = response;
     }
 
-    public void close() {
+    public void close() throws ApplicationException {
         // Default implementation does nothing, can be overridden
     }
 }
