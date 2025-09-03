@@ -35,7 +35,7 @@ import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.handler.HttpRequestHandler;
 import org.tinystruct.handler.HttpStaticFileHandler;
-import org.tinystruct.handler.Reforward;
+import org.tinystruct.http.Reforward;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.Session;
