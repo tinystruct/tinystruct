@@ -18,7 +18,6 @@ package org.tinystruct.handler;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.http.*;
 
-import java.io.IOException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -94,11 +93,7 @@ public class Reforward {
      * @throws ApplicationException if an error occurs.
      */
     public Response forward() throws ApplicationException {
-        try {
-            response.sendRedirect(this.fromURL);
-        } catch (IOException io) {
-            throw new ApplicationException(io.getMessage(), io);
-        }
+        response.sendRedirect(this.fromURL);
 
         return response;
     }
