@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.tinystruct.handler;
+package org.tinystruct.http;
 
 import org.tinystruct.ApplicationException;
-import org.tinystruct.http.*;
 
 import java.net.URLDecoder;
 import java.net.URLEncoder;
