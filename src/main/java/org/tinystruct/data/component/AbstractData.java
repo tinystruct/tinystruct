@@ -292,6 +292,51 @@ public abstract class AbstractData implements Data {
     }
 
     /**
+     * Set field value as double type.
+     *
+     * @param fieldName name of field.
+     * @param fieldValue value of field.
+     * @return field value
+     */
+    protected double setFieldAsDouble(String fieldName, double fieldValue) {
+        Object t = this.setField(fieldName, fieldValue);
+        if (t != null) {
+            return Double.parseDouble(t.toString());
+        }
+        return 0.0;
+    }
+
+    /**
+     * Set field value as float type.
+     *
+     * @param fieldName name of field.
+     * @param fieldValue value of field.
+     * @return field value
+     */
+    protected float setFieldAsFloat(String fieldName, float fieldValue) {
+        Object t = this.setField(fieldName, fieldValue);
+        if (t != null) {
+            return Float.parseFloat(t.toString());
+        }
+        return 0.0f;
+    }
+
+    /**
+     * Set field value as long type.
+     *
+     * @param fieldName name of field.
+     * @param fieldValue value of field.
+     * @return field value
+     */
+    protected long setFieldAsLong(String fieldName, long fieldValue) {
+        Object t = this.setField(fieldName, fieldValue);
+        if (t != null) {
+            return Long.parseLong(t.toString());
+        }
+        return 0L;
+    }
+
+    /**
      * Validate if the table name is set, and throw an exception if not.
      *
      * @throws ApplicationException If the table name is missing.
