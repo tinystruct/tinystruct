@@ -30,6 +30,8 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
     private ResponseStatus status = ResponseStatus.OK;
     private Version version = Version.HTTP1_1;
     private boolean headersSent = false;
+    private OutputStream responseBody;
+    private boolean closed = false;
 
     public ServerResponse(HttpExchange exchange) {
         this.exchange = exchange;
@@ -64,11 +66,12 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
                 exchange.sendResponseHeaders(status.code(), 0);
                 headersSent = true;
             }
-            try (OutputStream os = exchange.getResponseBody()) {
-                if (bytes != null && bytes.length > 0) {
-                    os.write(bytes);
-                    os.flush();
-                }
+            if (responseBody == null) {
+                responseBody = exchange.getResponseBody();
+            }
+            if (bytes != null && bytes.length > 0) {
+                responseBody.write(bytes);
+                responseBody.flush();
             }
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e);
@@ -82,7 +85,30 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
 
     @Override
     public void close() throws ApplicationException {
-        exchange.close();
+        if (closed) return;
+        try {
+            if (!headersSent) {
+                // Ensure at least headers are sent even if nothing was written
+                exchange.sendResponseHeaders(status.code(), 0);
+                headersSent = true;
+            }
+
+            if (responseBody == null) {
+                responseBody = exchange.getResponseBody();
+            }
+
+            if (responseBody != null) {
+                try {
+                    responseBody.close();
+                } catch (IOException ignored) {
+                }
+            }
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        } finally {
+            exchange.close();
+            closed = true;
+        }
     }
 
     @Override
@@ -109,5 +135,12 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
     @Override
     public void setVersion(Version version) {
         this.version = version;
+    }
+
+    /**
+     * Returns true if response headers/body have been committed to the client.
+     */
+    public boolean isCommitted() {
+        return headersSent;
     }
 }
