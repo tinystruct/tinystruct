@@ -23,6 +23,7 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
 import org.tinystruct.http.Reforward;
 import org.tinystruct.http.*;
+import org.tinystruct.mcp.MCPPushManager;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 import org.tinystruct.system.util.StringUtilities;
@@ -236,7 +237,15 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            boolean sseActive = false;
             try {
+                // Serve static files first (mirror Netty's HttpStaticFileHandler precedence)
+                if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    if (tryServeStatic(exchange)) {
+                        return;
+                    }
+                }
+
                 // Create TinyStruct Request and Response wrappers
                 ServerRequest request = new ServerRequest(exchange);
                 ServerResponse response = new ServerResponse(exchange);
@@ -245,15 +254,198 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 this.context.setAttribute(HTTP_REQUEST, request);
                 this.context.setAttribute(HTTP_RESPONSE, response);
 
+                // Process SSE first to ensure correct headers and long-lived connection
+                if (isSSE(exchange)) {
+                    sseActive = true;
+                    handleSSE(request, response, this.context);
+                    return;
+                }
+
                 // Process the request using TinyStruct's DefaultHandler logic
                 processRequest(request, response);
-
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error processing request", e);
-                sendErrorResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
+                // Try to send error only if headers haven't been committed yet
+                try {
+                    Response resp = (Response) this.context.getAttribute(HTTP_RESPONSE);
+                    if (resp instanceof ServerResponse) {
+                        ServerResponse serverResponse = (ServerResponse) resp;
+                        if (!serverResponse.isCommitted()) {
+                            sendErrorResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
+                        }
+                    } else {
+                        sendErrorResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
+                    }
+                } catch (Exception ignored) {
+                    // If we can't send an error (headers/body already sent), just log.
+                }
             } finally {
-                exchange.close();
+                try {
+                    if (!sseActive) {
+                        Response resp = (Response) this.context.getAttribute(HTTP_RESPONSE);
+                        if (resp instanceof ServerResponse) {
+                            ((ServerResponse) resp).close();
+                        } else {
+                            exchange.close();
+                        }
+                    }
+                } catch (Exception ex) {
+                    exchange.close();
+                }
             }
+        }
+
+        private boolean isSSE(HttpExchange exchange) {
+            String accept = exchange.getRequestHeaders().getFirst("Accept");
+            return accept != null && accept.contains("text/event-stream");
+        }
+
+        private SSEPushManager getAppropriatePushManager(boolean isMCP) {
+            return isMCP ? MCPPushManager.getInstance() : SSEPushManager.getInstance();
+        }
+
+        private void handleSSE(ServerRequest request, ServerResponse response, Context context) throws IOException, ApplicationException {
+            // Set SSE headers
+            response.addHeader(Header.CONTENT_TYPE.name(), "text/event-stream");
+            response.addHeader(Header.CACHE_CONTROL.name(), "no-cache");
+            response.addHeader(Header.CONNECTION.name(), "keep-alive");
+            response.addHeader("X-Accel-Buffering", "no");
+
+            String query = request.getParameter("q");
+            boolean isMCP = false;
+            if (query != null) {
+                query = StringUtilities.htmlSpecialChars(query);
+                if (query.equals(org.tinystruct.mcp.MCPSpecification.Endpoints.SSE)) {
+                    isMCP = true;
+                }
+
+                Object call = ApplicationManager.call(query, context);
+                String sessionId = context.getId();
+                SSEPushManager pushManager = getAppropriatePushManager(isMCP);
+                SSEClient client = pushManager.register(sessionId, response);
+
+                if (call instanceof org.tinystruct.data.component.Builder) {
+                    if (client != null) client.send((org.tinystruct.data.component.Builder) call);
+                    else pushManager.push(sessionId, (org.tinystruct.data.component.Builder) call);
+                } else if (call != null) {
+                    // Send as data line
+                    String data = "data: " + String.valueOf(call).replace("\n", "\ndata: ") + "\n\n";
+                    response.writeAndFlush(data.getBytes("UTF-8"));
+                } else {
+                    // Initial comment to open stream and avoid proxy buffering
+                    response.writeAndFlush(": ok\n\n".getBytes("UTF-8"));
+                }
+            } else {
+                // No query, still open SSE stream
+                response.writeAndFlush(": ok\n\n".getBytes("UTF-8"));
+            }
+        }
+
+        private boolean tryServeStatic(HttpExchange exchange) {
+            try {
+                String uri = exchange.getRequestURI().toString();
+                String path = sanitizeUri(uri);
+                if (path == null) return false;
+
+                String filepath = path;
+                int q = path.indexOf("?");
+                if (q >= 0) filepath = path.substring(0, q);
+
+                java.io.File file = new java.io.File(filepath);
+                if (!file.exists() || file.isHidden()) {
+                    if (filepath.endsWith("/favicon.ico")) {
+                        try (InputStream stream = Objects.requireNonNull(getClass().getResource("/favicon.ico")).openStream()) {
+                            byte[] bytes = stream.readAllBytes();
+                            exchange.getResponseHeaders().set("Content-Type", "image/x-icon");
+                            exchange.sendResponseHeaders(200, bytes.length);
+                            try (OutputStream os = exchange.getResponseBody()) {
+                                os.write(bytes);
+                            }
+                            return true;
+                        } catch (Exception ignore) {
+                            // fall-through to dynamic handling
+                            return false;
+                        }
+                    }
+                    return false;
+                }
+
+                if (!file.isFile()) return false;
+
+                // If-Modified-Since support
+                String ifModifiedSince = exchange.getRequestHeaders().getFirst("If-Modified-Since");
+                if (ifModifiedSince != null && !ifModifiedSince.isEmpty()) {
+                    java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_FORMAT, java.util.Locale.US);
+                    df.setTimeZone(java.util.TimeZone.getTimeZone(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_GMT_TIMEZONE));
+                    java.util.Date ims = df.parse(ifModifiedSince);
+                    long imsSeconds = ims.getTime() / 1000;
+                    long fileSeconds = file.lastModified() / 1000;
+                    if (imsSeconds == fileSeconds) {
+                        // 304 Not Modified
+                        setDateHeader(exchange);
+                        exchange.sendResponseHeaders(304, -1);
+                        return true;
+                    }
+                }
+
+                // Content-Type
+                String contentType = null;
+                try {
+                    jakarta.activation.MimetypesFileTypeMap mimeTypesMap = new jakarta.activation.MimetypesFileTypeMap(org.tinystruct.handler.HttpStaticFileHandler.class.getResourceAsStream("/META-INF/mime.types"));
+                    contentType = mimeTypesMap.getContentType(file);
+                } catch (Exception ignore) {
+                }
+                if (contentType == null || contentType.equalsIgnoreCase("application/octet-stream")) {
+                    try {
+                        contentType = java.nio.file.Files.probeContentType(java.nio.file.Path.of(file.getName()));
+                    } catch (IOException ignore) {
+                    }
+                }
+                if (contentType == null) contentType = "application/octet-stream";
+
+                // Cache headers
+                setDateAndCacheHeaders(exchange, file);
+                exchange.getResponseHeaders().set("Content-Type", contentType);
+
+                long length = file.length();
+                exchange.sendResponseHeaders(200, length);
+                try (InputStream in = new java.io.FileInputStream(file); OutputStream os = exchange.getResponseBody()) {
+                    in.transferTo(os);
+                }
+                return true;
+            } catch (Exception e) {
+                logger.log(Level.FINE, "Static serve miss: " + e.getMessage(), e);
+                return false;
+            }
+        }
+
+        private String sanitizeUri(String uri) throws java.io.UnsupportedEncodingException {
+            String decoded = java.net.URLDecoder.decode(uri, java.nio.charset.StandardCharsets.UTF_8);
+            if (decoded.isEmpty() || decoded.charAt(0) != '/') return null;
+            if (decoded.length() > 255) throw new IllegalArgumentException("Input too long");
+            decoded = decoded.replace('/', java.io.File.separatorChar);
+            decoded = decoded.replace("..", "");
+            if (decoded.contains(java.io.File.separator + '.') || decoded.contains('.' + java.io.File.separator) || decoded.charAt(0) == '.' || decoded.charAt(decoded.length() - 1) == '.')
+                return null;
+            return System.getProperty("user.dir") + java.io.File.separator + decoded;
+        }
+
+        private void setDateHeader(HttpExchange exchange) {
+            java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_FORMAT, java.util.Locale.US);
+            df.setTimeZone(java.util.TimeZone.getTimeZone(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_GMT_TIMEZONE));
+            java.util.Calendar time = new java.util.GregorianCalendar();
+            exchange.getResponseHeaders().set("Date", df.format(time.getTime()));
+        }
+
+        private void setDateAndCacheHeaders(HttpExchange exchange, java.io.File file) {
+            java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_FORMAT, java.util.Locale.US);
+            df.setTimeZone(java.util.TimeZone.getTimeZone(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_GMT_TIMEZONE));
+            java.util.Calendar time = new java.util.GregorianCalendar();
+            exchange.getResponseHeaders().set("Date", df.format(time.getTime()));
+            time.add(java.util.Calendar.SECOND, org.tinystruct.handler.HttpStaticFileHandler.HTTP_CACHE_SECONDS);
+            exchange.getResponseHeaders().set("Expires", df.format(time.getTime()));
+            exchange.getResponseHeaders().set("Cache-Control", "private, max-age=" + org.tinystruct.handler.HttpStaticFileHandler.HTTP_CACHE_SECONDS);
+            exchange.getResponseHeaders().set("Last-Modified", df.format(new java.util.Date(file.lastModified())));
         }
 
         private void processRequest(ServerRequest request, ServerResponse response) throws IOException, ApplicationException {
@@ -307,8 +499,27 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 this.context.setAttribute(HTTP_REQUEST, request);
                 this.context.setAttribute(HTTP_RESPONSE, response);
 
+                // Ensure session cookie (JSESSIONID) is set like other servers
+                boolean sessionCookieExists = false;
+                for (Cookie cookie : request.cookies()) {
+                    if (cookie.name().equalsIgnoreCase(Constants.JSESSIONID)) {
+                        sessionCookieExists = true;
+                        break;
+                    }
+                }
+                if (!sessionCookieExists) {
+                    Cookie cookie = new CookieImpl(Constants.JSESSIONID);
+                    if (host.contains(":"))
+                        cookie.setDomain(host.substring(0, host.indexOf(":")));
+                    cookie.setValue(this.context.getId());
+                    cookie.setHttpOnly(true);
+                    cookie.setPath("/");
+                    cookie.setMaxAge(-1);
+                    response.addHeader(Header.SET_COOKIE.name(), cookie);
+                }
+
                 // Handle query using request.query() method (like HttpRequestHandler)
-                String query = request.query();
+                String query = request.getParameter("q");
                 if (query != null && query.length() > 1) {
                     handleRequest(query, this.context, response);
                 } else {
