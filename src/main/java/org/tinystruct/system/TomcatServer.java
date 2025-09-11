@@ -278,7 +278,7 @@ public class TomcatServer extends AbstractApplication implements Bootstrap {
     /**
      * DefaultHandler is responsible for handling HTTP requests and managing the application's lifecycle.
      */
-    private static class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
+    public static class DefaultHandler extends HttpServlet implements Bootstrap, Filter {
         private static final Logger logger = Logger.getLogger(DefaultHandler.class.getName());
         private static final long serialVersionUID = 0;
         private static final String DATE_FORMAT_PATTERN = "yyyy-M-d h:m:s";
