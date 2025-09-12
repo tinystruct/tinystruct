@@ -15,7 +15,6 @@
  *******************************************************************************/
 package org.tinystruct.system;
 
-import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.tinystruct.AbstractApplication;
@@ -38,8 +37,6 @@ import java.util.logging.Logger;
 import static org.tinystruct.http.Constants.HTTP_REQUEST;
 import static org.tinystruct.http.Constants.HTTP_RESPONSE;
 import static org.tinystruct.http.Constants.HTTP_HOST;
-import static org.tinystruct.Application.LANGUAGE;
-import static org.tinystruct.Application.METHOD;
 
 public class HttpServer extends AbstractApplication implements Bootstrap {
     private final Logger logger = Logger.getLogger(HttpServer.class.getName());
@@ -123,11 +120,11 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             if (serverThreads > 0) {
                 server.setExecutor(Executors.newFixedThreadPool(serverThreads));
             } else {
-                server.setExecutor(null); // Use default executor
+                server.setExecutor(Executors.newCachedThreadPool()); // Use default executor
             }
 
             // Create context and set handler
-            HttpContext context = server.createContext("/", new DefaultHttpHandler(getContext(), this.settings));
+            server.createContext("/", new DefaultHttpHandler(getContext(), this.settings));
 
             // Configure context attributes similar to Tomcat setup
             initServerDefaults();
@@ -188,8 +185,8 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
     @Action(value = "error", description = "Error page")
     public Object exceptionCaught() throws ApplicationException {
-        Request request = (Request) getContext().getAttribute(HTTP_REQUEST);
-        Response response = (Response) getContext().getAttribute(HTTP_RESPONSE);
+        Request<?, ?> request = (Request<?, ?>) getContext().getAttribute(HTTP_REQUEST);
+        Response<?, ?> response = (Response<?, ?>) getContext().getAttribute(HTTP_RESPONSE);
 
         Reforward reforward = new Reforward(request, response);
         this.setVariable("from", reforward.getFromURL());
@@ -237,7 +234,6 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            boolean sseActive = false;
             try {
                 // Serve static files first (mirror Netty's HttpStaticFileHandler precedence)
                 if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
@@ -256,7 +252,6 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
                 // Process SSE first to ensure correct headers and long-lived connection
                 if (isSSE(exchange)) {
-                    sseActive = true;
                     handleSSE(request, response, this.context);
                     return;
                 }
@@ -267,30 +262,9 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 logger.log(Level.SEVERE, "Error processing request", e);
                 // Try to send error only if headers haven't been committed yet
                 try {
-                    Response resp = (Response) this.context.getAttribute(HTTP_RESPONSE);
-                    if (resp instanceof ServerResponse) {
-                        ServerResponse serverResponse = (ServerResponse) resp;
-                        if (!serverResponse.isCommitted()) {
-                            sendErrorResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
-                        }
-                    } else {
-                        sendErrorResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
-                    }
+                    sendErrorResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
                 } catch (Exception ignored) {
                     // If we can't send an error (headers/body already sent), just log.
-                }
-            } finally {
-                try {
-                    if (!sseActive) {
-                        Response resp = (Response) this.context.getAttribute(HTTP_RESPONSE);
-                        if (resp instanceof ServerResponse) {
-                            ((ServerResponse) resp).close();
-                        } else {
-                            exchange.close();
-                        }
-                    }
-                } catch (Exception ex) {
-                    exchange.close();
                 }
             }
         }
@@ -309,6 +283,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             response.addHeader(Header.CONTENT_TYPE.name(), "text/event-stream");
             response.addHeader(Header.CACHE_CONTROL.name(), "no-cache");
             response.addHeader(Header.CONNECTION.name(), "keep-alive");
+            response.addHeader(Header.TRANSFER_ENCODING.name(), "chunked");
             response.addHeader("X-Accel-Buffering", "no");
 
             String query = request.getParameter("q");
@@ -322,22 +297,34 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 Object call = ApplicationManager.call(query, context);
                 String sessionId = context.getId();
                 SSEPushManager pushManager = getAppropriatePushManager(isMCP);
+                response.setStatus(ResponseStatus.OK);
+                // Ensure chunked streaming for SSE before any write
+                response.sendHeaders(-1);
                 SSEClient client = pushManager.register(sessionId, response);
 
                 if (call instanceof org.tinystruct.data.component.Builder) {
-                    if (client != null) client.send((org.tinystruct.data.component.Builder) call);
-                    else pushManager.push(sessionId, (org.tinystruct.data.component.Builder) call);
-                } else if (call != null) {
-                    // Send as data line
-                    String data = "data: " + String.valueOf(call).replace("\n", "\ndata: ") + "\n\n";
-                    response.writeAndFlush(data.getBytes("UTF-8"));
-                } else {
-                    // Initial comment to open stream and avoid proxy buffering
-                    response.writeAndFlush(": ok\n\n".getBytes("UTF-8"));
+                    pushManager.push(sessionId, (org.tinystruct.data.component.Builder) call);
+                } else if (call instanceof String) {
+                    org.tinystruct.data.component.Builder builder = new org.tinystruct.data.component.Builder();
+                    builder.parse((String) call);
+                    pushManager.push(sessionId, builder);
                 }
-            } else {
-                // No query, still open SSE stream
-                response.writeAndFlush(": ok\n\n".getBytes("UTF-8"));
+
+                if (client != null) {
+                    try {
+                        while (client.isActive()) {
+                            Thread.sleep(1000);
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new ApplicationException("Stream interrupted: " + e.getMessage(), e);
+                    } catch (Exception e) {
+                        throw new ApplicationException("Error in stream: " + e.getMessage(), e);
+                    } finally {
+                        client.close();
+                        pushManager.remove(sessionId);
+                    }
+                }
             }
         }
 
@@ -525,12 +512,12 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 } else {
                     handleDefaultPage(this.context, response);
                 }
-
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error in request processing", e);
                 response.setContentType("text/plain; charset=UTF-8");
                 response.setStatus(org.tinystruct.http.ResponseStatus.INTERNAL_SERVER_ERROR);
                 response.writeAndFlush("500 - Internal Server Error".getBytes("UTF-8"));
+                response.close();
             }
         }
 
@@ -546,19 +533,22 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             // Handle request
             query = StringUtilities.htmlSpecialChars(query);
             Object message = ApplicationManager.call(query, context);
+            byte[] bytes;
             if (message != null) {
                 if (message instanceof byte[]) {
-                    byte[] bytes = (byte[]) message;
-                    response.addHeader("Content-Length", String.valueOf(bytes.length));
-                    response.writeAndFlush(bytes);
+                    bytes = (byte[]) message;
                 } else {
                     response.setContentType("text/html; charset=UTF-8");
-                    response.writeAndFlush(String.valueOf(message).getBytes("UTF-8"));
+                    bytes = String.valueOf(message).getBytes("UTF-8");
                 }
             } else {
-                response.setContentType("text/plain; charset=UTF-8");
-                response.writeAndFlush("No response retrieved!".getBytes("UTF-8"));
+                response.setContentType("text/html; charset=UTF-8");
+                bytes = "No response retrieved!".getBytes("UTF-8");
             }
+
+            response.setStatus(ResponseStatus.OK);
+            response.writeAndFlush(bytes);
+            response.close();
         }
 
         /**
@@ -568,10 +558,20 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
          * @param response The HTTP response object
          * @throws IOException if an I/O error occurs
          */
-        private void handleDefaultPage(Context context, ServerResponse response) throws IOException, ApplicationException {
+        private void handleDefaultPage(Context context, ServerResponse response) throws ApplicationException {
             response.setContentType("text/html; charset=UTF-8");
             Object result = ApplicationManager.call(settings.getOrDefault("default.home.page", "say/Praise the Lord."), context);
-            response.writeAndFlush(String.valueOf(result).getBytes("UTF-8"));
+            if (!response.isClosed()) {
+                try {
+                    byte[] bytes = String.valueOf(result).getBytes("UTF-8");
+                    response.setStatus(ResponseStatus.OK);
+                    response.writeAndFlush(bytes);
+                } catch (IOException e) {
+                    throw new ApplicationException(e);
+                } finally {
+                    response.close();
+                }
+            }
         }
 
         private void sendErrorResponse(HttpExchange exchange, int statusCode, String message) {
@@ -582,11 +582,11 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(responseBytes);
                 }
+                exchange.close();
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Failed to send error response", e);
             }
         }
-
 
     }
 }
