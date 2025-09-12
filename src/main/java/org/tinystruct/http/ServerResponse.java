@@ -29,9 +29,9 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
     private final Headers headers = new Headers();
     private ResponseStatus status = ResponseStatus.OK;
     private Version version = Version.HTTP1_1;
-    private boolean headersSent = false;
-    private OutputStream responseBody;
     private boolean closed = false;
+    private boolean headersSent = false;
+    private OutputStream outputStream;
 
     public ServerResponse(HttpExchange exchange) {
         this.exchange = exchange;
@@ -55,23 +55,35 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
     public void sendRedirect(String url) throws ApplicationException {
         addHeader(Header.LOCATION.name(), url);
         setStatus(ResponseStatus.TEMPORARY_REDIRECT);
-        writeAndFlush(new byte[0]);
+        try {
+            this.exchange.sendResponseHeaders(this.status.code(), 0);
+            this.headersSent = true;
+        } catch (IOException e) {
+            throw new ApplicationException(e);
+        }
+        close();
     }
 
     @Override
     public void writeAndFlush(byte[] bytes) throws ApplicationException {
         try {
+            // Ensure headers are sent at least once.
+            // If we have a concrete byte array and headers not yet sent, prefer fixed Content-Length.
             if (!headersSent) {
-                // Use chunked transfer by specifying 0 length
-                exchange.sendResponseHeaders(status.code(), 0);
-                headersSent = true;
+                // If content length is known and this is a one-shot response, let caller use sendHeaders(len).
+                // Fallback here: if bytes provided, use exact length; if not, use 0 to enable chunked per JDK HttpServer.
+                long len = (bytes != null) ? bytes.length : 0;
+                this.exchange.sendResponseHeaders(this.status.code(), len);
+                this.headersSent = true;
             }
-            if (responseBody == null) {
-                responseBody = exchange.getResponseBody();
+
+            if (this.outputStream == null) {
+                this.outputStream = this.exchange.getResponseBody();
             }
+
             if (bytes != null && bytes.length > 0) {
-                responseBody.write(bytes);
-                responseBody.flush();
+                this.outputStream.write(bytes);
+                this.outputStream.flush();
             }
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e);
@@ -87,28 +99,14 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
     public void close() throws ApplicationException {
         if (closed) return;
         try {
-            if (!headersSent) {
-                // Ensure at least headers are sent even if nothing was written
-                exchange.sendResponseHeaders(status.code(), 0);
-                headersSent = true;
+            if (this.outputStream != null) {
+                this.outputStream.close();
             }
-
-            if (responseBody == null) {
-                responseBody = exchange.getResponseBody();
-            }
-
-            if (responseBody != null) {
-                try {
-                    responseBody.close();
-                } catch (IOException ignored) {
-                }
-            }
-        } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e);
+        } catch (IOException ignore) {
         } finally {
             exchange.close();
-            closed = true;
         }
+        closed = true;
     }
 
     @Override
@@ -138,9 +136,20 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
     }
 
     /**
-     * Returns true if response headers/body have been committed to the client.
+     * Send response headers once with a known content length. Use -1 to keep chunked (0) behavior.
      */
-    public boolean isCommitted() {
-        return headersSent;
+    public void sendHeaders(long contentLength) throws ApplicationException {
+        if (headersSent) return;
+        long len = contentLength >= 0 ? contentLength : 0;
+        try {
+            this.exchange.sendResponseHeaders(this.status.code(), len);
+            this.headersSent = true;
+        } catch (IOException e) {
+            throw new ApplicationException(e);
+        }
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 }
