@@ -1,12 +1,17 @@
 package org.tinystruct.http;
 
-public class ResponseHeaders extends Headers {
-    private final Response response;
+import java.util.ArrayList;
 
-    public ResponseHeaders(Response response) {
+public class ResponseHeaders extends Headers {
+    private final Response<?, ?> response;
+
+    public ResponseHeaders(Response<?, ?> response) {
         this.response = response;
-        if (this.response.headers() != null)
-            this.response.headers().values().forEach(this::add);
+        if (this.response.headers() != null) {
+            // Create a defensive copy to avoid ConcurrentModificationException
+            ArrayList<Header> headersCopy = new ArrayList<>(this.response.headers().values());
+            headersCopy.forEach(this::add);
+        }
     }
 
     @Override
