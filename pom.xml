@@ -221,7 +221,7 @@
         <jakarta.mail.version>2.0.2</jakarta.mail.version>
         <jakarta.servlet.version>6.1.0</jakarta.servlet.version>
         <java.version>17</java.version>
-        <jjwt.version>0.12.7</jjwt.version>
+        <jjwt.version>0.13.0</jjwt.version>
         <jna.version>5.17.0</jna.version>
         <jupiter.version>5.13.4</jupiter.version>
         <kafka.version>4.0.0</kafka.version>
