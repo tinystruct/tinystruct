@@ -24,8 +24,8 @@ import org.tinystruct.data.component.Builder;
 import org.tinystruct.mcp.tools.CalculatorTool;
 import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Dispatcher;
+import org.tinystruct.system.HttpServer;
 import org.tinystruct.system.Settings;
-import org.tinystruct.system.TomcatServer;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -62,7 +62,7 @@ public class MCPClientServerIntegrationTest {
                 Context serverContext = new ApplicationContext();
                 serverContext.setAttribute("--server-port", "8001");
                 ApplicationManager.install(new Dispatcher());
-                ApplicationManager.install(new TomcatServer());
+                ApplicationManager.install(new HttpServer());
                 ApplicationManager.call("start", serverContext, org.tinystruct.application.Action.Mode.CLI);
 
                 // Keep the thread alive as long as the server is running
