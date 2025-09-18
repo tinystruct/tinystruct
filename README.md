@@ -21,7 +21,7 @@ Installation and Getting Started
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.5</version>
+  <version>1.7.6</version>
   <classifier>jar-with-dependencies</classifier> <!-- Optional -->
 </dependency>
 ```
@@ -77,7 +77,7 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.5
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.6
            /
 ```
 ```tcsh
@@ -117,10 +117,10 @@ $ bin/dispatcher say --words Hello --import tinystruct.examples.example
 Hello
 ```
 
-Run it in a http server based on netty
+Run it in a http server
 --
 ```tcsh
-# bin/dispatcher start --import org.tinystruct.system.NettyHttpServer 
+# bin/dispatcher start --import org.tinystruct.system.HttpServer 
 ```
 You can access the below URLs:
 
