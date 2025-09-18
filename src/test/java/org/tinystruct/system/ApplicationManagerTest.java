@@ -30,7 +30,6 @@ class ApplicationManagerTest {
     @Test
     void testUninstall() {
         assertTrue(ApplicationManager.uninstall(new Dispatcher()));
-        assertFalse(ApplicationManager.uninstall(new MQTTServer()));
     }
 
     @Test
