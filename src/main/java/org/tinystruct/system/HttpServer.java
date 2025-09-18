@@ -43,6 +43,9 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
     private com.sun.net.httpserver.HttpServer server;
     private boolean started = false;
     private Settings settings;
+    public static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
+    public static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
+    public static final int HTTP_CACHE_SECONDS = 60;
 
     public HttpServer() {
     }
@@ -362,8 +365,8 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 // If-Modified-Since support
                 String ifModifiedSince = exchange.getRequestHeaders().getFirst("If-Modified-Since");
                 if (ifModifiedSince != null && !ifModifiedSince.isEmpty()) {
-                    java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_FORMAT, java.util.Locale.US);
-                    df.setTimeZone(java.util.TimeZone.getTimeZone(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_GMT_TIMEZONE));
+                    java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(HTTP_DATE_FORMAT, java.util.Locale.US);
+                    df.setTimeZone(java.util.TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
                     java.util.Date ims = df.parse(ifModifiedSince);
                     long imsSeconds = ims.getTime() / 1000;
                     long fileSeconds = file.lastModified() / 1000;
@@ -378,7 +381,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 // Content-Type
                 String contentType = null;
                 try {
-                    jakarta.activation.MimetypesFileTypeMap mimeTypesMap = new jakarta.activation.MimetypesFileTypeMap(org.tinystruct.handler.HttpStaticFileHandler.class.getResourceAsStream("/META-INF/mime.types"));
+                    jakarta.activation.MimetypesFileTypeMap mimeTypesMap = new jakarta.activation.MimetypesFileTypeMap(HttpServer.class.getResourceAsStream("/META-INF/mime.types"));
                     contentType = mimeTypesMap.getContentType(file);
                 } catch (Exception ignore) {
                 }
@@ -418,20 +421,20 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
         }
 
         private void setDateHeader(HttpExchange exchange) {
-            java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_FORMAT, java.util.Locale.US);
-            df.setTimeZone(java.util.TimeZone.getTimeZone(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_GMT_TIMEZONE));
+            java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(HTTP_DATE_FORMAT, java.util.Locale.US);
+            df.setTimeZone(java.util.TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
             java.util.Calendar time = new java.util.GregorianCalendar();
             exchange.getResponseHeaders().set("Date", df.format(time.getTime()));
         }
 
         private void setDateAndCacheHeaders(HttpExchange exchange, java.io.File file) {
-            java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_FORMAT, java.util.Locale.US);
-            df.setTimeZone(java.util.TimeZone.getTimeZone(org.tinystruct.handler.HttpStaticFileHandler.HTTP_DATE_GMT_TIMEZONE));
+            java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(HTTP_DATE_FORMAT, java.util.Locale.US);
+            df.setTimeZone(java.util.TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
             java.util.Calendar time = new java.util.GregorianCalendar();
             exchange.getResponseHeaders().set("Date", df.format(time.getTime()));
-            time.add(java.util.Calendar.SECOND, org.tinystruct.handler.HttpStaticFileHandler.HTTP_CACHE_SECONDS);
+            time.add(java.util.Calendar.SECOND, HTTP_CACHE_SECONDS);
             exchange.getResponseHeaders().set("Expires", df.format(time.getTime()));
-            exchange.getResponseHeaders().set("Cache-Control", "private, max-age=" + org.tinystruct.handler.HttpStaticFileHandler.HTTP_CACHE_SECONDS);
+            exchange.getResponseHeaders().set("Cache-Control", "private, max-age=" + HTTP_CACHE_SECONDS);
             exchange.getResponseHeaders().set("Last-Modified", df.format(new java.util.Date(file.lastModified())));
         }
 
