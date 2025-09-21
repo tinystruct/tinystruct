@@ -246,7 +246,7 @@ public final class ApplicationManager {
         }
 
         if (action.getMode().ordinal() < mode.ordinal()) {
-            throw new ApplicationException("The action is not allowed to be executed.");
+            throw new ApplicationException("The action is not allowed to be executed.", 400);
         }
 
         if (context != null) {
