@@ -515,10 +515,11 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 } else {
                     handleDefaultPage(this.context, response);
                 }
-            } catch (Exception e) {
+            } catch (ApplicationException e) {
                 logger.log(Level.SEVERE, "Error in request processing", e);
                 response.setContentType("text/plain; charset=UTF-8");
-                response.setStatus(org.tinystruct.http.ResponseStatus.INTERNAL_SERVER_ERROR);
+                int status = e.getStatus();
+                response.setStatus(org.tinystruct.http.ResponseStatus.valueOf(status));
                 response.writeAndFlush("500 - Internal Server Error".getBytes("UTF-8"));
                 response.close();
             }
@@ -569,7 +570,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     byte[] bytes = String.valueOf(result).getBytes("UTF-8");
                     response.setStatus(ResponseStatus.OK);
                     response.writeAndFlush(bytes);
-                } catch (IOException e) {
+                } catch (UnsupportedEncodingException e) {
                     throw new ApplicationException(e);
                 } finally {
                     response.close();
