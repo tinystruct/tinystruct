@@ -131,22 +131,22 @@
         </dependency>
     </dependencies>
     <properties>
-        <bouncycastle.version>1.81</bouncycastle.version>
+        <bouncycastle.version>1.82</bouncycastle.version>
         <brotli.version>0.1.2</brotli.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jakarta.activation.version>2.1.3</jakarta.activation.version>
+        <jakarta.activation.version>2.1.4</jakarta.activation.version>
         <jakarta.mail.version>2.0.2</jakarta.mail.version>
         <java.version>17</java.version>
         <jjwt.version>0.13.0</jjwt.version>
-        <jna.version>5.17.0</jna.version>
+        <jna.version>5.18.0</jna.version>
         <jupiter.version>5.13.4</jupiter.version>
-        <kafka.version>4.0.0</kafka.version>
-        <lettuce.version>6.8.0.RELEASE</lettuce.version>
+        <kafka.version>4.1.0</kafka.version>
+        <lettuce.version>6.8.1.RELEASE</lettuce.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <sqlite.version>3.50.3.0</sqlite.version>
         <h2.version>2.3.232</h2.version>
-        <mockito.version>5.19.0</mockito.version>
+        <mockito.version>5.20.0</mockito.version>
         <nashorn.version>15.7</nashorn.version>
         <zxing.version>3.5.3</zxing.version>
     </properties>
