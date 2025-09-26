@@ -17,23 +17,16 @@ package org.tinystruct.data.component;
 
 import org.tinystruct.ApplicationException;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.logging.Logger;
 
 import static org.tinystruct.data.component.Builder.*;
 
 /**
  * Optimized Builders class represents a collection of Builder objects with improved performance.
  */
-public class Builders extends ArrayList<Builder> implements Struct, Serializable {
+public class Builders extends ArrayList<Builder> implements Struct {
 
     private static final long serialVersionUID = -6787714840442861559L;
-    private static final Logger logger = Logger.getLogger(Builders.class.getName());
-
-    // Thread-local StringBuilder cache for better performance
-    private static final ThreadLocal<StringBuilder> STRING_BUILDER_CACHE =
-            ThreadLocal.withInitial(() -> new StringBuilder(256));
 
     /**
      * Constructor with optimized initial capacity
@@ -50,9 +43,7 @@ public class Builders extends ArrayList<Builder> implements Struct, Serializable
             return "[]";
         }
 
-        StringBuilder buffer = STRING_BUILDER_CACHE.get();
-        buffer.setLength(0); // Reset the buffer
-
+        StringBuilder buffer = new StringBuilder(256);
         buffer.append(LEFT_BRACKETS);
 
         boolean first = true;

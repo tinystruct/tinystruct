@@ -21,7 +21,6 @@ import org.tinystruct.system.util.StringUtilities;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Set;
@@ -31,14 +30,10 @@ import java.util.logging.Logger;
  * Optimized Builder class represents a key-value data structure, similar to a JSON object.
  * This version includes significant performance improvements over the original implementation.
  */
-public class Builder extends HashMap<String, Object> implements Struct, Serializable {
+public class Builder extends HashMap<String, Object> implements Struct {
 
     private static final long serialVersionUID = 3484789992424316230L;
     private static final Logger logger = Logger.getLogger(Builder.class.getName());
-
-    // Thread-local StringBuilder for better performance in multi-threaded environments
-    private static final ThreadLocal<StringBuilder> STRING_BUILDER_CACHE =
-            ThreadLocal.withInitial(() -> new StringBuilder(256));
 
     private int closedPosition = 0;
     private Object value = null;
@@ -125,10 +120,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
             return formatSingleValue(this.value);
         }
 
-        // Use thread-local StringBuilder for better performance
-        StringBuilder buffer = STRING_BUILDER_CACHE.get();
-        buffer.setLength(0); // Reset the buffer
-
+        StringBuilder buffer = new StringBuilder(256);
         buffer.append(LEFT_BRACE);
 
         Set<Entry<String, Object>> entries = this.entrySet();
@@ -152,7 +144,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
      */
     private String formatSingleValue(Object val) {
         if (val instanceof String) {
-            return QUOTE + val.toString() + QUOTE;
+            return QUOTE + StringUtilities.escape(val.toString()) + QUOTE;
         } else if (val != null && val.getClass().isArray()) {
             return formatArray(val);
         } else {
@@ -236,8 +228,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
         }
 
         if (resource.charAt(0) == QUOTE) {
-            this.parsePrimitiveValue(resource);
-            return;
+            throw new ApplicationException("Invalid data format:" + resource);
         }
 
         if (resource.charAt(0) != LEFT_BRACE || resource.charAt(resource.length() - 1) != RIGHT_BRACE) {
@@ -496,7 +487,7 @@ public class Builder extends HashMap<String, Object> implements Struct, Serializ
     /**
      * Optimized primitive value parsing with reduced regex usage
      */
-    static Object parsePrimitiveValue(String value) {
+     static Object parsePrimitiveValue(String value) {
         if (value == null || value.isEmpty()) {
             return null;
         }
