@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.7.6</version>
+    <version>1.7.7</version>
     <name>tinystruct framework</name>
     <description>A lightweight, modular Java application framework for web and CLI development,
         designed for AI integration and plugin-based architecture.
@@ -145,7 +145,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <sqlite.version>3.50.3.0</sqlite.version>
-        <h2.version>2.3.232</h2.version>
+        <h2.version>2.4.240</h2.version>
         <mockito.version>5.20.0</mockito.version>
         <nashorn.version>15.7</nashorn.version>
         <zxing.version>3.5.3</zxing.version>
