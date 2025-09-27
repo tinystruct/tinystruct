@@ -117,7 +117,8 @@ public class Builder extends HashMap<String, Object> implements Struct {
     public String toString() {
         // Handle single value case
         if (this.value != null && this.isEmpty()) {
-            return formatSingleValue(this.value);
+            Object value = parsePrimitiveValue(this.value);
+            return formatSingleValue(value);
         }
 
         StringBuilder buffer = new StringBuilder(256);
@@ -487,12 +488,12 @@ public class Builder extends HashMap<String, Object> implements Struct {
     /**
      * Optimized primitive value parsing with reduced regex usage
      */
-     static Object parsePrimitiveValue(String value) {
-        if (value == null || value.isEmpty()) {
+    static Object parsePrimitiveValue(Object value) {
+        if (value == null) {
             return null;
         }
 
-        String trimmed = value.trim();
+        String trimmed = value.toString().trim();
         if (trimmed.isEmpty()) {
             return value; // Preserve original if only whitespace
         }
@@ -623,8 +624,25 @@ public class Builder extends HashMap<String, Object> implements Struct {
         }
     }
 
+    /**
+     * Return the value of the key from a single value or the hash map.
+     *
+     * @param key the key whose associated value is to be returned
+     * @return value
+     */
+    @Override
+    public Object get(Object key) {
+        if (this.isSingleValue() && this.value instanceof Object[] objects) {
+            return objects[Integer.parseInt(key.toString())];
+        }
+        return super.get(key);
+    }
+
     @Override
     public int size() {
+        if (this.isSingleValue() && this.value instanceof Object[]) {
+            return ((Object[]) this.value).length;
+        }
         return this.keySet().size();
     }
 }
