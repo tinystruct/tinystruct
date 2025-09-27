@@ -162,16 +162,17 @@ public class Builders extends ArrayList<Builder> implements Struct {
                 throw new ApplicationException("Unmatched opening bracket in array");
             }
 
-            Builder arrayBuilder = new Builder();
             Builders nestedBuilders = new Builders();
             nestedBuilders.parseArrayContent(content, pos + 1, arrayEnd);
 
+            Object[] objects = new Object[nestedBuilders.size()];
             // Convert nested array to Builder with indexed keys
             for (int i = 0; i < nestedBuilders.size(); i++) {
                 Builder nested = nestedBuilders.get(i);
-                arrayBuilder.put(String.valueOf(i), nested.isSingleValue() ? nested.getValue() : nested);
+                objects[i] = nested.isSingleValue() ? nested.getValue() : nested;
             }
 
+            Builder arrayBuilder = new Builder(objects);
             return new ElementParseResult(arrayBuilder, arrayEnd + 1);
         } else {
             // Primitive element (number, boolean, null)
