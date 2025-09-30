@@ -2,6 +2,7 @@ package org.tinystruct.net.handlers;
 
 import org.brotli.dec.BrotliInputStream;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.Attachments;
 import org.tinystruct.net.URLHandler;
 import org.tinystruct.net.URLRequest;
@@ -23,6 +24,8 @@ import java.util.zip.GZIPInputStream;
 import static org.tinystruct.transfer.http.upload.ContentDisposition.LINE;
 
 public class HTTPHandler implements URLHandler {
+
+    private Boolean followRedirects = true;
 
     @Override
     public URLResponse handleRequest(URLRequest request) throws ApplicationException {
@@ -69,6 +72,11 @@ public class HTTPHandler implements URLHandler {
 
             connection.setRequestMethod(request.getMethod());
 
+            // Disable follow-redirects option if user disables it
+            if (!this.followRedirects) {
+                connection.setInstanceFollowRedirects(false);
+            }
+
             // Set headers
             if (request.getHeaders() != null) {
                 for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
@@ -79,7 +87,8 @@ public class HTTPHandler implements URLHandler {
             // Enable output if there's a body or multipart data
             if (request.getBody() != null || boundary != null ||
                     (request.getFormData() != null && request.getFormData().length > 0) ||
-                    (request.getAttachments() != null)) {
+                    (request.getAttachments() != null) ||
+                    ("application/x-www-form-urlencoded".equalsIgnoreCase(contentType) && request.getParameters() != null && !request.getParameters().isEmpty())) {
                 connection.setDoOutput(true);
 
                 if (boundary != null) {
@@ -129,10 +138,11 @@ public class HTTPHandler implements URLHandler {
                         }
                         // Write closing boundary
                         writer.write(("--" + boundary + "--" + LINE).getBytes(StandardCharsets.UTF_8));
-                    }
-
-                    // Write simple body if provided
-                    if (request.getBody() != null) {
+                    } else if ("application/x-www-form-urlencoded".equalsIgnoreCase(contentType)) {
+                        // URL-encoded body
+                        String formBody = buildQuery(request.getParameters());
+                        writer.write(formBody.getBytes(StandardCharsets.UTF_8));
+                    } else if (request.getBody() != null) {
                         writer.write(request.getBody().getBytes(StandardCharsets.UTF_8));
                     }
                     writer.flush();
@@ -197,6 +207,11 @@ public class HTTPHandler implements URLHandler {
 
             connection.setRequestMethod(request.getMethod());
 
+            // Disable follow-redirects option if user disables it
+            if (!this.followRedirects) {
+                connection.setInstanceFollowRedirects(false);
+            }
+
             // Set headers
             if (request.getHeaders() != null) {
                 for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
@@ -207,7 +222,9 @@ public class HTTPHandler implements URLHandler {
             // Enable output if there's a body or multipart data
             if (request.getBody() != null || boundary != null ||
                     (request.getFormData() != null && request.getFormData().length > 0) ||
-                    (request.getAttachments() != null)) {
+                    (request.getAttachments() != null) ||
+                    ("application/x-www-form-urlencoded".equalsIgnoreCase(contentType) && request.getParameters() != null && !request.getParameters().isEmpty())) {
+
                 connection.setDoOutput(true);
 
                 if (boundary != null) {
@@ -257,10 +274,12 @@ public class HTTPHandler implements URLHandler {
                         }
                         // Write closing boundary
                         writer.write(("--" + boundary + "--" + LINE).getBytes(StandardCharsets.UTF_8));
-                    }
-
-                    // Write simple body if provided
-                    if (request.getBody() != null) {
+                    } else if ("application/x-www-form-urlencoded".equalsIgnoreCase(contentType)) {
+                        // URL-encoded body
+                        String formBody = buildQuery(request.getParameters());
+                        writer.write(formBody.getBytes(StandardCharsets.UTF_8));
+                    } // Write simple body if provided
+                    else if (request.getBody() != null) {
                         writer.write(request.getBody().getBytes(StandardCharsets.UTF_8));
                     }
                     writer.flush();
@@ -296,6 +315,10 @@ public class HTTPHandler implements URLHandler {
         });
     }
 
+    public void disableFollowRedirects() {
+        this.followRedirects = false;
+    }
+
     // Helper: Build query string from parameters.
     private String buildQuery(Map<String, Object> parameters) {
         StringBuilder queryBuilder = new StringBuilder();
@@ -317,23 +340,27 @@ class HTTPResponse implements URLResponse {
     private final String body;
     private final Map<String, List<String>> headers;
 
-    public HTTPResponse(HttpURLConnection connection) throws IOException {
-        this.statusCode = connection.getResponseCode();
-        this.headers = connection.getHeaderFields();
+    public HTTPResponse(HttpURLConnection connection) {
+        try {
+            this.statusCode = connection.getResponseCode();
+            this.headers = connection.getHeaderFields();
 
-        // Choose the appropriate input stream based on the status code.
-        InputStream in = (statusCode >= HttpURLConnection.HTTP_OK &&
-                statusCode < HttpURLConnection.HTTP_BAD_REQUEST)
-                ? connection.getInputStream()
-                : connection.getErrorStream();
+            // Choose the appropriate input stream based on the status code.
+            InputStream in = (statusCode >= HttpURLConnection.HTTP_OK &&
+                    statusCode < HttpURLConnection.HTTP_BAD_REQUEST)
+                    ? connection.getInputStream()
+                    : connection.getErrorStream();
 
-        if (in != null) {
-            String contentEncoding = connection.getContentEncoding();
-            InputStream decodedStream = getDecodedInputStream(contentEncoding, in);
-            this.body = new String(decodedStream.readAllBytes(), StandardCharsets.UTF_8);
-            decodedStream.close();
-        } else {
-            this.body = "";
+            if (in != null) {
+                String contentEncoding = connection.getContentEncoding();
+                InputStream decodedStream = getDecodedInputStream(contentEncoding, in);
+                this.body = new String(decodedStream.readAllBytes(), StandardCharsets.UTF_8);
+                decodedStream.close();
+            } else {
+                this.body = "";
+            }
+        } catch (IOException e) {
+            throw new ApplicationRuntimeException(e);
         }
     }
 
@@ -388,7 +415,7 @@ class HTTPResponse implements URLResponse {
             String line;
             while ((line = reader.readLine()) != null) {
                 // When an empty line is encountered, dispatch the collected event
-                listener.accept(line +"\n");
+                listener.accept(line + "\n");
             }
         }
 
