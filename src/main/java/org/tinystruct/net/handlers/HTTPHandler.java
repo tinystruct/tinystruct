@@ -159,7 +159,7 @@ public class HTTPHandler implements URLHandler {
             // Default response for normal HTTP request
             return new HTTPResponse(connection);
         } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e);
+            throw new ApplicationException(e.getClass().getSimpleName() + ":" + e.getMessage(), e);
         }
     }
 
@@ -296,7 +296,7 @@ public class HTTPHandler implements URLHandler {
             // Default response for normal HTTP request
             return new HTTPResponse(connection);
         } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e);
+            throw new ApplicationException(e.getClass().getSimpleName() + ":" + e.getMessage(), e);
         }
     }
 
