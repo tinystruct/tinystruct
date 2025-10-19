@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,7 +29,7 @@ public class SSEPushManager {
     // True if running in Netty environment
     private final boolean isNetty;
     // Identifier for push management, useful for distinguishing clients
-    private String identifier = "";
+    private final AtomicReference<String> identifier = new AtomicReference<>("");
 
     private static final SSEPushManager instance = new SSEPushManager();
 
@@ -52,7 +53,7 @@ public class SSEPushManager {
     }
 
     public void setIdentifier(String identifier) {
-        this.identifier = identifier;
+        this.identifier.set(identifier);
     }
 
     /**
@@ -111,17 +112,17 @@ public class SSEPushManager {
         } else {
             // Servlet/Tomcat: use original thread-based approach
             SSEClient oldClient = (SSEClient) clients.get(sessionId);
-            if (oldClient != null) {
+            if (oldClient != null && oldClient.isActive()) {
                 return oldClient;
             }
 
-            SSEClient client = messageQueue != null ?
-                    new SSEClient(out, messageQueue) :
-                    new SSEClient(out);
-
-            clients.put(sessionId, client);
-            executor.submit(client);
-            logger.info("Registered Servlet SSE client: " + sessionId);
+            String finalSessionId = sessionId;
+            SSEClient client = (SSEClient) clients.computeIfAbsent(sessionId, id -> {
+                SSEClient c = (messageQueue != null) ? new SSEClient(out, messageQueue) : new SSEClient(out);
+                executor.submit(c);
+                logger.info("Registered a SSE client: " + finalSessionId);
+                return c;
+            });
             return client;
         }
     }
@@ -161,7 +162,7 @@ public class SSEPushManager {
             SSEClient client = (SSEClient) clients.get(sessionId);
             if (client != null && client.isActive()) {
                 client.send(message);
-                logger.fine("Pushed message to Servlet client: " + sessionId);
+                logger.fine("Pushed message to client: " + sessionId);
             } else {
                 // Clean up inactive client
                 clients.remove(sessionId, client);
