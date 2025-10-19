@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.7.7</version>
+    <version>1.7.8</version>
     <name>tinystruct framework</name>
     <description>A lightweight, modular Java application framework for web and CLI development,
         designed for AI integration and plugin-based architecture.
@@ -138,8 +138,8 @@
         <jakarta.mail.version>2.0.2</jakarta.mail.version>
         <java.version>17</java.version>
         <jjwt.version>0.13.0</jjwt.version>
-        <jna.version>5.18.0</jna.version>
-        <jupiter.version>5.13.4</jupiter.version>
+        <jna.version>5.18.1</jna.version>
+        <jupiter.version>6.0.0</jupiter.version>
         <kafka.version>4.1.0</kafka.version>
         <lettuce.version>6.8.1.RELEASE</lettuce.version>
         <maven.compiler.source>17</maven.compiler.source>
@@ -246,7 +246,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
                 <version>1.6</version>
@@ -259,13 +259,13 @@
                         </goals>
                         <configuration>
                             <gpgArguments>
-                                <arg>--pinentry-mode</arg>
+                                <arg>&#45;&#45;pinentry-mode</arg>
                                 <arg>loopback</arg>
                             </gpgArguments>
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
