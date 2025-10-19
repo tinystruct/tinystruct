@@ -48,7 +48,7 @@ public abstract class MCPApplication extends AbstractApplication {
     public void init() {
         this.setTemplateRequired(false);
         // Generate a random auth token if not configured
-        if (getConfiguration().get(Config.AUTH_TOKEN) == null) {
+        if (getConfiguration().get(Config.AUTH_TOKEN) == null || getConfiguration().get(Config.AUTH_TOKEN).isEmpty()) {
             String token = AuthorizationHandler.generateAuthToken();
             getConfiguration().set(Config.AUTH_TOKEN, token);
             LOGGER.info("Generated new MCP auth token: " + token);
@@ -75,6 +75,24 @@ public abstract class MCPApplication extends AbstractApplication {
                 res.setError(new JsonRpcError(ErrorCodes.INVALID_REQUEST, "Not in initializing state"));
             }
         });
+        this.registerRpcHandler(Methods.CANCELLED_NOTIFICATION, (req, res, app) -> {
+            // Handle cancelled notification according to MCP specification
+            Builder params = req.getParams();
+            if (params != null) {
+                String requestId = params.get("requestId") != null ? params.get("requestId").toString() : "unknown";
+                String reason = params.get("reason") != null ? params.get("reason").toString() : "No reason provided";
+                
+                LOGGER.info("Received cancellation notification for request ID: " + requestId + ", reason: " + reason);
+                
+                // According to MCP spec, cancellation notifications should not send a response
+                // They are "fire and forget" notifications
+                res.setResult(null);
+            } else {
+                LOGGER.warning("Received cancellation notification without parameters");
+                res.setResult(null);
+            }
+        });
+
     }
 
     /**

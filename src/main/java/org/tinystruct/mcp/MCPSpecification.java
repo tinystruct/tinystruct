@@ -241,6 +241,14 @@ public final class MCPSpecification {
          */
         public static final String INITIALIZED_NOTIFICATION = "notifications/initialized";
 
+        /**
+         * Notification event for cancelled state.
+         * <p>
+         * Sent when an operation is cancelled.
+         * </p>
+         */
+        public static final String CANCELLED_NOTIFICATION = "notifications/cancelled";
+
         private Methods() {} // Prevent instantiation
     }
 
