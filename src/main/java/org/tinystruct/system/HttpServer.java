@@ -18,6 +18,7 @@ package org.tinystruct.system;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.tinystruct.AbstractApplication;
+import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
 import org.tinystruct.http.Reforward;
@@ -127,7 +128,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             }
 
             // Create context and set handler
-            server.createContext("/", new DefaultHttpHandler(getContext(), this.settings));
+            server.createContext("/", new DefaultHttpHandler(this.settings));
 
             // Configure context attributes similar to Tomcat setup
             initServerDefaults();
@@ -227,11 +228,9 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
      */
     private class DefaultHttpHandler implements HttpHandler {
 
-        private final Context context;
         private final Settings settings;
 
-        private DefaultHttpHandler(Context context, Settings settings) {
-            this.context = context;
+        private DefaultHttpHandler(Settings settings) {
             this.settings = settings;
         }
 
@@ -250,17 +249,20 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 ServerResponse response = new ServerResponse(exchange);
 
                 // Set up context
-                this.context.setAttribute(HTTP_REQUEST, request);
-                this.context.setAttribute(HTTP_RESPONSE, response);
+                ApplicationContext context = new ApplicationContext();
+                // Set up session ID first
+                context.setId(request.getSession().getId());
+                context.setAttribute(HTTP_REQUEST, request);
+                context.setAttribute(HTTP_RESPONSE, response);
 
                 // Process SSE first to ensure correct headers and long-lived connection
                 if (isSSE(exchange)) {
-                    handleSSE(request, response, this.context);
+                    handleSSE(request, response, context);
                     return;
                 }
 
                 // Process the request using TinyStruct's DefaultHandler logic
-                processRequest(request, response);
+                processRequest(request, response, context);
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Error processing request", e);
                 // Try to send error only if headers haven't been committed yet
@@ -438,16 +440,13 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             exchange.getResponseHeaders().set("Last-Modified", df.format(new java.util.Date(file.lastModified())));
         }
 
-        private void processRequest(ServerRequest request, ServerResponse response) throws IOException, ApplicationException {
+        private void processRequest(ServerRequest request, ServerResponse response, Context context) throws IOException, ApplicationException {
             try {
-                // Set up session ID first
-                this.context.setId(request.getSession().getId());
-
                 // Handle command line parameters first (like HttpRequestHandler)
                 String[] parameterNames = request.parameterNames();
                 for (String parameter : parameterNames) {
                     if (parameter.startsWith("--")) {
-                        this.context.setAttribute(parameter, request.getParameter(parameter));
+                        context.setAttribute(parameter, request.getParameter(parameter));
                     }
                 }
 
@@ -456,7 +455,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 if (lang != null && !lang.trim().isEmpty()) {
                     String name = lang.replace('-', '_');
                     if (Language.support(name) && !lang.equalsIgnoreCase(this.settings.get("language"))) {
-                        this.context.setAttribute(LANGUAGE, name);
+                        context.setAttribute(LANGUAGE, name);
                     }
                 }
 
@@ -484,10 +483,10 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 }
 
                 // Set up context attributes (like HttpRequestHandler)
-                this.context.setAttribute(HTTP_HOST, http_protocol + hostName + url_prefix);
-                this.context.setAttribute(METHOD, request.method().name());
-                this.context.setAttribute(HTTP_REQUEST, request);
-                this.context.setAttribute(HTTP_RESPONSE, response);
+                context.setAttribute(HTTP_HOST, http_protocol + hostName + url_prefix);
+                context.setAttribute(METHOD, request.method().name());
+                context.setAttribute(HTTP_REQUEST, request);
+                context.setAttribute(HTTP_RESPONSE, response);
 
                 // Ensure session cookie (JSESSIONID) is set like other servers
                 boolean sessionCookieExists = false;
@@ -501,7 +500,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     Cookie cookie = new CookieImpl(Constants.JSESSIONID);
                     if (host.contains(":"))
                         cookie.setDomain(host.substring(0, host.indexOf(":")));
-                    cookie.setValue(this.context.getId());
+                    cookie.setValue(context.getId());
                     cookie.setHttpOnly(true);
                     cookie.setPath("/");
                     cookie.setMaxAge(-1);
@@ -511,9 +510,9 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 // Handle query using request.query() method (like HttpRequestHandler)
                 String query = request.getParameter("q");
                 if (query != null && query.length() > 1) {
-                    handleRequest(query, this.context, response);
+                    handleRequest(query, context, response);
                 } else {
-                    handleDefaultPage(this.context, response);
+                    handleDefaultPage(context, response);
                 }
             } catch (ApplicationException e) {
                 logger.log(Level.SEVERE, "Error in request processing", e);
@@ -585,10 +584,16 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 exchange.sendResponseHeaders(statusCode, responseBytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(responseBytes);
+                    os.flush();
                 }
-                exchange.close();
             } catch (IOException e) {
-                logger.log(Level.SEVERE, "Failed to send error response", e);
+                logger.log(Level.WARNING, "Client disconnected while sending error response", e);
+            } finally {
+                try {
+                    exchange.close();
+                } catch (Exception e) {
+                    logger.log(Level.FINE, "Error while closing exchange", e);
+                }
             }
         }
 
