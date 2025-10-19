@@ -20,9 +20,11 @@ public class SSEClient implements Runnable {
     // Indicates if the client connection is active
     private volatile boolean active = true;
     private static final Logger logger = Logger.getLogger(SSEClient.class.getName());
+    private volatile Thread workerThread;
 
     /**
      * Constructs an SSEClient with a new message queue.
+     *
      * @param out The response object for sending data
      */
     public SSEClient(Response out) {
@@ -31,7 +33,8 @@ public class SSEClient implements Runnable {
 
     /**
      * Constructs an SSEClient with a provided message queue.
-     * @param out The response object for sending data
+     *
+     * @param out          The response object for sending data
      * @param messageQueue The queue for messages to send
      */
     public SSEClient(Response out, BlockingQueue<Builder> messageQueue) {
@@ -41,6 +44,7 @@ public class SSEClient implements Runnable {
 
     /**
      * Enqueue a message to be sent to the client.
+     *
      * @param message The message to send
      */
     public void send(Builder message) {
@@ -55,7 +59,9 @@ public class SSEClient implements Runnable {
     public void close() {
         this.active = false;
         // Interrupt the thread if it's waiting on the queue
-        Thread.currentThread().interrupt();
+        if (workerThread != null) {
+            workerThread.interrupt();
+        }
     }
 
     /**
@@ -63,8 +69,9 @@ public class SSEClient implements Runnable {
      */
     @Override
     public void run() {
+        workerThread = Thread.currentThread();
         try {
-            while (active && !Thread.currentThread().isInterrupted()) {
+            while (active && !workerThread.isInterrupted()) {
                 Builder message = messageQueue.take(); // Blocks until a message is available
                 if (message != null) {
                     String event = formatSSEMessage(message);
@@ -72,7 +79,7 @@ public class SSEClient implements Runnable {
                 }
             }
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            workerThread.interrupt();
             this.active = false;
             logger.info("SSEClient thread interrupted for session");
         } catch (Exception e) {
@@ -83,6 +90,7 @@ public class SSEClient implements Runnable {
 
     /**
      * Formats a message as an SSE event string.
+     *
      * @param message The message to format
      * @return The formatted SSE event string
      */
@@ -98,6 +106,7 @@ public class SSEClient implements Runnable {
 
     /**
      * Checks if the client connection is still active.
+     *
      * @return true if active, false otherwise
      */
     public boolean isActive() {
