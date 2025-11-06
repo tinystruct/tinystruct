@@ -125,18 +125,6 @@ public final class ActionRegistry {
     }
 
     /**
-     * Register a method with a specific URL pattern and method type (GET, POST, etc.).
-     *
-     * @param app        The Application instance
-     * @param path       The URL pattern
-     * @param methodName The method name
-     * @param method     The HTTP method type
-     */
-    public void set(final Application app, final String path, final String methodName, final String method) {
-        this.set(app, path, methodName);
-    }
-
-    /**
      * Register a new Action object.
      *
      * @param action The Action object to register
