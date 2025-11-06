@@ -484,7 +484,6 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
                 // Set up context attributes (like HttpRequestHandler)
                 context.setAttribute(HTTP_HOST, http_protocol + hostName + url_prefix);
-                context.setAttribute(METHOD, request.method().name());
                 context.setAttribute(HTTP_REQUEST, request);
                 context.setAttribute(HTTP_RESPONSE, response);
 

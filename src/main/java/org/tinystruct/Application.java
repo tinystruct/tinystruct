@@ -66,11 +66,6 @@ public interface Application extends Runnable {
     String CLSID = "clsid";
 
     /**
-     * Constant for method.
-     */
-    String METHOD = "METHOD";
-
-    /**
      * Constant for request action.
      */
     String REQUEST_ACTION = "REQUEST_ACTION";
