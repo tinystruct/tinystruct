@@ -433,7 +433,14 @@ public class Action implements org.tinystruct.application.Method<Object> {
 
     public enum Mode {
         CLI,
-        Web,
+        // HTTP-specific modes for web handlers
+        HTTP_GET,
+        HTTP_POST,
+        HTTP_PUT,
+        HTTP_DELETE,
+        HTTP_PATCH,
+        HTTP_HEAD,
+        HTTP_OPTIONS,
         All
     }
 }
