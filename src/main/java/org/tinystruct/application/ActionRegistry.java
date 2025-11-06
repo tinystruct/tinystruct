@@ -222,40 +222,23 @@ public final class ActionRegistry {
     }
 
     /**
-     * Get the Action object for a given URL pattern (without trailing slash).
+     * Get the Action object for a given URL pattern and HTTP method type.
+     *
+     * @param path The URL pattern
+     * @return The corresponding Action object or null if not found
+     */
+    public Action getAction(String path) {
+        return this.getAction(path, Action.Mode.All);
+    }
+
+    /**
+     * Get the Action object for a given URL pattern and HTTP method type.
      *
      * @param path The URL pattern
      * @param mode The mode of action
      * @return The corresponding Action object or null if not found
      */
     public Action getAction(String path, Action.Mode mode) {
-        Action action = this.get(path, mode);
-        if (action == null) {
-            action = this.get(new StringUtilities(path).removeTrailingSlash(), mode);
-        }
-        return action;
-    }
-
-    /**
-     * Get the Action object for a given URL pattern and HTTP method type.
-     *
-     * @param path   The URL pattern
-     * @param method The HTTP method type
-     * @return The corresponding Action object or null if not found
-     */
-    public Action getAction(String path, String method) {
-        return this.getAction(path, method, Action.Mode.All);
-    }
-
-    /**
-     * Get the Action object for a given URL pattern and HTTP method type.
-     *
-     * @param path   The URL pattern
-     * @param method The HTTP method type
-     * @param mode   The mode of action
-     * @return The corresponding Action object or null if not found
-     */
-    public Action getAction(String path, String method, Action.Mode mode) {
         Action action = this.get(path, mode);
         if (action == null) {
             action = this.get(new StringUtilities(path).removeTrailingSlash(), mode);

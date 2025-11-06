@@ -265,15 +265,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     @Override
     public Object invoke(String path, Object[] parameters) throws ApplicationException {
-        String method = null;
-        Context context = threadLocalContext.get();
-
-        if (context != null && context.getAttribute(METHOD) != null) {
-            method = context.getAttribute(METHOD).toString();
-        }
-
-        // Get the action from the registry based on path and method
-        Action action = this.actionRegistry.getAction(path, method);
+        // Get the action from the registry based on path
+        Action action = this.actionRegistry.getAction(path);
         if (action == null) throw new ApplicationException("Action " + path + " path does not registered.");
 
         // Execute the action with or without parameters

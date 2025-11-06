@@ -232,14 +232,13 @@ public final class ApplicationManager {
                     "Invalid: empty path", 400);
         }
 
-        String method = (context != null && context.getAttribute("METHOD") != null) ? context.getAttribute("METHOD").toString() : null;
         if (context != null && context.getAttribute("--help") != null) {
             CommandLine command;
             if ((command = ROUTE_REGISTRY_INSTANCE.getCommand(path)) != null)
                 return command;
         }
 
-        Action action = ROUTE_REGISTRY_INSTANCE.getAction(path, method, mode);
+        Action action = ROUTE_REGISTRY_INSTANCE.getAction(path, mode);
         if (action == null) {
             throw new ApplicationException(
                     "No matching function found for path [" + path + "]. Ensure the path is correct and the function is public.", 404);
