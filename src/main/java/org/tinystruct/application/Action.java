@@ -77,7 +77,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
         this.pathRule = pathRule;
         this.pattern = Pattern.compile(pathRule);
         this.priority = priority;
-        this.mode = Mode.All;
+        this.mode = Mode.DEFAULT;
     }
 
     /**
@@ -432,16 +432,36 @@ public class Action implements org.tinystruct.application.Method<Object> {
     }
 
     public enum Mode {
-        CLI,
-        // HTTP-specific modes for web handlers
-        HTTP_GET,
-        HTTP_POST,
-        HTTP_PUT,
-        HTTP_DELETE,
-        HTTP_PATCH,
-        HTTP_HEAD,
-        HTTP_OPTIONS,
-        All
+        CLI("CLI"),
+        HTTP_GET("GET"),
+        HTTP_POST("POST"),
+        HTTP_PUT("PUT"),
+        HTTP_DELETE("DELETE"),
+        HTTP_PATCH("PATCH"),
+        HTTP_HEAD("HEAD"),
+        HTTP_OPTIONS("OPTIONS"),
+        DEFAULT("DEFAULT");
+
+        final String name;
+        Mode(String name) {
+            this.name = name;
+        }
+
+        // Custom method to get enum by 'name' field with default fallback
+        public static Mode fromName(String name) {
+            // Handle null input by returning default
+            if (name == null) {
+                return DEFAULT;
+            }
+            // Iterate through all enum constants to find a match
+            for (Mode mode : Mode.values()) {
+                if (mode.name.equalsIgnoreCase(name)) { // Case-sensitive comparison
+                    return mode;
+                }
+            }
+            // Return default if no match found
+            return DEFAULT;
+        }
     }
 }
 

@@ -214,7 +214,7 @@ public final class ApplicationManager {
      * @throws ApplicationException If an error occurs during action execution.
      */
     public static Object call(final String path, final Context context) throws ApplicationException {
-        return call(path, context, Action.Mode.All);
+        return call(path, context, Action.Mode.DEFAULT);
     }
 
     /**

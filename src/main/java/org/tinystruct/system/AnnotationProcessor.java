@@ -69,7 +69,7 @@ public class AnnotationProcessor {
 
                 // Register the action handler method
                 // Set the action in the action registry
-                if (mode != org.tinystruct.application.Action.Mode.All) {
+                if (mode != org.tinystruct.application.Action.Mode.DEFAULT) {
                     this.actionRegistry.set(this.app, path, method, mode);
                 } else {
                     this.actionRegistry.set(this.app, path, method);

@@ -82,7 +82,7 @@ public class ActionHttpModeTests {
             return "POST";
         }
 
-        @org.tinystruct.system.annotation.Action(value = "ping", description = "Ping", mode = Action.Mode.All)
+        @org.tinystruct.system.annotation.Action(value = "ping", description = "Ping", mode = Action.Mode.DEFAULT)
         public String ping() {
             return "pong";
         }

@@ -72,7 +72,7 @@ public final class ActionRegistry {
      * @param methodName The method name
      */
     public void set(final Application app, final String path, final String methodName) {
-        this.set(app, path, methodName, Action.Mode.All);
+        this.set(app, path, methodName, Action.Mode.DEFAULT);
     }
 
     /**
@@ -83,7 +83,7 @@ public final class ActionRegistry {
      * @param method The method name
      */
     public void set(final Application app, final String path, final Method method) {
-        this.set(app, path, method, Action.Mode.All);
+        this.set(app, path, method, Action.Mode.DEFAULT);
     }
 
     /**
@@ -228,7 +228,7 @@ public final class ActionRegistry {
      * @return The corresponding Action object or null if not found
      */
     public Action getAction(String path) {
-        return this.getAction(path, Action.Mode.All);
+        return this.getAction(path, Action.Mode.DEFAULT);
     }
 
     /**
@@ -314,7 +314,7 @@ public final class ActionRegistry {
     private Action createAction(int id, Application app, String expression, MethodHandle handle,
                                 String methodName, Class<?> returnType, Class<?>[] parameterTypes,
                                 int priority, Action.Mode mode) {
-        if (mode == Action.Mode.All) {
+        if (mode == Action.Mode.DEFAULT) {
             return new Action(id, app, expression, handle, methodName, returnType, parameterTypes, priority);
         } else {
             return new Action(id, app, expression, handle, methodName, returnType, parameterTypes, priority, mode);
