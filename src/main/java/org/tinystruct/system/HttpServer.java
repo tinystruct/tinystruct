@@ -509,7 +509,9 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 // Handle query using request.query() method (like HttpRequestHandler)
                 String query = request.getParameter("q");
                 if (query != null && query.length() > 1) {
-                    handleRequest(query, context, response);
+                    Method method = request.method();
+                    org.tinystruct.application.Action.Mode mode = org.tinystruct.application.Action.Mode.fromName(method.name());
+                    handleRequest(query, context, response, mode);
                 } else {
                     handleDefaultPage(context, response);
                 }
@@ -531,10 +533,10 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
          * @param response The HTTP response object
          * @throws IOException if an I/O error occurs
          */
-        private void handleRequest(String query, Context context, ServerResponse response) throws IOException, ApplicationException {
+        private void handleRequest(String query, Context context, ServerResponse response, org.tinystruct.application.Action.Mode mode) throws IOException, ApplicationException {
             // Handle request
             query = StringUtilities.htmlSpecialChars(query);
-            Object message = ApplicationManager.call(query, context);
+            Object message = ApplicationManager.call(query, context, mode);
             byte[] bytes;
             if (message != null) {
                 if (message instanceof byte[]) {
@@ -562,7 +564,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
          */
         private void handleDefaultPage(Context context, ServerResponse response) throws ApplicationException {
             response.setContentType("text/html; charset=UTF-8");
-            Object result = ApplicationManager.call(settings.getOrDefault("default.home.page", "say/Praise the Lord."), context);
+            Object result = ApplicationManager.call(settings.getOrDefault("default.home.page", "say/Praise the Lord."), context, org.tinystruct.application.Action.Mode.HTTP_GET);
             if (!response.isClosed()) {
                 try {
                     byte[] bytes = String.valueOf(result).getBytes("UTF-8");
