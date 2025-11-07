@@ -80,14 +80,14 @@ public final class ActionRegistry {
      *
      * @param app    The Application instance
      * @param path   The URL pattern
-     * @param method The method name
+     * @param method The method
      */
     public void set(final Application app, final String path, final Method method) {
         this.set(app, path, method, Action.Mode.DEFAULT);
     }
 
     /**
-     * Register a method with a specific URL pattern and method type (GET, POST, etc.).
+     * Register a method with a specific URL pattern and method name.
      *
      * @param app        The Application instance
      * @param path       The URL pattern
@@ -110,7 +110,7 @@ public final class ActionRegistry {
     }
 
     /**
-     * Register a method with a specific URL pattern and method type (GET, POST, etc.).
+     * Register a method with a specific URL pattern and method name.
      *
      * @param app    The Application instance
      * @param path   The URL pattern
