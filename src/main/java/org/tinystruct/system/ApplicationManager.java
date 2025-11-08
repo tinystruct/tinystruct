@@ -3,6 +3,7 @@ package org.tinystruct.system;
 import org.tinystruct.Application;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
+import org.tinystruct.system.annotation.Action.Mode;
 import org.tinystruct.application.Action;
 import org.tinystruct.application.ActionRegistry;
 import org.tinystruct.application.Context;
@@ -214,7 +215,7 @@ public final class ApplicationManager {
      * @throws ApplicationException If an error occurs during action execution.
      */
     public static Object call(final String path, final Context context) throws ApplicationException {
-        return call(path, context, Action.Mode.DEFAULT);
+        return call(path, context, Mode.DEFAULT);
     }
 
     /**
@@ -226,7 +227,7 @@ public final class ApplicationManager {
      * @return The result of the action execution.
      * @throws ApplicationException If an error occurs during action execution.
      */
-    public static Object call(final String path, final Context context, final Action.Mode mode) throws ApplicationException {
+    public static Object call(final String path, final Context context, final Mode mode) throws ApplicationException {
         if (path == null || path.trim().isEmpty()) {
             throw new ApplicationException(
                     "Invalid: empty path", 400);
