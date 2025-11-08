@@ -175,6 +175,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             }
         }
 
+        @SuppressWarnings("unchecked")
         private void setContextAttribute(String key, String value) {
             Object existing = context.getAttribute(key);
             if (existing != null) {
@@ -255,6 +256,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             }
         }
 
+        @SuppressWarnings("unchecked")
         private List<String> getApplicationList(Object importValue) {
             if (importValue instanceof List) {
                 return (List<String>) importValue;
