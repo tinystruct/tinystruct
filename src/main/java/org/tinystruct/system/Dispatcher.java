@@ -67,7 +67,7 @@ import java.util.stream.Stream;
                 @Argument(key = "settings", description = "Print settings"),
                 @Argument(key = "version", description = "Print version"),
                 @Argument(key = "help", description = "Print help information")
-        }, mode = org.tinystruct.application.Action.Mode.CLI)
+        }, mode = Action.Mode.CLI)
 public class Dispatcher extends AbstractApplication implements RemoteDispatcher {
     public static final String OK = "OK!";
     private static final Logger logger = Logger.getLogger(Dispatcher.class.getName());
@@ -301,7 +301,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         try {
             // Execute the command with the context.
             if (command != null) {
-                Object o = ApplicationManager.call(command, context, org.tinystruct.application.Action.Mode.CLI);
+                Object o = ApplicationManager.call(command, context, Action.Mode.CLI);
                 if (o != null) {
                     System.out.println(o);
                     return o;
@@ -314,7 +314,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 } else if (context.getAttribute("--logo") != null) {
                     output = dispatcher.logo();
                 } else if (context.getAttribute("--settings") != null) {
-                    output = ApplicationManager.call("--settings", context, org.tinystruct.application.Action.Mode.CLI);
+                    output = ApplicationManager.call("--settings", context, Action.Mode.CLI);
                 } else {
                     output = dispatcher.help();
                 }
@@ -334,7 +334,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
      */
     @Action(value = "install", description = "Install a package", options = {
             @Argument(key = "app", description = "Packages to be installed")
-    }, mode = org.tinystruct.application.Action.Mode.CLI)
+    }, mode = Action.Mode.CLI)
     public void install() {
         String appName;
         if ((appName = (String) getContext().getAttribute("--app")) == null)
@@ -380,7 +380,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
      * Update for latest version.
      */
     @Action(value = "update", options = {@Argument(key = "force", description = "Force to update the framework"),
-    }, description = "Update for latest version", mode = org.tinystruct.application.Action.Mode.CLI)
+    }, description = "Update for latest version", mode = Action.Mode.CLI)
     public String update() {
         System.out.print("Checking...");
         System.out.println("\rThe current project is based on tinystruct-" + this.color(ApplicationManager.VERSION, FORE_COLOR.green));
@@ -410,7 +410,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             @Argument(key = "http.proxyPort", description = "Proxy port for http"),
             @Argument(key = "https.proxyHost", description = "Proxy host for https"),
             @Argument(key = "https.proxyPort", description = "Proxy port for https")
-    }, mode = org.tinystruct.application.Action.Mode.CLI)
+    }, mode = Action.Mode.CLI)
     public void download() throws ApplicationException {
         if (getContext().getAttribute("--url") != null) {
             URL uri;
@@ -478,7 +478,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     @Action(value = "exec", description = "To execute native command(s)", options = {
             @Argument(key = "shell-command", description = "Commands needs to be executed"),
             @Argument(key = "output", description = "Specify a boolean value to determine output of the command")
-    }, mode = org.tinystruct.application.Action.Mode.CLI)
+    }, mode = Action.Mode.CLI)
     public void exec() throws ApplicationException {
         if (getContext().getAttribute("--shell-command") == null) {
             throw new ApplicationException("Invalid shell command");
@@ -534,7 +534,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     @Action(value = "sql-execute", description = "Executes the given SQL statement, which may be an INSERT, UPDATE, DELETE, or DDL statement", options = {
             @Argument(key = "sql", description = "an SQL Data Manipulation Language (DML) statement, such as INSERT, UPDATE or DELETE; or an SQL statement that returns nothing, such as a DDL statement."),
             @Argument(key = "sql-file", description = "path to a SQL script file to execute")
-    }, mode = org.tinystruct.application.Action.Mode.CLI)
+    }, mode = Action.Mode.CLI)
     public void executeUpdate() throws ApplicationException {
         String sql = null;
         String filePath = null;
@@ -596,7 +596,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
      */
     @Action(value = "sql-query", description = "Executes the given SQL statement, which returns a single ResultSet object", options = {
             @Argument(key = "sql", description = "an SQL statement to be sent to the database, typically a static SQL SELECT statement")
-    }, mode = org.tinystruct.application.Action.Mode.CLI)
+    }, mode = Action.Mode.CLI)
     public void executeQuery() throws ApplicationException {
         if (getContext().getAttribute("--sql") == null) {
             throw new ApplicationException("SQL Statement is required, you can specify it with --sql \"SELECT * FROM table\".");
@@ -708,7 +708,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     /**
      * Set system property.
      */
-    @Action(value = "set", description = "Set system property", mode = org.tinystruct.application.Action.Mode.CLI)
+    @Action(value = "set", description = "Set system property", mode = Action.Mode.CLI)
     public String setProperty(String propertyName) {
         if (getContext().getAttribute(propertyName) == null)
             throw new ApplicationRuntimeException("The key " + propertyName + " could not be found in the context.");
@@ -721,7 +721,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     /**
      * Print settings.
      */
-    @Action(value = "--settings", description = "Print settings", mode = org.tinystruct.application.Action.Mode.CLI)
+    @Action(value = "--settings", description = "Print settings", mode = Action.Mode.CLI)
     public StringBuilder settings() {
         String[] names = getConfiguration().propertyNames().toArray(new String[0]);
         Arrays.sort(names);
@@ -737,7 +737,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
      */
     @Action(value = "open", description = "Start a default browser to open the specific URL", options = {
             @Argument(key = "url", description = "URL resource to be downloaded")
-    }, mode = org.tinystruct.application.Action.Mode.CLI)
+    }, mode = Action.Mode.CLI)
     public void open() throws ApplicationException {
         if (getContext().getAttribute("--url") == null) {
             throw new ApplicationException("Invalid URL.");
@@ -777,7 +777,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             options = {
                     @Argument(key = "tables", description = "Table name(s) to be generated")
             },
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public void generate() throws ApplicationException {
         Scanner scanner = new Scanner(System.in);
         String tableNames;
@@ -858,7 +858,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     @Action(value = "maven-wrapper", description = "Extract Maven Wrapper", arguments = {
             @Argument(key = "--jar-file-path", description = "The jar file path which included maven-wrapper.zip"),
             @Argument(key = "--destination-dir", description = "The destination dir ")
-    }, mode = org.tinystruct.application.Action.Mode.CLI)
+    }, mode = Action.Mode.CLI)
     public void extractMavenWrapperFromJar() throws IOException, ApplicationException {
         String jarFilePath;
         String destinationDir;
@@ -896,7 +896,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     /**
      * Print logo.
      */
-    @Action(value = "--logo", description = "Print logo", mode = org.tinystruct.application.Action.Mode.CLI)
+    @Action(value = "--logo", description = "Print logo", mode = Action.Mode.CLI)
     public String logo() {
         return "\n"
                 + "  _/  '         _ _/  _     _ _/   \n"
@@ -917,13 +917,13 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
     /**
      * Print version.
      */
-    @Action(value = "--version", description = "Print version", mode = org.tinystruct.application.Action.Mode.CLI)
+    @Action(value = "--version", description = "Print version", mode = Action.Mode.CLI)
     @Override
     public String version() {
         return String.format("Dispatcher (cli) (built on %sinystruct-%s) %nCopyright (c) 2013-%s James M. ZHOU", this.color("t", FORE_COLOR.blue), ApplicationManager.VERSION, LocalDate.now().getYear());
     }
 
-    @Action(value = "--help", description = "Print help information", mode = org.tinystruct.application.Action.Mode.CLI)
+    @Action(value = "--help", description = "Print help information", mode = Action.Mode.CLI)
     @Override
     public String help() {
         StringBuilder builder = new StringBuilder("Usage: bin" + File.separator + "dispatcher COMMAND [OPTIONS]\n");
