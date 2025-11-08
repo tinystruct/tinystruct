@@ -63,7 +63,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             @Argument(key = "https.proxyHost", description = "Proxy host for https"),
             @Argument(key = "https.proxyPort", description = "Proxy port for https"),
             @Argument(key = "server-threads", description = "Number of server threads (default: 0 - uses system default)")
-    }, example = "bin/dispatcher start --import org.tinystruct.system.HttpServer --server-port 8080", mode = org.tinystruct.application.Action.Mode.CLI)
+    }, example = "bin/dispatcher start --import org.tinystruct.system.HttpServer --server-port 8080", mode = Action.Mode.CLI)
     @Override
     public void start() throws ApplicationException {
         if (started) return;
@@ -112,7 +112,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             }
         }
 
-        System.out.println(ApplicationManager.call("--logo", null, org.tinystruct.application.Action.Mode.CLI));
+        System.out.println(ApplicationManager.call("--logo", null, Action.Mode.CLI));
 
         final long start = System.currentTimeMillis();
 
@@ -141,7 +141,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
             // Open the default browser
             getContext().setAttribute("--url", "http://localhost:" + webPort);
-            ApplicationManager.call("open", getContext(), org.tinystruct.application.Action.Mode.CLI);
+            ApplicationManager.call("open", getContext(), Action.Mode.CLI);
 
             // Keep the server running
             logger.info("Server is running. Press Ctrl+C to stop.");
@@ -510,7 +510,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 String query = request.getParameter("q");
                 if (query != null && query.length() > 1) {
                     Method method = request.method();
-                    org.tinystruct.application.Action.Mode mode = org.tinystruct.application.Action.Mode.fromName(method.name());
+                    Action.Mode mode = Action.Mode.fromName(method.name());
                     handleRequest(query, context, response, mode);
                 } else {
                     handleDefaultPage(context, response);
@@ -533,7 +533,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
          * @param response The HTTP response object
          * @throws IOException if an I/O error occurs
          */
-        private void handleRequest(String query, Context context, ServerResponse response, org.tinystruct.application.Action.Mode mode) throws IOException, ApplicationException {
+        private void handleRequest(String query, Context context, ServerResponse response, Action.Mode mode) throws IOException, ApplicationException {
             // Handle request
             query = StringUtilities.htmlSpecialChars(query);
             Object message = ApplicationManager.call(query, context, mode);
@@ -564,7 +564,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
          */
         private void handleDefaultPage(Context context, ServerResponse response) throws ApplicationException {
             response.setContentType("text/html; charset=UTF-8");
-            Object result = ApplicationManager.call(settings.getOrDefault("default.home.page", "say/Praise the Lord."), context, org.tinystruct.application.Action.Mode.HTTP_GET);
+            Object result = ApplicationManager.call(settings.getOrDefault("default.home.page", "say/Praise the Lord."), context, Action.Mode.HTTP_GET);
             if (!response.isClosed()) {
                 try {
                     byte[] bytes = String.valueOf(result).getBytes("UTF-8");
