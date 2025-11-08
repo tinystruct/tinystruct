@@ -63,7 +63,7 @@ public class MCPClientApplication extends AbstractApplication {
                 @Argument(key = "url", description = "Server URL"),
                 @Argument(key = "token", description = "Authentication token")
             },
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String connect() {
         String url = getContext().getAttribute("--url") != null ? getContext().getAttribute("--url").toString() : null;
         String token = getContext().getAttribute("--token") != null ? getContext().getAttribute("--token").toString() : null;
@@ -88,7 +88,7 @@ public class MCPClientApplication extends AbstractApplication {
      */
     @Action(value = Methods.SHUTDOWN,
             description = "Disconnect from the MCP server",
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String disconnect() {
         if (client == null) {
             return "Not connected to any MCP server";
@@ -110,7 +110,7 @@ public class MCPClientApplication extends AbstractApplication {
      */
     @Action(value = Methods.LIST_RESOURCES,
             description = "List all available resources",
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String listResources() {
         if (client == null) {
             return "Not connected to any MCP server";
@@ -143,7 +143,7 @@ public class MCPClientApplication extends AbstractApplication {
      */
     @Action(value = Methods.LIST_RESOURCES,
             description = "List resources of a specific type",
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String listResourcesByType(String type) {
         if (client == null) {
             return "Not connected to any MCP server";
@@ -181,7 +181,7 @@ public class MCPClientApplication extends AbstractApplication {
                 @Argument(key = "name", description = "Resource name"),
                 @Argument(key = "params", description = "Parameters as JSON")
             },
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String executeResource() {
         String name = getContext().getAttribute("--name") != null ? getContext().getAttribute("--name").toString() : null;
         String params = getContext().getAttribute("--params") != null ? getContext().getAttribute("--params").toString() : null;
@@ -223,7 +223,7 @@ public class MCPClientApplication extends AbstractApplication {
      */
     @Action(value = "info",
             description = "Get information about a specific resource",
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String getResourceInfo(String name) {
         if (client == null) {
             return "Not connected to any MCP server";
@@ -260,7 +260,7 @@ public class MCPClientApplication extends AbstractApplication {
      */
     @Action(value = Methods.LIST_TOOLS,
             description = "List all available tools",
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String listTools() {
         if (client == null) {
             return "Not connected to any MCP server";
@@ -295,7 +295,7 @@ public class MCPClientApplication extends AbstractApplication {
                 @Argument(key = "name", description = "Tool name"),
                 @Argument(key = "arguments", description = "Tool arguments as key:value pairs")
             },
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String callTool() {
         String name = getContext().getAttribute("--name") != null ? getContext().getAttribute("--name").toString() : null;
         String arguments = getContext().getAttribute("--arguments") != null ? getContext().getAttribute("--arguments").toString() : null;
@@ -347,7 +347,7 @@ public class MCPClientApplication extends AbstractApplication {
      */
     @Action(value = Methods.LIST_PROMPTS,
             description = "List all available prompts",
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String listPrompts() {
         if (client == null) {
             return "Not connected to any MCP server";
@@ -383,7 +383,7 @@ public class MCPClientApplication extends AbstractApplication {
                 @Argument(key = "name", description = "Prompt name"),
                 @Argument(key = "arguments", description = "Prompt arguments as JSON")
             },
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String getPrompt(String name) {
         String arguments = getContext().getAttribute("--arguments") != null ? getContext().getAttribute("--arguments").toString() : null;
 
@@ -436,7 +436,7 @@ public class MCPClientApplication extends AbstractApplication {
                 @Argument(key = "version", description = "Show version information"),
                 @Argument(key = "import", description = "Import application")
             },
-            mode = org.tinystruct.application.Action.Mode.CLI)
+            mode = Action.Mode.CLI)
     public String main() throws ApplicationException {
         if (getContext().getAttribute("--help") != null) {
             return getHelpText();
