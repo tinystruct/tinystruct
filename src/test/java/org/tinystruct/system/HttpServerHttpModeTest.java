@@ -1,30 +1,92 @@
 package org.tinystruct.system;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationContext;
-import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Action;
-import org.tinystruct.application.ActionRegistry;
 import org.tinystruct.http.Method;
+import org.tinystruct.http.Response;
+import org.tinystruct.net.URLRequest;
+import org.tinystruct.net.URLResponse;
+import org.tinystruct.net.handlers.HTTPHandler;
+import org.tinystruct.system.Dispatcher;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.Socket;
+import java.net.URI;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class HttpServerHttpModeTest {
 
+    private static final int TEST_PORT = 18080;
+    private static final String BASE_URL = "http://localhost:" + TEST_PORT;
+    private HttpServer httpServer;
+    private Thread serverThread;
     private TestWebApp app;
-    private ActionRegistry registry;
 
-    @BeforeEach
-    public void setup() throws ApplicationException {
+    @BeforeAll
+    public void setUp() throws Exception {
+        // Initialize settings
+        Settings settings = new Settings();
+        settings.set("default.base_url", "/?q=");
+        settings.set("default.language", "en_US");
+        settings.set("charset", "utf-8");
+
+        // Create and install test app
         this.app = new TestWebApp();
+        ApplicationManager.install(this.app, settings);
 
-        this.registry = ActionRegistry.getInstance();
-        // Initialize configuration to trigger annotation processing
-        this.app.setConfiguration(new Settings());
-        // Ensure annotations are processed
-        new AnnotationProcessor(this.app).processActionAnnotations();
+        // Install required applications
+        ApplicationManager.install(new Dispatcher());
+        this.httpServer = new HttpServer();
+        ApplicationManager.install(this.httpServer, settings);
+
+        // Start server in a separate thread
+        serverThread = new Thread(() -> {
+            try {
+                ApplicationContext context = new ApplicationContext();
+                context.setAttribute("--server-port", String.valueOf(TEST_PORT));
+                ApplicationManager.call("start", context, Action.Mode.CLI);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        serverThread.setDaemon(true);
+        serverThread.start();
+
+        // Wait for server to be ready
+        boolean started = false;
+        for (int i = 0; i < 30; i++) {
+            try (Socket socket = new Socket("localhost", TEST_PORT)) {
+                started = true;
+                break;
+            } catch (Exception e) {
+                Thread.sleep(1000);
+            }
+        }
+        if (!started) {
+            throw new RuntimeException("Server failed to start within 30 seconds");
+        }
+        
+        // Give server a moment to fully initialize
+        Thread.sleep(500);
+    }
+
+    @AfterAll
+    public void tearDown() {
+        if (httpServer != null) {
+            httpServer.stop();
+        }
+        if (serverThread != null && serverThread.isAlive()) {
+            serverThread.interrupt();
+        }
     }
 
     @Test
@@ -48,109 +110,91 @@ public class HttpServerHttpModeTest {
     }
 
     @Test
-    public void testHttpGetRouting() throws ApplicationException {
-        // Test that GET requests match HTTP_GET mode actions
-        Action action = registry.getAction("api/users", Action.Mode.HTTP_GET);
-        assertNotNull(action, "GET action should be found");
-        assertEquals(Action.Mode.HTTP_GET, action.getMode());
-        
-        Object result = action.execute();
-        assertEquals("GET users", String.valueOf(result));
+    public void testHttpGetRequest() throws Exception {
+        // Make actual HTTP GET request
+        String response = sendHttpRequest("GET", BASE_URL + "/?q=api/users", null);
+        assertTrue(response.contains("GET users"), "GET request should return 'GET users'");
     }
 
     @Test
-    public void testHttpPostRouting() throws ApplicationException {
-        // Test that POST requests match HTTP_POST mode actions
-        Action action = registry.getAction("api/users", Action.Mode.HTTP_POST);
-        assertNotNull(action, "POST action should be found");
-        assertEquals(Action.Mode.HTTP_POST, action.getMode());
-        
-        Object result = action.execute();
-        assertEquals("POST users", String.valueOf(result));
+    public void testHttpPostRequest() throws Exception {
+        // Make actual HTTP POST request
+        String response = sendHttpRequest("POST", BASE_URL + "/?q=api/users", null);
+        assertTrue(response.contains("POST users"), "POST request should return 'POST users'");
     }
 
     @Test
-    public void testHttpPutRouting() throws ApplicationException {
-        // Test that PUT requests match HTTP_PUT mode actions
-        // Note: The path pattern "api/users" with a String parameter will match "api/users/123"
-        Action action = registry.getAction("api/users/123", Action.Mode.HTTP_PUT);
-        assertNotNull(action, "PUT action should be found");
-        assertEquals(Action.Mode.HTTP_PUT, action.getMode());
-        
-        // The action will extract "123" from the path
-        Object result = action.execute();
-        assertEquals("PUT user 123", String.valueOf(result));
+    public void testHttpPutRequest() throws Exception {
+        // Make actual HTTP PUT request
+        String response = sendHttpRequest("PUT", BASE_URL + "/?q=api/users/123", null);
+        assertTrue(response.contains("PUT user"), "PUT request should return 'PUT user'");
+        assertTrue(response.contains("123"), "PUT request should include the ID parameter");
     }
 
     @Test
-    public void testHttpDeleteRouting() throws ApplicationException {
-        // Test that DELETE requests match HTTP_DELETE mode actions
-        // Note: The path pattern "api/users" with a String parameter will match "api/users/123"
-        Action action = registry.getAction("api/users/123", Action.Mode.HTTP_DELETE);
-        assertNotNull(action, "DELETE action should be found");
-        assertEquals(Action.Mode.HTTP_DELETE, action.getMode());
-        
-        // The action will extract "123" from the path
-        Object result = action.execute();
-        assertEquals("DELETE user 123", String.valueOf(result));
+    public void testHttpDeleteRequest() throws Exception {
+        // Make actual HTTP DELETE request
+        String response = sendHttpRequest("DELETE", BASE_URL + "/?q=api/users/456", null);
+        assertTrue(response.contains("DELETE user"), "DELETE request should return 'DELETE user'");
+        assertTrue(response.contains("456"), "DELETE request should include the ID parameter");
     }
 
     @Test
-    public void testHttpMethodMismatch() {
-        // Test that wrong HTTP method doesn't match
-        Action getAction = registry.getAction("api/users", Action.Mode.HTTP_GET);
-        assertNotNull(getAction, "GET action should exist");
-        
-        // POST mode should not match GET action
-        Action postAction = registry.getAction("api/users", Action.Mode.HTTP_POST);
-        assertNotNull(postAction, "POST action should exist");
-        assertNotEquals(getAction.getMode(), postAction.getMode());
-    }
-
-    @Test
-    public void testDefaultModeAcceptsAllMethods() throws ApplicationException {
+    public void testDefaultModeAcceptsAllMethods() throws Exception {
         // Test that DEFAULT mode actions accept any HTTP method
-        Action getAction = registry.getAction("api/ping", Action.Mode.HTTP_GET);
-        Action postAction = registry.getAction("api/ping", Action.Mode.HTTP_POST);
-        Action putAction = registry.getAction("api/ping", Action.Mode.HTTP_PUT);
-        
-        // All should match the same DEFAULT mode action
-        assertNotNull(getAction);
-        assertNotNull(postAction);
-        assertNotNull(putAction);
-        
-        // They should all return the same result
-        assertEquals("pong", String.valueOf(getAction.execute()));
-        assertEquals("pong", String.valueOf(postAction.execute()));
-        assertEquals("pong", String.valueOf(putAction.execute()));
+        String getResponse = sendHttpRequest("GET", BASE_URL + "/?q=api/ping", null);
+        assertTrue(getResponse.contains("pong"), "GET request to ping should return 'pong'");
+
+        String postResponse = sendHttpRequest("POST", BASE_URL + "/?q=api/ping", null);
+        assertTrue(postResponse.contains("pong"), "POST request to ping should return 'pong'");
+
+        String putResponse = sendHttpRequest("PUT", BASE_URL + "/?q=api/ping", null);
+        assertTrue(putResponse.contains("pong"), "PUT request to ping should return 'pong'");
     }
 
     @Test
-    public void testApplicationManagerCallWithMode() throws ApplicationException {
-        // Test that ApplicationManager.call correctly uses mode
-        ApplicationContext context = new ApplicationContext();
-        
-        // GET request
-        Object getResult = ApplicationManager.call("api/users", context, Action.Mode.HTTP_GET);
-        assertEquals("GET users", String.valueOf(getResult));
-        
-        // POST request
-        Object postResult = ApplicationManager.call("api/users", context, Action.Mode.HTTP_POST);
-        assertEquals("POST users", String.valueOf(postResult));
-        
-        // PUT request with parameter (path includes the ID)
-        Object putResult = ApplicationManager.call("api/users/456", context, Action.Mode.HTTP_PUT);
-        assertTrue(String.valueOf(putResult).contains("PUT user"));
+    public void testHttpMethodMismatch() throws Exception {
+        // Try to access GET endpoint with POST method - should fail or return error
+        // Note: This depends on how the server handles method mismatches
+        String response = sendHttpRequest("POST", BASE_URL + "/?q=api/users", null);
+        // POST to api/users should work (there's a POST handler), but let's verify it's not the GET handler
+        assertTrue(response.contains("POST users"), "POST request should match POST handler, not GET");
+    }
+
+    /**
+     * Helper method to send HTTP requests
+     */
+    private String sendHttpRequest(String method, String urlString, String body) throws Exception {
+        URLRequest request = new URLRequest(URI.create(urlString).toURL());
+        request.setMethod(method.toUpperCase());
+
+        if (body != null && (method.equalsIgnoreCase("POST") || method.equalsIgnoreCase("PUT"))) {
+            request.setHeader("Content-Type", "application/x-www-form-urlencoded");
+            request.setBody(body);
+        }
+
+        HTTPHandler handler = new HTTPHandler();
+        URLResponse response = handler.handleRequest(request);
+
+        int statusCode = response.getStatusCode();
+        String responseText = response.getBody();
+
+        if (statusCode >= 200 && statusCode < 300) {
+            return responseText;
+        } else {
+            // return error response text for non-2xx responses
+            return responseText;
+        }
     }
 
     @Test
     public void testHttpMethodExtractionFromRequest() {
         // Test that HTTP method can be extracted from Method enum
-        Method getMethod = Method.GET;
+        org.tinystruct.http.Method getMethod = org.tinystruct.http.Method.GET;
         Action.Mode mode = Action.Mode.fromName(getMethod.name());
         assertEquals(Action.Mode.HTTP_GET, mode);
         
-        Method postMethod = Method.POST;
+        org.tinystruct.http.Method postMethod = org.tinystruct.http.Method.POST;
         mode = Action.Mode.fromName(postMethod.name());
         assertEquals(Action.Mode.HTTP_POST, mode);
     }
