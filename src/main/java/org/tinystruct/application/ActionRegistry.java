@@ -5,6 +5,7 @@ import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.component.Cache;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
+import org.tinystruct.system.annotation.Action.Mode;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.util.StringUtilities;
 
@@ -72,7 +73,7 @@ public final class ActionRegistry {
      * @param methodName The method name
      */
     public void set(final Application app, final String path, final String methodName) {
-        this.set(app, path, methodName, Action.Mode.DEFAULT);
+        this.set(app, path, methodName, Mode.DEFAULT);
     }
 
     /**
@@ -83,7 +84,7 @@ public final class ActionRegistry {
      * @param method The method
      */
     public void set(final Application app, final String path, final Method method) {
-        this.set(app, path, method, Action.Mode.DEFAULT);
+        this.set(app, path, method, Mode.DEFAULT);
     }
 
     /**
@@ -94,7 +95,7 @@ public final class ActionRegistry {
      * @param methodName The method name
      * @param mode       The mode name
      */
-    public void set(final Application app, final String path, final String methodName, final Action.Mode mode) {
+    public void set(final Application app, final String path, final String methodName, final Mode mode) {
         validateParameters(path, methodName);
         paths.add(path);
 
@@ -117,7 +118,7 @@ public final class ActionRegistry {
      * @param method The method name
      * @param mode   The mode name
      */
-    public void set(final Application app, final String path, final Method method, final Action.Mode mode) {
+    public void set(final Application app, final String path, final Method method, final Mode mode) {
         validateParameters(path, method);
         paths.add(path);
         storeCommandLine(app, path);
@@ -147,7 +148,7 @@ public final class ActionRegistry {
      * @param mode The mode of action
      * @return The corresponding Action object or null if not found
      */
-    public Action get(final String path, Action.Mode mode) {
+    public Action get(final String path, Mode mode) {
         Action bestMatch = null;
         Object[] args = new Object[]{};
         int bestPriority = Integer.MIN_VALUE; // assume lower numbers indicate higher priority
@@ -228,7 +229,7 @@ public final class ActionRegistry {
      * @return The corresponding Action object or null if not found
      */
     public Action getAction(String path) {
-        return this.getAction(path, Action.Mode.DEFAULT);
+        return this.getAction(path, Mode.DEFAULT);
     }
 
     /**
@@ -238,7 +239,7 @@ public final class ActionRegistry {
      * @param mode The mode of action
      * @return The corresponding Action object or null if not found
      */
-    public Action getAction(String path, Action.Mode mode) {
+    public Action getAction(String path, Mode mode) {
         Action action = this.get(path, mode);
         if (action == null) {
             action = this.get(new StringUtilities(path).removeTrailingSlash(), mode);
@@ -280,7 +281,7 @@ public final class ActionRegistry {
      * @param method The method
      * @param mode   The execution mode
      */
-    private synchronized void initializePattern(Application app, String path, Method method, Action.Mode mode) {
+    private synchronized void initializePattern(Application app, String path, Method method, Mode mode) {
         Class<?> clazz = app.getClass();
         String group = extractGroupFromPath(path);
 
@@ -311,10 +312,8 @@ public final class ActionRegistry {
     /**
      * Create an Action object based on provided parameters
      */
-    private Action createAction(int id, Application app, String expression, MethodHandle handle,
-                                String methodName, Class<?> returnType, Class<?>[] parameterTypes,
-                                int priority, Action.Mode mode) {
-        if (mode == Action.Mode.DEFAULT) {
+    private Action createAction(int id, Application app, String expression, MethodHandle handle, String methodName, Class<?> returnType, Class<?>[] parameterTypes, int priority, Mode mode) {
+        if (mode == Mode.DEFAULT) {
             return new Action(id, app, expression, handle, methodName, returnType, parameterTypes, priority);
         } else {
             return new Action(id, app, expression, handle, methodName, returnType, parameterTypes, priority, mode);
