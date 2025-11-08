@@ -26,6 +26,7 @@ import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Dispatcher;
 import org.tinystruct.system.HttpServer;
 import org.tinystruct.system.Settings;
+import org.tinystruct.system.annotation.Action;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -63,7 +64,7 @@ public class MCPClientServerIntegrationTest {
                 serverContext.setAttribute("--server-port", "8001");
                 ApplicationManager.install(new Dispatcher());
                 ApplicationManager.install(new HttpServer());
-                ApplicationManager.call("start", serverContext, org.tinystruct.application.Action.Mode.CLI);
+                ApplicationManager.call("start", serverContext, Action.Mode.CLI);
 
                 // Keep the thread alive as long as the server is running
                 while (!Thread.currentThread().isInterrupted()) {

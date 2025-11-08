@@ -3,22 +3,13 @@ package org.tinystruct.system;
 import org.junit.jupiter.api.*;
 import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationContext;
-import org.tinystruct.application.Action;
-import org.tinystruct.http.Method;
-import org.tinystruct.http.Response;
 import org.tinystruct.net.URLRequest;
 import org.tinystruct.net.URLResponse;
 import org.tinystruct.net.handlers.HTTPHandler;
-import org.tinystruct.system.Dispatcher;
+import org.tinystruct.system.annotation.Action;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URI;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -205,7 +196,7 @@ public class HttpServerHttpModeTest {
             this.setTemplateRequired(false);
         }
 
-        @org.tinystruct.system.annotation.Action(
+        @Action(
             value = "api/users",
             description = "Get users",
             mode = Action.Mode.HTTP_GET
@@ -214,7 +205,7 @@ public class HttpServerHttpModeTest {
             return "GET users";
         }
 
-        @org.tinystruct.system.annotation.Action(
+        @Action(
             value = "api/users",
             description = "Create user",
             mode = Action.Mode.HTTP_POST
@@ -223,7 +214,7 @@ public class HttpServerHttpModeTest {
             return "POST users";
         }
 
-        @org.tinystruct.system.annotation.Action(
+        @Action(
             value = "api/users",
             description = "Update user",
             mode = Action.Mode.HTTP_PUT
@@ -232,7 +223,7 @@ public class HttpServerHttpModeTest {
             return "PUT user " + (id != null ? id : "unknown");
         }
 
-        @org.tinystruct.system.annotation.Action(
+        @Action(
             value = "api/users",
             description = "Delete user",
             mode = Action.Mode.HTTP_DELETE
@@ -241,7 +232,7 @@ public class HttpServerHttpModeTest {
             return "DELETE user " + (id != null ? id : "unknown");
         }
 
-        @org.tinystruct.system.annotation.Action(
+        @Action(
             value = "api/ping",
             description = "Ping endpoint",
             mode = Action.Mode.DEFAULT

@@ -26,11 +26,11 @@ public class ActionHttpModeTests {
     public void shouldMatchHttpGetAndPostOnSamePath() throws ApplicationException {
         ActionRegistry registry = ActionRegistry.getInstance();
 
-        Action getAction = registry.getAction("hello", Action.Mode.HTTP_GET);
+        Action getAction = registry.getAction("hello", org.tinystruct.system.annotation.Action.Mode.HTTP_GET);
         assertNotNull(getAction, "GET action should be resolved");
         assertEquals("GET", String.valueOf(getAction.execute()));
 
-        Action postAction = registry.getAction("hello", Action.Mode.HTTP_POST);
+        Action postAction = registry.getAction("hello", org.tinystruct.system.annotation.Action.Mode.HTTP_POST);
         assertNotNull(postAction, "POST action should be resolved");
         assertEquals("POST", String.valueOf(postAction.execute()));
     }
@@ -56,14 +56,14 @@ public class ActionHttpModeTests {
         ActionRegistry registry = ActionRegistry.getInstance();
 
         // With explicit mode filter
-        Action a = registry.getAction("hello", Action.Mode.HTTP_GET);
+        Action a = registry.getAction("hello", org.tinystruct.system.annotation.Action.Mode.HTTP_GET);
         assertNotNull(a);
-        assertEquals(Action.Mode.HTTP_GET, a.getMode());
+        assertEquals(org.tinystruct.system.annotation.Action.Mode.HTTP_GET, a.getMode());
 
         // Mismatched filter returns best available action but not HTTP_PUT
-        Action b = registry.getAction("hello", Action.Mode.HTTP_PUT);
+        Action b = registry.getAction("hello", org.tinystruct.system.annotation.Action.Mode.HTTP_PUT);
         assertNotNull(b);
-        assertNotEquals(Action.Mode.HTTP_PUT, b.getMode());
+        assertNotEquals(org.tinystruct.system.annotation.Action.Mode.HTTP_PUT, b.getMode());
     }
 
     private static class TestWebApp extends AbstractApplication {
@@ -72,17 +72,17 @@ public class ActionHttpModeTests {
             this.setTemplateRequired(false);
         }
 
-        @org.tinystruct.system.annotation.Action(value = "hello", description = "GET hello", mode = Action.Mode.HTTP_GET)
+        @org.tinystruct.system.annotation.Action(value = "hello", description = "GET hello", mode = org.tinystruct.system.annotation.Action.Mode.HTTP_GET)
         public String helloGet() {
             return "GET";
         }
 
-        @org.tinystruct.system.annotation.Action(value = "hello", description = "POST hello", mode = Action.Mode.HTTP_POST)
+        @org.tinystruct.system.annotation.Action(value = "hello", description = "POST hello", mode = org.tinystruct.system.annotation.Action.Mode.HTTP_POST)
         public String helloPost() {
             return "POST";
         }
 
-        @org.tinystruct.system.annotation.Action(value = "ping", description = "Ping", mode = Action.Mode.DEFAULT)
+        @org.tinystruct.system.annotation.Action(value = "ping", description = "Ping", mode = org.tinystruct.system.annotation.Action.Mode.DEFAULT)
         public String ping() {
             return "pong";
         }

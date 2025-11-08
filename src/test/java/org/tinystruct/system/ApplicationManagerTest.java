@@ -3,7 +3,7 @@ package org.tinystruct.system;
 import org.junit.jupiter.api.Test;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
-import org.tinystruct.application.Action;
+import org.tinystruct.system.annotation.Action;
 
 import java.time.Duration;
 import java.time.Instant;
