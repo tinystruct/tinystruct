@@ -163,7 +163,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         private void parseLongOption(String[] args, int index) {
             String arg = args[index];
             String value = null;
-            
+
             if (index + 1 < args.length && !args[index + 1].startsWith("--")) {
                 value = args[index + 1].trim();
             }
@@ -303,7 +303,14 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         try {
             // Execute the command with the context.
             if (command != null) {
-                Object o = ApplicationManager.call(command, context, Action.Mode.CLI);
+                Action.Mode defaultMode = Action.Mode.CLI;
+                if (context.getAttribute("--mode") != null) {
+                    String mode = context.getAttribute("--mode").toString();
+                    if (!mode.isEmpty()) {
+                        defaultMode = Action.Mode.fromName(mode);
+                    }
+                }
+                Object o = ApplicationManager.call(command, context, defaultMode);
                 if (o != null) {
                     System.out.println(o);
                     return o;
@@ -324,8 +331,10 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             }
         } catch (ApplicationException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
-            logger.info("* SOLUTION: if it's caused by a ClassNotFoundException, ensuring that all dependencies are properly downloaded and available in the classpath is crucial. The command uses Maven Wrapper (mvnw) to copy all dependencies to a specified directory (lib) will be helpful to resolve the issue: \n" +
-                    ".\\mvnw dependency:copy-dependencies -DoutputDirectory=lib\n");
+            if(e.getMessage().contains("ClassNotFoundException")) {
+                logger.info("* SOLUTION: if it's caused by a ClassNotFoundException, ensuring that all dependencies are properly downloaded and available in the classpath is crucial. The command uses Maven Wrapper (mvnw) to copy all dependencies to a specified directory (lib) will be helpful to resolve the issue: \n" +
+                        ".\\mvnw dependency:copy-dependencies -DoutputDirectory=lib\n");
+            }
         }
 
         return output;
@@ -459,7 +468,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                  BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream);
                  FileOutputStream fos = new FileOutputStream(path);
                  BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fos)) {
-                
+
                 byte[] buffer = new byte[8192]; // 8KB buffer
                 int bytesRead;
                 while ((bytesRead = bufferedInputStream.read(buffer)) != -1) {
