@@ -64,6 +64,7 @@ import java.util.stream.Stream;
                 @Argument(key = "allow-remote-access", description = "Allow to be accessed remotely"),
                 @Argument(key = "host", description = "Host name / IP"),
                 @Argument(key = "logo", description = "Print logo"),
+                @Argument(key = "mode", description = "Specify the mode of execution such as CLI, GET, POST, PUT, etc."),
                 @Argument(key = "settings", description = "Print settings"),
                 @Argument(key = "version", description = "Print version"),
                 @Argument(key = "help", description = "Print help information")
@@ -148,9 +149,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             for (int i = start; i < args.length; i++) {
                 String arg = args[i];
                 if (arg.startsWith("--")) {
-                    parseLongOption(args, i);
-                    if (i < args.length - 1 && !args[i + 1].startsWith("--")) {
-                        i++; // Skip the value in next iteration
+                    boolean consumedNext = parseLongOption(args, i);
+                    if (consumedNext) {
+                        i++; // Skip the value in next iteration only when it was consumed
                     }
                 } else if (arg.startsWith("-D")) {
                     parseSystemProperty(arg);
@@ -160,19 +161,36 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             }
         }
 
-        private void parseLongOption(String[] args, int index) {
+        /**
+         * Parse a long option starting at args[index].
+         * Returns true if the next token in args[] was consumed as the value.
+         */
+        private boolean parseLongOption(String[] args, int index) {
             String arg = args[index];
             String value = null;
+            boolean consumedNext = false;
 
-            if (index + 1 < args.length && !args[index + 1].startsWith("--")) {
+            // Support --key=value form
+            if (arg.contains("=")) {
+                String[] parts = arg.split("=", 2);
+                arg = parts[0];
+                value = parts.length > 1 ? parts[1].trim() : null;
+            }
+
+            // If not in --key=value form, try to take the next token as value when it's not another option
+            if (value == null && index + 1 < args.length && !args[index + 1].startsWith("--")) {
                 value = args[index + 1].trim();
+                consumedNext = true;
             }
 
             if (value != null && !value.isEmpty()) {
                 setContextAttribute(arg, value);
             } else {
+                // keep the previous behavior of setting a flag when no value was supplied
                 context.setAttribute(arg, true);
             }
+
+            return consumedNext;
         }
 
         @SuppressWarnings("unchecked")
@@ -304,10 +322,31 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             // Execute the command with the context.
             if (command != null) {
                 Action.Mode defaultMode = Action.Mode.CLI;
-                if (context.getAttribute("--mode") != null) {
-                    String mode = context.getAttribute("--mode").toString();
-                    if (!mode.isEmpty()) {
-                        defaultMode = Action.Mode.fromName(mode);
+                Object modeAttribute = context.getAttribute("--mode");
+                if (modeAttribute != null) {
+                    if (modeAttribute instanceof String) {
+                        String mode = ((String) modeAttribute).trim();
+                        if (!mode.isEmpty()) {
+                            try {
+                                // Try to map the provided name to an Action.Mode; fromName may be case-sensitive
+                                Action.Mode resolved = Action.Mode.fromName(mode);
+                                if (resolved != null) {
+                                    defaultMode = resolved;
+                                } else {
+                                    // fallback to case-insensitive match
+                                    try {
+                                        defaultMode = Action.Mode.valueOf(mode.toUpperCase(Locale.ROOT));
+                                    } catch (IllegalArgumentException iae) {
+                                        logger.warning("Unknown mode '" + mode + "', falling back to CLI");
+                                    }
+                                }
+                            } catch (IllegalArgumentException e) {
+                                logger.warning("Invalid mode '" + mode + "' supplied, using CLI mode");
+                            }
+                        }
+                    } else {
+                        // If user passed a flag without value (e.g. --mode) parseLongOption sets boolean true
+                        logger.warning("--mode requires a value (e.g. --mode CLI). Found: " + modeAttribute.getClass().getSimpleName());
                     }
                 }
                 Object o = ApplicationManager.call(command, context, defaultMode);
