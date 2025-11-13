@@ -18,6 +18,7 @@ package org.tinystruct;
 import org.tinystruct.application.Context;
 import org.tinystruct.application.Template;
 import org.tinystruct.system.Configuration;
+import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.cli.CommandLine;
 
 import java.util.Locale;
@@ -184,11 +185,11 @@ public interface Application extends Runnable {
     String getName();
 
     /**
-     * Return a list of CommandLine for current application.
+     * Return a map of command name -> map of Mode -> CommandLine for current application.
      *
-     * @return A map for commandline
+     * @return A map for commandline grouped by mode
      */
-    Map<String, CommandLine> getCommandLines();
+    Map<String, Map<Action.Mode, CommandLine>> getCommandLines();
 
     /**
      * Help information.
