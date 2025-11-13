@@ -6,6 +6,8 @@ import org.tinystruct.system.util.StringUtilities;
 import java.io.File;
 import java.util.*;
 
+import org.tinystruct.system.annotation.Action.Mode;
+
 public class CommandLine implements Comparable<CommandLine> {
     private final String command;
     private String description;
@@ -13,6 +15,7 @@ public class CommandLine implements Comparable<CommandLine> {
     private List<CommandOption> options = new ArrayList<>();
     private Set<CommandArgument<String, Object>> arguments = new HashSet<>(16);
     private String example;
+    private Mode mode = Mode.DEFAULT;
 
     public static final int ARGUMENT_MAX_WIDTH = 77;
 
@@ -27,6 +30,15 @@ public class CommandLine implements Comparable<CommandLine> {
 
         this.arguments = arguments;
         this.options = options;
+    }
+
+    public Mode getMode() {
+        return mode;
+    }
+
+    public CommandLine setMode(Mode mode) {
+        if (mode != null) this.mode = mode;
+        return this;
     }
 
     public Application getApplication() {
