@@ -235,7 +235,7 @@ public final class ApplicationManager {
 
         if (context != null && context.getAttribute("--help") != null) {
             CommandLine command;
-            if ((command = ROUTE_REGISTRY_INSTANCE.getCommand(path)) != null)
+            if ((command = ROUTE_REGISTRY_INSTANCE.getCommand(path, mode)) != null)
                 return command;
         }
 
