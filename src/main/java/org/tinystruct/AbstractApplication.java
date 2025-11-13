@@ -17,6 +17,7 @@ package org.tinystruct;
 
 import org.tinystruct.application.*;
 import org.tinystruct.system.AnnotationProcessor;
+import org.tinystruct.system.annotation.Action.Mode;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Resource;
 import org.tinystruct.system.cli.CommandLine;
@@ -29,10 +30,7 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.OptionalInt;
+import java.util.*;
 
 import static org.tinystruct.http.Constants.HTTP_HOST;
 
@@ -49,9 +47,9 @@ public abstract class AbstractApplication implements Application, Cloneable {
     private static final Container CONTAINER = Container.getInstance();
 
     /**
-     * Collection of command line.
+     * Collection of command line grouped by modes.
      */
-    protected Map<String, CommandLine> commandLines;
+    protected Map<String, Map<Mode, CommandLine>> commandLines;
 
     /**
      * Registry for actions associated with the application
@@ -577,22 +575,54 @@ public abstract class AbstractApplication implements Application, Cloneable {
         int length = examples.length();
         int optionsLength = options.length();
 
+        // Aggregate nested command lines map (commandName -> Map<Mode, CommandLine>)
+        Map<String, Map<Mode, CommandLine>> combined = this.commandLines;
+
         // Find the maximum length of the command names
-        OptionalInt longSizeCommand = this.commandLines.keySet().stream().mapToInt(String::length).max();
+        OptionalInt longSizeCommand = combined.keySet().stream().mapToInt(String::length).max();
         int max = longSizeCommand.orElse(0);
 
-        // Iterate over the command lines and add them to the appropriate StringBuilder
-        this.commandLines.forEach((s, commandLine) -> {
+        // Build a mapping from CommandLine -> set of modes it belongs to
+        Map<CommandLine, Set<String>> modesByCommand = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<Mode, CommandLine>> e : combined.entrySet()) {
+            Map<Mode, CommandLine> modes = e.getValue();
+            if (modes == null) continue;
+            for (Map.Entry<Mode, CommandLine> me : modes.entrySet()) {
+                Mode m = me.getKey();
+                CommandLine cli = me.getValue();
+                String modeName = m == null ? "DEFAULT" : m.name();
+                modesByCommand.computeIfAbsent(cli, k -> new LinkedHashSet<>()).add(modeName);
+            }
+        }
+
+        List<CommandLine> toShow = modesByCommand.keySet().stream()
+                .distinct()
+                .sorted()
+                .toList();
+
+        toShow.forEach(commandLine -> {
             String command = commandLine.getCommand();
             String description = commandLine.getDescription();
             String example = commandLine.getExample();
+            Set<String> modes = modesByCommand.getOrDefault(commandLine, Collections.singleton("DEFAULT"));
+            String modeLabel = "";
+            if (!(modes.size() == 1 && modes.contains("DEFAULT"))) {
+                modeLabel = " (modes: " + String.join(", ", modes) + ")";
+            }
 
             if (command.startsWith("--")) {
                 options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+                // include option details if available
+                if (commandLine.getOptions() != null) {
+                    commandLine.getOptions().forEach(option -> options.append("\t\t").append(StringUtilities.rightPadding(option.getKey(), max, ' ')).append("\t").append(option.getDescription()).append("\n"));
+                }
             } else if (command.isEmpty()) {
                 builder.append(description).append("\n");
+                if (commandLine.getOptions() != null) {
+                    commandLine.getOptions().forEach(option -> options.append("\t").append(StringUtilities.rightPadding(option.getKey(), max, ' ')).append("\t").append(option.getDescription()).append("\n"));
+                }
             } else {
-                commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+                commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append(modeLabel).append("\n");
             }
 
             if (example != null && !example.isEmpty()) {
@@ -621,6 +651,10 @@ public abstract class AbstractApplication implements Application, Cloneable {
         return this;
     }
 
+    public void setOutput(String output) {
+        this.output = output;
+    }
+
     /**
      * Retrieves the command line arguments and their corresponding
      * CommandLine objects stored in a Map object.
@@ -629,7 +663,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * corresponding CommandLine objects
      */
     @Override
-    public Map<String, CommandLine> getCommandLines() {
+    public Map<String, Map<Mode, CommandLine>> getCommandLines() {
         return this.commandLines;
     }
 
