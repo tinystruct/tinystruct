@@ -25,8 +25,8 @@ public final class ActionRegistry {
 
     // Map to store pattern groups
     private static final Map<String, List<Action>> patternGroups = new ConcurrentHashMap<>();
-    // Map to store URL patterns and their corresponding CommandLine objects
-    private static final Map<String, CommandLine> commands = new ConcurrentHashMap<>();
+    // Map to store URL patterns and their corresponding CommandLine objects per Mode
+    private static final Map<String, Map<Mode, CommandLine>> commands = new ConcurrentHashMap<>();
     // Map of type patterns for URL parameter matching
     private static final Map<Class<?>, PatternPriority> TYPE_PATTERNS = new HashMap<>();
     private final Set<String> paths = new HashSet<>();
@@ -219,7 +219,26 @@ public final class ActionRegistry {
      * @return The corresponding CommandLine object or null if not found
      */
     public CommandLine getCommand(String path) {
-        return commands.get(path);
+        return getCommand(path, Mode.DEFAULT);
+    }
+
+    /**
+     * Get the CommandLine object for a given URL pattern and Mode.
+     * Falls back to DEFAULT mode if the requested mode is not available.
+     *
+     * @param path The URL pattern
+     * @param mode The action mode
+     * @return The corresponding CommandLine object or null if not found
+     */
+    public CommandLine getCommand(String path, Mode mode) {
+        Map<Mode, CommandLine> map = commands.get(path);
+        if (map == null || map.isEmpty()) return null;
+        // Try exact mode
+        if (mode != null && map.containsKey(mode)) return map.get(mode);
+        // Fallback to DEFAULT
+        if (map.containsKey(Mode.DEFAULT)) return map.get(Mode.DEFAULT);
+        // Otherwise return any available command line (first entry)
+        return map.values().stream().findFirst().orElse(null);
     }
 
     /**
@@ -267,9 +286,18 @@ public final class ActionRegistry {
      * @param path The URL pattern
      */
     private void storeCommandLine(Application app, String path) {
-        CommandLine cli = app.getCommandLines().get(path);
-        if (cli != null) {
-            commands.put(path, cli);
+        // Support nested map format: Map<String, Map<Mode, CommandLine>>
+        for (Map.Entry<String, Map<Mode, CommandLine>> entry : app.getCommandLines().entrySet()) {
+            String key = entry.getKey();
+            Map<Mode, CommandLine> modeMap = entry.getValue();
+
+            if (key.equals(path)) {
+                // Put all available modes for this command name
+                for (Map.Entry<Mode, CommandLine> me : modeMap.entrySet()) {
+                    Mode m = me.getKey() == null ? Mode.DEFAULT : me.getKey();
+                    commands.computeIfAbsent(path, k -> new ConcurrentHashMap<>()).put(m, me.getValue());
+                }
+            }
         }
     }
 
