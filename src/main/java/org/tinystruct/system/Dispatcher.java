@@ -56,7 +56,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 @Action(value = "", description = "A command line tool for tinystruct framework",
         options = {
@@ -371,8 +370,10 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         } catch (ApplicationException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
             if(e.getMessage().contains("ClassNotFoundException")) {
-                logger.info("* SOLUTION: if it's caused by a ClassNotFoundException, ensuring that all dependencies are properly downloaded and available in the classpath is crucial. The command uses Maven Wrapper (mvnw) to copy all dependencies to a specified directory (lib) will be helpful to resolve the issue: \n" +
-                        ".\\mvnw dependency:copy-dependencies -DoutputDirectory=lib\n");
+                logger.info("""
+                        * SOLUTION: if it's caused by a ClassNotFoundException, ensuring that all dependencies are properly downloaded and available in the classpath is crucial. The command uses Maven Wrapper (mvnw) to copy all dependencies to a specified directory (lib) will be helpful to resolve the issue:\s
+                        .\\mvnw dependency:copy-dependencies -DoutputDirectory=lib
+                        """);
             }
         }
 
@@ -409,18 +410,15 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 try {
                     Application app = (Application) Class.forName(appName).getDeclaredConstructor().newInstance();
                     ApplicationManager.install(app, config);
-                } catch (InstantiationException e) {
-                    logger.log(Level.SEVERE, e.getMessage(), e);
-                } catch (IllegalAccessException e) {
-                    logger.log(Level.SEVERE, e.getMessage(), e);
-                } catch (InvocationTargetException e) {
-                    logger.log(Level.SEVERE, e.getMessage(), e);
-                } catch (NoSuchMethodException e) {
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                         NoSuchMethodException e) {
                     logger.log(Level.SEVERE, e.getMessage(), e);
                 } catch (ClassNotFoundException e) {
                     logger.log(Level.SEVERE, e.getMessage(), e);
-                    logger.info("* SOLUTION: if it's caused by a ClassNotFoundException, ensuring that all dependencies are properly downloaded and available in the classpath is crucial. The command uses Maven Wrapper (mvnw) to copy all dependencies to a specified directory (lib) will be helpful to resolve the issue: \n" +
-                            ".\\mvnw dependency:copy-dependencies -DoutputDirectory=lib\n");
+                    logger.info("""
+                            * SOLUTION: if it's caused by a ClassNotFoundException, ensuring that all dependencies are properly downloaded and available in the classpath is crucial. The command uses Maven Wrapper (mvnw) to copy all dependencies to a specified directory (lib) will be helpful to resolve the issue:\s
+                            .\\mvnw dependency:copy-dependencies -DoutputDirectory=lib
+                            """);
                 }
             });
         }
@@ -687,9 +685,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 }
                 System.out.println("|");
             });
-        } catch (ApplicationException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
-        } catch (SQLException e) {
+        } catch (ApplicationException | SQLException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
@@ -983,15 +979,71 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         StringBuilder examples = new StringBuilder("Example(s): \n");
         int length = examples.length();
         int optionsLength = options.length();
-        Map<String, CommandLine> commandLines = new HashMap<>();
+        // Aggregate command lines from all applications. Each app now provides
+        Map<String, Map<Action.Mode, CommandLine>> combined = new LinkedHashMap<>();
         Collection<Application> apps = ApplicationManager.list();
-        apps.forEach(app -> commandLines.putAll(app.getCommandLines()));
+        for (Application app : apps) {
+            Map<String, Map<Action.Mode, CommandLine>> appCommands = app.getCommandLines();
+            if (appCommands == null) continue;
+            for (Map.Entry<String, Map<Action.Mode, CommandLine>> e : appCommands.entrySet()) {
+                combined.computeIfAbsent(e.getKey(), k -> new LinkedHashMap<>()).putAll(e.getValue());
+            }
+        }
 
-        OptionalInt longSizeCommand = commandLines.keySet().stream().mapToInt(String::length).max();
+        OptionalInt longSizeCommand = combined.keySet().stream().mapToInt(String::length).max();
         int max = longSizeCommand.orElse(0);
 
-        Stream<CommandLine> sorted = this.commandLines.values().stream().sorted();
-        sorted.forEach(commandLine -> {
+        // Determine requested mode from context; include both DEFAULT and requested mode entries
+        final Action.Mode requestedMode;
+        {
+            Action.Mode _rm = null;
+            if (getContext() != null && getContext().getAttribute("--mode") != null) {
+                Object modeAttr = getContext().getAttribute("--mode");
+                if (modeAttr instanceof String) {
+                    String mode = ((String) modeAttr).trim();
+                    if (!mode.isEmpty()) {
+                        try {
+                            Action.Mode resolved = Action.Mode.fromName(mode);
+                            if (resolved != null) _rm = resolved;
+                            else {
+                                try {
+                                    _rm = Action.Mode.valueOf(mode.toUpperCase(Locale.ROOT));
+                                } catch (IllegalArgumentException ignored) {
+                                }
+                            }
+                        } catch (IllegalArgumentException ignored) {
+                        }
+                    }
+                }
+            }
+            requestedMode = _rm;
+        }
+
+        // Build a mapping from CommandLine -> set of modes it belongs to (DEFAULT or explicit suffix)
+        Map<CommandLine, Set<String>> modesByCommand = new LinkedHashMap<>();
+        for (Map.Entry<String, Map<Action.Mode, CommandLine>> e : combined.entrySet()) {
+            Map<Action.Mode, CommandLine> modes = e.getValue();
+            for (Map.Entry<Action.Mode, CommandLine> me : modes.entrySet()) {
+                Action.Mode m = me.getKey();
+                CommandLine cli = me.getValue();
+                String modeName = m == null ? "DEFAULT" : m.name();
+                modesByCommand.computeIfAbsent(cli, k -> new LinkedHashSet<>()).add(modeName);
+            }
+        }
+
+        // Filter command lines: include when no mode requested, or when the command is DEFAULT or matches requested mode
+        List<CommandLine> curated = modesByCommand.entrySet().stream()
+                .filter(entry -> {
+                    if (requestedMode == null) return true;
+                    Set<String> modes = entry.getValue();
+                    return modes.contains("DEFAULT") || modes.contains(requestedMode.name());
+                })
+                .map(Map.Entry::getKey)
+                .distinct()
+                .sorted()
+                .toList();
+
+        curated.forEach(commandLine -> {
             String command = commandLine.getCommand();
             String description = commandLine.getDescription();
             String example = commandLine.getExample();
