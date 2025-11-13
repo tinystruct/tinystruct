@@ -8,10 +8,7 @@ import org.tinystruct.system.cli.CommandArgument;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.cli.CommandOption;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class AnnotationProcessor {
     private final Application app;
@@ -28,7 +25,9 @@ public class AnnotationProcessor {
             Argument[] optionAnnotations = annotation.options();
             List<CommandOption> options = new ArrayList<>();
             CommandLine commandLine = new CommandLine(this.app, annotation.value(), annotation.description());
-            this.app.getCommandLines().put(annotation.value(), commandLine);
+            // set mode on commandLine and store in nested map
+            commandLine.setMode(annotation.mode());
+            this.app.getCommandLines().computeIfAbsent(annotation.value(), k -> new HashMap<>()).put(annotation.mode(), commandLine);
 
             for (Argument optionAnnotation : optionAnnotations) {
                 String key = optionAnnotation.key();
@@ -36,7 +35,7 @@ public class AnnotationProcessor {
                 CommandOption option = new CommandOption(key, null, optionDescription);
                 options.add(option);
             }
-            this.app.getCommandLines().get(annotation.value()).setOptions(options);
+            this.app.getCommandLines().get(annotation.value()).get(annotation.mode()).setOptions(options);
         }
 
         for (java.lang.reflect.Method method : this.app.getClass().getMethods()) {
@@ -49,10 +48,12 @@ public class AnnotationProcessor {
                 Action.Mode mode = actionAnnotation.mode();
 
                 CommandLine commandLine = new CommandLine(this.app, commandName, description);
-                this.app.getCommandLines().put(commandName, commandLine);
+                commandLine.setMode(mode);
+                this.app.getCommandLines().computeIfAbsent(commandName, k -> new HashMap<>()).put(mode, commandLine);
 
                 Set<CommandArgument<String, Object>> arguments = getCommandArguments(actionAnnotation);
-                this.app.getCommandLines().get(commandName).setArguments(arguments);
+                // Set arguments on the stored commandLine
+                this.app.getCommandLines().get(commandName).get(mode).setArguments(arguments);
 
                 Argument[] optionAnnotations = actionAnnotation.options();
                 List<CommandOption> options = new ArrayList<>();
@@ -62,10 +63,10 @@ public class AnnotationProcessor {
                     CommandOption option = new CommandOption(key, null, optionDescription);
                     options.add(option);
                 }
-                this.app.getCommandLines().get(commandName).setOptions(options);
+                this.app.getCommandLines().get(commandName).get(mode).setOptions(options);
 
                 if (!example.isEmpty())
-                    this.app.getCommandLines().get(commandName).setExample(example);
+                    this.app.getCommandLines().get(commandName).get(mode).setExample(example);
 
                 // Register the action handler method
                 // Set the action in the action registry
