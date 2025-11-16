@@ -66,6 +66,16 @@ public class example extends AbstractApplication {
         return words;
     }
 
+    @Action(value = "hello", mode = Mode.HTTP_GET)
+    public String helloGet() {
+        return "GET";
+    }
+
+    @Action(value = "hello", mode = Mode.HTTP_POST)
+    public String helloPost() {
+        return "POST";
+    }
+
 }
 
 ```

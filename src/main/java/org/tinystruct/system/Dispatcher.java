@@ -1065,7 +1065,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
         builder.append(commands).append("\n");
         if (optionsLength < options.length())
-            builder.append(options);
+            builder.append(options).append("\n");
 
         if (length < examples.length())
             builder.append(examples);
