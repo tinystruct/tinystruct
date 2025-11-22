@@ -14,7 +14,11 @@ A simple framework for Java development. Simple thinking, Better design, Easy to
 - Maven (for dependency management)
 - A text editor or IDE (IntelliJ IDEA, Eclipse, VS Code, etc.)
 
-Installation and Getting Started
+Getting Started with tinystruct archetype
+--
+You can follow this quickily: https://github.com/tinystruct/tinystruct-archetype
+
+Installation and Getting Started Manually
 --
 * Add the dependency into your pom.xml.
 ```xml
