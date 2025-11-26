@@ -16,7 +16,7 @@ A simple framework for Java development. Simple thinking, Better design, Easy to
 
 Getting Started with tinystruct archetype
 --
-You can follow this quickily: https://github.com/tinystruct/tinystruct-archetype
+You can follow this archetype quickly: https://github.com/tinystruct/tinystruct-archetype
 
 Installation and Getting Started Manually
 --
