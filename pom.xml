@@ -122,7 +122,7 @@
         <jjwt.version>0.13.0</jjwt.version>
         <jna.version>5.18.1</jna.version>
         <jupiter.version>6.0.1</jupiter.version>
-        <kafka.version>4.1.0</kafka.version>
+        <kafka.version>4.1.1</kafka.version>
         <lettuce.version>7.0.0.RELEASE</lettuce.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
