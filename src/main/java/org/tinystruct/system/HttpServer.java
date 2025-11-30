@@ -30,6 +30,7 @@ import org.tinystruct.system.util.StringUtilities;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -71,7 +72,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
         String charsetName = null;
         this.settings = new Settings();
         if (this.settings.get("default.file.encoding") != null)
-            charsetName = this.settings.get("default.file.encoding");
+            charsetName = settings.getOrDefault("default.file.encoding", Charset.defaultCharset().name());
 
         if (charsetName != null && !charsetName.trim().isEmpty())
             System.setProperty("file.encoding", charsetName);
@@ -285,7 +286,8 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
         private void handleSSE(ServerRequest request, ServerResponse response, Context context) throws IOException, ApplicationException {
             // Set SSE headers
-            response.addHeader(Header.CONTENT_TYPE.name(), "text/event-stream");
+            String charsetName = settings.getOrDefault("default.file.encoding", Charset.defaultCharset().name());
+            response.addHeader(Header.CONTENT_TYPE.name(), "text/event-stream; charset=" + charsetName);
             response.addHeader(Header.CACHE_CONTROL.name(), "no-cache");
             response.addHeader(Header.CONNECTION.name(), "keep-alive");
             response.addHeader(Header.TRANSFER_ENCODING.name(), "chunked");
