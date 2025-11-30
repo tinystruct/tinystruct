@@ -111,19 +111,17 @@ public class SSEPushManager {
             return null; // No SSEClient needed for Netty
         } else {
             // Servlet/Tomcat: use original thread-based approach
-            SSEClient oldClient = (SSEClient) clients.get(sessionId);
-            if (oldClient != null && oldClient.isActive()) {
-                return oldClient;
-            }
-
             String finalSessionId = sessionId;
-            SSEClient client = (SSEClient) clients.computeIfAbsent(sessionId, id -> {
+            return (SSEClient) clients.compute(sessionId, (id, existing) -> {
+                if (existing != null && ((SSEClient) existing).isActive() && out.equals(((SSEClient) existing).getResponse())) {
+                    // keep existing active client
+                    return existing;
+                }
                 SSEClient c = (messageQueue != null) ? new SSEClient(out, messageQueue) : new SSEClient(out);
                 executor.submit(c);
                 logger.info("Registered a SSE client: " + finalSessionId);
                 return c;
             });
-            return client;
         }
     }
 
@@ -277,6 +275,7 @@ public class SSEPushManager {
 
     /**
      * Formats a message as an SSE event string.
+     *
      * @param message The message to format
      * @return The formatted SSE event string
      */

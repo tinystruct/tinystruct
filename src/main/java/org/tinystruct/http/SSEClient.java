@@ -1,11 +1,11 @@
 package org.tinystruct.http;
 
+import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.component.Builder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -65,6 +65,15 @@ public class SSEClient implements Runnable {
     }
 
     /**
+     * Return the response.
+     *
+     * @return out
+     */
+    public Response getResponse(){
+        return this.out;
+    }
+
+    /**
      * Main loop: waits for messages and sends them to the client as SSE events.
      */
     @Override
@@ -83,8 +92,24 @@ public class SSEClient implements Runnable {
             this.active = false;
             logger.info("SSEClient thread interrupted for session");
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error in SSE client: " + e.getMessage(), e);
-            this.active = false;
+            // Check if this is a normal connection closure
+            String message = e.getMessage();
+            if (message != null && (
+                    message.contains("你的主机中的软件中止了一个已建立的连接") ||
+                            message.contains("An established connection was aborted") ||
+                            message.contains("Connection reset by peer") ||
+                            message.contains("Broken pipe"))) {
+
+                // This is a normal SSE disconnection - log at DEBUG level
+                logger.fine("SSE client disconnected normally: " + message);
+                this.active = false;
+            } else {
+                // This is for unexpected exceptions; still stop the client.
+                this.active = false;
+                // This is an unexpected error - log at SEVERE level
+                logger.severe("Unexpected error in SSE client: " + message);
+                throw new ApplicationRuntimeException(message, e);
+            }
         }
     }
 
