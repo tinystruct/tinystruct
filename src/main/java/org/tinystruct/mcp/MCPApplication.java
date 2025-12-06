@@ -104,7 +104,7 @@ public abstract class MCPApplication extends AbstractApplication {
      * @return The JSON-RPC response as a string
      * @throws ApplicationException if an error occurs
      */
-    @Action(Endpoints.SSE)
+    @Action(value = Endpoints.SSE, description = "Main entry point for handling JSON-RPC requests via Streamable HTTP POST")
     public String handleRpcRequest(Request request, Response response) throws ApplicationException {
         try {
             // Validate authentication
