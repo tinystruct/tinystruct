@@ -48,23 +48,17 @@ public class Settings implements Configuration<String> {
     @Override
     public String get(String property) {
         String value = properties.getProperty(property);
-
-        if (value != null && value.startsWith("$_")) {
-            String envVariableName = value.substring(2).toUpperCase();
-            return System.getenv(envVariableName) != null ? System.getenv(envVariableName) : "";
+        if (value == null) return "";
+        value = value.trim();
+        // Handle environment variables if needed
+        if (value.startsWith("$_")) {
+            String envName = value.substring(2).toUpperCase();
+            return System.getenv(envName) != null ? System.getenv(envName) : "";
         }
 
-        try {
-            if (value != null) {
-                byte[] bytes = value.getBytes(StandardCharsets.ISO_8859_1);
-                return new String(bytes, StandardCharsets.UTF_8).trim();
-            }
-        } catch (Exception ignored) {
-            // Ignored intentionally
-        }
-
-        return "";
+        return value.trim();
     }
+
 
     @Override
     public void set(String key, String value) {
@@ -133,7 +127,10 @@ public class Settings implements Configuration<String> {
         private Properties getProperties(String fileName) {
             try (InputStream in = Settings.class.getClassLoader().getResourceAsStream(fileName)) {
                 if (in != null) {
-                    properties.load(in);
+                    try (InputStreamReader reader = new InputStreamReader(
+                            in, StandardCharsets.UTF_8)) {
+                        properties.load(reader);
+                    }
                 } else {
                     Logger.getLogger(Settings.class.getName()).warning("No settings loaded.");
                 }
