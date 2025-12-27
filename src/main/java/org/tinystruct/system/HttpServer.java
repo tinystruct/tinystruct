@@ -266,7 +266,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     }
 
                     // Cache the preflight response for a configurable duration (seconds)
-                    String maxAge = settings.getOrDefault("cors.max.age", "86400");
+                    String maxAge = settings.getOrDefault("cors.preflight.maxage", "3600");
                     exchange.getResponseHeaders().set("Access-Control-Max-Age", maxAge);
 
                     // No response body for preflight; return 204 No Content
