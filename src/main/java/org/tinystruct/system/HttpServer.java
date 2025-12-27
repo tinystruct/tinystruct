@@ -238,6 +238,46 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             try {
+                // Handle CORS preflight (OPTIONS) requests up-front: these have no body.
+                if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    String origin = exchange.getRequestHeaders().getFirst("Origin");
+                    String acrMethod = exchange.getRequestHeaders().getFirst("Access-Control-Request-Method");
+                    String acrHeaders = exchange.getRequestHeaders().getFirst("Access-Control-Request-Headers");
+
+                    // Allow origins: prefer explicit setting, otherwise echo Origin or wildcard
+                    String allowOrigin = settings.getOrDefault("cors.allowed.origins", origin != null ? origin : "*");
+                    exchange.getResponseHeaders().set("Access-Control-Allow-Origin", allowOrigin);
+                    // Make responses vary by Origin when echoing it
+                    if (origin != null) {
+                        exchange.getResponseHeaders().set("Vary", "Origin");
+                    }
+
+                    // Allow methods: prefer configured list, otherwise echo requested or use sensible defaults
+                    String allowMethods = settings.getOrDefault("cors.allowed.methods", acrMethod != null ? acrMethod : "GET,POST,PUT,DELETE,OPTIONS");
+                    exchange.getResponseHeaders().set("Access-Control-Allow-Methods", allowMethods);
+
+                    // Allow headers: prefer configured list, otherwise echo requested or common headers
+                    String allowHeaders = settings.getOrDefault("cors.allowed.headers", acrHeaders != null ? acrHeaders : "Content-Type,Authorization");
+                    exchange.getResponseHeaders().set("Access-Control-Allow-Headers", allowHeaders);
+
+                    // Allow credentials if explicitly enabled in settings
+                    if ("true".equalsIgnoreCase(settings.get("cors.allow.credentials"))) {
+                        exchange.getResponseHeaders().set("Access-Control-Allow-Credentials", "true");
+                    }
+
+                    // Cache the preflight response for a configurable duration (seconds)
+                    String maxAge = settings.getOrDefault("cors.max.age", "86400");
+                    exchange.getResponseHeaders().set("Access-Control-Max-Age", maxAge);
+
+                    // No response body for preflight; return 204 No Content
+                    exchange.sendResponseHeaders(204, 0);
+                    try {
+                        exchange.getResponseBody().close();
+                    } catch (Exception ignore) {
+                    }
+                    return;
+                }
+
                 // Serve static files first (mirror Netty's HttpStaticFileHandler precedence)
                 if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
                     if (tryServeStatic(exchange)) {
@@ -602,3 +642,4 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
     }
 }
+
