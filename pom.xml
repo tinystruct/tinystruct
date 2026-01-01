@@ -87,7 +87,7 @@
         <dependency>
             <groupId>org.lz4</groupId>
             <artifactId>lz4-java</artifactId>
-            <version>1.8.1</version>
+            <version>1.10.2</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -138,7 +138,7 @@
         <jna.version>5.18.1</jna.version>
         <jupiter.version>6.0.1</jupiter.version>
         <kafka.version>4.1.1</kafka.version>
-        <lettuce.version>7.2.0.RELEASE</lettuce.version>
+        <lettuce.version>7.2.1.RELEASE</lettuce.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <sqlite.version>3.51.1.0</sqlite.version>
