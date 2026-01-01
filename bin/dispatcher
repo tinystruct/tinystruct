@@ -17,7 +17,7 @@
 # ***************************************************************************
 
 ROOT="$(pwd)"
-VERSION="1.7.13"
+VERSION="1.7.14"
 cd "$(dirname "$0")" || exit
 cd "../"
 # Navigate to the root directory
