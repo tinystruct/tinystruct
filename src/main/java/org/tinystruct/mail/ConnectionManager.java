@@ -24,6 +24,7 @@ import jakarta.mail.Session;
 import jakarta.mail.Message;
 import jakarta.mail.Address;
 
+import java.io.EOFException;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -123,11 +124,14 @@ public final class ConnectionManager implements AutoCloseable {
             PooledConnection pooledConnection = (PooledConnection) connection;
             activeConnections.remove(connection);
 
-            if (isConnectionValid(pooledConnection)) {
+            if (pooledConnection.dead) {
+                closeConnection(pooledConnection);
+            } else if (isConnectionValid(pooledConnection)) {
                 idleConnections.offer(pooledConnection);
             } else {
                 closeConnection(pooledConnection);
             }
+
         }
     }
 
@@ -157,7 +161,7 @@ public final class ConnectionManager implements AutoCloseable {
 
         // Cleanup idle connections
         idleConnections.removeIf(conn -> {
-            if (isConnectionExpired(conn, now)) {
+            if (conn.available() || isConnectionExpired(conn, now)) {
                 closeConnection(conn);
                 return true;
             }
@@ -175,11 +179,14 @@ public final class ConnectionManager implements AutoCloseable {
     }
 
     private boolean isConnectionValid(PooledConnection connection) {
-        return connection != null &&
-                connection.getCreationTime() != null &&
-                connection.getLastUsedTime() != null &&
-                Duration.between(connection.getCreationTime(), Instant.now()).compareTo(maxLifetime) <= 0 &&
-                Duration.between(connection.getLastUsedTime(), Instant.now()).compareTo(maxIdleTime) <= 0;
+        return connection != null
+                && !connection.dead               // ⭐ 新增
+                && connection.getCreationTime() != null
+                && connection.getLastUsedTime() != null
+                && Duration.between(connection.getCreationTime(), Instant.now())
+                .compareTo(maxLifetime) <= 0
+                && Duration.between(connection.getLastUsedTime(), Instant.now())
+                .compareTo(maxIdleTime) <= 0;
     }
 
     private boolean isConnectionExpired(PooledConnection connection, Instant now) {
@@ -230,6 +237,7 @@ public final class ConnectionManager implements AutoCloseable {
         private final Connection delegate;
         private final Instant creationTime;
         private volatile Instant lastUsedTime;
+        private volatile boolean dead = false;
 
         PooledConnection(Connection delegate) {
             this.delegate = delegate;
@@ -254,7 +262,7 @@ public final class ConnectionManager implements AutoCloseable {
 
         @Override
         public boolean available() {
-            return delegate.available();
+            return delegate.available() && !dead;
         }
 
         @Override
@@ -263,10 +271,23 @@ public final class ConnectionManager implements AutoCloseable {
                 delegate.send(message, recipients);
                 lastUsedTime = Instant.now();
             } catch (MessagingException e) {
-                // Log the error and rethrow
-                logger.log(Level.WARNING, "Failed to send message using connection: " + getId(), e);
+                if (isEOF(e)) {
+                    dead = true;   // ⭐ 关键
+                }
+
+                logger.log(Level.WARNING,
+                        "Failed to send message using connection: " + getId()
+                                + (dead ? " [EOF detected, mark as DEAD]" : ""),
+                        e);
                 throw e;
             }
+        }
+
+        private boolean isEOF(MessagingException e) {
+            String msg = e.getMessage();
+            return msg == null
+                    || msg.contains("EOF")
+                    || e.getNextException() instanceof EOFException;
         }
 
         @Override
