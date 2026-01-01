@@ -181,7 +181,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * @param path     The path for which to set the action.
      * @param function The action object to be associated with the path.
      * @deprecated Use the {@link org.tinystruct.system.annotation.Action}
-     *             annotation instead.
+     * annotation instead.
      */
     public void setAction(String path, String function) {
         // Set the action in the action registry
@@ -223,7 +223,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
         config.set(DEFAULT_LANGUAGE, "zh_CN");
         config.set(LANGUAGE, config.get(DEFAULT_LANGUAGE));
         config.set(CHARSET, "utf-8");
-        config.set(DEFAULT_BASE_URL, "/?q=");
+        config.set(DEFAULT_BASE_URL, config.getOrDefault(DEFAULT_BASE_URL, "/?q="));
 
         // Set locale and assign the configuration
         this.setLocale(config.get(DEFAULT_LANGUAGE));
@@ -685,7 +685,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * CommandLine objects stored in a Map object.
      *
      * @return a Map object containing the command line arguments and their
-     *         corresponding CommandLine objects
+     * corresponding CommandLine objects
      */
     @Override
     public Map<String, Map<Mode, CommandLine>> getCommandLines() {
