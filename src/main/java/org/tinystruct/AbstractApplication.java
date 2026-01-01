@@ -35,7 +35,8 @@ import java.util.*;
 import static org.tinystruct.http.Constants.HTTP_HOST;
 
 /**
- * AbstractApplication provides some common methods for a standard {link:Application}.
+ * AbstractApplication provides some common methods for a standard
+ * {link:Application}.
  *
  * @author James Zhou
  */
@@ -136,7 +137,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
     @Override
     public void init(Context context) {
         this.setContext(context);
-        String language = context.getAttribute(LANGUAGE) != null ? context.getAttribute(LANGUAGE).toString() : config.get(DEFAULT_LANGUAGE);
+        String language = context.getAttribute(LANGUAGE) != null ? context.getAttribute(LANGUAGE).toString()
+                : config.get(DEFAULT_LANGUAGE);
         // Unique key for the instance based on context, language, and name
         String key = context.getId() + language + File.separatorChar + this.getName();
 
@@ -165,18 +167,21 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     @Override
     public Application getInstance(Context context) {
-        String language = context.getAttribute(LANGUAGE) != null ? context.getAttribute(LANGUAGE).toString() : config.get(DEFAULT_LANGUAGE);
+        String language = context.getAttribute(LANGUAGE) != null ? context.getAttribute(LANGUAGE).toString()
+                : config.get(DEFAULT_LANGUAGE);
 
         // Retrieve the instance from the container based on context, language, and name
         return CONTAINER.get(context.getId() + language + File.separatorChar + this.getName());
     }
 
     /**
-     * Sets the action for the given path and associates it with the provided action object.
+     * Sets the action for the given path and associates it with the provided action
+     * object.
      *
      * @param path     The path for which to set the action.
      * @param function The action object to be associated with the path.
-     * @deprecated Use the {@link org.tinystruct.system.annotation.Action} annotation instead.
+     * @deprecated Use the {@link org.tinystruct.system.annotation.Action}
+     *             annotation instead.
      */
     public void setAction(String path, String function) {
         // Set the action in the action registry
@@ -265,7 +270,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
     public Object invoke(String path, Object[] parameters) throws ApplicationException {
         // Get the action from the registry based on path
         Action action = this.actionRegistry.getAction(path);
-        if (action == null) throw new ApplicationException("Action " + path + " path does not registered.");
+        if (action == null)
+            throw new ApplicationException("Action " + path + " path does not registered.");
 
         // Execute the action with or without parameters
         if (parameters == null) {
@@ -296,20 +302,23 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     /**
-     * Sets a variable with a given name and value, optionally overwriting an existing variable.
+     * Sets a variable with a given name and value, optionally overwriting an
+     * existing variable.
      *
      * @param name  the name of the variable
      * @param value the value of the variable
      * @param force whether to overwrite an existing variable
      */
     public void setVariable(String name, String value, boolean force) {
-        if (value == null) value = "";
+        if (value == null)
+            value = "";
         StringVariable variable = new StringVariable(name, value);
         this.setVariable(variable, force);
     }
 
     /**
-     * Sets a variable with a given name and value, optionally overwriting an existing variable.
+     * Sets a variable with a given name and value, optionally overwriting an
+     * existing variable.
      *
      * @param variable the variable to set
      * @param force    whether to overwrite an existing variable
@@ -412,7 +421,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
             baseUrl = this.config.get(DEFAULT_BASE_URL);
         }
 
-        if (actionRegistry.paths().contains(path)) {
+        if (actionRegistry.validate(path)) {
             if (locale != null) {
                 return baseUrl + path + "&lang=" + locale.toLanguageTag();
             } else {
@@ -446,7 +455,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     /**
-     * Retrieves the value of a property from a resource bundle file for a specified locale.
+     * Retrieves the value of a property from a resource bundle file for a specified
+     * locale.
      *
      * @param propertyName the name of the property to retrieve
      * @param locale       the locale for which to retrieve the property
@@ -504,7 +514,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     @Override
     public String toString() {
-        if (!this.templateRequired) return this.name + "@" + Integer.toHexString(hashCode());
+        if (!this.templateRequired)
+            return this.name + "@" + Integer.toHexString(hashCode());
 
         InputStream in = null;
         String templatePath = "UNKNOWN";
@@ -524,7 +535,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
         if (null != in) {
             try {
                 if (locale != null) {
-                    return this.setTemplate(new DefaultTemplate(this, in, Variables.getInstance(locale.toString()).getVariables()));
+                    return this.setTemplate(
+                            new DefaultTemplate(this, in, Variables.getInstance(locale.toString()).getVariables()));
                 } else {
                     return this.setTemplate(new DefaultTemplate(this, in));
                 }
@@ -536,7 +548,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
                 try {
                     String output;
                     if (locale != null) {
-                        output = this.setTemplate(new PlainText(this, this.output, Variables.getInstance(locale.toString()).getVariables()));
+                        output = this.setTemplate(new PlainText(this, this.output,
+                                Variables.getInstance(locale.toString()).getVariables()));
                     } else {
                         output = this.setTemplate(new PlainText(this, this.output));
                     }
@@ -548,7 +561,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
             }
         }
 
-        throw new ApplicationRuntimeException("The template " + templatePath + " could not be found and the output has not been set. Reminder: If you don't need a template for this application, please setTemplateRequired(false) in init();");
+        throw new ApplicationRuntimeException("The template " + templatePath
+                + " could not be found and the output has not been set. Reminder: If you don't need a template for this application, please setTemplateRequired(false) in init();");
     }
 
     /**
@@ -586,7 +600,8 @@ public abstract class AbstractApplication implements Application, Cloneable {
         Map<CommandLine, Set<String>> modesByCommand = new LinkedHashMap<>();
         for (Map.Entry<String, Map<Mode, CommandLine>> e : combined.entrySet()) {
             Map<Mode, CommandLine> modes = e.getValue();
-            if (modes == null) continue;
+            if (modes == null)
+                continue;
             for (Map.Entry<Mode, CommandLine> me : modes.entrySet()) {
                 Mode m = me.getKey();
                 CommandLine cli = me.getValue();
@@ -611,18 +626,26 @@ public abstract class AbstractApplication implements Application, Cloneable {
             }
 
             if (command.startsWith("--")) {
-                options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append("\n");
+                options.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t")
+                        .append(description).append("\n");
                 // include option details if available
                 if (commandLine.getOptions() != null) {
-                    commandLine.getOptions().forEach(option -> options.append("\t\t").append(StringUtilities.rightPadding(option.getKey(), max, ' ')).append("\t").append(option.getDescription()).append("\n"));
+                    commandLine.getOptions()
+                            .forEach(option -> options.append("\t\t")
+                                    .append(StringUtilities.rightPadding(option.getKey(), max, ' ')).append("\t")
+                                    .append(option.getDescription()).append("\n"));
                 }
             } else if (command.isEmpty()) {
                 builder.append(description).append("\n");
                 if (commandLine.getOptions() != null) {
-                    commandLine.getOptions().forEach(option -> options.append("\t").append(StringUtilities.rightPadding(option.getKey(), max, ' ')).append("\t").append(option.getDescription()).append("\n"));
+                    commandLine.getOptions()
+                            .forEach(option -> options.append("\t")
+                                    .append(StringUtilities.rightPadding(option.getKey(), max, ' ')).append("\t")
+                                    .append(option.getDescription()).append("\n"));
                 }
             } else {
-                commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t").append(description).append(modeLabel).append("\n");
+                commands.append("\t").append(StringUtilities.rightPadding(command, max, ' ')).append("\t")
+                        .append(description).append(modeLabel).append("\n");
             }
 
             if (example != null && !example.isEmpty()) {
@@ -632,9 +655,11 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         // Add the commands and options to the StringBuilder
         builder.append(commands).append("\n");
-        if (optionsLength < options.length()) builder.append(options);
+        if (optionsLength < options.length())
+            builder.append(options);
 
-        if (length < examples.length()) builder.append(examples);
+        if (length < examples.length())
+            builder.append(examples);
 
         // Return the help message as a String
         return builder.toString();
@@ -660,7 +685,7 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * CommandLine objects stored in a Map object.
      *
      * @return a Map object containing the command line arguments and their
-     * corresponding CommandLine objects
+     *         corresponding CommandLine objects
      */
     @Override
     public Map<String, Map<Mode, CommandLine>> getCommandLines() {

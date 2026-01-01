@@ -19,7 +19,8 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 /**
- * The ActionRegistry class is responsible for managing and mapping actions/methods to their corresponding URL patterns.
+ * The ActionRegistry class is responsible for managing and mapping
+ * actions/methods to their corresponding URL patterns.
  */
 public final class ActionRegistry {
 
@@ -29,7 +30,7 @@ public final class ActionRegistry {
     private static final Map<String, Map<Mode, CommandLine>> commands = new ConcurrentHashMap<>();
     // Map of type patterns for URL parameter matching
     private static final Map<Class<?>, PatternPriority> TYPE_PATTERNS = new HashMap<>();
-    private final Set<String> paths = new HashSet<>();
+    private final Set<String> paths = ConcurrentHashMap.newKeySet();
 
     static {
         // Initialize the type pattern mappings
@@ -209,7 +210,30 @@ public final class ActionRegistry {
      * @return paths Set
      */
     public Collection<String> paths() {
-        return this.paths;
+        return Collections.unmodifiableSet(this.paths);
+    }
+
+    /**
+     * Validate the specific path.
+     *
+     * @param path The path
+     * @return String
+     */
+    public boolean validate(String path) {
+        if (path == null || path.isEmpty()) {
+            return false;
+        }
+
+        // Normalize the path by removing leading and trailing slashes
+        // This reuse the normalization pattern found in extractGroupFromPath
+        String normalizedPath = path.replaceAll("^/|/$", "");
+
+        // Check if the path is explicitly registered or matches a dynamic action rule
+        if (paths.contains(normalizedPath) || this.getAction(normalizedPath) != null) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -340,7 +364,8 @@ public final class ActionRegistry {
     /**
      * Create an Action object based on provided parameters
      */
-    private Action createAction(int id, Application app, String expression, MethodHandle handle, String methodName, Class<?> returnType, Class<?>[] parameterTypes, int priority, Mode mode) {
+    private Action createAction(int id, Application app, String expression, MethodHandle handle, String methodName,
+            Class<?> returnType, Class<?>[] parameterTypes, int priority, Mode mode) {
         if (mode == Mode.DEFAULT) {
             return new Action(id, app, expression, handle, methodName, returnType, parameterTypes, priority);
         } else {
@@ -358,7 +383,8 @@ public final class ActionRegistry {
 
         if (types.length > 0) {
             for (Class<?> type : types) {
-                if (Request.class.isAssignableFrom(type) || Response.class.isAssignableFrom(type)) continue;
+                if (Request.class.isAssignableFrom(type) || Response.class.isAssignableFrom(type))
+                    continue;
 
                 PatternPriority patternPriority = getPatternForType(type);
                 priority += patternPriority.getPriority();
