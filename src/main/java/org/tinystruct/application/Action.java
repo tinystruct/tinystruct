@@ -139,6 +139,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
 
     /**
      * Return the MethodHandle that provides reflective access to the underlying method.
+     *
      * @return methodHandle
      */
     public MethodHandle getMethodHandle() {
@@ -147,6 +148,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
 
     /**
      * Return the name of the method to be executed when this action is invoked.
+     *
      * @return method
      */
     public String getMethod() {
@@ -288,19 +290,18 @@ public class Action implements org.tinystruct.application.Method<Object> {
 
         // If no target types are specified, return the arguments as-is, which only includes the instance.
         if (types.length == 0) return arguments;
-
+        int i = 0;
         // Iterate over each target type.
         for (int n = 0; n < types.length; n++) {
             Class<?> targetType = types[n];
             if (!targetType.isAssignableFrom(Request.class) && !targetType.isAssignableFrom(Response.class)) {
-                Object arg = (args != null && args.length > n) ? args[n] : null;
+                Object arg = (args != null && i < args.length) ? args[i++] : null;
 
                 // Convert the argument to the required target type, if provided.
                 if (arg != null) {
                     arguments[n + 1] = convertArgument(arg, targetType);
                 }
-            }
-            else {
+            } else {
                 // Handle context-specific arguments like Request and Response.
                 if (context != null) {
                     if (targetType.isAssignableFrom(Request.class) && context.getAttribute(HTTP_REQUEST) != null) {
