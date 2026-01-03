@@ -292,19 +292,22 @@ public class Action implements org.tinystruct.application.Method<Object> {
         // Iterate over each target type.
         for (int n = 0; n < types.length; n++) {
             Class<?> targetType = types[n];
-            Object arg = (args != null && args.length > n) ? args[n] : null;
+            if (!targetType.isAssignableFrom(Request.class) && !targetType.isAssignableFrom(Response.class)) {
+                Object arg = (args != null && args.length > n) ? args[n] : null;
 
-            // Convert the argument to the required target type, if provided.
-            if (arg != null) {
-                arguments[n + 1] = convertArgument(arg, targetType);
+                // Convert the argument to the required target type, if provided.
+                if (arg != null) {
+                    arguments[n + 1] = convertArgument(arg, targetType);
+                }
             }
-
-            // Handle context-specific arguments like Request and Response.
-            if (context != null) {
-                if (targetType.isAssignableFrom(Request.class) && context.getAttribute(HTTP_REQUEST) != null) {
-                    arguments[n + 1] = context.getAttribute(HTTP_REQUEST);
-                } else if (targetType.isAssignableFrom(Response.class) && context.getAttribute(HTTP_RESPONSE) != null) {
-                    arguments[n + 1] = context.getAttribute(HTTP_RESPONSE);
+            else {
+                // Handle context-specific arguments like Request and Response.
+                if (context != null) {
+                    if (targetType.isAssignableFrom(Request.class) && context.getAttribute(HTTP_REQUEST) != null) {
+                        arguments[n + 1] = context.getAttribute(HTTP_REQUEST);
+                    } else if (targetType.isAssignableFrom(Response.class) && context.getAttribute(HTTP_RESPONSE) != null) {
+                        arguments[n + 1] = context.getAttribute(HTTP_RESPONSE);
+                    }
                 }
             }
         }
