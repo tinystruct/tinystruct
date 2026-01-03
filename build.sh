@@ -25,7 +25,7 @@ elif [ -f "$HOME/.bash_profile" ]; then
 fi
 
 # Define variables
-TARGET_JAR="./target/tinystruct-1.7.14.jar"
+TARGET_JAR="./target/tinystruct-1.7.15.jar"
 NATIVE_NAME="dispatcher-native"
 MAIN_CLASS="org.tinystruct.system.Dispatcher"
 CONFIG_DIR="./bin/.metadata"
