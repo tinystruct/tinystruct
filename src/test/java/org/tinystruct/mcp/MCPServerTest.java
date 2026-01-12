@@ -22,7 +22,7 @@ public class MCPServerApplicationTest {
         
         // Register calculator tool methods
         CalculatorTool calculator = new CalculatorTool();
-        app.registerToolMethods(calculator);
+        app.registerTool(calculator);
         
         // Register a mock tool
         app.registerTool(new MockTool());
@@ -86,7 +86,7 @@ public class MCPServerApplicationTest {
         JsonRpcResponse resp = new JsonRpcResponse();
         app.handleCallTool(req, resp);
         assertNotNull(resp.getError());
-        assertEquals(MCPSpecification.ErrorCodes.RESOURCE_NOT_FOUND, resp.getError().getCode());
+        assertEquals(MCPSpecification.ErrorCodes.METHOD_NOT_FOUND, resp.getError().getCode());
     }
 
     @Test
@@ -126,7 +126,7 @@ public class MCPServerApplicationTest {
         JsonRpcResponse resp = new JsonRpcResponse();
         app.handleCallTool(req, resp);
         assertNotNull(resp.getError());
-        assertEquals(MCPSpecification.ErrorCodes.RESOURCE_NOT_FOUND, resp.getError().getCode());
+        assertEquals(MCPSpecification.ErrorCodes.METHOD_NOT_FOUND, resp.getError().getCode());
     }
 
     // Simple mock tool for testing

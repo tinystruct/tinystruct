@@ -34,6 +34,9 @@ public class CosineSimilarity {
      * @return the cosine similarity between the two vectors, or 0.0 if one of the vectors has zero magnitude
      */
     public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
+        if (vectorA.length != vectorB.length) {
+            throw new IllegalArgumentException("Vectors must have the same dimension");
+        }
         double[] values = dotProductAndMagnitude(vectorA, vectorB);
         double dotProduct = values[0];
         double magnitudeA = values[1];

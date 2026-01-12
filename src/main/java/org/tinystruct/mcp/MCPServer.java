@@ -61,6 +61,15 @@ public class MCPServerApplication extends MCPApplication {
             toolsList.add(toolInfo);
         }
 
+        // Add registered tool classes
+        for (MCPTool tool : tools.values()) {
+            Builder toolInfo = new Builder();
+            toolInfo.put("name", tool.getName());
+            toolInfo.put("description", tool.getDescription());
+            toolInfo.put("inputSchema", tool.getSchema());
+            toolsList.add(toolInfo);
+        }
+
         result.put("tools", toolsList);
 
         response.setId(request.getId());
@@ -84,19 +93,17 @@ public class MCPServerApplication extends MCPApplication {
             if (toolMethod != null) {
                 Object result = toolMethod.execute(toolParams);
                 response.setId(request.getId());
-
-                // Create the correct MCP response format
-                Builder resultBuilder = new Builder();
-                Builders contentArray = new Builders();
-                Builder contentItem = new Builder();
-                contentItem.put("type", "text");
-                contentItem.put("text", String.valueOf(result));
-                contentArray.add(contentItem);
-                resultBuilder.put("content", contentArray);
-
-                response.setResult(resultBuilder);
+                response.setResult(formatToolResult(result));
             } else {
-                response.setError(new JsonRpcError(ErrorCodes.INTERNAL_ERROR, "Tool not exists"));
+                // Try to find the tool in the tools map
+                MCPTool tool = tools.get(toolName);
+                if (tool != null) {
+                    Object result = tool.execute(toolParams);
+                    response.setId(request.getId());
+                    response.setResult(formatToolResult(result));
+                } else {
+                    response.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND, "Tool not exists: " + toolName));
+                }
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error calling tool", e);
@@ -156,7 +163,8 @@ public class MCPServerApplication extends MCPApplication {
 
             MCPDataResource resource = resources.get(resourceName);
             if (resource == null) {
-                response.setError(new JsonRpcError(ErrorCodes.RESOURCE_NOT_FOUND, "Resource not found: " + resourceName));
+                response.setError(
+                        new JsonRpcError(ErrorCodes.RESOURCE_NOT_FOUND, "Resource not found: " + resourceName));
                 return;
             }
 
@@ -194,7 +202,7 @@ public class MCPServerApplication extends MCPApplication {
             Builder promptInfo = new Builder();
             promptInfo.put("name", prompt.getName());
             promptInfo.put("description", prompt.getDescription());
-            
+
             // Create arguments array as required by MCP Prompt schema
             Builders arguments = new Builders();
             if (prompt.getSchema() != null && prompt.getSchema().containsKey("properties")) {
@@ -204,7 +212,7 @@ public class MCPServerApplication extends MCPApplication {
                     Builder argument = new Builder();
                     argument.put("name", propName);
                     argument.put("description", property.get("description"));
-                    
+
                     // Check if this argument is required
                     boolean required = false;
                     if (prompt.getSchema().containsKey("required")) {
@@ -253,7 +261,7 @@ public class MCPServerApplication extends MCPApplication {
             // Create the correct MCP response format according to GetPromptResult
             Builder result = new Builder();
             result.put("description", prompt.getDescription());
-            
+
             // Create messages array as required by MCP specification
             Builders messages = new Builders();
             Builder message = new Builder();
@@ -263,7 +271,7 @@ public class MCPServerApplication extends MCPApplication {
             content.put("text", prompt.getTemplate());
             message.put("content", content);
             messages.add(message);
-            
+
             result.put("messages", messages);
 
             response.setId(request.getId());
@@ -277,13 +285,33 @@ public class MCPServerApplication extends MCPApplication {
     @Override
     protected String[] getFeatures() {
         // Example: server supports core, tools, resources, prompts
-        return new String[]{"core", "tools", "resources", "prompts"};
+        return new String[] { "core", "tools", "resources", "prompts" };
+    }
+
+    /**
+     * Formats the tool execution result into the MCP-compliant JSON-RPC response
+     * format.
+     *
+     * @param result The result of the tool execution
+     * @return A Builder containing the formatted result
+     */
+    private Builder formatToolResult(Object result) {
+        Builder resultBuilder = new Builder();
+        Builders contentArray = new Builders();
+        Builder contentItem = new Builder();
+        contentItem.put("type", "text");
+        contentItem.put("text", String.valueOf(result));
+        contentArray.add(contentItem);
+        resultBuilder.put("content", contentArray);
+
+        return resultBuilder;
     }
 }
 
 class SchemaGenerator {
     /**
-     * Generates a schema Builder for a tool class by inspecting @Action and @Argument annotations.
+     * Generates a schema Builder for a tool class by inspecting @Action
+     * and @Argument annotations.
      *
      * @param toolClass The tool class to inspect
      * @return The generated schema as a Builder
