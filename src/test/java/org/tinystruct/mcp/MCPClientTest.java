@@ -1,117 +1,114 @@
 package org.tinystruct.mcp;
 
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.tinystruct.mcp.tools.CalculatorTool;
-import org.tinystruct.system.Settings;
+import org.tinystruct.data.component.Builder;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
-public class MCPClientTest {
-    private MCPServerApplication serverApp;
-    private MCPClient client;
-    private static final String SERVER_URL = "http://localhost:8004";
-
-    @BeforeEach
-    public void setUp() {
-        // Set up server
-        serverApp = new MCPServerApplication();
-        serverApp.setConfiguration(new Settings());
-        serverApp.init();
-        
-        // Register calculator tool methods
-        CalculatorTool calculator = new CalculatorTool();
-        serverApp.registerToolMethods(calculator);
-        
-        // Set up client and initialize it for testing
-        client = new MCPClient(SERVER_URL, null);
-        
-        // Use reflection to set the session state for testing
-        try {
-            Field sessionStateField = MCPClient.class.getDeclaredField("sessionState");
-            sessionStateField.setAccessible(true);
-            sessionStateField.set(client, MCPSpecification.SessionState.READY);
-        } catch (Exception e) {
-            fail("Failed to set session state for testing: " + e.getMessage());
-        }
-    }
+/**
+ * Integration tests for the MCPClient using a real server.
+ * Extends BaseMCPTest to use the centralized server setup.
+ */
+public class MCPClientTest extends BaseMCPTest {
 
     @Test
-    public void testClientInitialization() {
-        // Test that the client is properly initialized
-        assertNotNull(client);
+    public void testClientConnect() throws IOException {
+        MCPClient client = new MCPClient(SERVER_URL, authToken);
+        client.connect();
         assertEquals(MCPSpecification.SessionState.READY, client.getSessionState());
+        client.disconnect();
     }
 
     @Test
-    public void testClientDisconnection() {
-        // Test that the client can be disconnected
-        try {
-            client.disconnect();
-            assertEquals(MCPSpecification.SessionState.DISCONNECTED, client.getSessionState());
-        } catch (IOException e) {
-            // Expected since there's no actual server
-            assertTrue(e.getMessage().contains("Connection failed"));
-        }
+    public void testClientDisconnection() throws IOException {
+        MCPClient client = new MCPClient(SERVER_URL, authToken);
+        client.connect();
+        client.disconnect();
+        assertEquals(MCPSpecification.SessionState.DISCONNECTED, client.getSessionState());
     }
 
     @Test
-    public void testClientStateManagement() {
-        // Test client state management
-        assertNotNull(client.getSessionState());
-        assertTrue(client.getSessionState() == MCPSpecification.SessionState.READY);
+    public void testClientStateManagement() throws IOException {
+        MCPClient client = new MCPClient(SERVER_URL, authToken);
+        assertEquals(MCPSpecification.SessionState.DISCONNECTED, client.getSessionState());
+
+        client.connect();
+        assertEquals(MCPSpecification.SessionState.READY, client.getSessionState());
+
+        client.disconnect();
+        assertEquals(MCPSpecification.SessionState.DISCONNECTED, client.getSessionState());
     }
 
     @Test
-    public void testClientConfiguration() {
-        // Test that client configuration is correct
-        assertNotNull(client);
-        // The client should be configured with the test URL
-        assertTrue(client.getSessionState() == MCPSpecification.SessionState.READY);
+    public void testListResources() throws IOException, MCPException {
+        MCPClient client = new MCPClient(SERVER_URL, authToken);
+        client.connect();
+
+        List<MCPResource> resources = client.listResources();
+        assertNotNull(resources);
+        assertTrue(resources.size() > 0, "Should have at least one resource (the calculator tool)");
+
+        client.disconnect();
     }
 
     @Test
-    public void testListResourcesAndGetResource() {
-        // Should return empty or throw since no real server
-        assertThrows(MCPException.class, () -> client.listResources());
-        assertThrows(MCPException.class, () -> client.getResource("nonexistent"));
+    public void testExecuteResource() throws IOException, MCPException {
+        MCPClient client = new MCPClient(SERVER_URL, authToken);
+        client.connect();
+
+        Builder params = new Builder();
+        params.put("operation", "add");
+        params.put("a", 10.0);
+        params.put("b", 20.0);
+
+        Object result = client.executeResource("calculator", params);
+        assertNotNull(result);
+
+        // The result should be "30.0" as per current implementation of formatToolResult
+        assertEquals("30.0", result.toString());
+
+        client.disconnect();
     }
 
     @Test
-    public void testExecuteResourceAndCallTool() {
-        // Should throw since no real server
-        assertThrows(MCPException.class, () -> client.executeResource("nonexistent", new org.tinystruct.data.component.Builder()));
-        assertThrows(IOException.class, () -> client.callTool("nonexistent", new org.tinystruct.data.component.Builder()));
+    public void testCallTool() throws IOException {
+        MCPClient client = new MCPClient(SERVER_URL, authToken);
+        client.connect();
+
+        Builder params = new Builder();
+        params.put("operation", "multiply");
+        params.put("a", 5.0);
+        params.put("b", 6.0);
+
+        Object result = client.callTool("calculator", params);
+        assertNotNull(result);
+        assertEquals("30.0", result.toString());
+
+        client.disconnect();
     }
 
     @Test
-    public void testConnectWrongState() {
-        // Set state to READY and try to connect again
-        try {
-            java.lang.reflect.Field sessionStateField = MCPClient.class.getDeclaredField("sessionState");
-            sessionStateField.setAccessible(true);
-            sessionStateField.set(client, org.tinystruct.mcp.MCPSpecification.SessionState.READY);
-            assertThrows(IllegalStateException.class, () -> client.connect());
-        } catch (Exception e) {
-            fail("Reflection failed: " + e.getMessage());
-        }
+    public void testAuthentication() {
+        // Test with invalid token
+        MCPClient client = new MCPClient(SERVER_URL, "Bearer invalid-token");
+        assertThrows(IOException.class, client::connect, "Should fail with invalid token");
     }
 
     @Test
-    public void testDisconnectWrongState() {
-        // Set state to DISCONNECTED and try to disconnect
-        try {
-            java.lang.reflect.Field sessionStateField = MCPClient.class.getDeclaredField("sessionState");
-            sessionStateField.setAccessible(true);
-            sessionStateField.set(client, org.tinystruct.mcp.MCPSpecification.SessionState.DISCONNECTED);
-            assertThrows(IllegalStateException.class, () -> client.disconnect());
-        } catch (Exception e) {
-            fail("Reflection failed: " + e.getMessage());
-        }
+    public void testResourceNotFound() throws IOException {
+        MCPClient client = new MCPClient(SERVER_URL, authToken);
+        client.connect();
+
+        MCPException exception = assertThrows(MCPException.class, () -> {
+            client.executeResource("non-existent-tool", new Builder());
+        });
+
+        assertTrue(exception.getMessage().contains("not found") || exception.getMessage().contains("404"),
+                "Error message should indicate resource not found");
+
+        client.disconnect();
     }
-} 
+}

@@ -95,7 +95,5 @@ public abstract class AbstractMCPResource implements MCPResource {
      * @return The result of the execution
      * @throws MCPException If an error occurs during execution or if local execution is not supported
      */
-    protected Object executeLocally(Builder builder) throws MCPException {
-        throw new MCPException("Local execution not supported for resource: " + name);
-    }
+    abstract protected Object executeLocally(Builder builder) throws MCPException;
 }

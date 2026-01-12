@@ -11,12 +11,12 @@ import org.tinystruct.system.Settings;
 import static org.junit.jupiter.api.Assertions.*;
 
 
-public class MCPServerApplicationTest {
-    private MCPServerApplication app;
+public class MCPServerTest {
+    private MCPServer app;
 
     @BeforeEach
     public void setUp() {
-        app = new MCPServerApplication();
+        app = new MCPServer();
         app.setConfiguration(new Settings());
         app.init();
         

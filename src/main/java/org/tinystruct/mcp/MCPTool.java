@@ -81,7 +81,7 @@ public class MCPTool extends AbstractMCPResource {
     public MCPTool(String name, String description, Builder schema, MCPClient client) {
         super(name, description, client);
         this.schema = schema;
-        this.supportsLocalExecution = true; // Default to true for test tools
+        this.supportsLocalExecution = false; // Default to false for test tools
     }
 
     /**
@@ -264,6 +264,16 @@ public class MCPTool extends AbstractMCPResource {
     @Override
     protected boolean supportsLocalExecution() {
         return supportsLocalExecution;
+    }
+
+    /**
+     * @param builder The parameters to use for execution
+     * @return
+     * @throws MCPException
+     */
+    @Override
+    protected Object executeLocally(Builder builder) throws MCPException {
+        throw new MCPException("Local execution not implemented for tool: " + name);
     }
 
     @Override

@@ -22,7 +22,7 @@ public abstract class BaseMCPTest {
     protected static final Logger LOGGER = Logger.getLogger(BaseMCPTest.class.getName());
     protected static final int SERVER_PORT = 8004;
     protected static final String SERVER_URL = "http://localhost:" + SERVER_PORT;
-    protected static MCPServerApplication serverApp;
+    protected static MCPServer serverApp;
     protected static Thread serverThread;
     protected static String authToken;
 
@@ -36,7 +36,7 @@ public abstract class BaseMCPTest {
                 settings.set("charset", "utf-8");
                 settings.set("server.port", String.valueOf(SERVER_PORT));
 
-                serverApp = new MCPServerApplication();
+                serverApp = new MCPServer();
                 ApplicationManager.install(serverApp, settings);
                 serverApp.registerTool(new CalculatorTool());
 

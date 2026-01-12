@@ -32,8 +32,8 @@ import static org.tinystruct.mcp.MCPSpecification.ErrorCodes;
  * MCP Server Application that extends the base MCPApplication
  * and adds support for tools and resources.
  */
-public class MCPServerApplication extends MCPApplication {
-    private static final Logger LOGGER = Logger.getLogger(MCPServerApplication.class.getName());
+public class MCPServer extends MCPApplication {
+    private static final Logger LOGGER = Logger.getLogger(MCPServer.class.getName());
 
     @Override
     public void init() {

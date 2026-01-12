@@ -12,9 +12,8 @@ The MCP module consists of the following core components:
 
 ### Core Classes
 1. **MCPApplication**: Abstract base class for MCP applications with JSON-RPC handling
-2. **MCPServerApplication**: Complete MCP server implementation with tool and resource management
+2. **MCPServer**: Complete MCP server implementation with tool and resource management
 3. **MCPClient**: Full-featured client for connecting to MCP servers
-4. **MCPClientApplication**: Tinystruct application for CLI-based MCP interactions
 
 ### Resource Management
 5. **MCPResource**: Unified interface for all MCP resources (tools, data sources, prompts)
@@ -38,29 +37,29 @@ The MCP module consists of the following core components:
 ### Creating an MCP Server
 
 ```java
-import org.tinystruct.mcp.MCPServerApplication;
+import org.tinystruct.mcp.MCPServer;
 import org.tinystruct.mcp.tools.CalculatorTool;
 
-public class MyMCPServer extends MCPServerApplication {
-    
+public class MyMCPServer extends MCPServer {
+
     @Override
     public void init() {
         super.init();
-        
+
         // Register tools
         CalculatorTool calculator = new CalculatorTool();
-        this.registerToolMethods(calculator);
-        
+        this.registerTool(calculator);
+
         // Register custom tools
         this.registerTool(new MyCustomTool());
-        
+
         // Register prompts
         MCPPrompt greetingPrompt = new MCPPrompt(
-            "greeting",
-            "A greeting prompt",
-            "Hello, {{name}}!",
-            createPromptSchema(),
-            null
+                "greeting",
+                "A greeting prompt",
+                "Hello, {{name}}!",
+                createPromptSchema(),
+                null
         ) {
             @Override
             protected boolean supportsLocalExecution() {
@@ -79,9 +78,35 @@ public class MyMCPServer extends MCPServerApplication {
 bin/dispatcher start --import org.tinystruct.mcp.examples.SampleMCPServerApplication
 
 # Or programmatically
-MCPServerApplication server = new MCPServerApplication();
+MCPServer server = new MyMCPServer();
 ApplicationManager.install(server, settings);
-ApplicationManager.call("mcp-server/start", context);
+
+Context serverContext = new ApplicationContext();
+serverContext.setAttribute("--server-port", "8004");
+ApplicationManager.install(new Dispatcher());
+ApplicationManager.install(new HttpServer());
+ApplicationManager.call("start", serverContext, Action.Mode.CLI);
+```
+
+### Using the MCP CLI Client
+
+The module provides a CLI application for interacting with MCP servers:
+
+```bash
+# Connect to a server
+bin/dispatcher mcp/connect --url http://localhost:8004 [--token auth-token]
+
+# List available tools
+bin/dispatcher mcp/list/tools
+
+# Call a tool
+bin/dispatcher mcp/call --name calculator/add --arguments "a:10,b:20"
+
+# List available resources
+bin/dispatcher mcp/list
+
+# Disconnect
+bin/dispatcher mcp/disconnect
 ```
 
 ### Supported MCP Methods
@@ -99,36 +124,6 @@ The server implements the following MCP methods:
 - **get-status**: Get server status
 - **shutdown**: Gracefully shutdown the server
 
-## MCP Client Implementation
-
-### Command Line Interface
-
-The MCP module provides a comprehensive CLI through `MCPClientApplication`:
-
-```bash
-# Show help information
-bin/dispatcher mcp --help
-
-# Connect to an MCP server
-bin/dispatcher mcp/connect --url http://localhost:8080 --token your-auth-token
-
-# List all available resources
-bin/dispatcher mcp/list
-
-# List resources of a specific type
-bin/dispatcher mcp/list/TOOL
-bin/dispatcher mcp/list/DATA
-bin/dispatcher mcp/list/PROMPT
-
-# Execute a tool
-bin/dispatcher mcp/execute --name calculator/add --params "a:10,b:5"
-
-# Get information about a resource
-bin/dispatcher mcp/info/calculator
-
-# Disconnect from the MCP server
-bin/dispatcher mcp/disconnect
-```
 
 ### Programmatic Usage
 
@@ -160,29 +155,6 @@ try {
 } finally {
     client.disconnect();
 }
-```
-
-### Using with ApplicationManager
-
-```java
-import org.tinystruct.ApplicationException;
-import org.tinystruct.system.ApplicationManager;
-import org.tinystruct.system.Settings;
-
-// Register the MCPClientApplication
-Settings settings = new Settings();
-ApplicationManager.install("org.tinystruct.mcp.MCPClientApplication", settings);
-
-// Connect to an MCP server
-ApplicationManager.call("mcp/connect", new Object[] {"http://localhost:8080", "your-auth-token"});
-
-// List available resources
-String resources = (String) ApplicationManager.call("mcp/list", null);
-System.out.println(resources);
-
-// Execute a resource
-String result = (String) ApplicationManager.call("mcp/execute", new Object[] {"calculator/add", "a:10,b:5"});
-System.out.println(result);
 ```
 
 ## Creating Custom Tools
@@ -295,9 +267,8 @@ public class CustomPrompt extends MCPPrompt {
     
     @Override
     protected Object executeLocally(Builder builder) throws MCPException {
-        String name = builder.get("name").toString();
-        String score = builder.get("score").toString();
-        return template.replace("{{name}}", name).replace("{{score}}", score);
+        // Use the default implementation which handles placeholder substitution
+        return super.executeLocally(builder);
     }
 }
 ```
@@ -373,32 +344,75 @@ try {
 - **resources**: Resource subscription and list change notifications
 - **tools**: Tool discovery with list change notifications
 
+## Key Updates (2026)
+
+### Resource Management
+- MCPApplication and MCPServer now support `registerTool`, `registerResource`, and `registerPrompt` methods for resource management.
+- Example:
+```java
+// Register tools/resources/prompts
+this.registerTool(tool);
+this.registerResource(resource);
+this.registerPrompt(prompt);
+```
+
+### JSON-RPC Error Response Handling
+- Error responses include a unique request ID and standard error codes.
+- Example:
+```java
+String response = handler.createErrorResponse("Error message", -32600);
+```
+
+### Batch Request Support
+- JsonRpcHandler supports batch JSON-RPC requests and returns batch responses.
+- Example:
+```java
+String batchResponse = handler.handleBatchRequest(batchJson, methodHandler);
+```
+
+### MCPPushManager Clarification
+- MCPPushManager is a thin wrapper for SSEPushManager, providing an MCP-specific entry point for server-sent events.
+- Use `MCPPushManager.getInstance()` for real-time updates.
+
+### Protocol Handler Registration
+- Custom JSON-RPC methods can be registered via `registerRpcHandler`.
+- Example:
+```java
+this.registerRpcHandler("custom/method", (req, res, app) -> {
+    res.setResult("Custom result");
+});
+```
+
+### Usage Example Updates
+- All resource, tool, and prompt management examples updated to use new lifecycle methods.
+- Error handling and batch request examples added.
+
 ## Examples
 
 ### Complete Server Example
 
 ```java
-import org.tinystruct.mcp.MCPServerApplication;
+import org.tinystruct.mcp.MCPServer;
 import org.tinystruct.mcp.tools.CalculatorTool;
 
-public class CompleteMCPServer extends MCPServerApplication {
-    
+public class CompleteMCPServer extends MCPServer {
+
     @Override
     public void init() {
         super.init();
-        
+
         // Register calculator tool
         CalculatorTool calculator = new CalculatorTool();
-        this.registerToolMethods(calculator);
-        
+        this.registerTool(calculator);
+
         // Register custom tools
         this.registerTool(new FileProcessorTool());
         this.registerTool(new DataAnalysisTool());
-        
+
         // Register prompts
         this.registerPrompt(new GreetingPrompt());
         this.registerPrompt(new ReportPrompt());
-        
+
         // Register data resources
         this.registerResource(new DatabaseResource());
         this.registerResource(new FileSystemResource());

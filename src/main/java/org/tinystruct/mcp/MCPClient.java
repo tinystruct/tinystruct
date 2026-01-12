@@ -19,14 +19,14 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.data.component.Builders;
 
-import java.io.BufferedReader;
+import org.tinystruct.net.URLRequest;
+import org.tinystruct.net.URLResponse;
+import org.tinystruct.net.handlers.HTTPHandler;
+
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,17 +40,21 @@ import static org.tinystruct.mcp.MCPSpecification.*;
 
 /**
  * Client implementation for the Model Context Protocol (MCP).
- * Provides a unified interface for interacting with MCP servers, treating tools as resources.
+ * Provides a unified interface for interacting with MCP servers, treating tools
+ * as resources.
  * <p>
- * This client provides a Java interface for interacting with MCP servers. It handles
+ * This client provides a Java interface for interacting with MCP servers. It
+ * handles
  * connection management, resource discovery, and resource execution.
  * </p>
  * <p>
- * The client uses a unified resource model where tools, data sources, and templates
+ * The client uses a unified resource model where tools, data sources, and
+ * templates
  * are all treated as resources that can be discovered and executed.
  * </p>
  * <p>
  * Usage example:
+ * 
  * <pre>
  * MCPClient client = new MCPClient("http://localhost:8080", "auth-token");
  * client.connect();
@@ -68,26 +72,30 @@ import static org.tinystruct.mcp.MCPSpecification.*;
  * </p>
  */
 public class MCPClient {
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // Constants and Fields
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     private static final Logger LOGGER = Logger.getLogger(MCPClient.class.getName());
     private final String baseUrl;
     private final String authToken;
     private String clientId;
+    private String sessionId;
     private SessionState sessionState = SessionState.DISCONNECTED;
 
     // Cache for discovered resources
     private final Map<String, MCPResource> resourceCache = new ConcurrentHashMap<>();
 
     /**
-     * Constructs a new MCPClient with the specified base URL and authentication token.
+     * Constructs a new MCPClient with the specified base URL and authentication
+     * token.
      * <p>
-     * The base URL should point to the root of the MCP server, e.g., "http://localhost:8080".
-     * The authentication token is optional and may be null if the server does not require authentication.
+     * The base URL should point to the root of the MCP server, e.g.,
+     * "http://localhost:8080".
+     * The authentication token is optional and may be null if the server does not
+     * require authentication.
      * </p>
      *
-     * @param baseUrl The base URL of the MCP server (must not be null)
+     * @param baseUrl   The base URL of the MCP server (must not be null)
      * @param authToken The authentication token (may be null)
      * @throws IllegalArgumentException If baseUrl is null
      */
@@ -105,18 +113,19 @@ public class MCPClient {
      * <p>
      * This method performs the following steps:
      * <ol>
-     *   <li>Initializes the connection with the server</li>
-     *   <li>Gets the server capabilities</li>
-     *   <li>Starts the event stream for server-sent events</li>
-     *   <li>Discovers available resources (tools, data resources, prompts)</li>
+     * <li>Initializes the connection with the server</li>
+     * <li>Gets the server capabilities</li>
+     * <li>Starts the event stream for server-sent events</li>
+     * <li>Discovers available resources (tools, data resources, prompts)</li>
      * </ol>
      * </p>
      * <p>
-     * After a successful connection, the client is in the READY state and can be used
+     * After a successful connection, the client is in the READY state and can be
+     * used
      * to execute resources.
      * </p>
      *
-     * @throws IOException If an error occurs during connection
+     * @throws IOException           If an error occurs during connection
      * @throws IllegalStateException If the client is already connected
      */
     public void connect() throws IOException {
@@ -171,7 +180,7 @@ public class MCPClient {
      * If the client is not in the READY state, an IllegalStateException is thrown.
      * </p>
      *
-     * @throws IOException If an error occurs during disconnection
+     * @throws IOException           If an error occurs during disconnection
      * @throws IllegalStateException If the client is not in the READY state
      */
     public void disconnect() throws IOException {
@@ -270,7 +279,6 @@ public class MCPClient {
                 String name = (String) resourceData.get("name");
                 String description = (String) resourceData.get("description");
                 String uri = (String) resourceData.get("uri");
-                String mimeType = (String) resourceData.get("mimeType");
 
                 MCPDataResource resource = new MCPDataResource(name, description, uri, this);
                 resourceCache.put(name, resource);
@@ -308,22 +316,22 @@ public class MCPClient {
                 if (arguments != null && !arguments.isEmpty()) {
                     Builder properties = new Builder();
                     List<String> required = new ArrayList<>();
-                    
+
                     for (Builder argument : arguments) {
                         String argName = (String) argument.get("name");
                         String argDescription = (String) argument.get("description");
                         Boolean isRequired = (Boolean) argument.get("required");
-                        
+
                         Builder property = new Builder();
                         property.put("type", "string"); // Default type
                         property.put("description", argDescription);
                         properties.put(argName, property);
-                        
+
                         if (isRequired != null && isRequired) {
                             required.add(argName);
                         }
                     }
-                    
+
                     promptSchema.put("type", "object");
                     promptSchema.put("properties", properties);
                     if (!required.isEmpty()) {
@@ -349,13 +357,16 @@ public class MCPClient {
 
     private JsonRpcResponse sendRequest(String method, Builder params) throws IOException {
         URL url = URI.create(baseUrl + "?q=" + Endpoints.SSE).toURL();
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("POST");  // Changed to POST for JSON-RPC
-        conn.setRequestProperty("Content-Type", Http.CONTENT_TYPE_JSON);
-        conn.setDoOutput(true);
+        URLRequest urlRequest = new URLRequest(url);
+        urlRequest.setMethod("POST")
+                .setHeader("Content-Type", Http.CONTENT_TYPE_JSON);
 
         if (authToken != null) {
-            conn.setRequestProperty(Http.AUTH_HEADER, authToken);
+            urlRequest.setHeader(Http.AUTH_HEADER, authToken);
+        }
+
+        if (sessionId != null) {
+            urlRequest.setHeader(Http.SESSION_ID, sessionId);
         }
 
         // Create JSON-RPC request
@@ -374,78 +385,78 @@ public class MCPClient {
         // Log the full request
         String requestString = request.toString();
         LOGGER.info("Full JSON-RPC request: " + requestString);
-
-        // Send request
-        try (OutputStream os = conn.getOutputStream()) {
-            os.write(requestString.getBytes(StandardCharsets.UTF_8));
-        }
+        urlRequest.setBody(requestString);
 
         try {
-            int responseCode = conn.getResponseCode();
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                throw new IOException("Request failed with response code: " + responseCode);
+            HTTPHandler handler = new HTTPHandler();
+            URLResponse urlResponse = handler.handleRequest(urlRequest);
+
+            // Capture session ID if provided by the server
+            List<String> headerSessionIdValues = urlResponse.getHeaders().get(Http.SESSION_ID);
+            if (headerSessionIdValues != null && !headerSessionIdValues.isEmpty()) {
+                this.sessionId = headerSessionIdValues.get(0);
             }
 
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = in.readLine()) != null) {
-                    response.append(line);
-                }
-
-                String responseString = response.toString();
-                LOGGER.info("Raw server response: " + responseString);
-
-                JsonRpcResponse jsonRpcResponse = new JsonRpcResponse();
-                try {
-                    jsonRpcResponse.parse(responseString);
-                } catch (ApplicationException e) {
-                    LOGGER.severe("Error parsing response: " + responseString + ", error: " + e.getMessage());
-                    throw new IOException("Error parsing response: " + e.getMessage(), e);
-                }
-
-                if (jsonRpcResponse.hasError()) {
-                    LOGGER.warning("Server returned error: " + jsonRpcResponse.getError().getMessage() +
-                                  " (code: " + jsonRpcResponse.getError().getCode() + ")");
-                } else {
-                    LOGGER.info("Server returned result: " + jsonRpcResponse.getResult());
-                }
-
-                return jsonRpcResponse;
+            if (urlResponse.getStatusCode() != HttpURLConnection.HTTP_OK) {
+                throw new IOException("Request failed with response code: " + urlResponse.getStatusCode());
             }
-        } catch (Exception e) {
-            if (e instanceof IOException) {
-                throw (IOException) e;
+
+            String responseString = urlResponse.getBody();
+            LOGGER.info("Raw server response: " + responseString);
+
+            JsonRpcResponse jsonRpcResponse = new JsonRpcResponse();
+            try {
+                jsonRpcResponse.parse(responseString);
+            } catch (ApplicationException e) {
+                LOGGER.severe("Error parsing response: " + responseString + ", error: " + e.getMessage());
+                throw new IOException("Error parsing response: " + e.getMessage(), e);
+            }
+
+            if (jsonRpcResponse.hasError()) {
+                LOGGER.warning("Server returned error: " + jsonRpcResponse.getError().getMessage() +
+                        " (code: " + jsonRpcResponse.getError().getCode() + ")");
             } else {
-                throw new IOException("Failed to process response", e);
+                LOGGER.info("Server returned result: " + jsonRpcResponse.getResult());
             }
-        } finally {
-            conn.disconnect();
+
+            return jsonRpcResponse;
+        } catch (ApplicationException e) {
+            throw new IOException("Request failed: " + e.getMessage(), e);
         }
     }
 
     private void startEventStream() {
         Thread eventThread = new Thread(() -> {
             try {
-                URL url = URI.create(baseUrl + "?q=" + Endpoints.EVENTS + "&" + Http.TOKEN_PARAM + "=" + authToken).toURL();
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", Http.CONTENT_TYPE_SSE);
+                URL url = URI.create(baseUrl + "?q=" + Endpoints.SSE).toURL();
+                URLRequest urlRequest = new URLRequest(url);
+                urlRequest.setMethod("GET")
+                        .setHeader("Accept", Http.CONTENT_TYPE_SSE);
 
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null && sessionState == SessionState.READY) {
+                if (authToken != null) {
+                    urlRequest.setHeader(Http.AUTH_HEADER, authToken);
+                }
+
+                HTTPHandler handler = new HTTPHandler();
+                handler.handleRequest(urlRequest, new java.util.function.Consumer<String>() {
+                    String lastEvent = null;
+
+                    @Override
+                    public void accept(String line) {
+                        if (sessionState != SessionState.READY)
+                            return;
+
+                        line = line.trim();
                         if (line.startsWith("event: ")) {
-                            String event = line.substring(7);
-                            String data = reader.readLine();
-                            if (data != null && data.startsWith("data: ")) {
-                                data = data.substring(6);
-                                handleEvent(event, data);
-                            }
+                            lastEvent = line.substring(7);
+                        } else if (line.startsWith("data: ") && lastEvent != null) {
+                            String data = line.substring(6);
+                            handleEvent(lastEvent, data);
+                            lastEvent = null;
                         }
                     }
-                }
-            } catch (IOException e) {
+                });
+            } catch (Exception e) {
                 LOGGER.log(Level.SEVERE, "Error in SSE connection", e);
                 sessionState = SessionState.ERROR;
             }
@@ -552,7 +563,7 @@ public class MCPClient {
             case ErrorCodes.UNAUTHORIZED:
                 throw new SecurityException("Unauthorized: " + error.getMessage());
             case ErrorCodes.NOT_INITIALIZED:
-                synchronized(this) {
+                synchronized (this) {
                     sessionState = SessionState.DISCONNECTED;
                 }
                 throw new IllegalStateException(error.getMessage());
@@ -612,7 +623,7 @@ public class MCPClient {
     /**
      * Executes a resource with the given parameters.
      *
-     * @param name The name of the resource
+     * @param name       The name of the resource
      * @param parameters The parameters to use for execution
      * @return The result of the execution
      * @throws MCPException If an error occurs
@@ -633,7 +644,7 @@ public class MCPClient {
     /**
      * Calls a tool with the given parameters.
      *
-     * @param name The name of the tool
+     * @param name       The name of the tool
      * @param parameters The parameters to use for execution
      * @return The result of the tool execution
      * @throws IOException If an error occurs
@@ -665,7 +676,7 @@ public class MCPClient {
                     }
                 }
             }
-            
+
             return result;
         } catch (Exception e) {
             throw new IOException("Tool execution failed", e);
@@ -703,7 +714,7 @@ public class MCPClient {
                     }
                 }
             }
-            
+
             return result;
         } catch (Exception e) {
             throw new IOException("Resource read failed", e);

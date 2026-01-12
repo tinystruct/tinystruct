@@ -2,14 +2,14 @@ package org.tinystruct.mcp.examples;
 
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.mcp.MCPPrompt;
-import org.tinystruct.mcp.MCPServerApplication;
+import org.tinystruct.mcp.MCPServer;
 import org.tinystruct.mcp.tools.CalculatorTool;
 
 /**
  * Sample MCP Server Application that demonstrates how to use MCPServerApplication
  * with sample tools and prompts using the new tool method registration system.
  */
-public class SampleMCPServerApplication extends MCPServerApplication {
+public class SampleMCPServerApplication extends MCPServer {
 
     @Override
     public void init() {
@@ -17,7 +17,7 @@ public class SampleMCPServerApplication extends MCPServerApplication {
         
         // Register calculator tool methods as individual tools
         CalculatorTool calculator = new CalculatorTool();
-        this.registerToolMethods(calculator);
+        this.registerTool(calculator);
 
         // Register a sample prompt
         Builder promptSchema = new Builder();

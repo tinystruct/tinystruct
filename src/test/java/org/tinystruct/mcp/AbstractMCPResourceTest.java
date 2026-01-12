@@ -11,7 +11,19 @@ public class AbstractMCPResourceTest {
         @Override
         public MCPResource.ResourceType getType() { return MCPResource.ResourceType.DATA; }
         @Override
-        public Object execute(org.tinystruct.data.component.Builder builder) { return null; }
+        public Object execute(org.tinystruct.data.component.Builder builder) throws MCPException {
+            throw new MCPException("Not implemented");
+        }
+
+        /**
+         * @param builder The parameters to use for execution
+         * @return
+         * @throws MCPException
+         */
+        @Override
+        protected Object executeLocally(Builder builder) throws MCPException {
+            throw new MCPException("Local execution not supported");
+        }
     }
 
     @Test

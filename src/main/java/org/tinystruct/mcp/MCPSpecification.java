@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.tinystruct.mcp;
 
+import org.tinystruct.http.Header;
+
 /**
  * Model Context Protocol (MCP) Specification
  * <p>
@@ -30,14 +32,14 @@ package org.tinystruct.mcp;
  * <p>
  * This specification includes:
  * <ul>
- *   <li>Protocol constants (version, ID)</li>
- *   <li>Feature identifiers</li>
- *   <li>Method names</li>
- *   <li>Event types</li>
- *   <li>HTTP constants</li>
- *   <li>Error codes</li>
- *   <li>Session state enum</li>
- *   <li>JSON-RPC constants</li>
+ * <li>Protocol constants (version, ID)</li>
+ * <li>Feature identifiers</li>
+ * <li>Method names</li>
+ * <li>Event types</li>
+ * <li>HTTP constants</li>
+ * <li>Error codes</li>
+ * <li>Session state enum</li>
+ * <li>JSON-RPC constants</li>
  * </ul>
  * </p>
  */
@@ -47,9 +49,9 @@ public final class MCPSpecification {
         throw new AssertionError("MCPSpecification is a utility class and should not be instantiated");
     }
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // Protocol Constants
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * Protocol version - Updated to match current MCP specification
@@ -71,9 +73,9 @@ public final class MCPSpecification {
         ERROR
     }
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // Feature Identifiers
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * Standard feature identifiers for MCP capabilities.
@@ -125,15 +127,16 @@ public final class MCPSpecification {
          * </p>
          */
         public static final String[] CORE_FEATURES = {
-            BASE, LIFECYCLE, RESOURCES, TOOLS, PROMPTS, SSE, JSON_RPC
+                BASE, LIFECYCLE, RESOURCES, TOOLS, PROMPTS, SSE, JSON_RPC
         };
 
-        private Features() {} // Prevent instantiation
+        private Features() {
+        } // Prevent instantiation
     }
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // Method Names
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * Standard method names for MCP JSON-RPC requests.
@@ -249,12 +252,13 @@ public final class MCPSpecification {
          */
         public static final String CANCELLED_NOTIFICATION = "notifications/cancelled";
 
-        private Methods() {} // Prevent instantiation
+        private Methods() {
+        } // Prevent instantiation
     }
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // Error Codes
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * Standard error codes for MCP error responses.
@@ -277,12 +281,13 @@ public final class MCPSpecification {
         public static final int FEATURE_NOT_SUPPORTED = -32004;
         public static final int RESOURCE_NOT_FOUND = -32005;
 
-        private ErrorCodes() {} // Prevent instantiation
+        private ErrorCodes() {
+        } // Prevent instantiation
     }
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // Event Types
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * Server-Sent Events (SSE) event types.
@@ -361,28 +366,30 @@ public final class MCPSpecification {
          */
         public static final String PROMPTS_CHANGED = "prompts_changed";
 
-        private Events() {} // Prevent instantiation
+        private Events() {
+        } // Prevent instantiation
     }
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // HTTP Constants
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * HTTP header and parameter constants for MCP communication.
      */
     public static final class Http {
-        public static final String AUTH_HEADER = "Authorization";
-        public static final String CONTENT_TYPE_JSON = "application/json";
+        public static final String AUTH_HEADER = Header.AUTHORIZATION.name();
+        public static final String CONTENT_TYPE_JSON = Header.StandardValue.APPLICATION_JSON.name();
         public static final String CONTENT_TYPE_SSE = "text/event-stream";
-        public static final String TOKEN_PARAM = "token";
+        public static final String SESSION_ID = "Mcp-session-id";
 
-        private Http() {} // Prevent instantiation
+        private Http() {
+        } // Prevent instantiation
     }
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // Configuration Properties
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * Configuration property keys for MCP applications.
@@ -393,12 +400,13 @@ public final class MCPSpecification {
         public static final String SERVER_HOST = "mcp.server.host";
         public static final String SESSION_TIMEOUT = "mcp.session.timeout";
 
-        private Config() {} // Prevent instantiation
+        private Config() {
+        } // Prevent instantiation
     }
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // Endpoint Paths
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * Endpoint paths for MCP server API.
@@ -416,12 +424,13 @@ public final class MCPSpecification {
         public static final String PING = "ping";
         public static final String INITIALIZED = "initialized";
 
-        private Endpoints() {} // Prevent instantiation
+        private Endpoints() {
+        } // Prevent instantiation
     }
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // JSON-RPC Constants
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * JSON-RPC related constants for MCP communication.
@@ -438,12 +447,13 @@ public final class MCPSpecification {
         public static final String ERROR_MESSAGE_FIELD = "message";
         public static final String ERROR_DATA_FIELD = "data";
 
-        private JsonRpc() {} // Prevent instantiation
+        private JsonRpc() {
+        } // Prevent instantiation
     }
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // Utility Methods
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * Validates if a feature is a standard MCP feature.

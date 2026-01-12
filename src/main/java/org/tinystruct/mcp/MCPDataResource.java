@@ -119,4 +119,14 @@ public class MCPDataResource extends AbstractMCPResource {
 
         return result;
     }
+
+    /**
+     * @param builder The parameters to use for execution
+     * @return
+     * @throws MCPException
+     */
+    @Override
+    protected Object executeLocally(Builder builder) throws MCPException {
+        throw new MCPException("Local execution not implemented for data resource: " + name);
+    }
 }

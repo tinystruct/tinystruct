@@ -29,8 +29,9 @@ public abstract class MCPApplication extends AbstractApplication {
     protected JsonRpcHandler jsonRpcHandler;
     protected AuthorizationHandler authHandler;
 
-    protected SessionState sessionState = SessionState.DISCONNECTED;
+    protected final Map<String, SessionState> sessionStates = new ConcurrentHashMap<>();
     protected final Map<String, Object> sessionMap = new ConcurrentHashMap<>(); // sessionId -> user info or state
+    private static final ThreadLocal<String> currentSessionId = new ThreadLocal<>();
 
     // Generic registries for tools, resources, prompts, and custom RPC handlers
     protected final Map<String, MCPTool> tools = new java.util.concurrent.ConcurrentHashMap<>();
@@ -40,8 +41,10 @@ public abstract class MCPApplication extends AbstractApplication {
     protected static final Map<String, MCPTool.MCPToolMethod> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
-     * Initializes the MCP application, setting up authentication, SSE, JSON-RPC handler,
-     * and registering core protocol handlers. Subclasses should call super.init() and
+     * Initializes the MCP application, setting up authentication, SSE, JSON-RPC
+     * handler,
+     * and registering core protocol handlers. Subclasses should call super.init()
+     * and
      * may register additional handlers for custom protocol extensions.
      */
     @Override
@@ -68,8 +71,8 @@ public abstract class MCPApplication extends AbstractApplication {
         this.registerRpcHandler(Methods.SHUTDOWN, (req, res, app) -> app.handleShutdown(req, res));
         this.registerRpcHandler(Methods.GET_STATUS, (req, res, app) -> app.handleGetStatus(req, res));
         this.registerRpcHandler(Methods.INITIALIZED_NOTIFICATION, (req, res, app) -> {
-            if (app.sessionState == SessionState.INITIALIZING) {
-                app.sessionState = SessionState.READY;
+            if (app.getSessionState() == SessionState.INITIALIZING) {
+                app.setSessionState(SessionState.READY);
                 res.setResult(null);
             } else {
                 res.setError(new JsonRpcError(ErrorCodes.INVALID_REQUEST, "Not in initializing state"));
@@ -81,9 +84,9 @@ public abstract class MCPApplication extends AbstractApplication {
             if (params != null) {
                 String requestId = params.get("requestId") != null ? params.get("requestId").toString() : "unknown";
                 String reason = params.get("reason") != null ? params.get("reason").toString() : "No reason provided";
-                
+
                 LOGGER.info("Received cancellation notification for request ID: " + requestId + ", reason: " + reason);
-                
+
                 // According to MCP spec, cancellation notifications should not send a response
                 // They are "fire and forget" notifications
                 res.setResult(null);
@@ -110,6 +113,14 @@ public abstract class MCPApplication extends AbstractApplication {
             // Validate authentication
             authHandler.validateAuthHeader(request);
 
+            // Session management: extract or assign sessionId
+            String sessionId = (String) request.headers().get(Header.value0f(Http.SESSION_ID));
+            if (sessionId == null || sessionId.isEmpty()) {
+                sessionId = request.getSession().getId();
+            }
+            response.addHeader(Http.SESSION_ID, sessionId);
+            currentSessionId.set(sessionId);
+
             // Parse the JSON-RPC request
             String requestBody = request.body();
             assert requestBody != null;
@@ -120,14 +131,8 @@ public abstract class MCPApplication extends AbstractApplication {
             }
 
             if (requestBody.contains("\"method\":\"initialize\"")) {
-                // Session management: extract or assign sessionId
-                String sessionId = (String) request.headers().get(Header.value0f("Mcp-Session-Id"));
-                if (sessionId == null || sessionId.isEmpty()) {
-                    sessionId = request.getSession().getId();
-                }
-                response.addHeader("Mcp-Session-Id", sessionId);
-                sessionMap.put(sessionId, System.currentTimeMillis()); // Store session state as needed
-                sessionState = SessionState.INITIALIZING; // Set initial state
+                sessionMap.put(sessionId, System.currentTimeMillis()); // Store session start time
+                setSessionState(SessionState.INITIALIZING); // Set initial state
             }
             // Add batch request support
             else if (requestBody.trim().startsWith("[")) {
@@ -136,7 +141,8 @@ public abstract class MCPApplication extends AbstractApplication {
                     if (handler != null) {
                         handler.handle(rpcReq, rpcRes, this);
                     } else {
-                        rpcRes.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND, "Method not found: " + rpcReq.getMethod()));
+                        rpcRes.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND,
+                                "Method not found: " + rpcReq.getMethod()));
                     }
                 });
             }
@@ -160,7 +166,10 @@ public abstract class MCPApplication extends AbstractApplication {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "RPC request failed", e);
             response.setStatus(ResponseStatus.INTERNAL_SERVER_ERROR);
-            return jsonRpcHandler.createErrorResponse("Internal server error: " + e.getMessage(), ErrorCodes.INTERNAL_ERROR);
+            return jsonRpcHandler.createErrorResponse("Internal server error: " + e.getMessage(),
+                    ErrorCodes.INTERNAL_ERROR);
+        } finally {
+            currentSessionId.remove();
         }
     }
 
@@ -173,7 +182,7 @@ public abstract class MCPApplication extends AbstractApplication {
      */
     protected void handleInitialize(JsonRpcRequest request, JsonRpcResponse response) {
         // Set protocolVersion as required
-        String protocolVersion = "2024-11-05";
+        String protocolVersion = PROTOCOL_VERSION;
 
         // Build capabilities object as required by MCP
         Builder capabilities = new Builder();
@@ -195,8 +204,8 @@ public abstract class MCPApplication extends AbstractApplication {
 
         // Build serverInfo with name, title, and version
         Builder serverInfo = new Builder()
-                .put("name", "TinyStructMCP")
-                .put("title", "TinyStruct MCP Server")
+                .put("name", "tinystruct-mcp")
+                .put("title", "tinystruct MCP Server")
                 .put("version", version());
 
         // Build result object
@@ -204,12 +213,12 @@ public abstract class MCPApplication extends AbstractApplication {
                 .put("protocolVersion", protocolVersion)
                 .put("capabilities", capabilities)
                 .put("serverInfo", serverInfo)
-                .put("instructions", "Welcome to TinyStruct MCP.");
+                .put("instructions", "Welcome to tinystruct MCP.");
 
         response.setId(request.getId());
         response.setResult(result);
         // Set session state to READY
-        sessionState = SessionState.READY;
+        setSessionState(SessionState.READY);
     }
 
     /**
@@ -242,12 +251,12 @@ public abstract class MCPApplication extends AbstractApplication {
      * @param response The JSON-RPC response to populate
      */
     protected void handleShutdown(JsonRpcRequest request, JsonRpcResponse response) {
-        if (sessionState != SessionState.READY) {
+        if (getSessionState() != SessionState.READY) {
             response.setError(new JsonRpcError(ErrorCodes.NOT_INITIALIZED, "Not in ready state"));
             return;
         }
 
-        sessionState = SessionState.DISCONNECTED;
+        setSessionState(SessionState.DISCONNECTED);
 
         response.setId(request.getId());
         response.setResult(new Builder().put("status", "shutdown_complete"));
@@ -280,7 +289,7 @@ public abstract class MCPApplication extends AbstractApplication {
             response.setError(new JsonRpcError(ErrorCodes.INTERNAL_ERROR, "Session start time invalid"));
             return;
         }
-        result.put("state", sessionState.toString());
+        result.put("state", getSessionState().toString());
         result.put("sessionId", sessionId);
         result.put("uptime", System.currentTimeMillis() - sessionStart);
         response.setId(request.getId());
@@ -314,26 +323,16 @@ public abstract class MCPApplication extends AbstractApplication {
      * @param tool The tool to register
      */
     public void registerTool(MCPTool tool) {
-        Builder builder = SchemaGenerator.generateSchema(tool.getClass());
+        Class<? extends MCPTool> toolClass = tool.getClass();
+        Builder builder = SchemaGenerator.generateSchema(toolClass);
         tool.setSchema(builder);
         tools.put(tool.getName(), tool);
         LOGGER.info("Registered tool: " + tool.getName());
-    }
-
-    /**
-     * Registers a tool class and extracts all its methods as individual tools.
-     * This method scans the tool class for methods annotated with @Action and
-     * registers each method as a separate tool method.
-     *
-     * @param toolInstance The tool instance to register
-     */
-    public void registerToolMethods(Object toolInstance) {
-        Class<?> toolClass = toolInstance.getClass();
 
         for (Method method : toolClass.getDeclaredMethods()) {
             Action action = method.getAnnotation(Action.class);
             if (action != null) {
-                MCPTool.MCPToolMethod toolMethod = new MCPTool.MCPToolMethod(method, action, toolInstance);
+                MCPTool.MCPToolMethod toolMethod = new MCPTool.MCPToolMethod(method, action, tool);
                 toolMethods.put(toolMethod.getName(), toolMethod);
                 LOGGER.info("Registered tool method: " + toolMethod.getName());
             }
@@ -427,4 +426,28 @@ public abstract class MCPApplication extends AbstractApplication {
      */
     abstract void handleGetPrompt(JsonRpcRequest request, JsonRpcResponse response);
 
+    /**
+     * Gets the current session state based on the current session ID.
+     *
+     * @return The current state
+     */
+    protected SessionState getSessionState() {
+        String sessionId = currentSessionId.get();
+        if (sessionId != null) {
+            return sessionStates.getOrDefault(sessionId, SessionState.DISCONNECTED);
+        }
+        return SessionState.DISCONNECTED;
+    }
+
+    /**
+     * Sets the session state for the current session.
+     *
+     * @param state The new state
+     */
+    protected void setSessionState(SessionState state) {
+        String sessionId = currentSessionId.get();
+        if (sessionId != null) {
+            sessionStates.put(sessionId, state);
+        }
+    }
 }
