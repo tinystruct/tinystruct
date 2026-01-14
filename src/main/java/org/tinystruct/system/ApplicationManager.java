@@ -245,7 +245,7 @@ public final class ApplicationManager {
                     "No matching function found for path [" + path + "]. Ensure the path is correct and the function is public.", 404);
         }
 
-        if (action.getMode().ordinal() < mode.ordinal()) {
+        if (action.getMode() != Mode.DEFAULT && action.getMode() != mode) {
             throw new ApplicationException("The action is not allowed to be executed.", 400);
         }
 
