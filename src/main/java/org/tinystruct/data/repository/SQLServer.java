@@ -42,7 +42,7 @@ public class SQLServer extends AbstractDataRepository {
         FieldInfo currentField;
 
         for (Enumeration<String> _field = ready_fields.keys(); _field
-                .hasMoreElements(); ) {
+                .hasMoreElements();) {
             currentProperty = _field.nextElement();
             currentField = ready_fields.get(currentProperty);
 
@@ -55,7 +55,8 @@ public class SQLServer extends AbstractDataRepository {
                     || currentField.getType() == FieldType.BIT
                     || currentField.getType() == FieldType.DATE
                     || currentField.getType() == FieldType.DATETIME) {
-                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type")).append(dot);
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type"))
+                        .append(dot);
 
                 if (currentField.getType() == FieldType.TEXT) {
                     values.append("'").append(currentField.stringValue().replaceAll("'", "''")).append("'").append(dot);
@@ -74,7 +75,8 @@ public class SQLServer extends AbstractDataRepository {
                 } else
                     values.append(currentField.value()).append(dot);
             } else {
-                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type")).append("(").append(currentField.getLength()).append(")").append(dot);
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type"))
+                        .append("(").append(currentField.getLength()).append(")").append(dot);
                 values.append("'").append(currentField.stringValue().replaceAll("'", "''")).append("'").append(dot);
             }
 
@@ -104,6 +106,10 @@ public class SQLServer extends AbstractDataRepository {
 
     /**
      * Append a new record to the database and return the generated ID.
+     * <p>
+     * If a field's "generate" property is set to true, its value will be used as
+     * the returned ID.
+     * </p>
      *
      * @param ready_fields the fields ready for insertion.
      * @param table        the table to append the record to.
@@ -120,7 +126,8 @@ public class SQLServer extends AbstractDataRepository {
         String currentProperty;
         FieldInfo currentField;
 
-        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements(); ) {
+        Object Id = null;
+        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements();) {
             currentProperty = _field.nextElement();
             currentField = ready_fields.get(currentProperty);
 
@@ -128,12 +135,18 @@ public class SQLServer extends AbstractDataRepository {
                 continue;
             }
 
+            if (Id == null && currentField.get("generate") != null
+                    && Boolean.parseBoolean(currentField.get("generate").toString())) {
+                Id = currentField.value();
+            }
+
             if ("int".equalsIgnoreCase(currentField.getType().getRealType())
                     || currentField.getType() == FieldType.TEXT
                     || currentField.getType() == FieldType.BIT
                     || currentField.getType() == FieldType.DATE
                     || currentField.getType() == FieldType.DATETIME) {
-                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type")).append(dot);
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type"))
+                        .append(dot);
 
                 if (currentField.getType() == FieldType.TEXT) {
                     values.append("'").append(currentField.stringValue().replaceAll("'", "''")).append("'").append(dot);
@@ -152,7 +165,8 @@ public class SQLServer extends AbstractDataRepository {
                 } else
                     values.append(currentField.value()).append(dot);
             } else {
-                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type")).append("(").append(currentField.getLength()).append(")").append(dot);
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type"))
+                        .append("(").append(currentField.getLength()).append(")").append(dot);
                 values.append("'").append(currentField.stringValue().replaceAll("'", "''")).append("'").append(dot);
             }
 
@@ -167,23 +181,31 @@ public class SQLServer extends AbstractDataRepository {
 
         table = table.replaceAll("\\[", "").replaceAll("\\]", "");
 
-        // For SQL Server, we need to modify the stored procedure to return the generated ID
+        // For SQL Server, we need to modify the stored procedure to return the
+        // generated ID
         String SQL = "if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].["
                 + table
                 + "_APPEND_GET_ID]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)"
                 + "BEGIN exec('CREATE PROCEDURE [dbo].[" + table + "_APPEND_GET_ID] "
                 + parameters + " AS BEGIN INSERT INTO [" + table + "](" + dataKeys
                 + ") VALUES(" + keys + "); SELECT SCOPE_IDENTITY() AS ID; END')"
-                + " DECLARE @OutputID INT; EXEC @OutputID = [" + table + "_APPEND_GET_ID] " + values + "; SELECT @OutputID AS ID; END"
-                + " else BEGIN DECLARE @OutputID INT; EXEC @OutputID = [" + table + "_APPEND_GET_ID] " + values + "; SELECT @OutputID AS ID; END";
+                + " DECLARE @OutputID INT; EXEC @OutputID = [" + table + "_APPEND_GET_ID] " + values
+                + "; SELECT @OutputID AS ID; END"
+                + " else BEGIN DECLARE @OutputID INT; EXEC @OutputID = [" + table + "_APPEND_GET_ID] " + values
+                + "; SELECT @OutputID AS ID; END";
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            // Execute the SQL and get the result set
-            ResultSet resultSet = operator.query(SQL);
-            if (resultSet != null && resultSet.next()) {
-                return resultSet.getObject("ID");
+            if (Id == null) {
+                // Execute the SQL and get the result set
+                ResultSet resultSet = operator.query(SQL);
+                if (resultSet != null && resultSet.next()) {
+                    return resultSet.getObject("ID");
+                }
+                return null;
+            } else {
+                operator.execute(SQL);
+                return Id;
             }
-            return null;
         } catch (SQLException e) {
             throw new ApplicationException("Error appending record and getting ID: " + e.getMessage(), e);
         }
@@ -194,7 +216,7 @@ public class SQLServer extends AbstractDataRepository {
         String SQL = "DELETE FROM [" + table + "] WHERE id=?";
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[] {});
             ps.setObject(1, Id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -216,7 +238,7 @@ public class SQLServer extends AbstractDataRepository {
         FieldInfo currentField;
 
         for (Enumeration<String> _field = ready_fields.keys(); _field
-                .hasMoreElements(); ) {
+                .hasMoreElements();) {
             currentProperty = _field.nextElement();
             currentField = ready_fields.get(currentProperty);
 
@@ -321,7 +343,8 @@ public class SQLServer extends AbstractDataRepository {
                         v_field = null;
                     } else {
                         // Get the appropriate data type based on fieldType[i]
-                        // SQL Server data types: https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-types-transact-sql
+                        // SQL Server data types:
+                        // https://docs.microsoft.com/en-us/sql/t-sql/data-types/data-types-transact-sql
                         String type = fieldType[i].toUpperCase();
 
                         try {
@@ -333,7 +356,7 @@ public class SQLServer extends AbstractDataRepository {
                                     v_field = resultSet.getInt(i + 1);
                                 }
                             } else if (type.equals("DECIMAL") || type.equals("NUMERIC") ||
-                                      type.equals("MONEY") || type.equals("SMALLMONEY")) {
+                                    type.equals("MONEY") || type.equals("SMALLMONEY")) {
                                 // Handle decimal types
                                 v_field = resultSet.getBigDecimal(i + 1);
                             } else if (type.equals("FLOAT") || type.equals("REAL")) {
@@ -347,15 +370,15 @@ public class SQLServer extends AbstractDataRepository {
                                 // Handle boolean types
                                 v_field = resultSet.getBoolean(i + 1);
                             } else if (type.equals("DATE") || type.equals("DATETIME") ||
-                                      type.equals("DATETIME2") || type.equals("SMALLDATETIME") ||
-                                      type.equals("DATETIMEOFFSET")) {
+                                    type.equals("DATETIME2") || type.equals("SMALLDATETIME") ||
+                                    type.equals("DATETIMEOFFSET")) {
                                 // Handle date/time types
                                 v_field = resultSet.getTimestamp(i + 1);
                             } else if (type.equals("TIME")) {
                                 // Handle time type
                                 v_field = resultSet.getTime(i + 1);
                             } else if (type.equals("BINARY") || type.equals("VARBINARY") ||
-                                      type.equals("IMAGE") || type.contains("BLOB")) {
+                                    type.equals("IMAGE") || type.contains("BLOB")) {
                                 // Handle binary data
                                 v_field = resultSet.getBytes(i + 1);
                             } else if (type.equals("UNIQUEIDENTIFIER")) {

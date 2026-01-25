@@ -42,7 +42,7 @@ public class SQLiteServer extends AbstractDataRepository {
 
         List<String> fieldNames = new ArrayList<String>();
         for (Enumeration<String> _field = ready_fields.keys(); _field
-                .hasMoreElements(); ) {
+                .hasMoreElements();) {
             currentProperty = _field.nextElement();
 
             currentField = ready_fields.get(currentProperty);
@@ -52,12 +52,12 @@ public class SQLiteServer extends AbstractDataRepository {
 
             fieldNames.add(currentProperty);
 
-            if (expressions.length() == 0)
+            if (expressions.isEmpty())
                 expressions.append("[").append(currentField.getColumnName()).append("]");
             else
                 expressions.append(dot).append("[").append(currentField.getColumnName()).append("]");
 
-            if (values.length() == 0)
+            if (values.isEmpty())
                 values.append('?');
             else
                 values.append(dot).append('?');
@@ -68,7 +68,7 @@ public class SQLiteServer extends AbstractDataRepository {
 
         Iterator<String> iterator = fieldNames.iterator();
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[] {});
             int i = 1;
             while (iterator.hasNext()) {
                 currentField = ready_fields.get(iterator.next());
@@ -101,6 +101,10 @@ public class SQLiteServer extends AbstractDataRepository {
 
     /**
      * Append a new record to the database and return the generated ID.
+     * <p>
+     * If a field's "generate" property is set to true, its value will be used as
+     * the returned ID.
+     * </p>
      *
      * @param ready_fields the fields ready for insertion.
      * @param table        the table to append the record to.
@@ -114,7 +118,7 @@ public class SQLiteServer extends AbstractDataRepository {
         FieldInfo currentField;
 
         List<String> fieldNames = new ArrayList<String>();
-        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements(); ) {
+        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements();) {
             currentProperty = _field.nextElement();
 
             currentField = ready_fields.get(currentProperty);
@@ -124,20 +128,20 @@ public class SQLiteServer extends AbstractDataRepository {
 
             fieldNames.add(currentProperty);
 
-            if (expressions.length() == 0)
+            if (expressions.isEmpty())
                 expressions.append("[").append(currentField.getColumnName()).append("]");
             else
                 expressions.append(dot).append("[").append(currentField.getColumnName()).append("]");
 
-            if (values.length() == 0)
+            if (values.isEmpty())
                 values.append('?');
             else
                 values.append(dot).append('?');
         }
 
+        Object Id = null;
         String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES("
                 + values + ")";
-
         try (DatabaseOperator operator = new DatabaseOperator()) {
             // Create a prepared statement that returns generated keys
             PreparedStatement ps = operator.createPreparedStatement(SQL, false, true);
@@ -149,6 +153,11 @@ public class SQLiteServer extends AbstractDataRepository {
 
                 if (currentField.autoIncrement()) {
                     continue;
+                }
+
+                if (Id == null && currentField.get("generate") != null
+                        && Boolean.parseBoolean(currentField.get("generate").toString())) {
+                    Id = currentField.value();
                 }
 
                 if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
@@ -164,8 +173,13 @@ public class SQLiteServer extends AbstractDataRepository {
                 }
             }
 
-            // Execute the update and get the generated ID
-            return operator.executeUpdateAndGetGeneratedId(ps);
+            if (Id == null) {
+                // Execute the update and get the generated ID
+                return operator.executeUpdateAndGetGeneratedId(ps);
+            } else {
+                operator.executeUpdate(ps);
+                return Id;
+            }
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
         }
@@ -181,7 +195,7 @@ public class SQLiteServer extends AbstractDataRepository {
         Object Id = null;
         List<String> fieldNames = new ArrayList<String>();
         for (Enumeration<String> _field = ready_fields.keys(); _field
-                .hasMoreElements(); ) {
+                .hasMoreElements();) {
             currentProperty = _field.nextElement();
             currentField = ready_fields.get(currentProperty);
             if ("Id".equalsIgnoreCase(currentField.getName())) {
@@ -192,8 +206,7 @@ public class SQLiteServer extends AbstractDataRepository {
 
             if (currentField.value() != null) {
                 fieldNames.add(currentProperty);
-
-                if (expressions.length() == 0)
+                if (expressions.isEmpty())
                     expressions.append("[").append(currentField.getColumnName()).append("]").append("=?");
                 else
                     expressions.append(dot).append("[").append(currentField.getColumnName()).append("]").append("=?");
@@ -203,7 +216,7 @@ public class SQLiteServer extends AbstractDataRepository {
         String SQL = "UPDATE " + table + " SET " + expressions + " WHERE id=?";
         Iterator<String> iterator = fieldNames.iterator();
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[] {});
             int i = 1;
             while (iterator.hasNext()) {
                 currentField = ready_fields.get(iterator.next());
@@ -214,8 +227,7 @@ public class SQLiteServer extends AbstractDataRepository {
                     ps.setString(i++, currentField.stringValue());
                 } else if (currentField.getType() == FieldType.DATE
                         || currentField.getType() == FieldType.DATETIME) {
-                    ps.setDate(i++, new Date(currentField.dateValue()
-                            .getTime()));
+                    ps.setDate(i++, new Date(currentField.dateValue().getTime()));
                 } else if (currentField.getType() == FieldType.BIT || currentField.getType() == FieldType.BOOLEAN) {
                     ps.setBoolean(i++, currentField.booleanValue());
                 } else {
@@ -284,10 +296,10 @@ public class SQLiteServer extends AbstractDataRepository {
                                 v_field = resultSet.getLong(i + 1);
                             }
                         } else if (type.equals("REAL") ||
-                                  type.contains("FLOAT") ||
-                                  type.contains("DOUBLE") ||
-                                  type.contains("NUMERIC") ||
-                                  type.contains("DECIMAL")) {
+                                type.contains("FLOAT") ||
+                                type.contains("DOUBLE") ||
+                                type.contains("NUMERIC") ||
+                                type.contains("DECIMAL")) {
                             // Handle all floating-point types
                             try {
                                 v_field = resultSet.getDouble(i + 1);
@@ -299,7 +311,7 @@ public class SQLiteServer extends AbstractDataRepository {
                             // Handle boolean types
                             v_field = resultSet.getBoolean(i + 1);
                         } else if (type.contains("DATE") ||
-                                  type.contains("TIME")) {
+                                type.contains("TIME")) {
                             // Handle date/time types
                             try {
                                 v_field = resultSet.getTimestamp(i + 1);
@@ -308,7 +320,7 @@ public class SQLiteServer extends AbstractDataRepository {
                                 v_field = resultSet.getString(i + 1);
                             }
                         } else if (type.equals("BLOB") ||
-                                  type.contains("BINARY")) {
+                                type.contains("BINARY")) {
                             // Handle binary data
                             try {
                                 v_field = resultSet.getBytes(i + 1);

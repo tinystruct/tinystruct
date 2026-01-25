@@ -72,7 +72,7 @@ public class MySQLServer extends AbstractDataRepository {
 
         String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES(" + values + ")";
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[] {});
             setParameters(ps, fields);
 
             return ps.executeUpdate() > 0;
@@ -83,6 +83,10 @@ public class MySQLServer extends AbstractDataRepository {
 
     /**
      * Append a new record to the database and return the generated ID.
+     * <p>
+     * If a field's "generate" property is set to true, its value will be used as
+     * the returned ID.
+     * </p>
      *
      * @param ready_fields The fields ready for insertion.
      * @param table        The table name.
@@ -92,22 +96,27 @@ public class MySQLServer extends AbstractDataRepository {
     @Override
     public Object appendAndGetId(Field ready_fields, String table) throws ApplicationException {
         int i = 0, cols = ready_fields.size();
-        String[] columns = new String[cols];
         FieldInfo[] fields = new FieldInfo[cols];
 
+        Object Id = null;
         String key;
         StringBuilder expressions = new StringBuilder(), values = new StringBuilder();
         Enumeration<String> keys = ready_fields.keys();
         while (keys.hasMoreElements()) {
             key = keys.nextElement();
-            if (!ready_fields.get(key).autoIncrement()) {
-                columns[i] = ready_fields.get(key).getColumnName();
-                fields[i] = ready_fields.get(key);
+            FieldInfo currentField = ready_fields.get(key);
+            if (!currentField.autoIncrement()) {
+                fields[i] = currentField;
+
+                if (Id == null && currentField.get("generate") != null
+                        && Boolean.parseBoolean(currentField.get("generate").toString())) {
+                    Id = currentField.value();
+                }
 
                 if (expressions.length() == 0)
-                    expressions.append("`").append(columns[i]).append("`");
+                    expressions.append("`").append(currentField.getColumnName()).append("`");
                 else
-                    expressions.append(COMMA).append("`").append(columns[i]).append("`");
+                    expressions.append(COMMA).append("`").append(currentField.getColumnName()).append("`");
 
                 if (values.length() == 0)
                     values.append('?');
@@ -124,8 +133,13 @@ public class MySQLServer extends AbstractDataRepository {
             PreparedStatement ps = operator.createPreparedStatement(SQL, false, true);
             setParameters(ps, fields);
 
-            // Execute the update and get the generated ID
-            return operator.executeUpdateAndGetGeneratedId(ps);
+            if (Id == null) {
+                // Execute the update and get the generated ID
+                return operator.executeUpdateAndGetGeneratedId(ps);
+            } else {
+                operator.executeUpdate(ps);
+                return Id;
+            }
         } catch (SQLException e) {
             throw new ApplicationException("Error appending record: " + e.getMessage(), e);
         }
@@ -170,7 +184,7 @@ public class MySQLServer extends AbstractDataRepository {
 
         String SQL = "UPDATE " + table + " SET " + expressions + " WHERE " + id + "=?";
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[] {});
             setParameters(ps, values);
             ps.setObject(ready_fields.size(), Id); // Set Id parameter
 
@@ -191,7 +205,8 @@ public class MySQLServer extends AbstractDataRepository {
     }
 
     /**
-     * Retrieve records from the MySQL database table based on the provided SQL query.
+     * Retrieve records from the MySQL database table based on the provided SQL
+     * query.
      *
      * @param SQL        The SQL query to retrieve records.
      * @param parameters The parameters to be used in the SQL query.
@@ -236,7 +251,7 @@ public class MySQLServer extends AbstractDataRepository {
                                     fieldValue = resultSet.getInt(i + 1);
                                 }
                             } else if (type.equals("DECIMAL") || type.equals("NUMERIC") ||
-                                      type.contains("FLOAT") || type.contains("DOUBLE")) {
+                                    type.contains("FLOAT") || type.contains("DOUBLE")) {
                                 // Handle all floating-point types
                                 if (type.contains("FLOAT")) {
                                     fieldValue = resultSet.getFloat(i + 1);
@@ -256,8 +271,8 @@ public class MySQLServer extends AbstractDataRepository {
                                     fieldValue = resultSet.getTimestamp(i + 1);
                                 }
                             } else if (type.equals("BLOB") || type.equals("BINARY") ||
-                                      type.equals("VARBINARY") || type.equals("TINYBLOB") ||
-                                      type.equals("MEDIUMBLOB") || type.equals("LONGBLOB")) {
+                                    type.equals("VARBINARY") || type.equals("TINYBLOB") ||
+                                    type.equals("MEDIUMBLOB") || type.equals("LONGBLOB")) {
                                 // Handle binary data
                                 fieldValue = resultSet.getBytes(i + 1);
                             } else {
@@ -288,7 +303,8 @@ public class MySQLServer extends AbstractDataRepository {
     }
 
     /**
-     * Retrieve a single record from the MySQL database table based on the provided SQL query.
+     * Retrieve a single record from the MySQL database table based on the provided
+     * SQL query.
      *
      * @param SQL        The SQL query to retrieve the record.
      * @param parameters The parameters to be used in the SQL query.
@@ -330,7 +346,7 @@ public class MySQLServer extends AbstractDataRepository {
                                     fieldValue = resultSet.getInt(i + 1);
                                 }
                             } else if (type.equals("DECIMAL") || type.equals("NUMERIC") ||
-                                      type.contains("FLOAT") || type.contains("DOUBLE")) {
+                                    type.contains("FLOAT") || type.contains("DOUBLE")) {
                                 // Handle all floating-point types
                                 if (type.contains("FLOAT")) {
                                     fieldValue = resultSet.getFloat(i + 1);
@@ -350,8 +366,8 @@ public class MySQLServer extends AbstractDataRepository {
                                     fieldValue = resultSet.getTimestamp(i + 1);
                                 }
                             } else if (type.equals("BLOB") || type.equals("BINARY") ||
-                                      type.equals("VARBINARY") || type.equals("TINYBLOB") ||
-                                      type.equals("MEDIUMBLOB") || type.equals("LONGBLOB")) {
+                                    type.equals("VARBINARY") || type.equals("TINYBLOB") ||
+                                    type.equals("MEDIUMBLOB") || type.equals("LONGBLOB")) {
                                 // Handle binary data
                                 fieldValue = resultSet.getBytes(i + 1);
                             } else {
@@ -397,18 +413,18 @@ public class MySQLServer extends AbstractDataRepository {
         return "INSERT INTO " + table + " (" + _columns + ") VALUES (" + values + ")";
     }
 
-    private void setParameters(PreparedStatement ps, FieldInfo[] values) throws SQLException {
+    private void setParameters(PreparedStatement ps, FieldInfo[] fields) throws SQLException {
         int i = 1;
-        for (FieldInfo fieldInfo : values) {
-            if (fieldInfo != null && !fieldInfo.autoIncrement()) {
+        for (FieldInfo fieldInfo : fields) {
+            if (fieldInfo != null) {
                 Object value = fieldInfo.value();
                 if ("int".equalsIgnoreCase(fieldInfo.getType().getRealType())) {
                     ps.setInt(i++, fieldInfo.intValue());
-                } else if (fieldInfo.getType() == FieldType.TEXT) {
+                } else if (fieldInfo.getType() == FieldType.TEXT || fieldInfo.getType() == FieldType.LONGTEXT) {
                     ps.setString(i++, fieldInfo.stringValue());
                 } else if (fieldInfo.getType() == FieldType.DATE || fieldInfo.getType() == FieldType.DATETIME) {
                     ps.setDate(i++, new Date(fieldInfo.dateValue().getTime()));
-                } else if (fieldInfo.getType() == FieldType.BIT) {
+                } else if (fieldInfo.getType() == FieldType.BIT || fieldInfo.getType() == FieldType.BOOLEAN) {
                     ps.setBoolean(i++, fieldInfo.booleanValue());
                 } else {
                     ps.setObject(i++, value);

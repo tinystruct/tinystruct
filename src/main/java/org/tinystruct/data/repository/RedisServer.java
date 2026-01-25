@@ -46,7 +46,8 @@ public class RedisServer implements Repository {
      * Append a new record to the Redis database.
      *
      * @param ready_fields the fields ready for insertion.
-     * @param table        the table to append the record to (not applicable for Redis).
+     * @param table        the table to append the record to (not applicable for
+     *                     Redis).
      * @return true if the operation is successful, false otherwise.
      * @throws ApplicationException if an application-specific error occurs.
      */
@@ -58,9 +59,14 @@ public class RedisServer implements Repository {
 
     /**
      * Append a new record to the Redis database and return the generated ID.
+     * <p>
+     * If a field's "generate" property is set to true, its value will be used as
+     * the returned ID.
+     * </p>
      *
      * @param ready_fields the fields ready for insertion.
-     * @param table        the table to append the record to (not applicable for Redis).
+     * @param table        the table to append the record to (not applicable for
+     *                     Redis).
      * @return the generated ID if the operation is successful, null otherwise.
      * @throws ApplicationException if an application-specific error occurs.
      */
@@ -96,7 +102,8 @@ public class RedisServer implements Repository {
      * Update an existing record in the Redis database.
      *
      * @param ready_fields the fields ready for update.
-     * @param table        the table to update the record in (not applicable for Redis).
+     * @param table        the table to update the record in (not applicable for
+     *                     Redis).
      * @return true if the operation is successful, false otherwise.
      * @throws ApplicationException if an application-specific error occurs.
      */
@@ -135,7 +142,8 @@ public class RedisServer implements Repository {
     }
 
     /**
-     * Find records in the Redis database based on the given SQL query and parameters.
+     * Find records in the Redis database based on the given SQL query and
+     * parameters.
      *
      * @param SQL        the SQL query (not applicable for Redis).
      * @param parameters the parameters for the query (not applicable for Redis).
@@ -153,7 +161,8 @@ public class RedisServer implements Repository {
     }
 
     /**
-     * Find a single record in the Redis database based on the given SQL query and parameters.
+     * Find a single record in the Redis database based on the given SQL query and
+     * parameters.
      *
      * @param SQL        the SQL query (not applicable for Redis).
      * @param parameters the parameters for the query (not applicable for Redis).
