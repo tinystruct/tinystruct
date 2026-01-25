@@ -1,4 +1,4 @@
-# Tinystruct Framework Developer Guide
+# tinystruct framework developer guide
 
 ## 1. Introduction
 
