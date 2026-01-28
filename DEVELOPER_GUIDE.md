@@ -185,6 +185,46 @@ The dispatcher provides several utility commands:
 ### Custom Exception Handling
 Extending `ApplicationException` or `ApplicationRuntimeException` allows for structured error reporting across both CLI and Web modes.
 
+### Event Mechanism
+Tinystruct supports an event-driven architecture to decouple components. To improve performance in asynchronous scenarios, event handlers can offload heavy processing to separate threads.
+
+1. **Define an Event**: Implement `org.tinystruct.system.Event<T>`.
+   ```java
+   public class UserRegisterEvent implements Event<User> {
+       private final User user;
+
+       public UserRegisterEvent(User user) {
+           this.user = user;
+       }
+
+       @Override
+       public String getName() {
+           return "user_register";
+       }
+
+       @Override
+       public User getPayload() {
+           return user;
+       }
+   }
+   ```
+
+2. **Dispatch an Event**:
+   ```java
+   EventDispatcher.getInstance().dispatch(new UserRegisterEvent(newUser));
+   ```
+
+3. **Asynchronous Handling**:
+   To prevent blocking the main thread (e.g., during HTTP requests), handle events asynchronously using `CompletableFuture`.
+   ```java
+   EventDispatcher.getInstance().registerHandler(UserRegisterEvent.class, event -> {
+       CompletableFuture.runAsync(() -> {
+           // Heavy tasks: send email, update analytics, etc.
+           sendWelcomeEmail(event.getPayload());
+       });
+   });
+   ```
+
 ---
 
 ## 7. Networking & Integration
