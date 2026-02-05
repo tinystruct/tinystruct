@@ -240,7 +240,12 @@ request.setMethod("POST")
        .setBody("{\"key\":\"value\"}");
 
 HTTPHandler handler = new HTTPHandler();
-String responseBody = handler.handleRequest(request).getBody();
+URLResponse response = handler.handleRequest(request);
+if (response.getStatusCode() == 201 || response.getStatusCode() == 200) {
+    logger.log(Level.INFO, "API successfully");
+} else {
+    logger.log(Level.WARNING, "API returned status "+ response.getStatusCode());
+}
 ```
 
 ---

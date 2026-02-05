@@ -7,6 +7,8 @@ The tinystruct framework
 A simple framework for Java development. Simple thinking, Better design, Easy to be used with better performance! 
 
 [![Star History Chart](https://api.star-history.com/svg?repos=tinystruct/tinystruct&type=Date)](https://www.star-history.com/#tinystruct/tinystruct&Date)
+[![MvnRepository](https://badges.mvnrepository.com/badge/org.tinystruct/tinystruct/badge.svg?label=MvnRepository)](https://mvnrepository.com/artifact/org.tinystruct/tinystruct)
+
 
 ## Prerequisites
 

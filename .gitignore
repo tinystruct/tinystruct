@@ -5,3 +5,7 @@
 _
 /target/
 /lib/
+.cursor/
+.vscode/
+jdk-17/
+.lock

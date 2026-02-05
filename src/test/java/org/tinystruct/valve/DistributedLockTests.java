@@ -15,15 +15,17 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DistributedLockTests {
     private static final Logger logger = Logger.getLogger(DistributedLockTests.class.getName());
     private static int tickets = 100;
-    private static CountDownLatch latch;
+    private static volatile CountDownLatch latch = new CountDownLatch(tickets);
     private static long n;
 
     @AfterAll
     static void done() {
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (latch != null) {
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         assertEquals(0, tickets);
@@ -39,6 +41,7 @@ public class DistributedLockTests {
 
     @BeforeEach
     public void setUp() throws ApplicationException {
+        tickets = 100;
         latch = new CountDownLatch(tickets);
         n = 0L;
     }
@@ -51,7 +54,7 @@ public class DistributedLockTests {
     void testBasicLockUnlock() {
         DistributedLock lock = new DistributedLock();
         assertNotNull(lock.id(), "Lock ID should not be null");
-        
+
         try {
             lock.lock();
             assertTrue(true, "Lock acquired successfully");
@@ -78,8 +81,9 @@ public class DistributedLockTests {
     void testConcurrentIncrement() throws InterruptedException {
         final int THREAD_COUNT = 100;
         final int ITERATIONS = 100;
-//        final Lock lock = new DistributedLock("7439e9a6-0828-422f-8c86-3f9b4f7e1460".getBytes(StandardCharsets.UTF_8));
-//        final ReentrantLock lock = new ReentrantLock();
+        // final Lock lock = new
+        // DistributedLock("7439e9a6-0828-422f-8c86-3f9b4f7e1460".getBytes(StandardCharsets.UTF_8));
+        // final ReentrantLock lock = new ReentrantLock();
         final Lock lock = new DistributedLock();
 
         n = 0L;
@@ -126,7 +130,7 @@ public class DistributedLockTests {
     @Test
     public void testLockTimeout() throws InterruptedException, ApplicationException {
         // Create a lock
-        Lock lock = Watcher.getInstance().acquire();
+        final Lock lock = Watcher.getInstance().acquire();
 
         // Start a thread to acquire and release the lock
         Thread thread = new Thread(() -> {
@@ -179,5 +183,3 @@ public class DistributedLockTests {
     }
 
 }
-
-
