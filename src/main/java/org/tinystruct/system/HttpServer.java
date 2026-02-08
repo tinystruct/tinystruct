@@ -31,6 +31,7 @@ import org.tinystruct.system.util.StringUtilities;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -304,8 +305,19 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
                 // Process the request using TinyStruct's DefaultHandler logic
                 processRequest(request, response, context);
+            } catch (ApplicationException e) {
+                logger.log(Level.SEVERE, e.getMessage(), e);
+                int status = e.getStatus();
+                ResponseStatus responseStatus = ResponseStatus.valueOf(status);
+                if (responseStatus == null)
+                    responseStatus = ResponseStatus.INTERNAL_SERVER_ERROR;
+
+                try {
+                    sendErrorResponse(exchange, responseStatus.code(), e.getMessage());
+                } catch (Exception ignored) {
+                }
             } catch (Exception e) {
-                logger.log(Level.SEVERE, "Error processing request", e);
+                logger.log(Level.SEVERE, e.getMessage(), e);
                 // Try to send error only if headers haven't been committed yet
                 try {
                     sendErrorResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
@@ -561,8 +573,12 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 logger.log(Level.SEVERE, "Error in request processing", e);
                 response.setContentType("text/plain; charset=UTF-8");
                 int status = e.getStatus();
-                response.setStatus(org.tinystruct.http.ResponseStatus.valueOf(status));
-                response.writeAndFlush("500 - Internal Server Error".getBytes("UTF-8"));
+                ResponseStatus responseStatus = ResponseStatus.valueOf(status);
+                if (responseStatus == null)
+                    responseStatus = ResponseStatus.INTERNAL_SERVER_ERROR;
+
+                response.setStatus(responseStatus);
+                response.writeAndFlush(e.getMessage().getBytes(StandardCharsets.UTF_8));
                 response.close();
             }
         }
@@ -642,4 +658,3 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
     }
 }
-
