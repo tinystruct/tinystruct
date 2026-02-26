@@ -14,15 +14,36 @@ public class JWTManager {
     // A default secret key for signing JWTs
     private static final SecretKey SECRET_KEY = Jwts.SIG.HS256.key().build();
     private SecretKey base64Key;
+    private long clockSkew = 0;
 
     /**
-     * Sets the secret key using a base64 encoded string.
+     * Sets the secret key using a plain text string.
      * This method allows for a custom secret key to be used instead of the default one.
      *
      * @param secret The secret key as a plain text string
      */
     public void withSecret(String secret) {
         this.base64Key = Keys.hmacShaKeyFor(Base64.getEncoder().encode(secret.getBytes()));
+    }
+
+    /**
+     * Sets the secret key using a base64 encoded string.
+     * This method allows for a custom secret key to be used instead of the default one.
+     *
+     * @param base64Secret The secret key as a base64 string
+     */
+    public void withBase64Secret(String base64Secret) {
+        this.base64Key = Keys.hmacShaKeyFor(base64Secret.getBytes());
+    }
+
+    /**
+     * Sets the clock skew in seconds.
+     * This method allows for a leeway in the token's expiration time to account for clock differences between machines.
+     *
+     * @param clockSkew The clock skew in seconds
+     */
+    public void withClockSkew(long clockSkew) {
+        this.clockSkew = clockSkew;
     }
 
     /**
@@ -78,6 +99,8 @@ public class JWTManager {
             parser.verifyWith(this.base64Key);
         else
             parser.verifyWith(SECRET_KEY);
+
+        parser.clockSkewSeconds(this.clockSkew);
 
         // Parse the JWT and return the claims
         return parser.build().parseSignedClaims(compactToken);

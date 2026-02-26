@@ -52,7 +52,23 @@ public class JWTManagerTest {
         Builder builder = new Builder();
         builder.put("role", "admin");
 
-        // Create a JWT with 1 second validity
+        // Create a JWT with -1 hour validity (already expired)
+        String token = jwtManager.createToken(SUBJECT, builder, -1);
+
+        // Parsing an expired token should throw ExpiredJwtException
+        assertThrows(ExpiredJwtException.class, () -> jwtManager.parseToken(token));
+    }
+
+    @Test
+    public void testTokenWithClockSkew() {
+        assertNotNull(jwtManager); // Ensure jwtManager is not null
+        jwtManager.withSecret(SECRET);
+
+        // Create a builder with some claims
+        Builder builder = new Builder();
+        builder.put("role", "admin");
+
+        // Create a JWT with 0 validity (expires immediately)
         String token = jwtManager.createToken(SUBJECT, builder, 0);
 
         // Sleep for 1 second to ensure token expiration
@@ -62,8 +78,14 @@ public class JWTManagerTest {
             e.printStackTrace();
         }
 
-        // Parsing an expired token should throw ExpiredJwtException
-        assertThrows(ExpiredJwtException.class, () -> jwtManager.parseToken(token));
+        // Set clock skew to 60 seconds
+        jwtManager.withClockSkew(60);
+
+        // Parsing the token should NOT throw ExpiredJwtException because of clock skew
+        assertDoesNotThrow(() -> jwtManager.parseToken(token));
+        
+        Jws<Claims> parsedToken = jwtManager.parseToken(token);
+        assertEquals(SUBJECT, parsedToken.getPayload().getSubject());
     }
 
     @Test
