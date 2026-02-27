@@ -26,7 +26,7 @@ Add the following dependency to your `pom.xml`:
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.17</version>
+  <version>1.7.18</version>
 </dependency>
 ```
 
