@@ -13,9 +13,11 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -338,8 +340,8 @@ public final class ActionRegistry {
         String group = extractGroupFromPath(path);
 
         if (method != null) {
+            PatternBuilder patternBuilder = buildPattern(path, method);
             Class<?>[] types = method.getParameterTypes();
-            PatternBuilder patternBuilder = buildPattern(path, types);
 
             try {
                 MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -349,7 +351,7 @@ public final class ActionRegistry {
                 List<Action> actions = patternGroups.getOrDefault(group, new ArrayList<>());
                 Action action = createAction(actions.size(), app, patternBuilder.getExpression(),
                         handle, method.getName(), method.getReturnType(),
-                        method.getParameterTypes(), patternBuilder.getPriority(), mode);
+                        types, patternBuilder.getPriority(), mode);
 
                 actions.add(action);
                 patternGroups.put(group, actions);
@@ -376,37 +378,86 @@ public final class ActionRegistry {
     /**
      * Build a pattern and calculate priority for method parameters
      */
-    private PatternBuilder buildPattern(String path, Class<?>[] types) {
-        String patternPrefix = "^/?" + path;
-        StringBuilder patterns = new StringBuilder();
+    private PatternBuilder buildPattern(String path, Method method) {
         int priority = 0;
+        Parameter[] parameters = method.getParameters();
+        org.tinystruct.system.annotation.Action annotation = method
+                .getAnnotation(org.tinystruct.system.annotation.Action.class);
 
-        if (types.length > 0) {
-            for (Class<?> type : types) {
-                if (Request.class.isAssignableFrom(type) || Response.class.isAssignableFrom(type))
-                    continue;
-
-                PatternPriority patternPriority = getPatternForType(type);
-                priority += patternPriority.getPriority();
-
-                String pattern = "(" + patternPriority.getPattern() + ")";
-                if (patterns.length() != 0) {
-                    patterns.append("/");
+        // Extract "data" parameters (skipping Request/Response)
+        List<ParameterInfo> dataParams = new ArrayList<>();
+        int dataIndex = 0;
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter parameter = parameters[i];
+            Class<?> type = parameter.getType();
+            if (!Request.class.isAssignableFrom(type) && !Response.class.isAssignableFrom(type)) {
+                String name = parameter.getName();
+                // Check if there's an @Argument annotation providing a name
+                if (annotation != null && i < annotation.arguments().length) {
+                    name = annotation.arguments()[i].key();
                 }
-                patterns.append(pattern);
+                dataParams.add(new ParameterInfo(dataIndex++, type, name));
             }
-
-            String expression;
-            if (patterns.length() > 0) {
-                expression = patternPrefix + "/" + patterns + "$";
-            } else {
-                expression = patternPrefix + "$";
-            }
-
-            return new PatternBuilder(expression, priority);
-        } else {
-            return new PatternBuilder(patternPrefix + "$", 0);
         }
+
+        int parameterIndex = 0;
+        String finalPath = path;
+
+        if (path != null && !path.isEmpty()) {
+            Matcher m = Pattern.compile("\\{([^/]*)\\}").matcher(path);
+            StringBuilder sb = new StringBuilder();
+            int lastEnd = 0;
+            while (m.find()) {
+                String placeholderName = m.group(1);
+                ParameterInfo matchedParam = null;
+                // Try to find a parameter by name
+                for (ParameterInfo param : dataParams) {
+                    if (param.name.equals(placeholderName)) {
+                        matchedParam = param;
+                        break;
+                    }
+                }
+
+                // If not found by name, just take the next data parameter (fallback or
+                // index-based)
+                if (matchedParam == null && parameterIndex < dataParams.size()) {
+                    matchedParam = dataParams.get(parameterIndex);
+                }
+
+                if (matchedParam != null) {
+                    sb.append(path, lastEnd, m.start());
+                    PatternPriority patternPriority = getPatternForType(matchedParam.type);
+                    priority += patternPriority.getPriority();
+                    sb.append("(").append(patternPriority.getPattern()).append(")");
+                    parameterIndex++;
+                    lastEnd = m.end();
+                }
+            }
+            sb.append(path.substring(lastEnd));
+            finalPath = sb.toString();
+        }
+
+        StringBuilder expression = new StringBuilder("^/?").append(finalPath);
+
+        // Handle remaining parameters (Legacy behavior)
+        StringBuilder patterns = new StringBuilder();
+        while (parameterIndex < dataParams.size()) {
+            ParameterInfo param = dataParams.get(parameterIndex++);
+            PatternPriority patternPriority = getPatternForType(param.type);
+            priority += patternPriority.getPriority();
+
+            if (!patterns.isEmpty()) {
+                patterns.append("/");
+            }
+            patterns.append("(").append(patternPriority.getPattern()).append(")");
+        }
+
+        if (!patterns.isEmpty()) {
+            expression.append("/").append(patterns);
+        }
+
+        expression.append("$");
+        return new PatternBuilder(expression.toString(), priority);
     }
 
     /**
@@ -448,6 +499,18 @@ public final class ActionRegistry {
 
         public int getPriority() {
             return priority;
+        }
+    }
+
+    private static class ParameterInfo {
+        final int index;
+        final Class<?> type;
+        final String name;
+
+        ParameterInfo(int index, Class<?> type, String name) {
+            this.index = index;
+            this.type = type;
+            this.name = name;
         }
     }
 
