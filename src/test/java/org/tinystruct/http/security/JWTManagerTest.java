@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.tinystruct.data.component.Builder;
 
+import java.time.ZoneId;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JWTManagerTest {
@@ -78,12 +80,13 @@ public class JWTManagerTest {
             e.printStackTrace();
         }
 
-        // Set clock skew to 60 seconds
-        jwtManager.withClockSkew(60);
+        // Set timezone to UTC to ensure there's some clock skew if the system is not in
+        // UTC
+        jwtManager.withTimezone(ZoneId.of("UTC"));
 
         // Parsing the token should NOT throw ExpiredJwtException because of clock skew
         assertDoesNotThrow(() -> jwtManager.parseToken(token));
-        
+
         Jws<Claims> parsedToken = jwtManager.parseToken(token);
         assertEquals(SUBJECT, parsedToken.getPayload().getSubject());
     }
