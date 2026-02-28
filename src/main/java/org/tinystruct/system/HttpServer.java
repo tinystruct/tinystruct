@@ -578,7 +578,11 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     responseStatus = ResponseStatus.INTERNAL_SERVER_ERROR;
 
                 response.setStatus(responseStatus);
-                response.writeAndFlush(e.getMessage().getBytes(StandardCharsets.UTF_8));
+                if (e.getMessage() != null) {
+                    response.writeAndFlush(e.getMessage().getBytes(StandardCharsets.UTF_8));
+                } else {
+                    response.writeAndFlush(new byte[0]);
+                }
                 response.close();
             }
         }
