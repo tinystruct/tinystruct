@@ -285,7 +285,7 @@ class HTTPResponse implements URLResponse {
                 this.body = new String(decodedStream.readAllBytes(), StandardCharsets.UTF_8);
                 decodedStream.close();
             } else {
-                this.body = "";
+                this.body = null;
             }
         } catch (IOException e) {
             throw new ApplicationRuntimeException(e);
@@ -298,7 +298,7 @@ class HTTPResponse implements URLResponse {
     public HTTPResponse(HttpResponse<InputStream> response, Consumer<String> onMessage) {
         this.statusCode = response.statusCode();
         this.headers = response.headers().map();
-        this.body = ""; // SSE mode does not return the entire body content.
+        this.body = null; // SSE mode does not return the entire body content.
 
         handleSSE(response, onMessage);
     }
