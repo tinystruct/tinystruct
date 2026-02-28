@@ -278,7 +278,7 @@ class HTTPResponse implements URLResponse {
         this.headers = response.headers().map();
 
         try (InputStream in = response.body()) {
-            if (in != null) {
+            if (in != null && in.available() > 0) {
                 String contentEncoding = response.headers()
                         .firstValue("Content-Encoding").orElse(null);
                 InputStream decodedStream = getDecodedInputStream(contentEncoding, in);
