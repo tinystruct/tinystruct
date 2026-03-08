@@ -45,6 +45,9 @@ public class HTTPHandler implements URLHandler {
 
             return new HTTPResponse(response);
         } catch (IOException e) {
+            if (e instanceof ConnectException) {
+                throw new ApplicationException(e.getClass().getSimpleName() + ":Connection Error", e);
+            }
             throw new ApplicationException(e.getClass().getSimpleName() + ":" + e.getMessage(), e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
