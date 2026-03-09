@@ -293,8 +293,60 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
         private void executeRemoteCommands() throws RemoteException {
             if (!commands.isEmpty()) {
-                for (String command : commands) {
-                    System.out.print(remoteDispatcher.execute(command, context));
+                Object lastOutput = null;
+                boolean isPiped = false;
+                try {
+                    if (System.in.available() > 0) {
+                        byte[] bytes = System.in.readAllBytes();
+                        if (bytes.length > 0) {
+                            lastOutput = new String(bytes).trim();
+                            isPiped = true;
+                        }
+                    }
+                } catch (IOException e) {
+                    // ignore
+                }
+
+                if (isPiped) {
+                    Map<String, String> placeholders = new HashMap<>();
+                    for (String key : context.getAttributeNames()) {
+                        Object value = context.getAttribute(key);
+                        if (value instanceof String && ((String) value).contains("{}")) {
+                            placeholders.put(key, (String) value);
+                        }
+                    }
+
+                    for (String command : commands) {
+                        String currentCommand = command;
+                        if (lastOutput != null && !lastOutput.toString().equals(OK) && !lastOutput.toString().isEmpty()) {
+                            String outputStr = lastOutput.toString();
+                            boolean consumed = false;
+
+                            if (currentCommand != null && currentCommand.contains("{}")) {
+                                currentCommand = currentCommand.replace("{}", outputStr);
+                                consumed = true;
+                            }
+
+                            for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+                                context.setAttribute(entry.getKey(), entry.getValue().replace("{}", outputStr));
+                                consumed = true;
+                            }
+
+                            if (!consumed && currentCommand != null) {
+                                currentCommand += "/" + outputStr;
+                            }
+                        } else {
+                            for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+                                context.setAttribute(entry.getKey(), entry.getValue());
+                            }
+                        }
+                        lastOutput = remoteDispatcher.execute(currentCommand, context);
+                        System.out.print(lastOutput);
+                    }
+                } else {
+                    for (String command : commands) {
+                        System.out.print(remoteDispatcher.execute(command, context));
+                    }
                 }
             } else {
                 System.out.print(remoteDispatcher.execute(null, context));
@@ -303,9 +355,62 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
         private void executeLocalCommands() throws RemoteException {
             if (!commands.isEmpty()) {
-                for (String command : commands) {
-                    if (!disableHelper || command != null) {
-                        dispatcher.execute(command, context);
+                Object lastOutput = null;
+                boolean isPiped = false;
+                try {
+                    if (System.in.available() > 0) {
+                        byte[] bytes = System.in.readAllBytes();
+                        if (bytes.length > 0) {
+                            lastOutput = new String(bytes).trim();
+                            isPiped = true;
+                        }
+                    }
+                } catch (IOException e) {
+                    // ignore
+                }
+
+                if (isPiped) {
+                    Map<String, String> placeholders = new HashMap<>();
+                    for (String key : context.getAttributeNames()) {
+                        Object value = context.getAttribute(key);
+                        if (value instanceof String && ((String) value).contains("{}")) {
+                            placeholders.put(key, (String) value);
+                        }
+                    }
+
+                    for (String command : commands) {
+                        if (!disableHelper || command != null) {
+                            String currentCommand = command;
+                            if (lastOutput != null && !lastOutput.toString().equals(OK) && !lastOutput.toString().isEmpty()) {
+                                String outputStr = lastOutput.toString();
+                                boolean consumed = false;
+
+                                if (currentCommand != null && currentCommand.contains("{}")) {
+                                    currentCommand = currentCommand.replace("{}", outputStr);
+                                    consumed = true;
+                                }
+
+                                for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+                                    context.setAttribute(entry.getKey(), entry.getValue().replace("{}", outputStr));
+                                    consumed = true;
+                                }
+
+                                if (!consumed && currentCommand != null) {
+                                    currentCommand += "/" + outputStr;
+                                }
+                            } else {
+                                for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+                                    context.setAttribute(entry.getKey(), entry.getValue());
+                                }
+                            }
+                            lastOutput = dispatcher.execute(currentCommand, context);
+                        }
+                    }
+                } else {
+                    for (String command : commands) {
+                        if (!disableHelper || command != null) {
+                            dispatcher.execute(command, context);
+                        }
                     }
                 }
             } else if (!disableHelper) {
