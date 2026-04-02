@@ -307,20 +307,33 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 processRequest(request, response, context);
             } catch (ApplicationException e) {
                 logger.log(Level.SEVERE, e.getMessage(), e);
+                // If it's a closed stream exception, we shouldn't attempt to write an error back.
+                if (e.getCause() instanceof IOException && e.getCause().getClass().getName().contains("StreamClosedException")) {
+                    return;
+                }
+
                 int status = e.getStatus();
                 ResponseStatus responseStatus = ResponseStatus.valueOf(status);
                 if (responseStatus == null)
                     responseStatus = ResponseStatus.INTERNAL_SERVER_ERROR;
 
                 try {
-                    sendErrorResponse(exchange, responseStatus.code(), e.getMessage());
+                    sendErrorResponse(exchange, responseStatus.code(), e.getMessage() != null ? e.getMessage() : "Error in request processing");
                 } catch (Exception ignored) {
                 }
             } catch (Exception e) {
                 logger.log(Level.SEVERE, e.getMessage(), e);
+                // If it's a closed stream exception, we shouldn't attempt to write an error back.
+                if (e instanceof IOException && e.getClass().getName().contains("StreamClosedException")) {
+                    return;
+                }
+                if (e.getCause() instanceof IOException && e.getCause().getClass().getName().contains("StreamClosedException")) {
+                    return;
+                }
+
                 // Try to send error only if headers haven't been committed yet
                 try {
-                    sendErrorResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
+                    sendErrorResponse(exchange, 500, "Internal Server Error" + (e.getMessage() != null ? ": " + e.getMessage() : ""));
                 } catch (Exception ignored) {
                     // If we can't send an error (headers/body already sent), just log.
                 }
@@ -354,34 +367,36 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 }
 
                 Object call = ApplicationManager.call(query, context);
-                String sessionId = context.getId();
-                SSEPushManager pushManager = getAppropriatePushManager(isMCP);
-                response.setStatus(ResponseStatus.OK);
-                // Ensure chunked streaming for SSE before any write
-                response.sendHeaders(-1);
-                SSEClient client = pushManager.register(sessionId, response);
+                if (!response.isClosed()) {
+                    String sessionId = context.getId();
+                    SSEPushManager pushManager = getAppropriatePushManager(isMCP);
+                    response.setStatus(ResponseStatus.OK);
+                    // Ensure chunked streaming for SSE before any write
+                    response.sendHeaders(-1);
+                    SSEClient client = pushManager.register(sessionId, response);
 
-                if (call instanceof org.tinystruct.data.component.Builder) {
-                    pushManager.push(sessionId, (org.tinystruct.data.component.Builder) call);
-                } else if (call instanceof String) {
-                    org.tinystruct.data.component.Builder builder = new org.tinystruct.data.component.Builder();
-                    builder.parse((String) call);
-                    pushManager.push(sessionId, builder);
-                }
+                    if (call instanceof org.tinystruct.data.component.Builder) {
+                        pushManager.push(sessionId, (org.tinystruct.data.component.Builder) call);
+                    } else if (call instanceof String) {
+                        org.tinystruct.data.component.Builder builder = new org.tinystruct.data.component.Builder();
+                        builder.parse((String) call);
+                        pushManager.push(sessionId, builder);
+                    }
 
-                if (client != null) {
-                    try {
-                        while (client.isActive()) {
-                            Thread.sleep(1000);
+                    if (client != null) {
+                        try {
+                            while (client.isActive()) {
+                                Thread.sleep(1000);
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new ApplicationException("Stream interrupted: " + e.getMessage(), e);
+                        } catch (Exception e) {
+                            throw new ApplicationException("Error in stream: " + e.getMessage(), e);
+                        } finally {
+                            client.close();
+                            pushManager.remove(sessionId);
                         }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new ApplicationException("Stream interrupted: " + e.getMessage(), e);
-                    } catch (Exception e) {
-                        throw new ApplicationException("Error in stream: " + e.getMessage(), e);
-                    } finally {
-                        client.close();
-                        pushManager.remove(sessionId);
                     }
                 }
             }
@@ -571,19 +586,26 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 }
             } catch (ApplicationException e) {
                 logger.log(Level.SEVERE, "Error in request processing", e);
-                response.setContentType("text/plain; charset=UTF-8");
-                int status = e.getStatus();
-                ResponseStatus responseStatus = ResponseStatus.valueOf(status);
-                if (responseStatus == null)
-                    responseStatus = ResponseStatus.INTERNAL_SERVER_ERROR;
-
-                response.setStatus(responseStatus);
-                if (e.getMessage() != null) {
-                    response.writeAndFlush(e.getMessage().getBytes(StandardCharsets.UTF_8));
-                } else {
-                    response.writeAndFlush(new byte[0]);
+                // If it's a closed stream exception, we shouldn't attempt to write an error back.
+                if (e.getCause() instanceof IOException && e.getCause().getClass().getName().contains("StreamClosedException")) {
+                    return;
                 }
-                response.close();
+
+                if (!response.isClosed()) {
+                    try {
+                        response.setContentType("text/plain; charset=UTF-8");
+                        int status = e.getStatus();
+                        ResponseStatus responseStatus = ResponseStatus.valueOf(status);
+                        if (responseStatus == null)
+                            responseStatus = ResponseStatus.INTERNAL_SERVER_ERROR;
+
+                        response.setStatus(responseStatus);
+                        response.writeAndFlush(e.getMessage() != null ? e.getMessage().getBytes(StandardCharsets.UTF_8) : new byte[0]);
+                        response.close();
+                    } catch (Exception ignored) {
+                        // If we can't send an error (headers/body already sent or stream closed), just ignore.
+                    }
+                }
             }
         }
 
@@ -599,22 +621,25 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             // Handle request
             query = StringUtilities.htmlSpecialChars(query);
             Object message = ApplicationManager.call(query, context, mode);
-            byte[] bytes;
-            if (message != null) {
-                if (message instanceof byte[]) {
-                    bytes = (byte[]) message;
+
+            if (!response.isClosed()) {
+                byte[] bytes;
+                if (message != null) {
+                    if (message instanceof byte[]) {
+                        bytes = (byte[]) message;
+                    } else {
+                        response.setContentType("text/html; charset=UTF-8");
+                        bytes = String.valueOf(message).getBytes(StandardCharsets.UTF_8);
+                    }
                 } else {
                     response.setContentType("text/html; charset=UTF-8");
-                    bytes = String.valueOf(message).getBytes("UTF-8");
+                    bytes = "No response retrieved!".getBytes(StandardCharsets.UTF_8);
                 }
-            } else {
-                response.setContentType("text/html; charset=UTF-8");
-                bytes = "No response retrieved!".getBytes("UTF-8");
-            }
 
-            response.setStatus(ResponseStatus.OK);
-            response.writeAndFlush(bytes);
-            response.close();
+                response.setStatus(ResponseStatus.OK);
+                response.writeAndFlush(bytes);
+                response.close();
+            }
         }
 
         /**
@@ -625,15 +650,15 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
          * @throws IOException if an I/O error occurs
          */
         private void handleDefaultPage(Context context, ServerResponse response) throws ApplicationException {
-            response.setContentType("text/html; charset=UTF-8");
             Object result = ApplicationManager.call(settings.getOrDefault("default.home.page", "say/Praise the Lord."), context, Action.Mode.HTTP_GET);
             if (!response.isClosed()) {
                 try {
-                    byte[] bytes = String.valueOf(result).getBytes("UTF-8");
+                    response.setContentType("text/html; charset=UTF-8");
+                    byte[] bytes = String.valueOf(result).getBytes(StandardCharsets.UTF_8);
                     response.setStatus(ResponseStatus.OK);
                     response.writeAndFlush(bytes);
-                } catch (UnsupportedEncodingException e) {
-                    throw new ApplicationException(e);
+                } catch (Exception e) {
+                    throw new ApplicationException(e.getMessage(), e);
                 } finally {
                     response.close();
                 }
@@ -642,7 +667,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
         private void sendErrorResponse(HttpExchange exchange, int statusCode, String message) {
             try {
-                byte[] responseBytes = message.getBytes("UTF-8");
+                byte[] responseBytes = (message != null ? message : "Unknown error").getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
                 exchange.sendResponseHeaders(statusCode, responseBytes.length);
                 try (OutputStream os = exchange.getResponseBody()) {
@@ -650,7 +675,11 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     os.flush();
                 }
             } catch (IOException e) {
-                logger.log(Level.WARNING, "Client disconnected while sending error response", e);
+                if ("headers already sent".equalsIgnoreCase(e.getMessage())) {
+                    logger.log(Level.FINE, "Headers were already sent; cannot send error response again", e);
+                } else {
+                    logger.log(Level.WARNING, "Client disconnected while sending error response", e);
+                }
             } finally {
                 try {
                     exchange.close();

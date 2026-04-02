@@ -281,12 +281,15 @@ class HTTPResponse implements URLResponse {
         this.headers = response.headers().map();
 
         try (InputStream in = response.body()) {
-            if (in != null && in.available() > 0) {
+            if (in != null) {
                 String contentEncoding = response.headers()
                         .firstValue("Content-Encoding").orElse(null);
                 InputStream decodedStream = getDecodedInputStream(contentEncoding, in);
-                this.body = new String(decodedStream.readAllBytes(), StandardCharsets.UTF_8);
+                byte[] bytes = decodedStream.readAllBytes();
                 decodedStream.close();
+                this.body = bytes.length > 0
+                        ? new String(bytes, StandardCharsets.UTF_8)
+                        : null;
             } else {
                 this.body = null;
             }

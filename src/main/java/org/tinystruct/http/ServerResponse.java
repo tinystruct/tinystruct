@@ -56,7 +56,8 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
         addHeader(Header.LOCATION.name(), url);
         setStatus(ResponseStatus.TEMPORARY_REDIRECT);
         try {
-            this.exchange.sendResponseHeaders(this.status.code(), 0);
+            // -1 signals no response body for a redirect
+            this.exchange.sendResponseHeaders(this.status.code(), -1);
             this.headersSent = true;
         } catch (IOException e) {
             throw new ApplicationException(e);
@@ -86,7 +87,7 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
                 this.outputStream.flush();
             }
         } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e);
+            throw new ApplicationException(e.getMessage() != null ? e.getMessage() : e.toString(), e);
         }
     }
 
@@ -104,9 +105,9 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
             }
         } catch (IOException ignore) {
         } finally {
+            closed = true;
             exchange.close();
         }
-        closed = true;
     }
 
     @Override
