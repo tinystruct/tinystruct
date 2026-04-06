@@ -40,14 +40,20 @@ Alternatively, use the [tinystruct-archetype](https://github.com/tinystruct/tiny
 In tinystruct, every module is an `Application`. To create one, extend `org.tinystruct.AbstractApplication`.
 
 ```java
+package com.example.app;
+
 import org.tinystruct.AbstractApplication;
+import org.tinystruct.ApplicationException;
 import org.tinystruct.system.annotation.Action;
+import org.tinystruct.system.annotation.Action.Mode;
 
 public class HelloApplication extends AbstractApplication {
 
     @Override
     public void init() {
         // Initialization logic (e.g., setting up resources)
+        // Note: Do NOT register actions here — use the @Action annotation instead.
+        this.setTemplateRequired(false); // Skip .view template lookup if returning data directly
     }
 
     @Override
@@ -55,9 +61,23 @@ public class HelloApplication extends AbstractApplication {
         return "1.0.0";
     }
 
+    // Handles: bin/dispatcher hello  AND  GET /?q=hello
     @Action("hello")
     public String sayHello() {
-        return "Hello, Tinystruct!";
+        return "Hello, tinystruct!";
+    }
+
+    // Path parameter: GET /?q=greet/James  OR  bin/dispatcher greet/James
+    @Action("greet")
+    public String greet(String name) {
+        return "Hello, " + name + "!";
+    }
+
+    // HTTP-only POST handler
+    @Action(value = "submit", mode = Mode.HTTP_POST)
+    public String submit() throws ApplicationException {
+        // Logic for handling submission
+        return "Submitted successfully";
     }
 }
 ```
@@ -67,20 +87,26 @@ The `@Action` annotation maps URI paths or CLI commands to Java methods.
 
 - **Path Mapping**: `@Action("praise")` handles `dispatcher praise` or `/?q=praise`.
 - **Modes**: Specify if an action is restricted to CLI or specific HTTP methods.
-  ```java
-  @Action(value = "hello", mode = Mode.HTTP_POST)
-  public String handlePost() { ... }
-  ```
-- **Arguments**: Methods can accept parameters directly. For complex HTTP interactions, you can include `Request` and `Response` as parameters.
-  ```java
-  @Action("greet")
-  public String greet(String name) {
-      return "Hello, " + name;
-  }
+- **Metadata**: Add descriptions and examples for CLI help generation.
 
-  @Action("download")
-  public void download(Request<?, ?> request, Response<?, ?> response) {
+  ```java
+  @Action(
+      value = "user/{id}",
+      description = "Get a user by their ID",
+      mode = Mode.HTTP_GET,
+      example = "bin/dispatcher user/42"
+  )
+  public String getUser(int id) { 
+      return "User ID: " + id;
+  }
+  ```
+
+- **Arguments and Path Parameters**: Methods can accept parameters directly. tinystruct automatically builds a regex from the method signature for path parameters (e.g., `@Action("user/{id}")` -> `^/?user/(-?\d+)$`). For complex HTTP interactions, you can include `Request` and `Response` as parameters.
+  ```java
+  @Action(value = "upload", mode = Mode.HTTP_POST)
+  public String upload(Request<?, ?> request, Response<?, ?> response) throws ApplicationException {
       // Use request and response directly for custom logic
+      return "Upload handled";
   }
   ```
 
@@ -90,6 +116,7 @@ The `Context` object provides access to request-specific data, including CLI opt
 ```java
 @Action("echo")
 public String echo() {
+    // Access CLI flags passed as `--words "Hello World"`
     Object words = getContext().getAttribute("--words");
     return words != null ? words.toString() : "No words provided";
 }
@@ -133,11 +160,13 @@ Tinystruct provides built-in support for various databases (H2, MySQL, SQLite, S
 2. **Usage**: Use the `generate` command to create POJOs and use the internal data layer to interact with the database.
 
 ### Session Management
-For web applications, session management is transparent. You can access session data via the `Context`:
+For web applications, session management is handled via the `Request` object. Include it as a parameter in your action method:
 
 ```java
-public String login() {
-    getContext().getSession().setAttribute("user", "James");
+import org.tinystruct.http.Request;
+
+public String login(Request<?, ?> request) {
+    request.getSession().setAttribute("user", "James");
     return "Logged in";
 }
 ```
@@ -146,6 +175,8 @@ public String login() {
 For JSON serialization and parsing, use the built-in `org.tinystruct.data.component.Builder` class instead of external libraries like Gson or Jackson.
 
 ```java
+import org.tinystruct.data.component.Builder;
+
 // Serialization
 Builder builder = new Builder();
 builder.put("status", "success");
@@ -153,8 +184,9 @@ builder.put("data", someObject);
 String json = builder.toString();
 
 // Parsing
-builder.parse(jsonString);
-Object value = builder.get("status");
+Builder parsed = new Builder();
+parsed.parse(jsonString);
+String status = parsed.get("status").toString();
 ```
 
 ### application.properties
@@ -240,17 +272,77 @@ request.setMethod("POST")
        .setBody("{\"key\":\"value\"}");
 
 HTTPHandler handler = new HTTPHandler();
-URLResponse response = handler.handleRequest(request);
-if (response.getStatusCode() == 201 || response.getStatusCode() == 200) {
-    logger.log(Level.INFO, "API successfully");
+var response = handler.handleRequest(request);
+
+// Always check the status code before using the response body
+if (response.getStatusCode() == 200) {
+    String responseBody = response.getBody();
+    // Process the successful response
 } else {
-    logger.log(Level.WARNING, "API returned status "+ response.getStatusCode());
+    // Handle the error (e.g., log response.getStatusCode())
 }
 ```
 
 ---
 
-## 8. Best Practices
+## 8. Testing Patterns
+
+For testing your applications, use JUnit 5. Since `ActionRegistry` is a singleton, you must manage its state carefully across tests.
+
+```java
+import org.junit.jupiter.api.*;
+import org.tinystruct.system.Settings;
+
+class HelloApplicationTest {
+
+    private HelloApplication app;
+
+    @BeforeEach
+    void setUp() {
+        app = new HelloApplication();
+        // Setting configuration triggers init() and annotation processing
+        app.setConfiguration(new Settings());
+    }
+
+    @Test
+    void testHello() throws Exception {
+        Object result = app.invoke("hello");
+        Assertions.assertEquals("Hello, tinystruct!", result);
+    }
+
+    @Test
+    void testGreet() throws Exception {
+        Object result = app.invoke("greet", new Object[]{"James"});
+        Assertions.assertEquals("Hello, James!", result);
+    }
+}
+```
+
+---
+
+## 9. Common Pitfalls
+
+| Problem | Fix |
+|---|---|
+| `ApplicationRuntimeException: template not found` | Call `setTemplateRequired(false)` in `init()` if you are returning data directly (e.g., for APIs). |
+| Action not found at runtime | Make sure the class is imported via `--import` on the CLI or listed in `application.properties`. |
+| Method not registered | Ensure the `@Action` annotation is on a `public` method — private/protected methods are ignored. |
+| CLI arg not visible | Pass arguments with `--key value` syntax; access via `getContext().getAttribute("--key")`. |
+| JSON using Gson/Jackson | Use `org.tinystruct.data.component.Builder` instead — it is the framework-native JSON library. |
+| Two methods have the same path | Set explicit `mode` parameters (e.g., `Mode.HTTP_GET` vs `Mode.HTTP_POST`) to disambiguate. |
+
+---
+
+## 10. Best Practices
 1. **Granular Applications**: Break logic into smaller, focused applications.
 2. **Standard Interfaces**: Leverage `init()` for setup rather than constructors.
 3. **Mode Awareness**: Use `Mode` in `@Action` to ensure security (e.g., restricted CLI-only tools).
+
+---
+
+## 11. Developer Tools
+
+### Gemini CLI Skill
+This project includes a specialized **Gemini CLI skill** located in `.agent/skills/tinystruct-dev/SKILL.md`. This skill provides expert guidance for developing with the tinystruct framework, covering architecture, routing, context, and more.
+
+If you are using Gemini CLI, it will automatically recognize and utilize this skill to assist you with tinystruct-specific development tasks.
