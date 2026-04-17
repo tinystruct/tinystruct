@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -169,7 +170,7 @@ public class Builder extends HashMap<String, Object> implements Struct {
             Object element = Array.get(array, i);
             if (element instanceof String) {
                 buffer.append(QUOTE)
-                        .append(escapeString(element.toString()))
+                        .append(StringUtilities.escape(element.toString()))
                         .append(QUOTE);
             } else {
                 buffer.append(element != null ? element.toString() : NULL_STRING);
@@ -200,15 +201,6 @@ public class Builder extends HashMap<String, Object> implements Struct {
         }
     }
 
-    /**
-     * Optimized string escaping
-     */
-    private String escapeString(String str) {
-        if (str.indexOf(QUOTE) == -1) {
-            return str; // No quotes to escape
-        }
-        return str.replace("\"", "\\\"");
-    }
 
     /**
      * Parse the resource string and populate the Builder object with key-value pairs.
@@ -300,7 +292,7 @@ public class Builder extends HashMap<String, Object> implements Struct {
                 throw new ApplicationException("Unterminated key");
             }
 
-            String key = content.substring(keyStart, pos);
+            String key = StringUtilities.unescape(content.substring(keyStart, pos));
             pos++; // Skip closing quote
 
             // Skip whitespace and find colon
@@ -558,18 +550,18 @@ public class Builder extends HashMap<String, Object> implements Struct {
      */
     static Number parseNumericValue(String value) {
         try {
-            if (value.contains(".") || value.contains("e") || value.contains("E")) {
-                return Double.parseDouble(value);
-            }
             return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            try {
-                return Long.parseLong(value);
-            } catch (NumberFormatException ex) {
-                logger.warning("Failed to parse numeric value: " + value);
-                throw new IllegalArgumentException("Invalid number value: " + value, ex);
-            }
+        } catch (NumberFormatException ignored) {
         }
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException ignored) {
+        }
+        try {
+            return new BigDecimal(value);
+        } catch (NumberFormatException ignored) {
+        }
+        throw new IllegalArgumentException("Invalid number: " + value);
     }
 
     /**

@@ -78,15 +78,25 @@ public class Builders extends ArrayList<Builder> implements Struct {
             }
         }
 
-        // Handle single elements that are objects
+        // Handle bare object sequences: {…},{…},{…} (no enclosing brackets)
         if (value.charAt(0) == LEFT_BRACE) {
-            Builder builder = new Builder();
-            builder.parse(value);
-            this.add(builder);
-            int p = builder.getClosedPosition();
-
-            if (p < value.length() && value.charAt(p) == COMMA) {
-                parse(value.substring(p + 1));
+            int pos = 0;
+            int length = value.length();
+            while (pos < length) {
+                // Skip whitespace and commas between objects
+                while (pos < length && (Character.isWhitespace(value.charAt(pos)) || value.charAt(pos) == COMMA)) {
+                    pos++;
+                }
+                if (pos >= length) {
+                    break;
+                }
+                if (value.charAt(pos) != LEFT_BRACE) {
+                    break; // not an object, stop
+                }
+                Builder builder = new Builder();
+                builder.parse(value.substring(pos));
+                this.add(builder);
+                pos += builder.getClosedPosition();
             }
         }
     }

@@ -17,6 +17,8 @@ package org.tinystruct.system.util;
 
 import org.tinystruct.http.Cookie;
 
+import static org.tinystruct.data.component.Struct.ESCAPE_CHAR;
+
 /**
  * Utility class for string manipulation operations.
  * Provides methods for common string operations like escaping, HTML handling,
@@ -532,6 +534,67 @@ public class StringUtilities implements java.io.Serializable {
         }
 
         return raw.replace(String.valueOf(ch), "");
+    }
+
+    /**
+     * Converts a JSON-escaped string back to its original form.
+     *
+     * <p>Handles the standard JSON escape sequences:
+     * {@code \"}, {@code \\}, {@code \/}, {@code \b}, {@code \f},
+     * {@code \n}, {@code \r}, {@code \t}, and {@code \\uXXXX}.
+     *
+     * @param s the raw JSON string content (without surrounding quotes)
+     * @return the unescaped Java string
+     */
+    public static String unescape(String s) {
+        if (s == null || s.indexOf(ESCAPE_CHAR) == -1) {
+            return s; // fast path – nothing to unescape
+        }
+
+        StringBuilder sb = new StringBuilder(s.length());
+        int i = 0;
+        while (i < s.length()) {
+            char c = s.charAt(i);
+            if (c != ESCAPE_CHAR || i + 1 >= s.length()) {
+                sb.append(c);
+                i++;
+                continue;
+            }
+
+            char next = s.charAt(i + 1);
+            switch (next) {
+                case '"':  sb.append('"');  i += 2; break;
+                case '\\': sb.append('\\'); i += 2; break;
+                case '/':  sb.append('/');  i += 2; break;
+                case 'b':  sb.append('\b'); i += 2; break;
+                case 'f':  sb.append('\f'); i += 2; break;
+                case 'n':  sb.append('\n'); i += 2; break;
+                case 'r':  sb.append('\r'); i += 2; break;
+                case 't':  sb.append('\t'); i += 2; break;
+                case 'u':
+                    if (i + 5 < s.length()) {
+                        String hex = s.substring(i + 2, i + 6);
+                        try {
+                            sb.append((char) Integer.parseInt(hex, 16));
+                            i += 6;
+                        } catch (NumberFormatException e) {
+                            // not a valid unicode escape – keep literally
+                            sb.append(c);
+                            i++;
+                        }
+                    } else {
+                        sb.append(c);
+                        i++;
+                    }
+                    break;
+                default:
+                    // unknown escape – keep as-is (lenient)
+                    sb.append(c);
+                    i++;
+                    break;
+            }
+        }
+        return sb.toString();
     }
 
     /**
