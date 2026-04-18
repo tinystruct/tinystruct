@@ -112,10 +112,7 @@ public class ServerRequest implements Request<HttpExchange, Object> {
     @Override
     public Session getSession(String id, boolean generate) {
         SessionManager manager = SessionManager.getInstance();
-        if (manager.getSession(id) == null && generate) {
-            manager.setSession(id, new MemorySession(id));
-        }
-        return manager.getSession(id);
+        return manager.getSession(id, generate);
     }
 
     @Override

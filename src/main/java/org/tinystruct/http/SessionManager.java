@@ -1,5 +1,7 @@
 package org.tinystruct.http;
 
+import org.tinystruct.system.Configuration;
+import org.tinystruct.system.Settings;
 import org.tinystruct.system.scheduling.Scheduler;
 import org.tinystruct.system.scheduling.TimeIterator;
 
@@ -11,8 +13,21 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SessionManager implements Monitor<SessionListener> {
     private static final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<String, Session>();
     private transient final List<SessionListener> listeners = new ArrayList<>();
+    private SessionRepository repository;
 
     private SessionManager() {
+        Configuration<String> settings = new Settings();
+        String repositoryName = settings.get("default.session.repository");
+        if (repositoryName != null && !repositoryName.isEmpty()) {
+            try {
+                this.repository = (SessionRepository) Class.forName(repositoryName).getDeclaredConstructor().newInstance();
+            } catch (Exception e) {
+                this.repository = new MemorySessionRepository();
+            }
+        } else {
+            this.repository = new MemorySessionRepository();
+        }
+
         Scheduler.getInstance().schedule(new ExpirationValidator(), new TimeIterator(0, 0, 0), 1000);
     }
 
@@ -21,7 +36,9 @@ public final class SessionManager implements Monitor<SessionListener> {
     }
 
     public void setSession(String sessionId, Session session) {
-        sessions.put(sessionId, session);
+        if (this.repository instanceof MemorySessionRepository) {
+            sessions.put(sessionId, session);
+        }
         SessionEvent event = new SessionEvent(SessionEvent.Type.CREATED, session);
         fireEvent(event);
     }
@@ -34,13 +51,28 @@ public final class SessionManager implements Monitor<SessionListener> {
     }
 
     public Session getSession(String sessionId) {
-        return sessions.get(sessionId);
+        return this.repository.findById(sessionId);
+    }
+
+    public Session getSession(String sessionId, boolean generate) {
+        Session session = this.repository.findById(sessionId);
+        if (session == null && generate) {
+            session = this.repository.create(sessionId);
+        }
+        return session;
     }
 
     public void removeSession(String sessionId) {
-        Session session = sessions.remove(sessionId);
-        SessionEvent event = new SessionEvent(SessionEvent.Type.DESTROYED, session);
-        listeners.forEach(listener -> listener.onSessionEvent(event));
+        Session session = this.getSession(sessionId);
+        if (session != null) {
+            this.repository.delete(sessionId);
+            SessionEvent event = new SessionEvent(SessionEvent.Type.DESTROYED, session);
+            listeners.forEach(listener -> listener.onSessionEvent(event));
+
+            if (this.repository instanceof MemorySessionRepository) {
+                sessions.remove(sessionId);
+            }
+        }
     }
 
     @Override
