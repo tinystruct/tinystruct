@@ -95,9 +95,7 @@ public class MultipartData {
             }
 
             java.io.ByteArrayOutputStream dataStream = new java.io.ByteArrayOutputStream();
-            byte[] buffer = new byte[bufferSize];
-            int bytesRead;
-            
+
             // This is a bit tricky with standard InputStream as we need to find the boundary
             // For simplicity in this implementation, we read line by line until boundary
             // Note: This might not be efficient for large binary files
