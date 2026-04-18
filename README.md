@@ -13,6 +13,15 @@ A simple framework for Java development. Simple thinking, Better design, Easy to
 
 
 
+## Key Features
+
+- **Zero Boilerplate**: No `main()` method required.
+- **Unified Design**: The same application logic can be invoked via CLI or HTTP.
+- **Pluggable Sessions**: Supports memory and Redis-backed session management natively across all server implementations.
+- **File Uploads**: Generic multipart data handling works out-of-the-box (`request.getAttachments()`).
+- **Multiple Servers**: Compatible with JDK HttpServer, Netty, Tomcat, and Undertow.
+- **Minimal Configuration**: Convention over configuration with an emphasis on transparency.
+
 ## Prerequisites
 
 - Java Development Kit (JDK) 17 or higher
@@ -30,7 +39,7 @@ Installation and Getting Started Manually
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.19</version>
+  <version>1.7.20</version>
   <classifier>jar-with-dependencies</classifier> <!-- Optional -->
 </dependency>
 ```
@@ -96,7 +105,7 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.19
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.20
            /
 ```
 ```tcsh

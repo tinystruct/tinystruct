@@ -26,7 +26,7 @@ Add the following dependency to your `pom.xml`:
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.19</version>
+  <version>1.7.20</version>
 </dependency>
 ```
 
@@ -145,7 +145,44 @@ Access your actions via:
 
 ---
 
-## 5. Data & Templating
+## 5. HTTP Features
+
+### Session Management
+Tinystruct provides a pluggable architecture for HTTP session management via the `SessionManager` and `SessionRepository` interfaces.
+
+- **Default Behavior**: By default, sessions are stored in memory using `MemorySessionRepository`.
+- **Redis Integration**: For clustered or stateless deployments, you can easily switch to a Redis-backed session repository.
+  
+To configure Redis sessions, update your `application.properties`:
+```properties
+default.session.repository=org.tinystruct.http.RedisSessionRepository
+redis.host=127.0.0.1
+redis.port=6379
+# redis.password=yourpassword
+```
+Session configuration applies universally across all supported server modules (JDK HttpServer, Netty, Tomcat, Undertow).
+
+### File Uploads (Multipart Data)
+Handling file uploads is supported out of the box. When a `multipart/form-data` request is received, the framework automatically parses it. You can access uploaded files using `request.getAttachments()`:
+
+```java
+@Action(value = "upload", mode = Mode.HTTP_POST)
+public String upload(Request<?, ?> request, Response<?, ?> response) throws ApplicationException {
+    List<FileEntity> files = request.getAttachments();
+    if (files != null) {
+        for (FileEntity file : files) {
+            System.out.println("Uploaded: " + file.getFilename());
+            // Save or process file.getContent()
+        }
+    }
+    return "Upload successful!";
+}
+```
+This generic multipart handler works identically across the built-in JDK HTTP server and specialized server adapters like Undertow and Tomcat.
+
+---
+
+## 6. Data & Templating
 
 ### Database Integration
 Tinystruct provides built-in support for various databases (H2, MySQL, SQLite, SQLServer).
@@ -159,16 +196,7 @@ Tinystruct provides built-in support for various databases (H2, MySQL, SQLite, S
    ```
 2. **Usage**: Use the `generate` command to create POJOs and use the internal data layer to interact with the database.
 
-### Session Management
-For web applications, session management is handled via the `Request` object. Include it as a parameter in your action method:
 
-```java
-import org.tinystruct.http.Request;
-
-public String login(Request<?, ?> request) {
-    request.getSession().setAttribute("user", "James");
-    return "Logged in";
-}
 ```
 
 ### JSON Handling
@@ -206,7 +234,7 @@ Tinystruct supports dynamic content through a variable-based templating system.
 
 ---
 
-## 6. Advanced Topics
+## 7. Advanced Topics
 
 ### Built-in CLI Commands
 The dispatcher provides several utility commands:
@@ -259,7 +287,7 @@ Tinystruct supports an event-driven architecture to decouple components. To impr
 
 ---
 
-## 7. Networking & Integration
+## 8. Networking & Integration
 
 ### HTTP Client (URLRequest & HTTPHandler)
 To make outbound HTTP requests, use `org.tinystruct.net.URLRequest` and `org.tinystruct.net.handlers.HTTPHandler`.
@@ -285,7 +313,7 @@ if (response.getStatusCode() == 200) {
 
 ---
 
-## 8. Testing Patterns
+## 9. Testing Patterns
 
 For testing your applications, use JUnit 5. Since `ActionRegistry` is a singleton, you must manage its state carefully across tests.
 
@@ -320,7 +348,7 @@ class HelloApplicationTest {
 
 ---
 
-## 9. Common Pitfalls
+## 10. Common Pitfalls
 
 | Problem | Fix |
 |---|---|
@@ -333,14 +361,14 @@ class HelloApplicationTest {
 
 ---
 
-## 10. Best Practices
+## 11. Best Practices
 1. **Granular Applications**: Break logic into smaller, focused applications.
 2. **Standard Interfaces**: Leverage `init()` for setup rather than constructors.
 3. **Mode Awareness**: Use `Mode` in `@Action` to ensure security (e.g., restricted CLI-only tools).
 
 ---
 
-## 11. Developer Tools
+## 12. Developer Tools
 
 ### Gemini CLI Skill
 This project includes a specialized **Gemini CLI skill** located in `.agent/skills/tinystruct-dev/SKILL.md`. This skill provides expert guidance for developing with the tinystruct framework, covering architecture, routing, context, and more.
