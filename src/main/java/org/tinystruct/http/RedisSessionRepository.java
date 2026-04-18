@@ -26,14 +26,17 @@ import org.tinystruct.system.Settings;
  * Redis-backed implementation of {@link SessionRepository}.
  * Uses Lettuce as the Redis client.
  *
- * <p>Expects {@code redis.host}, {@code redis.port}, and optionally
+ * <p>
+ * Expects {@code redis.host}, {@code redis.port}, and optionally
  * {@code redis.password} to be set in {@code application.properties}.
  */
 public class RedisSessionRepository implements SessionRepository {
 
     private final RedisCommands<String, String> commands;
+    private final SessionManager manager;
 
-    public RedisSessionRepository() {
+    public RedisSessionRepository(SessionManager manager) {
+        this.manager = manager;
         Configuration<String> settings = new Settings();
         String host = settings.get("redis.host") != null ? settings.get("redis.host") : "127.0.0.1";
         int port = settings.get("redis.port") != null ? Integer.parseInt(settings.get("redis.port")) : 6379;
@@ -66,11 +69,14 @@ public class RedisSessionRepository implements SessionRepository {
         RedisSession session = new RedisSession(sessionId, commands);
         // We set a marker to ensure the session exists in Redis
         session.setAttribute("_created", String.valueOf(System.currentTimeMillis()));
+        manager.fireEvent(new SessionEvent(SessionEvent.Type.CREATED, session));
         return session;
     }
 
     @Override
     public void delete(String sessionId) {
+        Session session = findById(sessionId);
         commands.del("session:" + sessionId);
+        manager.fireEvent(new SessionEvent(SessionEvent.Type.DESTROYED, session));
     }
 }

@@ -1,45 +1,52 @@
-/*******************************************************************************
- * Copyright  (c) 2025 James M. Zhou
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *******************************************************************************/
 package org.tinystruct.http;
 
+import org.tinystruct.system.scheduling.Scheduler;
+import org.tinystruct.system.scheduling.TimeIterator;
+
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
- * In-process {@link SessionRepository} backed by {@link SessionManager}'s
- * {@link java.util.concurrent.ConcurrentHashMap} — the original default behaviour.
- *
- * <p>This implementation reuses the existing {@link MemorySession} and
- * {@link SessionManager} expiration scheduler unchanged.
+ * In-process {@link SessionRepository} backed by a {@link ConcurrentHashMap}.
  */
 public class MemorySessionRepository implements SessionRepository {
 
-    private final SessionManager manager = SessionManager.getInstance();
+    private final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
+    private final SessionManager manager;
+
+    public MemorySessionRepository(SessionManager sessionManager) {
+        this.manager = sessionManager;
+        Scheduler.getInstance().schedule(new ExpirationValidator(), new TimeIterator(0, 0, 0), 1000);
+    }
 
     @Override
     public Session findById(String sessionId) {
-        return manager.getSession(sessionId);
+        return sessions.get(sessionId);
     }
 
     @Override
     public Session create(String sessionId) {
         Session session = new MemorySession(sessionId);
-        manager.setSession(sessionId, session);
+        sessions.put(sessionId, session);
+        manager.fireEvent(new SessionEvent(SessionEvent.Type.CREATED, session));
         return session;
     }
 
     @Override
     public void delete(String sessionId) {
-        manager.removeSession(sessionId);
+        Session session = findById(sessionId);
+        sessions.remove(sessionId);
+        manager.fireEvent(new SessionEvent(SessionEvent.Type.DESTROYED, session));
+    }
+
+    private final class ExpirationValidator extends TimerTask {
+        @Override
+        public void run() {
+            sessions.forEach((sessionId, session) -> {
+                if (session.isExpired()) {
+                    delete(sessionId);
+                }
+            });
+        }
     }
 }
