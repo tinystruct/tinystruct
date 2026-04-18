@@ -172,7 +172,13 @@ public String upload(Request<?, ?> request, Response<?, ?> response) throws Appl
     if (files != null) {
         for (FileEntity file : files) {
             System.out.println("Uploaded: " + file.getFilename());
-            // Save or process file.getContent()
+            // Save the file to disk
+            byte[] fileData = file.get();
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(new java.io.File("/tmp/" + file.getFilename()))) {
+                fos.write(fileData);
+            } catch (java.io.IOException e) {
+                throw new ApplicationException(e.getMessage(), e);
+            }
         }
     }
     return "Upload successful!";
@@ -235,6 +241,44 @@ Tinystruct supports dynamic content through a variable-based templating system.
 ---
 
 ## 7. Advanced Topics
+
+### Distributed Locking
+For clustered environments where you need to synchronize tasks across multiple nodes, use `DistributedLock` or `DistributedRedisLock`.
+
+```java
+import org.tinystruct.valve.DistributedRedisLock;
+import org.tinystruct.valve.Lock;
+
+public void processCriticalTask() {
+    Lock lock = new DistributedRedisLock("my-global-lock-id");
+    lock.lock();
+    try {
+        // Critical section logic here
+    } finally {
+        lock.unlock();
+    }
+}
+```
+
+### Server-Sent Events (SSE) & Streaming
+Tinystruct provides built-in support for SSE to push real-time updates from server to client.
+
+1. **Register the client connection**:
+```java
+@Action(value = "stream", mode = Mode.HTTP_GET)
+public void stream(Request<?, ?> request, Response<?, ?> response) {
+    String sessionId = request.getSession().getId();
+    SSEPushManager.getInstance().register(sessionId, response);
+}
+```
+
+2. **Push messages to the client**:
+```java
+Builder message = new Builder();
+message.put("event", "update");
+message.put("data", "Process completed!");
+SSEPushManager.getInstance().push(sessionId, message);
+```
 
 ### Built-in CLI Commands
 The dispatcher provides several utility commands:
@@ -309,6 +353,57 @@ if (response.getStatusCode() == 200) {
 } else {
     // Handle the error (e.g., log response.getStatusCode())
 }
+```
+
+
+### HTTP Client Async Patterns
+For high-performance or non-blocking I/O, `HTTPHandler` supports asynchronous requests returning a `CompletableFuture`.
+
+```java
+URL url = new URL("https://api.example.com/data");
+URLRequest request = new URLRequest(url);
+HTTPHandler handler = new HTTPHandler();
+
+CompletableFuture<URLResponse> future = handler.handleRequestAsync(request);
+future.thenAccept(response -> {
+    if (response.getStatusCode() == 200) {
+        System.out.println("Async Data: " + response.getBody());
+    }
+}).exceptionally(ex -> {
+    ex.printStackTrace();
+    return null;
+});
+```
+
+### Model Context Protocol (MCP) Integration
+Tinystruct natively supports the Model Context Protocol (MCP), enabling AI model interactions, tool discovery, and prompt handling.
+
+1. **Creating an MCP Server**:
+Extend `MCPServer` and register your tools and prompts.
+```java
+import org.tinystruct.mcp.MCPServer;
+import org.tinystruct.mcp.tools.CalculatorTool;
+
+public class MyMCPServer extends MCPServer {
+    @Override
+    public void init() {
+        super.init();
+        this.registerTool(new CalculatorTool());
+    }
+}
+```
+
+2. **Connecting as a Client**:
+Use `MCPClient` to connect to remote MCP servers, execute tools, and retrieve resources via JSON-RPC.
+```java
+MCPClient client = new MCPClient("http://localhost:8004", "auth-token");
+client.connect();
+
+Map<String, Object> params = new HashMap<>();
+params.put("a", 10);
+params.put("b", 20);
+Object result = client.executeResource("calculator/add", params);
+client.disconnect();
 ```
 
 ---

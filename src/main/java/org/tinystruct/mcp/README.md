@@ -16,21 +16,21 @@ The MCP module consists of the following core components:
 3. **MCPClient**: Full-featured client for connecting to MCP servers
 
 ### Resource Management
-5. **MCPResource**: Unified interface for all MCP resources (tools, data sources, prompts)
-6. **MCPTool**: Implementation for executable tools with method registration
-7. **MCPDataResource**: Implementation for data resources
-8. **MCPPrompt**: Implementation for prompt templates with parameter substitution
+1. **MCPResource**: Unified interface for all MCP resources (tools, data sources, prompts)
+2. **MCPTool**: Implementation for executable tools with method registration
+3. **MCPDataResource**: Implementation for data resources
+4. **MCPPrompt**: Implementation for prompt templates with parameter substitution
 
 ### Protocol Support
-9. **MCPSpecification**: Protocol constants, methods, and error codes
-10. **JsonRpcHandler**: JSON-RPC 2.0 protocol implementation
-11. **AuthorizationHandler**: JWT-based authentication
-12. **MCPPushManager**: Server-Sent Events management for real-time updates
+1. **MCPSpecification**: Protocol constants, methods, and error codes
+2. **JsonRpcHandler**: JSON-RPC 2.0 protocol implementation
+3. **AuthorizationHandler**: JWT-based authentication
+4. **MCPPushManager**: Server-Sent Events management for real-time updates
 
 ### Supporting Classes
-13. **MCPException**: Custom exception handling for MCP operations
-14. **AbstractMCPResource**: Base implementation for MCP resources
-15. **MCPLifecycle**: Lifecycle management utilities
+1. **MCPException**: Custom exception handling for MCP operations
+2. **AbstractMCPResource**: Base implementation for MCP resources
+3. **MCPLifecycle**: Lifecycle management utilities
 
 ## MCP Server Implementation
 
