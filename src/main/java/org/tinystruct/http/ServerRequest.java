@@ -17,6 +17,11 @@ package org.tinystruct.http;
 
 import com.sun.net.httpserver.HttpExchange;
 
+import org.tinystruct.ApplicationException;
+import org.tinystruct.data.Attachment;
+import org.tinystruct.data.FileEntity;
+import org.tinystruct.transfer.http.upload.ContentDisposition;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +36,7 @@ import static org.tinystruct.http.Constants.JSESSIONID;
 /**
  * Tinystruct Request adapter for JDK HttpServer (no servlet APIs).
  */
-public class ServerRequest implements Request<HttpExchange, Object> {
+public class ServerRequest implements Request<HttpExchange, InputStream> {
     private final HttpExchange exchange;
     private final Headers headers = new Headers();
     private final Map<String, List<String>> params = new HashMap<>();
@@ -41,6 +46,7 @@ public class ServerRequest implements Request<HttpExchange, Object> {
     private Version version = Version.HTTP1_1;
     private String body;
     private String sessionId;
+    private List<FileEntity> attachments;
 
     public ServerRequest(HttpExchange exchange) throws IOException {
         this.exchange = exchange;
@@ -72,21 +78,21 @@ public class ServerRequest implements Request<HttpExchange, Object> {
             cookies = cookieList.toArray(new Cookie[0]);
         }
 
-        // Body (only read small bodies; for large, user should stream())
-        try (InputStream is = exchange.getRequestBody()) {
-            StringBuilder sb = new StringBuilder();
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = br.readLine()) != null) sb.append(line);
-            }
-            body = sb.toString();
-        }
-
         // Params from query and x-www-form-urlencoded body
         URI u = exchange.getRequestURI();
         if (u.getRawQuery() != null) parseQueryString(u.getRawQuery());
+
         String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
-        if (contentType != null && contentType.toLowerCase().contains("application/x-www-form-urlencoded") && body != null) {
+        if (contentType != null && contentType.toLowerCase().contains("application/x-www-form-urlencoded")) {
+            // Body (only read small bodies; for large, user should stream())
+            try (InputStream is = exchange.getRequestBody()) {
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = br.readLine()) != null) sb.append(line);
+                }
+                body = sb.toString();
+            }
             parseQueryString(body);
         }
     }
@@ -105,8 +111,27 @@ public class ServerRequest implements Request<HttpExchange, Object> {
     }
 
     @Override
-    public List<org.tinystruct.data.FileEntity> getAttachments() {
-        return null;
+    public List<FileEntity> getAttachments() throws ApplicationException {
+        if (attachments != null) return attachments;
+
+        String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
+        if (contentType != null && contentType.toLowerCase().startsWith("multipart/form-data")) {
+            attachments = new ArrayList<>();
+            MultipartData multipartData = new MultipartData(this);
+            ContentDisposition part;
+            while ((part = multipartData.getNextPart()) != null) {
+                if (part.getFileName() != null) {
+                    Attachment attachment = new Attachment();
+                    attachment.setFilename(part.getFileName());
+                    attachment.setContentType(part.getContentType());
+                    attachment.setContent(part.getData());
+                    attachments.add(attachment);
+                } else {
+                    params.computeIfAbsent(part.getName(), k -> new ArrayList<>()).add(new String(part.getData(), StandardCharsets.UTF_8));
+                }
+            }
+        }
+        return attachments;
     }
 
     @Override
@@ -151,8 +176,8 @@ public class ServerRequest implements Request<HttpExchange, Object> {
     }
 
     @Override
-    public Object stream() {
-        return null;
+    public InputStream stream() {
+        return exchange.getRequestBody();
     }
 
     @Override
@@ -172,7 +197,7 @@ public class ServerRequest implements Request<HttpExchange, Object> {
     }
 
     @Override
-    public Request<HttpExchange, Object> setMethod(Method method) {
+    public Request<HttpExchange, InputStream> setMethod(Method method) {
         this.method = method;
         return this;
     }
@@ -183,7 +208,7 @@ public class ServerRequest implements Request<HttpExchange, Object> {
     }
 
     @Override
-    public Request<HttpExchange, Object> setUri(String uri) {
+    public Request<HttpExchange, InputStream> setUri(String uri) {
         this.uri = uri;
         return this;
     }

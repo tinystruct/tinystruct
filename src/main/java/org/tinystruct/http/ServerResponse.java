@@ -52,6 +52,11 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
     }
 
     @Override
+    public void addCookie(Cookie cookie) {
+        addHeader(Header.SET_COOKIE.name(), cookie.toString());
+    }
+
+    @Override
     public void sendRedirect(String url) throws ApplicationException {
         addHeader(Header.LOCATION.name(), url);
         setStatus(ResponseStatus.TEMPORARY_REDIRECT);

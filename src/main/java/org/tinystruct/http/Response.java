@@ -26,6 +26,8 @@ public interface Response<T, O> extends Protocol {
 
     void addHeader(String header, Object value);
 
+    void addCookie(Cookie cookie);
+
     void sendRedirect(String url) throws ApplicationException;
 
     void writeAndFlush(byte[] bytes) throws ApplicationException;
