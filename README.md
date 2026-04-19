@@ -11,17 +11,6 @@ A simple framework for Java development. Simple thinking, Better design, Easy to
 
 [![Star History Chart](https://api.star-history.com/svg?repos=tinystruct/tinystruct&type=Date)](https://www.star-history.com/#tinystruct/tinystruct&Date)
 
-
-
-## Key Features
-
-- **Zero Boilerplate**: No `main()` method required.
-- **Unified Design**: The same application logic can be invoked via CLI or HTTP.
-- **Pluggable Sessions**: Supports memory and Redis-backed session management natively across all server implementations.
-- **File Uploads**: Generic multipart data handling works out-of-the-box (`request.getAttachments()`).
-- **Multiple Servers**: Compatible with JDK HttpServer, Netty, Tomcat, and Undertow.
-- **Minimal Configuration**: Convention over configuration with an emphasis on transparency.
-
 ## Prerequisites
 
 - Java Development Kit (JDK) 17 or higher
