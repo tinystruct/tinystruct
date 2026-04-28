@@ -440,7 +440,7 @@ public class Header implements Cloneable {
         try {
             return Header.valueOf(name.toLowerCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            return Header.NOT_SUPPORTED;
+            return new Header(name);
         }
     }
 
@@ -465,9 +465,10 @@ public class Header implements Cloneable {
     }
 
     public Header set(Object value) {
-        this.value = value;
         try {
-            return (Header) this.clone();
+            Header clone = (Header) this.clone();
+            clone.value = value;
+            return clone;
         } catch (CloneNotSupportedException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
@@ -476,9 +477,10 @@ public class Header implements Cloneable {
     }
 
     public Header setInt(int readableBytes) {
-        this.value = readableBytes;
         try {
-            return (Header) this.clone();
+            Header clone = (Header) this.clone();
+            clone.value = readableBytes;
+            return clone;
         } catch (CloneNotSupportedException e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }

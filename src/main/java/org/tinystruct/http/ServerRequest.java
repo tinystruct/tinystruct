@@ -16,16 +16,16 @@
 package org.tinystruct.http;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpsExchange;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.Attachment;
 import org.tinystruct.data.FileEntity;
 import org.tinystruct.transfer.http.upload.ContentDisposition;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -56,16 +56,23 @@ public class ServerRequest implements Request<HttpExchange, InputStream> {
         exchange.getRequestHeaders().forEach((k, v) -> headers.add(Header.value0f(k).set(String.join(",", v))));
 
         // Cookies
-        List<String> cookieHeaders = exchange.getRequestHeaders().get("Cookie");
+        List<String> cookieHeaders = exchange.getRequestHeaders().get(Header.COOKIE.name());
         if (cookieHeaders != null && !cookieHeaders.isEmpty()) {
             List<Cookie> cookieList = new ArrayList<>();
             for (String header : cookieHeaders) {
                 String[] parts = header.split(";\\s*");
                 for (String part : parts) {
                     int idx = part.indexOf('=');
+                    String name, value;
                     if (idx > 0) {
-                        String name = part.substring(0, idx).trim();
-                        String value = part.substring(idx + 1).trim();
+                        name = part.substring(0, idx).trim();
+                        value = part.substring(idx + 1).trim();
+                    } else {
+                        name = part.trim();
+                        value = "";
+                    }
+
+                    if (!name.isEmpty()) {
                         CookieImpl cookie = new CookieImpl(name);
                         cookie.setValue(value);
                         if (JSESSIONID.equalsIgnoreCase(name)) {
@@ -78,22 +85,14 @@ public class ServerRequest implements Request<HttpExchange, InputStream> {
             cookies = cookieList.toArray(new Cookie[0]);
         }
 
-        // Params from query and x-www-form-urlencoded body
+        // Params from query
         URI u = exchange.getRequestURI();
         if (u.getRawQuery() != null) parseQueryString(u.getRawQuery());
 
-        String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
-        if (contentType != null && contentType.toLowerCase().contains("application/x-www-form-urlencoded")) {
-            // Body (only read small bodies; for large, user should stream())
-            try (InputStream is = exchange.getRequestBody()) {
-                StringBuilder sb = new StringBuilder();
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = br.readLine()) != null) sb.append(line);
-                }
-                body = sb.toString();
-            }
-            parseQueryString(body);
+        // Params from x-www-form-urlencoded body
+        String contentType = exchange.getRequestHeaders().getFirst(Header.CONTENT_TYPE.name());
+        if (contentType != null && contentType.toLowerCase().startsWith(Header.StandardValue.APPLICATION_X_WWW_FORM_URLENCODED.toString())) {
+            parseQueryString(this.body());
         }
     }
 
@@ -102,8 +101,8 @@ public class ServerRequest implements Request<HttpExchange, InputStream> {
         for (String pair : query.split("&")) {
             String[] kv = pair.split("=", 2);
             try {
-                String key = URLDecoder.decode(kv[0], StandardCharsets.UTF_8.name());
-                String value = kv.length == 2 ? URLDecoder.decode(kv[1], StandardCharsets.UTF_8.name()) : "";
+                String key = URLDecoder.decode(kv[0], StandardCharsets.UTF_8);
+                String value = kv.length == 2 ? URLDecoder.decode(kv[1], StandardCharsets.UTF_8) : "";
                 params.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
             } catch (Exception ignored) {
             }
@@ -114,8 +113,8 @@ public class ServerRequest implements Request<HttpExchange, InputStream> {
     public List<FileEntity> getAttachments() throws ApplicationException {
         if (attachments != null) return attachments;
 
-        String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
-        if (contentType != null && contentType.toLowerCase().startsWith("multipart/form-data")) {
+        String contentType = exchange.getRequestHeaders().getFirst(Header.CONTENT_TYPE.name());
+        if (contentType != null && contentType.toLowerCase().startsWith(Header.StandardValue.MULTIPART_FORM_DATA.toString())) {
             attachments = new ArrayList<>();
             MultipartData multipartData = new MultipartData(this);
             ContentDisposition part;
@@ -161,18 +160,36 @@ public class ServerRequest implements Request<HttpExchange, InputStream> {
 
     @Override
     public String query() {
-        String q = exchange.getRequestURI().getQuery();
+        String q = exchange.getRequestURI().getRawQuery();
         return q == null ? "" : q;
     }
 
     @Override
     public String body() {
+        if (body == null) {
+            boolean hasBody = false;
+            String contentLength = exchange.getRequestHeaders().getFirst(Header.CONTENT_LENGTH.name());
+            if (contentLength != null && Long.parseLong(contentLength) > 0) {
+                hasBody = true;
+            } else if (exchange.getRequestHeaders().containsKey(Header.TRANSFER_ENCODING.name())) {
+                hasBody = true;
+            }
+
+            if (hasBody) {
+                try (InputStream is = exchange.getRequestBody()) {
+                    byte[] bytes = is.readAllBytes();
+                    body = new String(bytes, StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    body = "";
+                }
+            }
+        }
         return body;
     }
 
     @Override
     public boolean isSecure() {
-        return false;
+        return exchange instanceof HttpsExchange;
     }
 
     @Override
@@ -230,5 +247,9 @@ public class ServerRequest implements Request<HttpExchange, InputStream> {
 
     public HttpExchange getHttpExchange() {
         return exchange;
+    }
+
+    public InetSocketAddress getRemoteAddress() {
+        return exchange.getRemoteAddress();
     }
 }
