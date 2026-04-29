@@ -3,11 +3,9 @@ name: tinystruct-dev
 description: Expert guidance for developing with the tinystruct Java framework. Use this skill whenever working on the tinystruct codebase or any project built on tinystruct — including creating new Application classes, adding @Action-mapped routes, writing unit tests, working with ActionRegistry, setting up HTTP/CLI dual-mode handling, configuring the built-in HTTP server, using the event system, handling JSON with Builder, or debugging routing and context issues. Trigger this skill for any task involving tinystruct patterns, framework internals, or developer conventions.
 ---
 
-# tinystruct Framework Developer Skill
+# Developer Skill - tinystruct framework
 
 This skill captures the architecture, conventions, and patterns of the **tinystruct** Java framework — a lightweight, high-performance framework that treats CLI and HTTP as equal citizens, requiring no `main()` method and minimal configuration.
-
-Project root: `c:\Users\james\IdeaProjects\tinystruct`
 
 ---
 
@@ -30,7 +28,7 @@ Project root: `c:\Users\james\IdeaProjects\tinystruct`
 | `Action` | Wraps a `MethodHandle` + regex pattern + priority + `Mode` for dispatch. |
 | `Context` | Per-request state store. Access via `getContext()`. Holds CLI args and HTTP request/response. |
 | `Dispatcher` | CLI entry point (`bin/dispatcher`). Reads `--import` to load applications. |
-| `HttpServer` | Built-in Netty-based HTTP server. Start with `bin/dispatcher start --import org.tinystruct.system.HttpServer`. |
+| `HttpServer` | Built-in HTTP server. Start with `bin/dispatcher start --import org.tinystruct.system.HttpServer`. |
 
 ### Package Map
 
@@ -65,6 +63,7 @@ package com.example;
 
 import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.http.Request;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Action.Mode;
 
@@ -96,7 +95,7 @@ public class HelloApp extends AbstractApplication {
 
     // HTTP-only POST handler
     @Action(value = "submit", mode = Mode.HTTP_POST)
-    public String submit() throws ApplicationException {
+    public String submit(Request request) throws ApplicationException {
         // Access raw request if needed
         return "Submitted";
     }
@@ -116,7 +115,7 @@ public class HelloApp extends AbstractApplication {
 @Action(
     value = "path/subpath",          // required: URI segment or CLI command
     description = "What it does",    // shown in --help output
-    mode = Mode.HTTP_POST,           // default: Mode.DEFAULT (both CLI + HTTP)
+    mode = Mode.DEFAULT,           // default: Mode.DEFAULT (both CLI + HTTP)
     example = "bin/dispatcher path/subpath/42"
 )
 public String myAction(int id) { ... }
@@ -132,6 +131,8 @@ public String myAction(int id) { ... }
 | `HTTP_PUT` | HTTP PUT only |
 | `HTTP_DELETE` | HTTP DELETE only |
 | `HTTP_PATCH` | HTTP PATCH only |
+
+> **Note:** You can map HTTP method names to `Mode` using `Action.Mode.fromName(String methodName)`. Unknown or null values return `Mode.DEFAULT`.
 
 ### Path Parameters
 tinystruct automatically builds a regex from the method signature:
@@ -205,17 +206,17 @@ String status = parsed.get("status").toString();
 
 ## Session Management (Web Mode)
 
-Tinystruct provides a pluggable architecture for HTTP sessions. By default, sessions are stored in memory (`MemorySessionRepository`). For clustered or stateless environments, you can switch to Redis natively.
+The framework provides a pluggable architecture for HTTP sessions. By default, sessions are stored in memory (`MemorySessionRepository`). For clustered or stateless environments, you can switch to Redis natively.
 
 Configure Redis sessions in `application.properties`:
-`properties
+```properties
 default.session.repository=org.tinystruct.http.RedisSessionRepository
 redis.host=127.0.0.1
 redis.port=6379
-``n
+```
 To use sessions in your code, include `Request` as a parameter. The framework automatically injects the current request.
 
-`java
+```java
 import org.tinystruct.http.Request;
 
 @Action(value = "login", mode = Mode.HTTP_POST)
@@ -230,14 +231,14 @@ public String profile(Request<?, ?> request) {
     if (userId == null) return "Not logged in";
     return "User: " + userId;
 }
-``n
+```
 ---
 
 ## File Uploads (Multipart Data)
 
 Handling `multipart/form-data` uploads works uniformly across all servers (JDK HttpServer, Netty, Tomcat, Undertow). Use `request.getAttachments()` to access files.
 
-`java
+```java
 import org.tinystruct.data.FileEntity;
 
 @Action(value = "upload", mode = Mode.HTTP_POST)
@@ -251,12 +252,12 @@ public String upload(Request<?, ?> request) throws ApplicationException {
     }
     return "Upload OK";
 }
-``n
+```
 ---
 
 ## Event System
 
-`java
+```java
 // 1. Define an event
 public class OrderCreatedEvent implements org.tinystruct.system.Event<Order> {
     private final Order order;
@@ -273,20 +274,20 @@ EventDispatcher.getInstance().registerHandler(OrderCreatedEvent.class, event -> 
 
 // 3. Dispatch
 EventDispatcher.getInstance().dispatch(new OrderCreatedEvent(newOrder));
-``n
+```
 ---
 
 ## Templates
 
 If `templateRequired` is `true` (the default), `toString()` looks for a `.view` file:
 - Location: `src/main/resources/themes/<ClassName>.view` (on classpath)
-- Variables are interpolated using `[%variableName%]`
+- Variables are interpolated using `{%variableName%}`
 
 ```java
 // In your action method:
 setVariable("username", "James");
 setVariable("count", String.valueOf(42));
-// The template file uses: [%username%] and [%count%]
+// The template file uses: {%username%} and {%count%}
 ```
 
 To skip templates and return data directly (e.g., for APIs):
@@ -413,30 +414,30 @@ class MyAppTest {
 For `ActionRegistry` unit tests, follow the pattern in:
 `src/test/java/org/tinystruct/application/ActionRegistryTest.java`
 
+### HTTP Integration Testing
+For full integration tests involving the built-in HTTP server and method mode verification, see:
+`src/test/java/org/tinystruct/system/HttpServerHttpModeTest.java`
+
+**Key Pattern:**
+1. Start `HttpServer` in a background thread.
+2. Use `ApplicationManager.call("start", context, Action.Mode.CLI)` to boot the server.
+3. Wait for the port to be open using a `Socket` before sending requests.
+4. Use `URLRequest` and `HTTPHandler` to perform actual HTTP requests and verify responses.
+
 ---
 
-## Red Flags - STOP and Review
+## Red Flags & Common Pitfalls
 
-| Symptom | Reality |
+| Symptom / Problem | Fix |
 |---|---|
 | Using `Gson` or `Jackson` | **Violation.** Use `org.tinystruct.data.component.Builder` for native JSON. |
-| `template not found` error | **Missing setting.** Call `setTemplateRequired(false)` in `init()` for data-only apps. |
-| `@Action` on private method | **Ignored.** Actions MUST be `public` to be registered. |
+| `ApplicationRuntimeException: template not found` | Call `setTemplateRequired(false)` in `init()` if you return data directly. |
+| `@Action` on private/protected method | **Ignored.** Actions MUST be `public` to be registered. |
 | Hardcoding `main()` method | **Anti-pattern.** Use `bin/dispatcher` for execution. |
 | Direct `ActionRegistry` usage | **Avoid.** Let the framework handle routing via annotations. |
-
----
-
-## Common Pitfalls
-
-| Problem | Fix |
-|---|---|
-| `ApplicationRuntimeException: template not found` | Call `setTemplateRequired(false)` in `init()` if you return data directly |
-| Action not found at runtime | Make sure the class is imported via `--import` or listed in `application.properties` |
-| Method not registered | Ensure `@Action` annotation is on a `public` method — private/protected methods are ignored |
+| Action not found at runtime | Make sure the class is imported via `--import` or listed in `application.properties`. |
 | CLI arg not visible | Pass with `--key value` syntax; access via `getContext().getAttribute("--key")`. **Do not** use `{key}` path parameters for optional flags. |
-| JSON using Gson/Jackson | Use `org.tinystruct.data.component.Builder` instead — it's the framework-native JSON library |
-| Two methods same path, wrong one fires | Set explicit `mode` (e.g., `HTTP_GET` vs `HTTP_POST`) to disambiguate |
+| Two methods same path, wrong one fires | Set explicit `mode` (e.g., `HTTP_GET` vs `HTTP_POST`) to disambiguate. |
 
 ---
 
@@ -453,9 +454,13 @@ For `ActionRegistry` unit tests, follow the pattern in:
 
 ## Reference Files
 
-- `DEVELOPER_GUIDE.md` — full developer guide with examples
-- `README.md` — quick start and architecture diagram
-- `src/main/java/org/tinystruct/AbstractApplication.java` — complete base class
-- `src/main/java/org/tinystruct/system/annotation/Action.java` — annotation definition + `Mode` enum
-- `src/main/java/org/tinystruct/application/ActionRegistry.java` — routing engine
-- `src/test/java/org/tinystruct/application/ActionRegistryTest.java` — registry test examples
+Read these when you need deeper context beyond what's in this skill:
+
+- `DEVELOPER_GUIDE.md` — full developer guide with extended examples; read for complex multi-module or advanced routing scenarios
+- `README.md` — quick start and architecture diagram; read for project setup or onboarding questions
+- `src/main/java/org/tinystruct/AbstractApplication.java` — complete base class; read when working with lifecycle hooks or unfamiliar inherited methods
+- `src/main/java/org/tinystruct/system/annotation/Action.java` — annotation definition + `Mode` enum; read for edge cases around routing modes
+- `src/main/java/org/tinystruct/application/ActionRegistry.java` 閳?routing engine internals; read when debuggin                                                                                                              ng route resolution or priority conflicts
+- `src/test/java/org/tinystruct/application/ActionRegistryTest.java` 閳?registry test examples; read when writin                                                                                                              ng tests involving `ActionRegistry`
+- `src/test/java/org/tinystruct/system/HttpServerHttpModeTest.java` 閳?HTTP mode and server integration test patterns; read when testing HTTP actions or server lifecycle
+
