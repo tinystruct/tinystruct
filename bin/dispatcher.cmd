@@ -21,12 +21,15 @@ set "MAVEN_REPO=%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct"
 set "ROOT=%~dp0.."
 set "VERSION=1.7.22"
 
-@REM Define the paths for tinystruct jars in the Maven repository
+@REM Define the paths for tinystruct jars in the project lib folder and Maven repository
+set "PROJECT_LIB_JAR=%ROOT%\lib\tinystruct-%VERSION%.jar"
 set "DEFAULT_JAR_FILE=%MAVEN_REPO%\%VERSION%\tinystruct-%VERSION%.jar"
 set "DEFAULT_JAR_FILE_WITH_DEPENDENCIES=%MAVEN_REPO%\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar"
 
 REM Check which jar to use for extracting Maven Wrapper
-if exist "%DEFAULT_JAR_FILE_WITH_DEPENDENCIES%" (
+if exist "%PROJECT_LIB_JAR%" (
+    set "JAR_PATH=%PROJECT_LIB_JAR%"
+) else if exist "%DEFAULT_JAR_FILE_WITH_DEPENDENCIES%" (
     set "JAR_PATH=%DEFAULT_JAR_FILE_WITH_DEPENDENCIES%"
 ) else (
     set "JAR_PATH=%DEFAULT_JAR_FILE%"
@@ -49,11 +52,11 @@ if not exist "%JAVA_HOME%\bin\java.exe" (
 set "JAVA_CMD=%JAVA_HOME%\bin\java.exe"
 
 @REM Check if the Maven Wrapper is already available
-if not exist "mvnw" (
+if not exist "%ROOT%\mvnw.cmd" (
     echo Maven Wrapper not found. Extracting from JAR...
 
     @REM Run Java code to extract the ZIP file from the JAR
-    %JAVA_CMD% -cp "%JAR_PATH%" org.tinystruct.system.Dispatcher maven-wrapper --jar-file-path "%JAR_PATH%" --destination-dir "%ROOT%"
+    "%JAVA_CMD%" -cp "%JAR_PATH%" org.tinystruct.system.Dispatcher maven-wrapper --jar-file-path "%JAR_PATH%" --destination-dir "%ROOT%"
 
     if exist "%ROOT%\maven-wrapper.zip" (
         @REM Now unzip the Maven Wrapper files
@@ -70,4 +73,4 @@ if not exist "mvnw" (
 set "classpath=%ROOT%\target\classes;%ROOT%\lib\tinystruct-%VERSION%-jar-with-dependencies.jar;%ROOT%\lib\tinystruct-%VERSION%.jar;%ROOT%\lib\*;%ROOT%\WEB-INF\lib\*;%ROOT%\WEB-INF\classes;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%-jar-with-dependencies.jar;%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\%VERSION%\tinystruct-%VERSION%.jar"
 
 @REM Run Java application
-%JAVA_CMD% -cp "%classpath%" org.tinystruct.system.Dispatcher %*
+"%JAVA_CMD%" -cp "%classpath%" org.tinystruct.system.Dispatcher %*
