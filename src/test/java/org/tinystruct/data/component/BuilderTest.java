@@ -340,4 +340,60 @@ public class BuilderTest {
         assertTrue(result.contains("\"decimal\":0.0"));
         assertTrue(result.contains("\"negativeDecimal\":-3.14"));
     }
+
+    @Test
+    void testIsSingleValue() {
+        Builder builder = new Builder("test string");
+        assertTrue(builder.isSingleValue());
+
+        Builder emptyBuilder = new Builder();
+        assertFalse(emptyBuilder.isSingleValue());
+
+        Builder mapBuilder = new Builder();
+        mapBuilder.put("key", "value");
+        assertFalse(mapBuilder.isSingleValue());
+    }
+
+    @Test
+    void testGetValue() {
+        Builder builder = new Builder(100);
+        assertEquals(100, builder.getValue());
+
+        Builder mapBuilder = new Builder();
+        mapBuilder.put("key", "value");
+        assertThrows(IllegalStateException.class, mapBuilder::getValue);
+    }
+
+    @Test
+    void testGetSingleValueArray() {
+        Object[] array = new Object[]{"first", 2, "third"};
+        Builder builder = new Builder(array);
+
+        assertEquals("first", builder.get(0));
+        assertEquals(2, builder.get("1"));
+        assertEquals("third", builder.get(2));
+    }
+
+    @Test
+    void testSizeSingleValueArray() {
+        Object[] array = new Object[]{"first", 2, "third", 4.0};
+        Builder builder = new Builder(array);
+
+        assertEquals(4, builder.size());
+
+        Builder mapBuilder = new Builder();
+        mapBuilder.put("a", 1);
+        mapBuilder.put("b", 2);
+        assertEquals(2, mapBuilder.size());
+    }
+
+    @Test
+    void testParseEscapedString() throws ApplicationException {
+        // This tests the logic at line 357 which unescapes parsed string values
+        String json = "{\"text\":\"He said \\\"Hello\\\", \\\\, \\n, and \\t.\"}";
+        Builder builder = new Builder();
+        builder.parse(json);
+
+        assertEquals("He said \"Hello\", \\, \n, and \t.", builder.get("text"));
+    }
 }
