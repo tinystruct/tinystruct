@@ -310,7 +310,4 @@ public class SQLiteGenerator implements Generator {
 
         return table;
     }
-
-
-    }
 }
