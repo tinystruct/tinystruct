@@ -20,6 +20,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,12 +29,7 @@ public class H2Generator extends MySQLGenerator {
     private final static Logger logger = Logger.getLogger(H2Generator.class.getName());
     private String path;
     private String packageName;
-    private String[] packageList;
 
-    public H2Generator() {
-        this.path = "src/main/java/org/tinystruct/custom/object";
-        this.packageList = new String[]{};
-    }
 
     @Override
     public void setPath(String path) {
@@ -46,47 +43,13 @@ public class H2Generator extends MySQLGenerator {
 
     @Override
     public void create(String className, String table) throws ApplicationException {
-        StringBuilder java_resource = new StringBuilder();
         StringBuilder java_member_declaration = new StringBuilder();
         StringBuilder java_method_declaration = new StringBuilder();
         StringBuilder java_method_setdata = new StringBuilder();
         StringBuilder java_method_tostring = new StringBuilder();
 
         String spliter = "";
-
-        String fullPath;
-        if (this.path.endsWith("/"))
-            fullPath = this.path + className;
-        else
-            fullPath = this.path + File.separator + className;
-
-        if (this.packageName != null) {
-            java_resource.append("package ").append(this.packageName).append(";\r\n");
-        } else {
-            java_resource.append("package org.tinystruct.custom.object;\r\n");
-        }
-
-        java_resource.append("import java.io.Serializable;\r\n");
-
-        if (this.packageList.length > 0) {
-            java_resource.append("\r\n");
-            for (int i = 0; i < this.packageList.length; i++) {
-                java_resource.append("import ").append(this.packageList[i]).append(";\r\n");
-            }
-        }
-
-        java_resource.append("\r\n");
-        java_resource.append("import org.tinystruct.data.component.Row;\r\n");
-        java_resource.append("import org.tinystruct.data.component.AbstractData;\r\n\r\n");
-        java_resource.append("public class ").append(className).append(" extends AbstractData implements Serializable {\r\n");
-        java_resource.append("   /**\r\n");
-        java_resource.append("   * Auto Generated Serial Version UID\r\n");
-        java_resource.append("   */\r\n");
-        try {
-            java_resource.append("  private static final long serialVersionUID = ").append(SecureRandom.getInstance("SHA1PRNG").nextLong()).append("L;\r\n");
-        } catch (NoSuchAlgorithmException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
-        }
+        String lineSeparator = System.lineSeparator();
 
         Element rootElement = new Element("mapping");
         Element classElement = rootElement.addElement("class");
@@ -98,6 +61,12 @@ public class H2Generator extends MySQLGenerator {
         Table data = this.find(command);
         Iterator<Row> listRow = data.iterator();
         Row currentRow;
+
+        Set<String> imports = new TreeSet<>();
+        imports.add("java.io.Serializable");
+        imports.add("org.tinystruct.data.component.Row");
+        imports.add("org.tinystruct.data.component.AbstractData");
+
 
         String propertyName, propertyType, propertyTypeValue;
         boolean increment;
@@ -120,15 +89,22 @@ public class H2Generator extends MySQLGenerator {
                 String[] props = propertyTypeValue.split("\\(");
                 propertyType = FieldType.valueOf(props[0]).getRealType();
 
-                if (java_method_tostring.length() > 0) spliter = ",";
+                // Add automatic imports based on propertyType
+                switch (propertyType) {
+                    case "LocalDateTime" -> imports.add("java.time.LocalDateTime");
+                    case "Date" -> imports.add("java.util.Date");
+                    case "Timestamp" -> imports.add("java.sql.Timestamp");
+                    case "Time" -> imports.add("java.sql.Time");
+                }
 
                 if (currentFields.get("COLUMN_NAME").value().toString().equalsIgnoreCase("id")) {
                     increment = propertyTypeValue.indexOf("BIGINT") != -1 && currentFields.get("KEY").stringValue().indexOf("PRI") != -1 && currentFields.get("IS_NULLABLE").stringValue().indexOf("NO") != -1;
 
                     if ("String".equalsIgnoreCase(propertyType))
-                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");").append(lineSeparator);
                     else
-                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());").append(lineSeparator);
+                    spliter = ",";
 
                     Element idElement = classElement.addElement("id");
 
@@ -140,43 +116,44 @@ public class H2Generator extends MySQLGenerator {
                     idElement.setAttribute("type", props[0]);
 
                     if ("String".equalsIgnoreCase(propertyType)) {
-                        java_method_declaration.append("\tpublic ").append(propertyType).append(" get").append(propertyNameOfMethod).append("()\r\n");
-                        java_method_declaration.append("\t{\r\n");
-                        java_method_declaration.append("\t\treturn String.valueOf(this.").append(propertyNameOfMethod).append(");\r\n");
+                        java_method_declaration.append("\tpublic ").append(propertyType).append(" get").append(propertyNameOfMethod).append("()").append(lineSeparator);
+                        java_method_declaration.append("\t{").append(lineSeparator);
+                        java_method_declaration.append("\t\treturn String.valueOf(this.").append(propertyNameOfMethod).append(");").append(lineSeparator);
                     } else if ("int".equalsIgnoreCase(propertyType)) {
-                        java_method_declaration.append("\tpublic Integer get").append(propertyNameOfMethod).append("()\r\n");
-                        java_method_declaration.append("\t{\r\n");
-                        java_method_declaration.append("\t\treturn Integer.parseInt(this.").append(propertyNameOfMethod).append(".toString());\r\n");
+                        java_method_declaration.append("\tpublic Integer get").append(propertyNameOfMethod).append("()").append(lineSeparator);
+                        java_method_declaration.append("\t{").append(lineSeparator);
+                        java_method_declaration.append("\t\treturn Integer.parseInt(this.").append(propertyNameOfMethod).append(".toString());").append(lineSeparator);
                     } else if ("long".equalsIgnoreCase(propertyType)) {
-                        java_method_declaration.append("\tpublic Long get").append(propertyNameOfMethod).append("()\r\n");
-                        java_method_declaration.append("\t{\r\n");
-                        java_method_declaration.append("\t\treturn Long.parseLong(this.").append(propertyNameOfMethod).append(".toString());\r\n");
+                        java_method_declaration.append("\tpublic Long get").append(propertyNameOfMethod).append("()").append(lineSeparator);
+                        java_method_declaration.append("\t{").append(lineSeparator);
+                        java_method_declaration.append("\t\treturn Long.parseLong(this.").append(propertyNameOfMethod).append(".toString());").append(lineSeparator);
                     }
 
-                    java_method_declaration.append("\t}\r\n\r\n");
+                    java_method_declaration.append("\t}").append(lineSeparator).append(lineSeparator);
                 } else {
-                    java_member_declaration.append("\tprivate ").append(propertyType).append(" ").append(propertyName).append(";\r\n");
+                    java_member_declaration.append("\tprivate ").append(propertyType).append(" ").append(propertyName).append(";").append(lineSeparator);
 
-                    java_method_declaration.append("\tpublic void set").append(propertyNameOfMethod).append("(").append(propertyType).append(" ").append(propertyName).append(")\r\n");
-                    java_method_declaration.append("\t{\r\n");
+                    java_method_declaration.append("\tpublic void set").append(propertyNameOfMethod).append("(").append(propertyType).append(" ").append(propertyName).append(")").append(lineSeparator);
+                    java_method_declaration.append("\t{").append(lineSeparator);
                     if (!propertyType.endsWith("[]")) {
-                        java_method_declaration.append("\t\tthis.").append(propertyName).append(" = this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType, 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
+                        java_method_declaration.append("\t\tthis.").append(propertyName).append(" = this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType, 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");").append(lineSeparator);
                     } else {
-                        java_method_declaration.append("\t\tthis.").append(propertyName).append(" = this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType.replace("[]", "Array"), 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");\r\n");
+                        java_method_declaration.append("\t\tthis.").append(propertyName).append(" = this.setFieldAs").append(StringUtilities.setCharToUpper(propertyType.replace("[]", "Array"), 0)).append("(\"").append(propertyName).append("\",").append(propertyName).append(");").append(lineSeparator);
                     }
-                    java_method_declaration.append("\t}\r\n\r\n");
+                    java_method_declaration.append("\t}").append(lineSeparator).append(lineSeparator);
 
                     if ("String".equalsIgnoreCase(propertyType) || "Date".equalsIgnoreCase(propertyType) || "LocalDateTime".equalsIgnoreCase(propertyType)) {
-                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");").append(lineSeparator);
                     } else if ("byte[]".equalsIgnoreCase(propertyType)) {
-                        java_method_tostring.append("\t\tif (this.get").append(propertyNameOfMethod).append("() != null) {\r\n");
-                        java_method_tostring.append("\t\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"binary-data\\\"\");\r\n");
-                        java_method_tostring.append("\t\t} else {\r\n");
-                        java_method_tostring.append("\t\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":null\");\r\n");
-                        java_method_tostring.append("\t\t}\r\n");
+                        java_method_tostring.append("\t\tif (this.get").append(propertyNameOfMethod).append("() != null) {").append(lineSeparator);
+                        java_method_tostring.append("\t\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\\\"binary-data\\\"\");").append(lineSeparator);
+                        java_method_tostring.append("\t\t} else {").append(lineSeparator);
+                        java_method_tostring.append("\t\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":null\");").append(lineSeparator);
+                        java_method_tostring.append("\t\t}").append(lineSeparator);
                     } else {
-                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());\r\n");
+                        java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());").append(lineSeparator);
                     }
+                    spliter = ",";
 
                     Element propertyElement = classElement.addElement("property");
 
@@ -185,27 +162,76 @@ public class H2Generator extends MySQLGenerator {
                     propertyElement.setAttribute("length", props.length > 1 ? props[1].split("\\)")[0] : "0");
                     propertyElement.setAttribute("type", props[0]);
 
-                    java_method_declaration.append("\tpublic ").append(propertyType).append(" get").append(propertyNameOfMethod).append("()\r\n");
-                    java_method_declaration.append("\t{\r\n");
-                    java_method_declaration.append("\t\treturn this.").append(propertyName).append(";\r\n");
-                    java_method_declaration.append("\t}\r\n\r\n");
+                    java_method_declaration.append("\tpublic ").append(propertyType).append(" get").append(propertyNameOfMethod).append("()").append(lineSeparator);
+                    java_method_declaration.append("\t{").append(lineSeparator);
+                    java_method_declaration.append("\t\treturn this.").append(propertyName).append(";").append(lineSeparator);
+                    java_method_declaration.append("\t}").append(lineSeparator).append(lineSeparator);
                 }
 
-                java_method_setdata.append("\t\tif(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\")!=null)");
+                java_method_setdata.append("\t\tif(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\")!=null)").append(lineSeparator);
                 if (propertyType.endsWith("[]")) {
-                    java_method_setdata.append("\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\").").append(propertyType.replace("[]", "Array")).append("Value());\r\n");
+                    java_method_setdata.append("\t\t\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\").").append(propertyType.replace("[]", "Array")).append("Value());").append(lineSeparator);
                 } else {
-                    java_method_setdata.append("\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\").").append(StringUtilities.setCharToLower(propertyType, 0)).append("Value());\r\n");
+                    java_method_setdata.append("\t\t\tthis.set").append(propertyNameOfMethod).append("(row.getFieldInfo(\"").append(currentFields.get("COLUMN_NAME").value().toString()).append("\").").append(StringUtilities.setCharToLower(propertyType, 0)).append("Value());").append(lineSeparator);
                 }
             }
         }
 
-        Path java_src_path = Paths.get(fullPath);
+        StringBuilder java_resource = new StringBuilder();
+        if (this.packageName != null) {
+            java_resource.append("package ").append(this.packageName).append(";").append(lineSeparator);
+        } else {
+            java_resource.append("package org.tinystruct.custom.object;").append(lineSeparator);
+        }
+
+        java_resource.append(lineSeparator);
+        for (String pkg : imports) {
+            java_resource.append("import ").append(pkg).append(";").append(lineSeparator);
+        }
+
+        java_resource.append(lineSeparator);
+        java_resource.append("public class ").append(className).append(" extends AbstractData implements Serializable {").append(lineSeparator);
+        java_resource.append("   /**").append(lineSeparator);
+        java_resource.append("   * Auto Generated Serial Version UID").append(lineSeparator);
+        java_resource.append("   */").append(lineSeparator);
+        try {
+            java_resource.append("  private static final long serialVersionUID = ").append(SecureRandom.getInstance("SHA1PRNG").nextLong()).append("L;").append(lineSeparator);
+        } catch (NoSuchAlgorithmException e) {
+            java_resource.append("  private static final long serialVersionUID = 1L;").append(lineSeparator);
+            logger.log(Level.SEVERE, e.getMessage(), e);
+        }
+
+        java_resource.append(java_member_declaration);
+        java_resource.append(lineSeparator);
+        java_resource.append(java_method_declaration);
+        java_resource.append(lineSeparator);
+        java_resource.append("\t@Override").append(lineSeparator);
+        java_resource.append("\tpublic void setData(Row row) {").append(lineSeparator);
+        java_resource.append(java_method_setdata);
+        java_resource.append("\t}").append(lineSeparator).append(lineSeparator);
+
+        java_resource.append("\t@Override").append(lineSeparator);
+        java_resource.append("\tpublic String toString() {").append(lineSeparator);
+        java_resource.append("\t\tStringBuilder buffer = new StringBuilder();").append(lineSeparator);
+        java_resource.append("\t\tbuffer.append(\"{\");").append(lineSeparator);
+        java_resource.append(java_method_tostring);
+        java_resource.append("\t\tbuffer.append(\"}\");").append(lineSeparator);
+        java_resource.append("\t\treturn buffer.toString();").append(lineSeparator);
+        java_resource.append("\t}").append(lineSeparator).append(lineSeparator);
+        java_resource.append("}");
+
+        String fullPath;
+        if (this.path.endsWith("/"))
+            fullPath = this.path + className;
+        else
+            fullPath = this.path + File.separator + className;
+
+        Path java_src_path = Paths.get(fullPath + ".java");
 
         // Replace path separators to handle Windows paths
-        String normalizedPath = fullPath.replace("\\", "/");
+        String normalizedPath = (fullPath + ".java").replace("\\", "/");
         String resourcePath = normalizedPath.replace("main/java", "main/resources");
-        Path java_resource_path = Paths.get(resourcePath + ".map.xml");
+        Path java_resource_path = Paths.get(resourcePath.replace(".java", ".map.xml"));
 
         try {
             Path parent = java_src_path.getParent();
@@ -226,31 +252,8 @@ public class H2Generator extends MySQLGenerator {
             logger.severe(IO.getMessage());
         }
 
-        java_resource.append(java_member_declaration);
-        java_resource.append("\r\n");
-        java_resource.append(java_method_declaration);
-        java_resource.append("\r\n");
-        java_resource.append("\t@Override\r\n");
-        java_resource.append("\tpublic void setData(Row row) {\r\n");
-        java_resource.append(java_method_setdata);
-        java_resource.append("\t}\r\n\r\n");
-
-        java_resource.append("\t@Override\r\n");
-        java_resource.append("\tpublic String toString() {\r\n");
-        java_resource.append("\t\tStringBuilder buffer = new StringBuilder();\r\n");
-        java_resource.append("\t\tbuffer.append(\"{\");\r\n");
-        java_resource.append(java_method_tostring);
-        java_resource.append("\t\tbuffer.append(\"}\");\r\n");
-        java_resource.append("\t\treturn buffer.toString();\r\n");
-        java_resource.append("\t}\r\n\r\n");
-        java_resource.append("}");
-
         FileGenerator generator = new FileGenerator(fullPath + ".java", java_resource);
         generator.save();
     }
 
-    @Override
-    public void importPackages(String packageNameList) {
-        this.packageList = packageNameList.split(";");
-    }
 }

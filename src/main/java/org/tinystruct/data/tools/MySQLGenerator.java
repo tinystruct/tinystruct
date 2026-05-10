@@ -34,6 +34,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.ResultSet;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,11 +43,9 @@ public class MySQLGenerator implements Generator {
     private final static Logger logger = Logger.getLogger(MySQLGenerator.class.getName());
     private String path;
     private String packageName;
-    private String[] packageList;
 
     public MySQLGenerator() {
         this.path = "src/main/java/org/tinystruct/custom/object";
-        this.packageList = new String[]{};
     }
 
     @Override
@@ -59,8 +59,7 @@ public class MySQLGenerator implements Generator {
     }
 
     @Override
-	public void create(String className, String table) throws ApplicationException {
-        StringBuilder java_resource = new StringBuilder();
+    public void create(String className, String table) throws ApplicationException {
         StringBuilder java_member_declaration = new StringBuilder();
         StringBuilder java_method_declaration = new StringBuilder();
         StringBuilder java_method_setdata = new StringBuilder();
@@ -72,41 +71,6 @@ public class MySQLGenerator implements Generator {
         // Singularize className if it's plural
         className = StringUtilities.singularize(className);
 
-        String fullPath;
-        if (this.path.endsWith("/"))
-            fullPath = this.path + className;
-        else
-            fullPath = this.path + File.separator + className;
-
-        if (this.packageName != null) {
-            java_resource.append("package ").append(this.packageName).append(";").append(lineSeparator);
-        } else {
-            java_resource.append("package org.tinystruct.custom.object;").append(lineSeparator);
-        }
-
-        java_resource.append("import java.io.Serializable;").append(lineSeparator);
-
-        if (this.packageList.length > 0) {
-            java_resource.append(lineSeparator);
-            for (int i = 0; i < this.packageList.length; i++) {
-                java_resource.append("import ").append(this.packageList[i]).append(";").append(lineSeparator);
-            }
-        }
-
-        java_resource.append(lineSeparator);
-        java_resource.append("import org.tinystruct.data.component.Row;").append(lineSeparator);
-        java_resource.append("import org.tinystruct.data.component.AbstractData;").append(lineSeparator).append(lineSeparator);
-        java_resource.append("public class ").append(className).append(" extends AbstractData implements Serializable {").append(lineSeparator);
-        java_resource.append("	/**").append(lineSeparator);
-        java_resource.append("   * Auto Generated Serial Version UID").append(lineSeparator);
-        java_resource.append("   */").append(lineSeparator);
-        try {
-            java_resource.append("  private static final long serialVersionUID = ").append(SecureRandom.getInstance("SHA1PRNG").nextLong()).append("L;").append(lineSeparator);
-        } catch (NoSuchAlgorithmException e) {
-            java_resource.append("  private static final long serialVersionUID = 1L;").append(lineSeparator);
-            logger.log(Level.SEVERE, e.getMessage(), e);
-        }
-
         Element rootElement = new Element("mapping");
         Element classElement = rootElement.addElement("class");
 
@@ -117,6 +81,12 @@ public class MySQLGenerator implements Generator {
         Table data = this.find(command);
         Iterator<Row> listRow = data.iterator();
         Row currentRow;
+
+        Set<String> imports = new TreeSet<>();
+        imports.add("java.io.Serializable");
+        imports.add("org.tinystruct.data.component.Row");
+        imports.add("org.tinystruct.data.component.AbstractData");
+
 
         String propertyName, propertyType, propertyTypeValue;
         boolean increment;
@@ -139,7 +109,13 @@ public class MySQLGenerator implements Generator {
                 String[] props = propertyTypeValue.split("\\(");
                 propertyType = FieldType.valueOf(props[0]).getRealType();
 
-                if (java_method_tostring.length() > 0) spliter = ",";
+                // Add automatic imports based on propertyType
+                switch (propertyType) {
+                    case "LocalDateTime" -> imports.add("java.time.LocalDateTime");
+                    case "Date" -> imports.add("java.util.Date");
+                    case "Timestamp" -> imports.add("java.sql.Timestamp");
+                    case "Time" -> imports.add("java.sql.Time");
+                }
 
                 if (currentFields.get("Field").value().toString().equalsIgnoreCase("id")) {
                     increment = currentFields.get("Extra").stringValue().indexOf("auto_increment") != -1;
@@ -148,6 +124,7 @@ public class MySQLGenerator implements Generator {
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\\\"\"+this.get").append(propertyNameOfMethod).append("()+\"\\\"\");").append(lineSeparator);
                     else
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyNameOfMethod).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());").append(lineSeparator);
+                    spliter = ",";
 
                     Element idElement = classElement.addElement("id");
 
@@ -195,6 +172,7 @@ public class MySQLGenerator implements Generator {
                     } else {
                         java_method_tostring.append("\t\tbuffer.append(\"").append(spliter).append("\\\"").append(propertyName).append("\\\":\"+this.get").append(propertyNameOfMethod).append("());").append(lineSeparator);
                     }
+                    spliter = ",";
 
                     Element propertyElement = classElement.addElement("property");
 
@@ -218,30 +196,28 @@ public class MySQLGenerator implements Generator {
             }
         }
 
-        Path java_src_path = Paths.get(fullPath);
-
-        // Replace path separators to handle Windows paths
-        String normalizedPath = fullPath.replace("\\", "/");
-        String resourcePath = normalizedPath.replace("main/java", "main/resources");
-        Path java_resource_path = Paths.get(resourcePath + ".map.xml");
-
-        try {
-            Path parent = java_src_path.getParent();
-            if (parent != null)
-                Files.createDirectories(parent);
-
-            parent = java_resource_path.getParent();
-            if (parent != null)
-                Files.createDirectories(parent);
-        } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e.getCause());
+        StringBuilder java_resource = new StringBuilder();
+        if (this.packageName != null) {
+            java_resource.append("package ").append(this.packageName).append(";").append(lineSeparator);
+        } else {
+            java_resource.append("package org.tinystruct.custom.object;").append(lineSeparator);
         }
 
-        Document document = new Document(rootElement);
-        try (FileOutputStream out = new FileOutputStream(java_resource_path.toString())) {
-            document.save(out);
-        } catch (IOException IO) {
-            logger.severe(IO.getMessage());
+        java_resource.append(lineSeparator);
+        for (String pkg : imports) {
+            java_resource.append("import ").append(pkg).append(";").append(lineSeparator);
+        }
+
+        java_resource.append(lineSeparator);
+        java_resource.append("public class ").append(className).append(" extends AbstractData implements Serializable {").append(lineSeparator);
+        java_resource.append("	/**").append(lineSeparator);
+        java_resource.append("   * Auto Generated Serial Version UID").append(lineSeparator);
+        java_resource.append("   */").append(lineSeparator);
+        try {
+            java_resource.append("  private static final long serialVersionUID = ").append(SecureRandom.getInstance("SHA1PRNG").nextLong()).append("L;").append(lineSeparator);
+        } catch (NoSuchAlgorithmException e) {
+            java_resource.append("  private static final long serialVersionUID = 1L;").append(lineSeparator);
+            logger.log(Level.SEVERE, e.getMessage(), e);
         }
 
         java_resource.append(java_member_declaration);
@@ -262,6 +238,37 @@ public class MySQLGenerator implements Generator {
         java_resource.append("\t\treturn buffer.toString();").append(lineSeparator);
         java_resource.append("\t}").append(lineSeparator).append(lineSeparator);
         java_resource.append("}");
+
+        String fullPath;
+        if (this.path.endsWith("/"))
+            fullPath = this.path + className;
+        else
+            fullPath = this.path + File.separator + className;
+
+        Path java_src_path = Paths.get(fullPath + ".java");
+        // Replace path separators to handle Windows paths
+        String normalizedPath = (fullPath + ".java").replace("\\", "/");
+        String resourcePath = normalizedPath.replace("main/java", "main/resources");
+        Path java_resource_path = Paths.get(resourcePath.replace(".java", ".map.xml"));
+
+        try {
+            Path parent = java_src_path.getParent();
+            if (parent != null)
+                Files.createDirectories(parent);
+
+            parent = java_resource_path.getParent();
+            if (parent != null)
+                Files.createDirectories(parent);
+        } catch (IOException e) {
+            throw new ApplicationException(e.getMessage(), e.getCause());
+        }
+
+        Document document = new Document(rootElement);
+        try (FileOutputStream out = new FileOutputStream(java_resource_path.toString())) {
+            document.save(out);
+        } catch (IOException IO) {
+            logger.severe(IO.getMessage());
+        }
 
         FileGenerator generator = new FileGenerator(fullPath + ".java", java_resource);
         generator.save();
@@ -309,8 +316,4 @@ public class MySQLGenerator implements Generator {
         return table;
     }
 
-    @Override
-	public void importPackages(String packageNameList) {
-        this.packageList = packageNameList.split(";");
-    }
 }

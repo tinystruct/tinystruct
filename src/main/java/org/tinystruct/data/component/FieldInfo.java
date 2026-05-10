@@ -240,6 +240,17 @@ public class FieldInfo extends ConcurrentHashMap<String, Object> {
         if (value instanceof LocalDateTime)
             return (LocalDateTime) value;
 
+        if (value instanceof java.sql.Timestamp)
+            return ((java.sql.Timestamp) value).toLocalDateTime();
+
+        if (value != null && !value.toString().isEmpty()) {
+            try {
+                return LocalDateTime.parse(value.toString().replace(' ', 'T'));
+            } catch (Exception e) {
+                // Ignore parsing errors and return now()
+            }
+        }
+
         return LocalDateTime.now();
     }
 

@@ -268,8 +268,10 @@ public final class FieldType implements Serializable {
      *
      * @since 1.8
      */
-    private final static int _DATETIME = Types.TIME_WITH_TIMEZONE;
+    private final static int _DATETIME = Types.TIMESTAMP;
     public final static FieldType DATETIME = new FieldType("DATETIME", _DATETIME, "LocalDateTime");
+    public final static FieldType DATETIME2 = new FieldType("DATETIME2", _DATETIME, "LocalDateTime");
+    public final static FieldType SMALLDATETIME = new FieldType("SMALLDATETIME", _DATETIME, "LocalDateTime");
     /**
      * The constant in the Java programming language, sometimes referred to
      * as a type code, that identifies the generic SQL type
@@ -278,7 +280,7 @@ public final class FieldType implements Serializable {
      * @since 1.8
      */
     private final static int _TIMESTAMP = Types.TIMESTAMP_WITH_TIMEZONE;
-    public final static FieldType TIMESTAMP = new FieldType("TIMESTAMP", _TIMESTAMP, "Timestamp");
+    public final static FieldType TIMESTAMP = new FieldType("TIMESTAMP", _TIMESTAMP, "LocalDateTime");
     private static Vector<FieldType> typeList;
     private final String realType;
     private String typeName;

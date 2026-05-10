@@ -23,7 +23,5 @@ public interface Generator {
 
     void setPackageName(String packageName);
 
-    void importPackages(String packageNameList);
-
     void create(String className, String table) throws ApplicationException;
 }
