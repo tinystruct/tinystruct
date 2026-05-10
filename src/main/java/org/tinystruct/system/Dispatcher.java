@@ -959,9 +959,6 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
         System.out.print("Please specify the base path to place the Java code files. [" + defaultPath + "]:");
         String basePath = scanner.nextLine();
 
-        System.out.print("Please specify the packages to be imported in code and use delimiter `;` for multiple items. [java.time.LocalDateTime]:");
-        String imports = scanner.nextLine();
-
         scanner.close();
 
         String driver = getConfiguration().get("driver");
@@ -1004,8 +1001,6 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
             packageName = basePath.replace("src/main/java/", "").replace("/", ".");
             generator.setPackageName(packageName);
-
-            generator.importPackages(imports.isBlank() ? "java.time.LocalDateTime" : imports);
 
             String[] list = tableNames.split(";");
             for (String tableName : list) {
