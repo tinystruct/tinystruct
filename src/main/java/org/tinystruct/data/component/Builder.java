@@ -354,7 +354,7 @@ public class Builder extends HashMap<String, Object> implements Struct {
                 throw new ApplicationException("Unterminated string value");
             }
 
-            String value = content.substring(valueStart, pos);
+            String value = StringUtilities.unescape(content.substring(valueStart, pos));
             pos++; // Skip closing quote
 
             return new ValueParseResult(value, pos);
