@@ -82,10 +82,8 @@ public class SSEClient implements Runnable {
         try {
             while (active && !workerThread.isInterrupted()) {
                 Builder message = messageQueue.take(); // Blocks until a message is available
-                if (message != null) {
-                    String event = formatSSEMessage(message);
-                    out.writeAndFlush(event.getBytes(StandardCharsets.UTF_8));
-                }
+                String event = SSEPushManager.formatSSEMessage(message);
+                out.writeAndFlush(event.getBytes(StandardCharsets.UTF_8));
             }
         } catch (InterruptedException e) {
             workerThread.interrupt();
@@ -111,22 +109,6 @@ public class SSEClient implements Runnable {
                 throw new ApplicationRuntimeException(message, e);
             }
         }
-    }
-
-    /**
-     * Formats a message as an SSE event string.
-     *
-     * @param message The message to format
-     * @return The formatted SSE event string
-     */
-    private String formatSSEMessage(Builder message) {
-        String type = message.get("type") != null ? message.get("type").toString() : null;
-        if ("connect".equals(type)) {
-            return "event: connect\ndata: Connected\n\n";
-        }
-        StringBuilder sb = new StringBuilder();
-        sb.append("data: ").append(message).append("\n\n");
-        return sb.toString();
     }
 
     /**

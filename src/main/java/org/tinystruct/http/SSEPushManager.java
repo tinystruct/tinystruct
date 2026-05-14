@@ -3,6 +3,8 @@ package org.tinystruct.http;
 import org.tinystruct.data.component.Builder;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -180,8 +182,9 @@ public class SSEPushManager {
             return;
         }
 
+        // Collect stale keys separately; never mutate clients inside forEach.
+        List<String> staleKeys = new ArrayList<>();
         if (isNetty) {
-            // Netty: broadcast to all clients
             String event = formatSSEMessage(message);
             clients.forEach((sessionId, clientObj) -> {
                 Response out = (Response) clientObj;
@@ -189,7 +192,7 @@ public class SSEPushManager {
                     out.writeAndFlush(event.getBytes(StandardCharsets.UTF_8));
                 } catch (Exception e) {
                     logger.log(Level.WARNING, "Failed to broadcast to Netty client " + sessionId + ": " + e.getMessage());
-                    clients.remove(sessionId, clientObj);
+                    staleKeys.add(sessionId);
                 }
             });
         } else {
@@ -199,10 +202,14 @@ public class SSEPushManager {
                 if (client.isActive()) {
                     client.send(message);
                 } else {
-                    // Clean up inactive client
-                    clients.remove(sessionId, client);
+                    staleKeys.add(sessionId);
                 }
             });
+        }
+
+        // Safe removal after iteration is complete
+        for (String key : staleKeys) {
+            clients.remove(key);
         }
     }
 
@@ -279,7 +286,7 @@ public class SSEPushManager {
      * @param message The message to format
      * @return The formatted SSE event string
      */
-    private String formatSSEMessage(Builder message) {
+    public static String formatSSEMessage(Builder message) {
         String type = message.get("type") != null ? message.get("type").toString() : null;
         if ("connect".equals(type)) {
             return "event: connect\ndata: Connected\n\n";
