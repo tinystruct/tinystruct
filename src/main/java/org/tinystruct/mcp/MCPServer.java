@@ -117,7 +117,10 @@ public class MCPServer extends MCPApplication {
             }
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error calling tool", e);
-            response.setError(new JsonRpcError(ErrorCodes.INTERNAL_ERROR, "Error calling tool: " + e.getMessage()));
+            response.setId(request.getId());
+            // Unwrap InvocationTargetException if necessary
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            response.setResult(formatToolErrorResult(cause.getMessage()));
         }
     }
 
@@ -292,6 +295,58 @@ public class MCPServer extends MCPApplication {
         }
     }
 
+    /**
+     * Handles the 'logging/setLevel' JSON-RPC method.
+     *
+     * @param request  The JSON-RPC request
+     * @param response The JSON-RPC response to populate
+     */
+    @Override
+    protected void handleLoggingSetLevel(JsonRpcRequest request, JsonRpcResponse response) {
+        Builder params = request.getParams();
+        if (params == null || params.get("level") == null) {
+            response.setError(new JsonRpcError(ErrorCodes.INVALID_PARAMS, "Missing level parameter"));
+            return;
+        }
+
+        String levelStr = params.get("level").toString().toUpperCase();
+        Level level;
+        try {
+            // Map common debug levels to JUL levels
+            switch (levelStr) {
+                case "DEBUG":
+                    level = Level.FINE;
+                    break;
+                case "TRACE":
+                    level = Level.FINER;
+                    break;
+                case "ERROR":
+                    level = Level.SEVERE;
+                    break;
+                case "WARN":
+                case "WARNING":
+                    level = Level.WARNING;
+                    break;
+                case "INFO":
+                    level = Level.INFO;
+                    break;
+                default:
+                    level = Level.parse(levelStr);
+                    break;
+            }
+            Logger.getLogger("").setLevel(level);
+            // Also set for MCP package specifically
+            Logger.getLogger("org.tinystruct.mcp").setLevel(level);
+            LOGGER.info("Log level set to " + level);
+
+            // Empty result object for success
+            response.setId(request.getId());
+            response.setResult(new Builder());
+        } catch (IllegalArgumentException e) {
+            response.setError(new JsonRpcError(ErrorCodes.INVALID_PARAMS, "Invalid log level: " + levelStr));
+        }
+    }
+
     @Override
     protected String[] getFeatures() {
         // Example: server supports core, tools, resources, prompts
@@ -313,6 +368,27 @@ public class MCPServer extends MCPApplication {
         contentItem.put("text", String.valueOf(result));
         contentArray.add(contentItem);
         resultBuilder.put("content", contentArray);
+        resultBuilder.put("isError", false);
+
+        return resultBuilder;
+    }
+
+    /**
+     * Formats a tool execution error into the MCP-compliant JSON-RPC response
+     * format.
+     *
+     * @param errorMessage The error message
+     * @return A Builder containing the formatted error result
+     */
+    private Builder formatToolErrorResult(String errorMessage) {
+        Builder resultBuilder = new Builder();
+        Builders contentArray = new Builders();
+        Builder contentItem = new Builder();
+        contentItem.put("type", "text");
+        contentItem.put("text", errorMessage != null ? errorMessage : "Unknown error executing tool");
+        contentArray.add(contentItem);
+        resultBuilder.put("content", contentArray);
+        resultBuilder.put("isError", true);
 
         return resultBuilder;
     }

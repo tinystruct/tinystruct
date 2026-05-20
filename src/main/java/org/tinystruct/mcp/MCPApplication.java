@@ -70,6 +70,7 @@ public abstract class MCPApplication extends AbstractApplication {
         this.registerRpcHandler(Methods.GET_CAPABILITIES, (req, res, app) -> app.handleGetCapabilities(req, res));
         this.registerRpcHandler(Methods.SHUTDOWN, (req, res, app) -> app.handleShutdown(req, res));
         this.registerRpcHandler(Methods.GET_STATUS, (req, res, app) -> app.handleGetStatus(req, res));
+        this.registerRpcHandler(Methods.LOGGING_SET_LEVEL, (req, res, app) -> app.handleLoggingSetLevel(req, res));
         this.registerRpcHandler(Methods.INITIALIZED_NOTIFICATION, (req, res, app) -> {
             if (app.getSessionState() == SessionState.INITIALIZING) {
                 app.setSessionState(SessionState.READY);
@@ -114,12 +115,18 @@ public abstract class MCPApplication extends AbstractApplication {
             authHandler.validateAuthHeader(request);
 
             // Session management: extract or assign sessionId
-            String sessionId = (String) request.headers().get(Header.value0f(Http.SESSION_ID));
-            if (sessionId == null || sessionId.isEmpty()) {
+            String sessionId = null;
+            Object mcpSessionId = request.headers().get(Header.value0f(Http.SESSION_ID));
+            if (mcpSessionId != null && !mcpSessionId.toString().isEmpty()) {
+                sessionId = mcpSessionId.toString();
+            } else {
                 sessionId = request.getSession().getId();
             }
             response.addHeader(Http.SESSION_ID, sessionId);
             currentSessionId.set(sessionId);
+            if (this.getContext() != null) {
+                this.getContext().setId(sessionId);
+            }
 
             // Parse the JSON-RPC request
             String requestBody = request.body();
@@ -456,6 +463,15 @@ public abstract class MCPApplication extends AbstractApplication {
      * @param response The JSON-RPC response to populate
      */
     abstract void handleGetPrompt(JsonRpcRequest request, JsonRpcResponse response);
+
+    /**
+     * Handles the 'logging/setLevel' JSON-RPC method.
+     * Subclasses should override to provide logging set level functionality.
+     *
+     * @param request  The JSON-RPC request
+     * @param response The JSON-RPC response to populate
+     */
+    abstract void handleLoggingSetLevel(JsonRpcRequest request, JsonRpcResponse response);
 
     /**
      * Gets the current session state based on the current session ID.

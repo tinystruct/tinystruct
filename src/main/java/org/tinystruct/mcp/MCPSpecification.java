@@ -252,6 +252,14 @@ public final class MCPSpecification {
          */
         public static final String CANCELLED_NOTIFICATION = "notifications/cancelled";
 
+        /**
+         * Set logging level.
+         * <p>
+         * This method sets the logging level for the server.
+         * </p>
+         */
+        public static final String LOGGING_SET_LEVEL = "logging/setLevel";
+
         private Methods() {
         } // Prevent instantiation
     }
