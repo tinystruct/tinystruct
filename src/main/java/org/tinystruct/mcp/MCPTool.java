@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.tinystruct.mcp;
 
+import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
@@ -67,7 +68,7 @@ public class MCPTool extends AbstractMCPResource {
      * @param client The MCP client to use for execution (maybe null for local tools)
      */
     public MCPTool(String name, String description, MCPClient client) {
-        this(name, description, null, client, false);
+        this(name, description, null, client, client == null);
     }
 
     /**
@@ -79,9 +80,7 @@ public class MCPTool extends AbstractMCPResource {
      * @param client The MCP client to use for execution (maybe null for local tools)
      */
     public MCPTool(String name, String description, Builder schema, MCPClient client) {
-        super(name, description, client);
-        this.schema = schema;
-        this.supportsLocalExecution = false; // Default to false for test tools
+        this(name, description, schema, client, client == null);
     }
 
     /**
@@ -157,6 +156,18 @@ public class MCPTool extends AbstractMCPResource {
      */
     @Override
     protected void validateParameters(Builder builder) throws MCPException {
+        validateParameters(builder, schema, name);
+    }
+
+    /**
+     * Validates parameters against a given schema.
+     *
+     * @param builder The parameters to validate
+     * @param schema The schema to validate against
+     * @param toolName The name of the tool
+     * @throws MCPException If the parameters are invalid
+     */
+    public static void validateParameters(Builder builder, Builder schema, String toolName) throws MCPException {
         if (schema == null) {
             // No schema to validate against
             return;
@@ -224,7 +235,7 @@ public class MCPTool extends AbstractMCPResource {
 
         // If there are validation errors, throw an exception
         if (!validationErrors.isEmpty()) {
-            throw new MCPException("Parameter validation failed for tool '" + name + "': " +
+            throw new MCPException("Parameter validation failed for tool '" + toolName + "': " +
                                   String.join("; ", validationErrors));
         }
     }
@@ -236,18 +247,22 @@ public class MCPTool extends AbstractMCPResource {
      * @param expectedType The expected type from the schema
      * @return true if the value matches the expected type, false otherwise
      */
-    private boolean validateType(Object value, String expectedType) {
+    private static boolean validateType(Object value, String expectedType) {
         switch (expectedType) {
             case "string":
                 return value instanceof String;
             case "number":
                 return value instanceof Number;
             case "integer":
+                if (value instanceof Number) {
+                    double d = ((Number) value).doubleValue();
+                    return d == Math.floor(d);
+                }
                 return value instanceof Integer || value instanceof Long;
             case "boolean":
                 return value instanceof Boolean;
             case "array":
-                return value instanceof List || value instanceof Object[] || value.getClass().isArray();
+                return value instanceof List || value instanceof Object[] || value.getClass().isArray() || value instanceof org.tinystruct.data.component.Builders;
             case "object":
                 return value instanceof Builder;
             default:
@@ -302,8 +317,8 @@ public class MCPTool extends AbstractMCPResource {
     /**
      * Inner static class representing an individual tool method for MCP.
      */
-    public static class MCPToolMethod {
-        private static final Logger LOGGER = Logger.getLogger(MCPToolMethod.class.getName());
+    public static class ToolMethod {
+        private static final Logger LOGGER = Logger.getLogger(ToolMethod.class.getName());
         
         private final String name;
         private final String description;
@@ -344,7 +359,7 @@ public class MCPTool extends AbstractMCPResource {
          * @param action The Action annotation
          * @param toolInstance The tool instance that contains this method
          */
-        public MCPToolMethod(Method method, Action action, Object toolInstance) {
+        public ToolMethod(Method method, Action action, Object toolInstance) {
             this.method = method;
             this.toolInstance = toolInstance;
             this.name = action.value();
@@ -373,12 +388,16 @@ public class MCPTool extends AbstractMCPResource {
         public List<ParameterInfo> getParameters() { return parameters; }
 
         public Object execute(Builder parameters) throws MCPException {
+            // Validate parameters against the generated schema
+            MCPTool.validateParameters(parameters, schema, name);
+
             try {
                 Object[] args = convertParametersToArguments(parameters);
                 return method.invoke(toolInstance, args);
             } catch (Exception e) {
-                LOGGER.severe("Error executing tool method " + name + ": " + e.getCause().getMessage());
-                throw new MCPException("Error executing tool method " + name + ": " + e.getCause().getMessage(), e);
+                String errorMsg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+                LOGGER.severe("Error executing tool method " + name + ": " + errorMsg);
+                throw new MCPException("Error executing tool method " + name + ": " + errorMsg, e);
             }
         }
 
@@ -402,6 +421,9 @@ public class MCPTool extends AbstractMCPResource {
 
         private Object convertValue(Object value, Class<?> targetType) throws MCPException {
             try {
+                if (value == null) {
+                    return null;
+                }
                 if (targetType == String.class) {
                     return value.toString();
                 } else if (targetType == int.class || targetType == Integer.class) {
@@ -429,10 +451,26 @@ public class MCPTool extends AbstractMCPResource {
                         return value;
                     }
                     return Boolean.parseBoolean(value.toString());
+                } else if (targetType == Builder.class) {
+                    if (value instanceof Builder) {
+                        return value;
+                    }
+                    Builder b = new Builder();
+                    b.parse(value.toString());
+                    return b;
+                } else if (targetType == org.tinystruct.data.component.Builders.class) {
+                    if (value instanceof org.tinystruct.data.component.Builders) {
+                        return value;
+                    }
+                    org.tinystruct.data.component.Builders b = new org.tinystruct.data.component.Builders();
+                    b.parse(value.toString());
+                    return b;
+                } else if (targetType == Object.class) {
+                    return value;
                 } else {
                     throw new MCPException("Unsupported parameter type: " + targetType.getName());
                 }
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException | ApplicationException e) {
                 throw new MCPException("Invalid number format for parameter: " + e.getMessage());
             }
         }

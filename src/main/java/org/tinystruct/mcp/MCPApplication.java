@@ -38,7 +38,7 @@ public abstract class MCPApplication extends AbstractApplication {
     protected final Map<String, MCPDataResource> resources = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, MCPPrompt> prompts = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, RpcMethodHandler> rpcHandlers = new java.util.concurrent.ConcurrentHashMap<>();
-    protected static final Map<String, MCPTool.MCPToolMethod> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
+    protected static final Map<String, MCPTool.ToolMethod> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Initializes the MCP application, setting up authentication, SSE, JSON-RPC
@@ -324,15 +324,46 @@ public abstract class MCPApplication extends AbstractApplication {
      */
     public void registerTool(MCPTool tool) {
         Class<? extends MCPTool> toolClass = tool.getClass();
-        Builder builder = SchemaGenerator.generateSchema(toolClass);
-        tool.setSchema(builder);
-        tools.put(tool.getName(), tool);
-        LOGGER.info("Registered tool: " + tool.getName());
-
+        
+        boolean hasActionMethods = false;
         for (Method method : toolClass.getDeclaredMethods()) {
             Action action = method.getAnnotation(Action.class);
             if (action != null) {
-                MCPTool.MCPToolMethod toolMethod = new MCPTool.MCPToolMethod(method, action, tool);
+                hasActionMethods = true;
+                MCPTool.ToolMethod toolMethod = new MCPTool.ToolMethod(method, action, tool);
+                toolMethods.put(toolMethod.getName(), toolMethod);
+                LOGGER.info("Registered tool method: " + toolMethod.getName());
+            }
+        }
+
+        if (!hasActionMethods) {
+            if (tool.getSchema() == null) {
+                Builder builder = SchemaGenerator.generateSchema(toolClass);
+                tool.setSchema(builder);
+            }
+            tools.put(tool.getName(), tool);
+            LOGGER.info("Registered tool: " + tool.getName());
+        }
+    }
+
+    /**
+     * Registers a tool with the application.
+     * Can register any Object containing @Action-annotated methods,
+     * or a direct MCPTool subclass.
+     *
+     * @param tool The tool object to register
+     */
+    public void registerTool(Object tool) {
+        if (tool instanceof MCPTool) {
+            registerTool((MCPTool) tool);
+            return;
+        }
+
+        Class<?> toolClass = tool.getClass();
+        for (Method method : toolClass.getDeclaredMethods()) {
+            Action action = method.getAnnotation(Action.class);
+            if (action != null) {
+                MCPTool.ToolMethod toolMethod = new MCPTool.ToolMethod(method, action, tool);
                 toolMethods.put(toolMethod.getName(), toolMethod);
                 LOGGER.info("Registered tool method: " + toolMethod.getName());
             }

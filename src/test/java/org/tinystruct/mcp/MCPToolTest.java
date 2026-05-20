@@ -235,7 +235,7 @@ public class MCPToolTest {
         Dummy dummy = new Dummy();
         java.lang.reflect.Method m = Dummy.class.getDeclaredMethod("add", double.class, double.class);
         org.tinystruct.system.annotation.Action action = m.getAnnotation(org.tinystruct.system.annotation.Action.class);
-        MCPTool.MCPToolMethod method = new MCPTool.MCPToolMethod(m, action, dummy);
+        MCPTool.ToolMethod method = new MCPTool.ToolMethod(m, action, dummy);
         Builder params = new Builder();
         params.put("a", 2.0);
         params.put("b", 3.0);
@@ -268,5 +268,47 @@ public class MCPToolTest {
         assertEquals("A local tool with schema", tool2.getDescription());
         assertEquals(schema, tool2.getSchema());
         assertTrue(tool2.supportsLocalExecution());
+    }
+
+    @Test
+    public void testMCPToolMethodAdvancedValidation() throws Exception {
+        class AdvancedDummy {
+            @org.tinystruct.system.annotation.Action(value = "dummy/validate", description = "Validate", arguments = {
+                @org.tinystruct.system.annotation.Argument(key = "intVal", type = "integer", description = "An integer"),
+                @org.tinystruct.system.annotation.Argument(key = "objVal", type = "object", description = "An object")
+            })
+            public String validate(int intVal, Builder objVal) {
+                return "Int: " + intVal + ", Obj: " + objVal.get("key");
+            }
+        }
+        
+        AdvancedDummy dummy = new AdvancedDummy();
+        java.lang.reflect.Method m = AdvancedDummy.class.getDeclaredMethod("validate", int.class, Builder.class);
+        org.tinystruct.system.annotation.Action action = m.getAnnotation(org.tinystruct.system.annotation.Action.class);
+        MCPTool.ToolMethod method = new MCPTool.ToolMethod(m, action, dummy);
+
+        // 1. Test passing exact decimal integer (2.0) and Builder - should succeed!
+        Builder params = new Builder();
+        params.put("intVal", 2.0); // Exact decimal representation of 2
+        Builder nestedObj = new Builder();
+        nestedObj.put("key", "value");
+        params.put("objVal", nestedObj);
+        
+        Object result = method.execute(params);
+        assertEquals("Int: 2, Obj: value", result.toString());
+
+        // 2. Test passing non-integer decimal (2.5) - should fail!
+        Builder paramsInvalidInt = new Builder();
+        paramsInvalidInt.put("intVal", 2.5); // Fractional number
+        paramsInvalidInt.put("objVal", nestedObj);
+        
+        assertThrows(MCPException.class, () -> method.execute(paramsInvalidInt));
+
+        // 3. Test passing invalid type (string instead of integer) - should fail!
+        Builder paramsInvalidType = new Builder();
+        paramsInvalidType.put("intVal", "not-a-number");
+        paramsInvalidType.put("objVal", nestedObj);
+        
+        assertThrows(MCPException.class, () -> method.execute(paramsInvalidType));
     }
 }

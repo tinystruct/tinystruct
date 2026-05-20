@@ -53,7 +53,7 @@ public class MCPServer extends MCPApplication {
         Builders toolsList = new Builders();
 
         // Add individual tool methods
-        for (MCPTool.MCPToolMethod toolMethod : toolMethods.values()) {
+        for (MCPTool.ToolMethod toolMethod : toolMethods.values()) {
             Builder toolInfo = new Builder();
             toolInfo.put("name", toolMethod.getName());
             toolInfo.put("description", toolMethod.getDescription());
@@ -63,11 +63,21 @@ public class MCPServer extends MCPApplication {
 
         // Add registered tool classes
         for (MCPTool tool : tools.values()) {
-            Builder toolInfo = new Builder();
-            toolInfo.put("name", tool.getName());
-            toolInfo.put("description", tool.getDescription());
-            toolInfo.put("inputSchema", tool.getSchema());
-            toolsList.add(toolInfo);
+            boolean hasSubMethods = false;
+            String prefix = tool.getName() + "/";
+            for (String methodName : toolMethods.keySet()) {
+                if (methodName.startsWith(prefix)) {
+                    hasSubMethods = true;
+                    break;
+                }
+            }
+            if (!hasSubMethods) {
+                Builder toolInfo = new Builder();
+                toolInfo.put("name", tool.getName());
+                toolInfo.put("description", tool.getDescription());
+                toolInfo.put("inputSchema", tool.getSchema());
+                toolsList.add(toolInfo);
+            }
         }
 
         result.put("tools", toolsList);
@@ -89,7 +99,7 @@ public class MCPServer extends MCPApplication {
             Builder toolParams = (Builder) params.get("arguments");
 
             // First try to find the tool method
-            MCPTool.MCPToolMethod toolMethod = toolMethods.get(toolName);
+            MCPTool.ToolMethod toolMethod = toolMethods.get(toolName);
             if (toolMethod != null) {
                 Object result = toolMethod.execute(toolParams);
                 response.setId(request.getId());

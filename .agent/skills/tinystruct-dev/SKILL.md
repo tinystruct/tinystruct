@@ -992,7 +992,95 @@ For full integration tests involving the built-in HTTP server and method mode ve
 1. Start `HttpServer` in a background thread.
 2. Use `ApplicationManager.call("start", context, Action.Mode.CLI)` to boot the server.
 3. Wait for the port to be open using a `Socket` before sending requests.
-4. Use `URLRequest` and `HTTPHandler` to perform actual HTTP requests and verify responses.
+4. Use `URLRequest` and `HTTPHandler` to perform actual HTTP requests and verify responses.---
+
+## Model Context Protocol (MCP) Tool Development
+
+The Model Context Protocol (MCP) allows tinystruct applications to act as servers exposing tools, data resources, and prompts to LLM (Large Language Model) clients.
+
+### 1. Unified Tool Model
+
+In `tinystruct`, a tool is a discrete function/capability that an LLM can invoke. You can develop tools in two different ways:
+
+#### A. Zero-Boilerplate POJO Tools (Recommended)
+You can write any standard Java class (POJO) and annotate its public methods with `@Action`. You **do not** need to extend any base class or write custom constructors. The framework automatically parses the `@Action` annotation and registers each annotated method as an individual MCP tool.
+
+```java
+package com.example.tools;
+
+import org.tinystruct.system.annotation.Action;
+import org.tinystruct.system.annotation.Argument;
+
+public class MathTools {
+
+    @Action(
+        value = "calculator/add",
+        description = "Add two numbers together",
+        arguments = {
+            @Argument(key = "a", description = "The first operand", type = "number"),
+            @Argument(key = "b", description = "The second operand", type = "number")
+        }
+    )
+    public double add(double a, double b) {
+        return a + b;
+    }
+}
+```
+
+#### B. Legacy Custom Tools
+For advanced use-cases where you want raw execution handling over a single tool name, inherit from `MCPTool` and override the `execute(Builder)` method.
+
+```java
+package com.example.tools;
+
+import org.tinystruct.mcp.MCPTool;
+import org.tinystruct.data.component.Builder;
+import org.tinystruct.mcp.MCPException;
+
+public class LegacyCustomTool extends MCPTool {
+
+    public LegacyCustomTool() {
+        super("custom-tool", "A custom tool that handles execution directly", null, null, true);
+    }
+
+    @Override
+    public Object execute(Builder parameters) throws MCPException {
+        // Raw parameter extraction & execution logic
+        return "Result from legacy execution";
+    }
+}
+```
+
+### 2. Tool Registration
+
+Register your tools within an `MCPServer` or an `MCPApplication` subclass. Both POJO tools and legacy `MCPTool` subclasses are registered using the exact same overloaded `registerTool` method.
+
+```java
+import org.tinystruct.mcp.MCPServer;
+import com.example.tools.MathTools;
+import com.example.tools.LegacyCustomTool;
+
+public class MyMCPServer extends MCPServer {
+
+    @Override
+    public void init() {
+        super.init();
+
+        // 1. Register POJO tools (methods are discovered & registered individually)
+        this.registerTool(new MathTools());
+
+        // 2. Register legacy tools
+        this.registerTool(new LegacyCustomTool());
+    }
+}
+```
+
+### 3. Non-Overlapping Architecture Rules
+
+To prevent tool registration overlaps and double-listing errors:
+1. **Namespace Isolation**: Name POJO action methods using a namespace prefix (e.g. `calculator/add`, `calculator/subtract`). 
+2. **Container Exclusion**: If a class registered via `registerTool` contains any `@Action`-annotated methods, the framework only registers the individual methods in `toolMethods` and excludes the container class itself from the `tools` listing, ensuring clean and non-overlapping outputs for `list-tools` calls.
+3. **Automatic Schema Safeguards**: The framework dynamically resolves parameters schemas. It will never overwrite a legacy tool's constructor-provided schema.
 
 ---
 

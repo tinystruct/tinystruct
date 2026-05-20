@@ -129,6 +129,28 @@ public class MCPServerTest {
         assertEquals(MCPSpecification.ErrorCodes.METHOD_NOT_FOUND, resp.getError().getCode());
     }
 
+    @Test
+    public void testRegisterPojoTool() {
+        app.registerTool(new SimplePojoTool());
+        
+        JsonRpcRequest req = new JsonRpcRequest();
+        req.setId("6");
+        Builder params = new Builder();
+        params.put("name", "pojo/sayHello");
+        params.put("arguments", new Builder());
+        req.setParams(params);
+        
+        JsonRpcResponse resp = new JsonRpcResponse();
+        app.handleCallTool(req, resp);
+        assertNull(resp.getError());
+        assertNotNull(resp.getResult());
+        
+        Builder result = resp.getResult();
+        Builders contentArray = (Builders) result.get("content");
+        Builder contentItem = contentArray.get(0);
+        assertEquals("Hello, POJO!", contentItem.get("text").toString());
+    }
+
     // Simple mock tool for testing
     static class MockTool extends MCPTool {
         public MockTool(String name, String description, MCPClient client) {
@@ -145,5 +167,12 @@ public class MCPServerTest {
         public String getDescription() { return "A mock tool for testing."; }
         @Override
         public Object execute(Builder parameters) { return "mock-result"; }
+    }
+
+    static class SimplePojoTool {
+        @org.tinystruct.system.annotation.Action(value = "pojo/sayHello", description = "Say hello to someone")
+        public String sayHello() {
+            return "Hello, POJO!";
+        }
     }
 } 
