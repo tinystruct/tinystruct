@@ -260,6 +260,14 @@ public final class MCPSpecification {
          */
         public static final String LOGGING_SET_LEVEL = "logging/setLevel";
 
+        /**
+         * Ping the server.
+         * <p>
+         * Sent by the client to check if the server is still alive.
+         * </p>
+         */
+        public static final String PING = "ping";
+
         private Methods() {
         } // Prevent instantiation
     }

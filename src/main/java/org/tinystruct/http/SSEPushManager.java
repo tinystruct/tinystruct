@@ -4,12 +4,17 @@ import org.tinystruct.data.component.Builder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -22,10 +27,21 @@ import java.util.logging.Logger;
  */
 public class SSEPushManager {
     private static final Logger logger = Logger.getLogger(SSEPushManager.class.getName());
-    // Map of sessionId to client (Response for Netty, SSEClient for Servlet)
+
+    /**
+     * Seconds of inactivity after which a Servlet-mode SSE client is considered stale
+     * and a WARNING is logged by the watchdog. Default: 60 seconds.
+     */
+    public static final int STALE_THRESHOLD_SEC = 60;
+
+    // Map of sessionId -> client (Response for Netty, SSEClient for Servlet)
     private final ConcurrentHashMap<String, Object> clients = new ConcurrentHashMap<>();
+    // Epoch-ms registration time per sessionId
+    private final ConcurrentHashMap<String, Long> registrationTimes = new ConcurrentHashMap<>();
     // Executor for running SSEClient threads (Servlet/Tomcat only)
     private final ExecutorService executor;
+    // Watchdog scheduler that logs stale connections
+    private final ScheduledExecutorService watchdog;
     // Indicates if the manager is shutting down
     private final AtomicBoolean isShutdown = new AtomicBoolean(false);
     // True if running in Netty environment
@@ -42,7 +58,14 @@ public class SSEPushManager {
     protected SSEPushManager() {
         this.isNetty = isNettyEnvironment();
         this.executor = isNetty ? null : Executors.newCachedThreadPool();
-        logger.info("SSEPushManager initialized for " + (isNetty ? "Netty" : "Servlet/Tomcat") + " environment");
+        // Start watchdog: check every 30 s for stale connections
+        this.watchdog = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "sse-watchdog");
+            t.setDaemon(true);
+            return t;
+        });
+        this.watchdog.scheduleAtFixedRate(this::checkStaleConnections, 30, 30, TimeUnit.SECONDS);
+        logger.info("SSEPushManager initialized");
     }
 
     /**
@@ -106,6 +129,7 @@ public class SSEPushManager {
         }
 
         sessionId = identifier + sessionId;
+        registrationTimes.put(sessionId, System.currentTimeMillis());
         if (isNetty) {
             // Netty: just store the response directly
             clients.put(sessionId, out);
@@ -220,6 +244,7 @@ public class SSEPushManager {
      */
     public void remove(String sessionId) {
         sessionId = identifier + sessionId;
+        registrationTimes.remove(sessionId);
         Object clientObj = clients.remove(sessionId);
         if (clientObj != null) {
             if (isNetty) {
@@ -253,6 +278,9 @@ public class SSEPushManager {
      */
     public void shutdown() {
         if (isShutdown.compareAndSet(false, true)) {
+            // Stop watchdog first
+            watchdog.shutdownNow();
+
             // Close all clients
             if (isNetty) {
                 clients.forEach((sessionId, clientObj) -> {
@@ -270,6 +298,7 @@ public class SSEPushManager {
                 });
             }
             clients.clear();
+            registrationTimes.clear();
 
             // Shutdown executor (only for Servlet/Tomcat)
             if (executor != null) {
@@ -277,6 +306,63 @@ public class SSEPushManager {
             }
 
             logger.info("SSEPushManager shutdown complete");
+        }
+    }
+
+    /**
+     * Returns a snapshot of connection statistics for monitoring purposes.
+     * Each entry maps a session ID to a two-element long array:
+     * {@code [registrationTimeMs, lastActivityTimeMs]}.
+     * For Netty clients, {@code lastActivityTimeMs} is -1 (not tracked per-client).
+     *
+     * @return unmodifiable map of sessionId → [registeredAt, lastActivity]
+     */
+    public Map<String, long[]> getConnectionStats() {
+        Map<String, long[]> stats = new LinkedHashMap<>();
+        clients.forEach((sessionId, clientObj) -> {
+            long registered = registrationTimes.getOrDefault(sessionId, -1L);
+            long lastActivity;
+            if (!isNetty && clientObj instanceof SSEClient) {
+                lastActivity = ((SSEClient) clientObj).getLastActivityTime();
+            } else {
+                lastActivity = -1L;
+            }
+            stats.put(sessionId, new long[]{registered, lastActivity});
+        });
+        return Collections.unmodifiableMap(stats);
+    }
+
+    /**
+     * Watchdog task: logs a WARNING for every Servlet-mode SSE client whose
+     * last activity (message or heartbeat) is older than {@link #STALE_THRESHOLD_SEC}.
+     * Also cleans up clients that are no longer active.
+     */
+    private void checkStaleConnections() {
+        if (isNetty || isShutdown.get()) return;
+        long now = System.currentTimeMillis();
+        long staleMs = STALE_THRESHOLD_SEC * 1000L;
+        List<String> staleKeys = new ArrayList<>();
+        clients.forEach((sessionId, clientObj) -> {
+            if (!(clientObj instanceof SSEClient)) return;
+            SSEClient client = (SSEClient) clientObj;
+            if (!client.isActive()) {
+                staleKeys.add(sessionId);
+                return;
+            }
+            long idle = now - client.getLastActivityTime();
+            if (idle > staleMs) {
+                logger.warning(String.format(
+                        "SSEPushManager watchdog: client '%s' has been idle for %d s (threshold %d s). "
+                        + "It may be stuck. Registered at: %s",
+                        sessionId, idle / 1000, STALE_THRESHOLD_SEC,
+                        new java.util.Date(registrationTimes.getOrDefault(sessionId, -1L))));
+            }
+        });
+        // Remove inactive clients discovered during scan
+        for (String key : staleKeys) {
+            clients.remove(key);
+            registrationTimes.remove(key);
+            logger.info("SSEPushManager watchdog: removed inactive client '" + key + "'");
         }
     }
 

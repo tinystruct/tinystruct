@@ -12,7 +12,7 @@ public class AuthorizationHandler {
     private final String authToken;
 
     public AuthorizationHandler(String authToken) {
-        this.authToken = "Bearer " + authToken;
+        this.authToken = authToken;
     }
 
     /**

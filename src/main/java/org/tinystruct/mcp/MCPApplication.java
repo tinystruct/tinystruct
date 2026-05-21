@@ -13,8 +13,13 @@ import org.tinystruct.system.annotation.Action;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.tinystruct.mcp.MCPSpecification.*;
 
@@ -39,6 +44,9 @@ public abstract class MCPApplication extends AbstractApplication {
     protected final Map<String, MCPPrompt> prompts = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, RpcMethodHandler> rpcHandlers = new java.util.concurrent.ConcurrentHashMap<>();
     protected static final Map<String, MCPTool.ToolMethod> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
+    
+    // Scheduled executor for cleaning up stale sessions
+    private ScheduledExecutorService sessionCleanupWatchdog;
 
     /**
      * Initializes the MCP application, setting up authentication, SSE, JSON-RPC
@@ -71,6 +79,7 @@ public abstract class MCPApplication extends AbstractApplication {
         this.registerRpcHandler(Methods.SHUTDOWN, (req, res, app) -> app.handleShutdown(req, res));
         this.registerRpcHandler(Methods.GET_STATUS, (req, res, app) -> app.handleGetStatus(req, res));
         this.registerRpcHandler(Methods.LOGGING_SET_LEVEL, (req, res, app) -> app.handleLoggingSetLevel(req, res));
+        this.registerRpcHandler(Methods.PING, (req, res, app) -> app.handlePing(req, res));
         this.registerRpcHandler(Methods.INITIALIZED_NOTIFICATION, (req, res, app) -> {
             if (app.getSessionState() == SessionState.INITIALIZING) {
                 app.setSessionState(SessionState.READY);
@@ -96,7 +105,54 @@ public abstract class MCPApplication extends AbstractApplication {
                 res.setResult(null);
             }
         });
+        
+        // Start session cleanup watchdog
+        long timeoutMs = getSessionTimeoutMs();
+        this.sessionCleanupWatchdog = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "mcp-session-cleanup");
+            t.setDaemon(true);
+            return t;
+        });
+        this.sessionCleanupWatchdog.scheduleAtFixedRate(this::cleanupStaleSessions, timeoutMs / 2, timeoutMs / 2, TimeUnit.MILLISECONDS);
+    }
+    
+    private long getSessionTimeoutMs() {
+        String timeoutStr = getConfiguration().getOrDefault(Config.SESSION_TIMEOUT, "1800"); // Default 30 min (1800s)
+        try {
+            return Long.parseLong(timeoutStr) * 1000L;
+        } catch (NumberFormatException e) {
+            LOGGER.warning("Invalid mcp.session.timeout value, using default 30 minutes");
+            return 1800 * 1000L;
+        }
+    }
+    
+    private void cleanupStaleSessions() {
+        long now = System.currentTimeMillis();
+        long timeoutMs = getSessionTimeoutMs();
+        List<String> staleSessions = new ArrayList<>();
+        
+        sessionMap.forEach((sessionId, sessionStartObj) -> {
+            if (sessionStartObj instanceof Number) {
+                long sessionStart = ((Number) sessionStartObj).longValue();
+                if (now - sessionStart > timeoutMs) {
+                    staleSessions.add(sessionId);
+                }
+            }
+        });
+        
+        for (String sessionId : staleSessions) {
+            sessionMap.remove(sessionId);
+            sessionStates.remove(sessionId);
+            LOGGER.info("Cleaned up stale MCP session: " + sessionId);
+        }
+    }
 
+    @Override
+    public void destroy() {
+        if (sessionCleanupWatchdog != null) {
+            sessionCleanupWatchdog.shutdownNow();
+        }
+        super.destroy();
     }
 
     /**
@@ -110,12 +166,14 @@ public abstract class MCPApplication extends AbstractApplication {
      */
     @Action(value = Endpoints.SSE, description = "Main entry point for handling JSON-RPC requests via Streamable HTTP POST")
     public String handleRpcRequest(Request request, Response response) throws ApplicationException {
+        long startTime = System.currentTimeMillis();
+        String method = "unknown";
+        String sessionId = null;
         try {
             // Validate authentication
             authHandler.validateAuthHeader(request);
 
             // Session management: extract or assign sessionId
-            String sessionId = null;
             Object mcpSessionId = request.headers().get(Header.value0f(Http.SESSION_ID));
             if (mcpSessionId != null && !mcpSessionId.toString().isEmpty()) {
                 sessionId = mcpSessionId.toString();
@@ -158,7 +216,7 @@ public abstract class MCPApplication extends AbstractApplication {
             rpcRequest.parse(requestBody);
             JsonRpcResponse jsonResponse = new JsonRpcResponse();
             // Restrict methods before READY
-            String method = rpcRequest.getMethod();
+            method = rpcRequest.getMethod();
             RpcMethodHandler handler = rpcHandlers.get(method);
             if (handler != null) {
                 handler.handle(rpcRequest, jsonResponse, this);
@@ -177,6 +235,9 @@ public abstract class MCPApplication extends AbstractApplication {
                     ErrorCodes.INTERNAL_ERROR);
         } finally {
             currentSessionId.remove();
+            long elapsed = System.currentTimeMillis() - startTime;
+            LOGGER.info(String.format("MCP Request processed | Session: %s | Method: %s | Time: %dms", 
+                    sessionId != null ? sessionId : "none", method, elapsed));
         }
     }
 
@@ -301,6 +362,29 @@ public abstract class MCPApplication extends AbstractApplication {
         result.put("uptime", System.currentTimeMillis() - sessionStart);
         response.setId(request.getId());
         response.setResult(result);
+    }
+    
+    /**
+     * Handles the 'ping' JSON-RPC method.
+     * The ping method can be used by clients or servers to verify that the
+     * connection is still alive.
+     * Returns an empty object per the MCP specification.
+     * 
+     * @param request  The JSON-RPC request
+     * @param response The JSON-RPC response to populate
+     */
+    protected void handlePing(JsonRpcRequest request, JsonRpcResponse response) {
+        // Update session activity timestamp to prevent timeout during long idle periods 
+        // when clients rely solely on ping for keep-alive
+        String sessionId = currentSessionId.get();
+        if (sessionId != null && sessionMap.containsKey(sessionId)) {
+            // we could track lastPingTime separately, but updating session map
+            // effectively extends the session timeout window for active clients
+            sessionMap.put(sessionId, System.currentTimeMillis());
+        }
+        
+        response.setId(request.getId());
+        response.setResult(new Builder());
     }
 
     /**

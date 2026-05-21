@@ -6,6 +6,8 @@ import org.tinystruct.data.component.Builder;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 /**
@@ -13,6 +15,17 @@ import java.util.logging.Logger;
  * It runs as a separate thread, pulling messages from a queue and sending them to the client.
  */
 public class SSEClient implements Runnable {
+    /**
+     * Interval in seconds between SSE keepalive heartbeats.
+     * A comment line "}: keepalive\n\n" is sent when the queue is idle for this long.
+     * Keeps proxies / browsers from silently closing idle connections and allows
+     * fast detection of a broken pipe (write failure marks the client inactive).
+     */
+    public static final int HEARTBEAT_INTERVAL_SEC = 20;
+
+    /** Raw SSE keepalive comment payload. */
+    private static final byte[] KEEPALIVE_PAYLOAD = ": keepalive\n\n".getBytes(StandardCharsets.UTF_8);
+
     // The response object used to send data to the client
     private final Response out;
     // Thread-safe queue for messages to be sent to the client
@@ -21,6 +34,8 @@ public class SSEClient implements Runnable {
     private volatile boolean active = true;
     private static final Logger logger = Logger.getLogger(SSEClient.class.getName());
     private volatile Thread workerThread;
+    /** Epoch-ms timestamp of the last successful write (message or heartbeat). */
+    private final AtomicLong lastActivityTime = new AtomicLong(System.currentTimeMillis());
 
     /**
      * Constructs an SSEClient with a new message queue.
@@ -81,9 +96,21 @@ public class SSEClient implements Runnable {
         workerThread = Thread.currentThread();
         try {
             while (active && !workerThread.isInterrupted()) {
-                Builder message = messageQueue.take(); // Blocks until a message is available
-                String event = SSEPushManager.formatSSEMessage(message);
-                out.writeAndFlush(event.getBytes(StandardCharsets.UTF_8));
+                // Poll with a timeout instead of blocking take().
+                // If no message arrives within HEARTBEAT_INTERVAL_SEC, send a keepalive
+                // comment so the TCP connection stays alive through proxies/browsers and
+                // so that a broken-pipe is detected quickly (write failure → active=false).
+                Builder message = messageQueue.poll(HEARTBEAT_INTERVAL_SEC, TimeUnit.SECONDS);
+                if (message == null) {
+                    // Queue was idle — send an SSE comment as a keepalive heartbeat
+                    out.writeAndFlush(KEEPALIVE_PAYLOAD);
+                    lastActivityTime.set(System.currentTimeMillis());
+                    logger.fine("SSEClient sent keepalive heartbeat");
+                } else {
+                    String event = SSEPushManager.formatSSEMessage(message);
+                    out.writeAndFlush(event.getBytes(StandardCharsets.UTF_8));
+                    lastActivityTime.set(System.currentTimeMillis());
+                }
             }
         } catch (InterruptedException e) {
             workerThread.interrupt();
@@ -118,5 +145,16 @@ public class SSEClient implements Runnable {
      */
     public boolean isActive() {
         return active;
+    }
+
+    /**
+     * Returns the epoch-millisecond timestamp of the last successful write
+     * (either a real message or a keepalive heartbeat).
+     * Useful for monitoring stale connections.
+     *
+     * @return last activity time in epoch milliseconds
+     */
+    public long getLastActivityTime() {
+        return lastActivityTime.get();
     }
 }
