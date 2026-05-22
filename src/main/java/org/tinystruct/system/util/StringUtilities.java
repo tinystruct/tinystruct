@@ -527,15 +527,20 @@ public class StringUtilities implements java.io.Serializable {
      * @return the unescaped Java string
      */
     public static String unescape(String s) {
-        if (s == null || s.indexOf(ESCAPE_CHAR) == -1) {
-            return s; // fast path – nothing to unescape
-        }
+        if (s == null) return null;
 
-        StringBuilder sb = new StringBuilder(s.length());
-        int i = 0;
-        while (i < s.length()) {
+        int len = s.length();
+        int escapeIdx = s.indexOf(ESCAPE_CHAR);
+        if (escapeIdx == -1) return s; // fast path – nothing to unescape
+
+        StringBuilder sb = new StringBuilder(len);
+        sb.append(s, 0, escapeIdx); // copy clean prefix directly
+        int i = escapeIdx;
+
+        while (i < len) {
             char c = s.charAt(i);
-            if (c != ESCAPE_CHAR || i + 1 >= s.length()) {
+
+            if (c != ESCAPE_CHAR || i + 1 >= len) {
                 sb.append(c);
                 i++;
                 continue;
@@ -551,30 +556,55 @@ public class StringUtilities implements java.io.Serializable {
                 case 'n':  sb.append('\n'); i += 2; break;
                 case 'r':  sb.append('\r'); i += 2; break;
                 case 't':  sb.append('\t'); i += 2; break;
-                case 'u':
-                    if (i + 5 < s.length()) {
-                        String hex = s.substring(i + 2, i + 6);
-                        try {
-                            sb.append((char) Integer.parseInt(hex, 16));
-                            i += 6;
-                        } catch (NumberFormatException e) {
-                            // not a valid unicode escape – keep literally
-                            sb.append(c);
-                            i++;
-                        }
-                    } else {
-                        sb.append(c);
-                        i++;
-                    }
-                    break;
+                case 'u':  i = unescapeUnicode(s, i, len, sb); break;
                 default:
-                    // unknown escape – keep as-is (lenient)
-                    sb.append(c);
-                    i++;
+                    // Unrecognised escape — preserve literally (e.g. \q → \q)
+                    sb.append(c).append(next);
+                    i += 2;
                     break;
             }
         }
+
         return sb.toString();
+    }
+
+    private static int unescapeUnicode(String s, int i, int len, StringBuilder sb) {
+        if (i + 6 > len) {
+            sb.append(s, i, len);
+            return len;
+        }
+
+        int high = parseHex4(s, i + 2);
+        if (high < 0) {
+            sb.append(s, i, i + 2);
+            return i + 2;
+        }
+
+        if (Character.isHighSurrogate((char) high) && i + 12 <= len
+                && s.charAt(i + 6) == '\\' && s.charAt(i + 7) == 'u') {
+            int low = parseHex4(s, i + 8);
+            if (low >= 0 && Character.isLowSurrogate((char) low)) {
+                sb.appendCodePoint(Character.toCodePoint((char) high, (char) low));
+                return i + 12;
+            }
+        }
+
+        sb.append((char) high);
+        return i + 6;
+    }
+
+    /**
+     * Parses exactly 4 hex digits from {@code s} starting at {@code start}.
+     * Returns the integer value, or -1 if any digit is invalid.
+     */
+    private static int parseHex4(String s, int start) {
+        int code = 0;
+        for (int j = start; j < start + 4; j++) {
+            int digit = Character.digit(s.charAt(j), 16);
+            if (digit < 0) return -1;
+            code = (code << 4) | digit;
+        }
+        return code;
     }
 
     /**
