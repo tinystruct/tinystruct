@@ -20,6 +20,7 @@ import org.tinystruct.ApplicationException;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Tinystruct Response adapter for JDK HttpServer (no servlet APIs).
@@ -29,8 +30,8 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
     private final Headers headers = new Headers();
     private ResponseStatus status = ResponseStatus.OK;
     private Version version = Version.HTTP1_1;
-    private boolean closed = false;
-    private boolean headersSent = false;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicBoolean headersSent = new AtomicBoolean(false);
     private OutputStream outputStream;
 
     public ServerResponse(HttpExchange exchange) {
@@ -63,7 +64,7 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
         try {
             // -1 signals no response body for a redirect
             this.exchange.sendResponseHeaders(this.status.code(), -1);
-            this.headersSent = true;
+            this.headersSent.set(true);
         } catch (IOException e) {
             throw new ApplicationException(e);
         }
@@ -75,19 +76,18 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
         try {
             // Ensure headers are sent at least once.
             // If we have a concrete byte array and headers not yet sent, prefer fixed Content-Length.
-            if (!headersSent) {
+            if (!headersSent.get()) {
                 // If content length is known and this is a one-shot response, let caller use sendHeaders(len).
                 // Fallback here: if bytes provided, use exact length; if not, use 0 to enable chunked per JDK HttpServer.
                 long len = (bytes != null) ? bytes.length : 0;
                 this.exchange.sendResponseHeaders(this.status.code(), len);
-                this.headersSent = true;
-            }
-
-            if (this.outputStream == null) {
-                this.outputStream = this.exchange.getResponseBody();
+                this.headersSent.set(true);
             }
 
             if (bytes != null && bytes.length > 0) {
+                if (this.outputStream == null) {
+                    this.outputStream = this.exchange.getResponseBody();
+                }
                 this.outputStream.write(bytes);
                 this.outputStream.flush();
             }
@@ -103,14 +103,15 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
 
     @Override
     public void close() throws ApplicationException {
-        if (closed) return;
+        if (closed.get()) return;
         try {
             if (this.outputStream != null) {
+                this.outputStream.flush();
                 this.outputStream.close();
             }
         } catch (IOException ignore) {
         } finally {
-            closed = true;
+            closed.set(true);
             exchange.close();
         }
     }
@@ -145,17 +146,17 @@ public class ServerResponse implements Response<HttpExchange, HttpExchange> {
      * Send response headers once with a known content length. Use -1 to keep chunked (0) behavior.
      */
     public void sendHeaders(long contentLength) throws ApplicationException {
-        if (headersSent) return;
+        if (headersSent.get()) return;
         long len = contentLength >= 0 ? contentLength : 0;
         try {
             this.exchange.sendResponseHeaders(this.status.code(), len);
-            this.headersSent = true;
+            this.headersSent.set(true);
         } catch (IOException e) {
             throw new ApplicationException(e);
         }
     }
 
     public boolean isClosed() {
-        return closed;
+        return closed.get();
     }
 }

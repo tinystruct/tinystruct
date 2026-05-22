@@ -1,5 +1,6 @@
 package org.tinystruct.http;
 
+import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.component.Builder;
 
@@ -77,6 +78,11 @@ public class SSEClient implements Runnable {
         if (workerThread != null) {
             workerThread.interrupt();
         }
+        try {
+            this.out.close();
+        } catch (ApplicationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -103,19 +109,19 @@ public class SSEClient implements Runnable {
                 Builder message = messageQueue.poll(HEARTBEAT_INTERVAL_SEC, TimeUnit.SECONDS);
                 if (message == null) {
                     // Queue was idle — send an SSE comment as a keepalive heartbeat
-                    out.writeAndFlush(KEEPALIVE_PAYLOAD);
-                    lastActivityTime.set(System.currentTimeMillis());
                     logger.fine("SSEClient sent keepalive heartbeat");
+                    out.writeAndFlush(KEEPALIVE_PAYLOAD);
                 } else {
                     String event = SSEPushManager.formatSSEMessage(message);
+                    logger.fine("SSEClient sent keepalive message");
                     out.writeAndFlush(event.getBytes(StandardCharsets.UTF_8));
-                    lastActivityTime.set(System.currentTimeMillis());
                 }
+                lastActivityTime.set(System.currentTimeMillis());
             }
         } catch (InterruptedException e) {
             workerThread.interrupt();
             this.active = false;
-            logger.info("SSEClient thread interrupted for session");
+            logger.severe("SSEClient thread interrupted for session");
         } catch (Exception e) {
             // Check if this is a normal connection closure
             String message = e.getMessage();

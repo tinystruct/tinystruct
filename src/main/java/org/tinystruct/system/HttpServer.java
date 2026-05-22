@@ -292,7 +292,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     }
                 }
 
-                // Create TinyStruct Request and Response wrappers
+                // Create tinystruct Request and Response wrappers
                 ServerRequest request = new ServerRequest(exchange);
                 ServerResponse response = new ServerResponse(exchange);
 
@@ -344,11 +344,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 }
 
                 // Try to send error only if headers haven't been committed yet
-                try {
-                    sendErrorResponse(exchange, 500, "Internal Server Error" + (e.getMessage() != null ? ": " + e.getMessage() : ""));
-                } catch (Exception ignored) {
-                    // If we can't send an error (headers/body already sent), just log.
-                }
+                sendErrorResponse(exchange, 500, "Internal Server Error" + (e.getMessage() != null ? ": " + e.getMessage() : ""));
             }
         }
 
@@ -470,7 +466,8 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
                     if (client != null) {
                         try {
-                            while (client.isActive()) {
+                            long deadline = System.currentTimeMillis() + 30 * 60 * 1000L; // 30-min max
+                            while (client.isActive() && System.currentTimeMillis() < deadline) {
                                 Thread.sleep(1000);
                             }
                         } catch (InterruptedException e) {
@@ -507,6 +504,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                             try (OutputStream os = exchange.getResponseBody()) {
                                 os.write(bytes);
                             }
+                            exchange.close();
                             return true;
                         } catch (Exception ignore) {
                             // fall-through to dynamic handling
@@ -530,6 +528,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                         // 304 Not Modified
                         setDateHeader(exchange);
                         exchange.sendResponseHeaders(304, -1);
+                        exchange.close();
                         return true;
                     }
                 }
@@ -558,6 +557,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 try (InputStream in = new java.io.FileInputStream(file); OutputStream os = exchange.getResponseBody()) {
                     in.transferTo(os);
                 }
+                exchange.close();
                 return true;
             } catch (Exception e) {
                 logger.log(Level.FINE, "Static serve miss: " + e.getMessage(), e);
