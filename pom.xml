@@ -250,7 +250,6 @@
                             <goal>sign</goal>
                         </goals>
                         <configuration>
-                            <skip>true</skip>
                             <gpgArguments>
                                 <arg>--pinentry-mode</arg>
                                 <arg>loopback</arg>
