@@ -444,53 +444,33 @@ public class StringUtilities implements java.io.Serializable {
             return "";
         }
 
-        int bufLen = len * 2;
-        if (bufLen < 0) {
-            bufLen = Integer.MAX_VALUE;
-        }
+        StringBuilder buffer = new StringBuilder(len * 2);
 
-        StringBuilder buffer = new StringBuilder(bufLen);
-        char c;
         for (int x = 0; x < len; x++) {
-            c = raw.charAt(x);
-            // avoids the special chars
-            if ((c >= 60) && (c < 127)) {
-                if (c == '\\') {
-                    buffer.append('\\').append('\\');
-                    continue;
-                }
-                buffer.append(c);
-                continue;
-            }
+            char c = raw.charAt(x);
 
             switch (c) {
-                case ' ':
-                    buffer.append(' ');
-                    break;
-                case '\t':
-                    buffer.append('\\').append('t');
-                    break;
-                case '\n':
-                    buffer.append('\\').append('n');
-                    break;
-                case '\r':
-                    buffer.append('\\').append('r');
-                    break;
-                case '\f':
-                    buffer.append('\\').append('f');
-                    break;
-                case ':':
-                case '#':
-                case '!':
-                    buffer.append(c);
+                case '\\':
+                    buffer.append("\\\\");
                     break;
                 case '"':
                     buffer.append("\\\"");
                     break;
+                case '\t':
+                    buffer.append("\\t");
+                    break;
+                case '\n':
+                    buffer.append("\\n");
+                    break;
+                case '\r':
+                    buffer.append("\\r");
+                    break;
+                case '\f':
+                    buffer.append("\\f");
+                    break;
                 default:
-                    if ((c < 0x0020) || (c > 0x007e)) {
-                        buffer.append('\\');
-                        buffer.append('u');
+                    if (c < 0x20) {
+                        buffer.append("\\u");
                         buffer.append(toHex((c >> 12) & 0xF));
                         buffer.append(toHex((c >> 8) & 0xF));
                         buffer.append(toHex((c >> 4) & 0xF));
