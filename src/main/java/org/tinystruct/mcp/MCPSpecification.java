@@ -398,6 +398,7 @@ public final class MCPSpecification {
         public static final String CONTENT_TYPE_JSON = Header.StandardValue.APPLICATION_JSON.name();
         public static final String CONTENT_TYPE_SSE = "text/event-stream";
         public static final String SESSION_ID = "Mcp-session-id";
+        public static final String CONVERSATION_ID = "Mcp-conversation-id";
 
         private Http() {
         } // Prevent instantiation
