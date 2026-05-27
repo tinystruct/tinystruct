@@ -17,13 +17,16 @@ package org.tinystruct.system;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import jakarta.activation.MimetypesFileTypeMap;
 import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.application.Context;
+import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.Reforward;
 import org.tinystruct.http.*;
 import org.tinystruct.mcp.MCPPushManager;
+import org.tinystruct.mcp.MCPSpecification;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 import org.tinystruct.system.util.StringUtilities;
@@ -34,9 +37,13 @@ import org.tinystruct.http.security.JWTManager;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -259,6 +266,10 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     exchange.getResponseHeaders().set("Access-Control-Allow-Credentials", "true");
                 }
 
+                // Expose specific headers for clients to read (e.g. MCP session ID)
+                String exposeHeaders = settings.getOrDefault("cors.exposed.headers", MCPSpecification.Http.SESSION_ID + "," + MCPSpecification.Http.CONVERSATION_ID);
+                exchange.getResponseHeaders().set("Access-Control-Expose-Headers", exposeHeaders);
+
                 // Handle CORS preflight (OPTIONS) requests up-front: these have no body.
                 if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                     String acrMethod = exchange.getRequestHeaders().getFirst("Access-Control-Request-Method");
@@ -269,7 +280,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     exchange.getResponseHeaders().set("Access-Control-Allow-Methods", allowMethods);
 
                     // Allow headers: prefer configured list, otherwise echo requested or common headers
-                    String allowHeaders = settings.getOrDefault("cors.allowed.headers", acrHeaders != null ? acrHeaders : "Content-Type,Authorization");
+                    String allowHeaders = settings.getOrDefault("cors.allowed.headers", acrHeaders != null ? acrHeaders : "Content-Type,Authorization,Mcp-session-id");
                     exchange.getResponseHeaders().set("Access-Control-Allow-Headers", allowHeaders);
 
                     // Cache the preflight response for a configurable duration (seconds)
@@ -441,7 +452,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             boolean isMCP = false;
             if (query != null) {
                 query = StringUtilities.htmlSpecialChars(query);
-                if (query.equals(org.tinystruct.mcp.MCPSpecification.Endpoints.SSE)) {
+                if (query.equals(MCPSpecification.Endpoints.SSE)) {
                     isMCP = true;
                 }
 
@@ -454,17 +465,18 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     response.setStatus(ResponseStatus.OK);
                     // Ensure chunked streaming for SSE before any write
                     response.sendHeaders(-1);
-                    SSEClient client = pushManager.register(sessionId, response);
+                    Object registration = pushManager.register(sessionId, response);
 
-                    if (call instanceof org.tinystruct.data.component.Builder) {
-                        pushManager.push(sessionId, (org.tinystruct.data.component.Builder) call);
+                    if (call instanceof Builder) {
+                        pushManager.push(sessionId, (Builder) call);
                     } else if (call instanceof String) {
-                        org.tinystruct.data.component.Builder builder = new org.tinystruct.data.component.Builder();
+                        Builder builder = new Builder();
                         builder.parse((String) call);
                         pushManager.push(sessionId, builder);
                     }
 
-                    if (client != null) {
+                    if (registration instanceof SSEClient) {
+                        SSEClient client = (SSEClient) registration;
                         try {
                             long deadline = System.currentTimeMillis() + 30 * 60 * 1000L; // 30-min max
                             while (client.isActive() && System.currentTimeMillis() < deadline) {
@@ -478,6 +490,11 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                         } finally {
                             client.close();
                             pushManager.remove(sessionId);
+                        }
+                    } else if (registration == null) {
+                        if (request.method() != Method.GET) {
+                            response.writeAndFlush(String.valueOf(call).getBytes(StandardCharsets.UTF_8));
+                            response.close();
                         }
                     }
                 }
@@ -494,7 +511,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 int q = path.indexOf("?");
                 if (q >= 0) filepath = path.substring(0, q);
 
-                java.io.File file = new java.io.File(filepath);
+                File file = new File(filepath);
                 if (!file.exists() || file.isHidden()) {
                     if (filepath.endsWith("/favicon.ico")) {
                         try (InputStream stream = Objects.requireNonNull(getClass().getResource("/favicon.ico")).openStream()) {
@@ -519,9 +536,9 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 // If-Modified-Since support
                 String ifModifiedSince = exchange.getRequestHeaders().getFirst("If-Modified-Since");
                 if (ifModifiedSince != null && !ifModifiedSince.isEmpty()) {
-                    java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(HTTP_DATE_FORMAT, java.util.Locale.US);
-                    df.setTimeZone(java.util.TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
-                    java.util.Date ims = df.parse(ifModifiedSince);
+                    SimpleDateFormat df = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
+                    df.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+                    Date ims = df.parse(ifModifiedSince);
                     long imsSeconds = ims.getTime() / 1000;
                     long fileSeconds = file.lastModified() / 1000;
                     if (imsSeconds == fileSeconds) {
@@ -536,13 +553,13 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 // Content-Type
                 String contentType = null;
                 try {
-                    jakarta.activation.MimetypesFileTypeMap mimeTypesMap = new jakarta.activation.MimetypesFileTypeMap(HttpServer.class.getResourceAsStream("/META-INF/mime.types"));
+                    MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap(HttpServer.class.getResourceAsStream("/META-INF/mime.types"));
                     contentType = mimeTypesMap.getContentType(file);
                 } catch (Exception ignore) {
                 }
                 if (contentType == null || contentType.equalsIgnoreCase("application/octet-stream")) {
                     try {
-                        contentType = java.nio.file.Files.probeContentType(java.nio.file.Path.of(file.getName()));
+                        contentType = Files.probeContentType(Path.of(file.getName()));
                     } catch (IOException ignore) {
                     }
                 }
@@ -554,7 +571,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
                 long length = file.length();
                 exchange.sendResponseHeaders(200, length);
-                try (InputStream in = new java.io.FileInputStream(file); OutputStream os = exchange.getResponseBody()) {
+                try (InputStream in = new FileInputStream(file); OutputStream os = exchange.getResponseBody()) {
                     in.transferTo(os);
                 }
                 exchange.close();
@@ -565,33 +582,33 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             }
         }
 
-        private String sanitizeUri(String uri) throws java.io.UnsupportedEncodingException {
-            String decoded = java.net.URLDecoder.decode(uri, java.nio.charset.StandardCharsets.UTF_8);
+        private String sanitizeUri(String uri) throws UnsupportedEncodingException {
+            String decoded = URLDecoder.decode(uri, StandardCharsets.UTF_8);
             if (decoded.isEmpty() || decoded.charAt(0) != '/') return null;
             if (decoded.length() > 255) throw new IllegalArgumentException("Input too long");
-            decoded = decoded.replace('/', java.io.File.separatorChar);
+            decoded = decoded.replace('/', File.separatorChar);
             decoded = decoded.replace("..", "");
-            if (decoded.contains(java.io.File.separator + '.') || decoded.contains('.' + java.io.File.separator) || decoded.charAt(0) == '.' || decoded.charAt(decoded.length() - 1) == '.')
+            if (decoded.contains(File.separator + '.') || decoded.contains('.' + File.separator) || decoded.charAt(0) == '.' || decoded.charAt(decoded.length() - 1) == '.')
                 return null;
-            return System.getProperty("user.dir") + java.io.File.separator + decoded;
+            return System.getProperty("user.dir") + File.separator + decoded;
         }
 
         private void setDateHeader(HttpExchange exchange) {
-            java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(HTTP_DATE_FORMAT, java.util.Locale.US);
-            df.setTimeZone(java.util.TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
-            java.util.Calendar time = new java.util.GregorianCalendar();
+            SimpleDateFormat df = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
+            df.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+            Calendar time = new GregorianCalendar();
             exchange.getResponseHeaders().set("Date", df.format(time.getTime()));
         }
 
-        private void setDateAndCacheHeaders(HttpExchange exchange, java.io.File file) {
-            java.text.SimpleDateFormat df = new java.text.SimpleDateFormat(HTTP_DATE_FORMAT, java.util.Locale.US);
-            df.setTimeZone(java.util.TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
-            java.util.Calendar time = new java.util.GregorianCalendar();
+        private void setDateAndCacheHeaders(HttpExchange exchange, File file) {
+            SimpleDateFormat df = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
+            df.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+            Calendar time = new GregorianCalendar();
             exchange.getResponseHeaders().set("Date", df.format(time.getTime()));
-            time.add(java.util.Calendar.SECOND, HTTP_CACHE_SECONDS);
+            time.add(Calendar.SECOND, HTTP_CACHE_SECONDS);
             exchange.getResponseHeaders().set("Expires", df.format(time.getTime()));
             exchange.getResponseHeaders().set("Cache-Control", "private, max-age=" + HTTP_CACHE_SECONDS);
-            exchange.getResponseHeaders().set("Last-Modified", df.format(new java.util.Date(file.lastModified())));
+            exchange.getResponseHeaders().set("Last-Modified", df.format(new Date(file.lastModified())));
         }
 
         private void processRequest(ServerRequest request, ServerResponse response, Context context) throws IOException, ApplicationException {
@@ -709,21 +726,27 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
             if (!response.isClosed()) {
                 byte[] bytes;
-                if (message != null) {
-                    if (message instanceof byte[]) {
-                        bytes = (byte[]) message;
+                String contentType = "text/html; charset=UTF-8";
+                try {
+                    if (message != null) {
+                        if (message instanceof byte[]) {
+                            bytes = (byte[]) message;
+                        } else {
+                            response.setContentType(contentType);
+                            bytes = String.valueOf(message).getBytes(StandardCharsets.UTF_8);
+                        }
                     } else {
-                        response.setContentType("text/html; charset=UTF-8");
-                        bytes = String.valueOf(message).getBytes(StandardCharsets.UTF_8);
+                        response.setContentType(contentType);
+                        bytes = "No response retrieved!".getBytes(StandardCharsets.UTF_8);
                     }
-                } else {
-                    response.setContentType("text/html; charset=UTF-8");
-                    bytes = "No response retrieved!".getBytes(StandardCharsets.UTF_8);
-                }
 
-                response.setStatus(ResponseStatus.OK);
-                response.writeAndFlush(bytes);
-                response.close();
+                    response.setStatus(ResponseStatus.OK);
+                    response.writeAndFlush(bytes);
+                } catch (Exception e) {
+                    throw new ApplicationException(e.getMessage(), e);
+                } finally {
+                    response.close();
+                }
             }
         }
 
@@ -752,16 +775,6 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
         private void sendErrorResponse(HttpExchange exchange, int statusCode, String message) {
             try {
-                String origin = exchange.getRequestHeaders().getFirst("Origin");
-                String allowOrigin = getAllowOrigin(origin);
-                if (allowOrigin != null) {
-                    exchange.getResponseHeaders().set("Access-Control-Allow-Origin", allowOrigin);
-                }
-
-                if (origin != null) {
-                    exchange.getResponseHeaders().set("Vary", "Origin");
-                }
-
                 byte[] responseBytes = (message != null ? message : "Unknown error").getBytes(StandardCharsets.UTF_8);
                 exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
                 exchange.sendResponseHeaders(statusCode, responseBytes.length);

@@ -108,9 +108,9 @@ public class SSEPushManager {
      *
      * @param sessionId Unique session identifier
      * @param out       Response object for sending data
-     * @return The SSEClient instance (Servlet) or null (Netty)
+     * @return The registration object (SSEClient for Servlet, Response for Netty) or null if already registered
      */
-    public SSEClient register(String sessionId, Response out) {
+    public Object register(String sessionId, Response out) {
         return register(sessionId, out, null);
     }
 
@@ -120,34 +120,44 @@ public class SSEPushManager {
      * @param sessionId    Unique session identifier
      * @param out          Response object for sending data
      * @param messageQueue Custom message queue (optional)
-     * @return The SSEClient instance (Servlet) or null (Netty)
+     * @return The registration object (SSEClient for Servlet, Response for Netty) or null if already registered
      */
-    public SSEClient register(String sessionId, Response out, BlockingQueue<Builder> messageQueue) {
+    public Object register(String sessionId, Response out, BlockingQueue<Builder> messageQueue) {
         if (isShutdown.get()) {
             logger.log(Level.WARNING, "SSEPushManager is shutting down, cannot register new client");
             return null;
         }
 
-        sessionId = identifier + sessionId;
-        registrationTimes.put(sessionId, System.currentTimeMillis());
+        final String finalSessionId = identifier + sessionId;
         if (isNetty) {
-            // Netty: just store the response directly
-            clients.put(sessionId, out);
-            logger.info("Registered Netty SSE client: " + sessionId);
-            return null; // No SSEClient needed for Netty
+            // Netty: just store the response directly if not present
+            if (clients.putIfAbsent(finalSessionId, out) == null) {
+                registrationTimes.put(finalSessionId, System.currentTimeMillis());
+                logger.info("Registered Netty SSE client: " + finalSessionId);
+                return out;
+            }
+            return null; // Already registered
         } else {
             // Servlet/Tomcat: use original thread-based approach
-            String finalSessionId = sessionId;
-            return (SSEClient) clients.compute(sessionId, (id, existing) -> {
-                if (existing != null && ((SSEClient) existing).isActive() && out.equals(((SSEClient) existing).getResponse())) {
+            final AtomicBoolean isNew = new AtomicBoolean(false);
+            SSEClient client = (SSEClient) clients.compute(finalSessionId, (id, existing) -> {
+                if (existing != null && ((SSEClient) existing).isActive()) {
                     // keep existing active client
                     return existing;
                 }
+                isNew.set(true);
                 SSEClient c = (messageQueue != null) ? new SSEClient(out, messageQueue) : new SSEClient(out);
                 executor.submit(c);
-                logger.info("Registered a SSE client: " + finalSessionId);
                 return c;
             });
+
+            if (isNew.get()) {
+                registrationTimes.put(finalSessionId, System.currentTimeMillis());
+                logger.info("Registered a SSE client: " + finalSessionId);
+                return client;
+            }
+
+            return null;
         }
     }
 

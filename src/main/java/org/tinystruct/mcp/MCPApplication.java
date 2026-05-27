@@ -4,14 +4,12 @@ import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.data.component.Builders;
-import org.tinystruct.http.Header;
-import org.tinystruct.http.Request;
-import org.tinystruct.http.Response;
-import org.tinystruct.http.ResponseStatus;
+import org.tinystruct.http.*;
 import org.tinystruct.system.annotation.Action;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -156,6 +154,69 @@ public abstract class MCPApplication extends AbstractApplication {
     }
 
     /**
+     * Establish SSE connection and return endpoint information for subsequent POST requests.
+     *
+     * @param request  The HTTP request
+     * @param response The HTTP response
+     * @return endpoint information as a Builder
+     */
+    @Action(value = Endpoints.SSE, mode = Action.Mode.HTTP_GET, description = "Establish SSE connection and return endpoint")
+    public Builder handleSseConnect(Request request, Response response) {
+        String conversationId = request.headers().get(Header.value0f(Http.CONVERSATION_ID)).toString();
+        SSEPushManager.getInstance().setIdentifier(conversationId);
+        Builder initial = new Builder();
+        initial.put("type", "connect");
+        return initial;
+    }
+
+    /**
+     * Handles the disconnection of an SSE connection.
+     *
+     * @param request  The HTTP request
+     * @param response The HTTP response
+     * @return The status message
+     */
+    @Action(value = Endpoints.SSE, mode = Action.Mode.HTTP_DELETE, description = "Disconnect SSE connection")
+    public String handleSseDisconnect(Request request, Response response) {
+        String sessionId = null;
+        try {
+            // Validate authentication
+            authHandler.validateAuthHeader(request);
+
+            // Session management: extract sessionId
+            Object mcpSessionId = request.headers().get(Header.value0f(Http.SESSION_ID));
+            if (mcpSessionId != null && !mcpSessionId.toString().isEmpty()) {
+                sessionId = mcpSessionId.toString();
+            } else {
+                sessionId = request.getSession().getId();
+            }
+
+            if (sessionId != null) {
+                currentSessionId.set(sessionId);
+                try {
+                    if (getSessionState() != SessionState.READY) {
+                        response.setStatus(ResponseStatus.BAD_REQUEST);
+                        return jsonRpcHandler.createErrorResponse("Not in ready state", ErrorCodes.NOT_INITIALIZED);
+                    }
+                    disconnect(sessionId);
+                } finally {
+                    currentSessionId.remove();
+                }
+            }
+
+            return new Builder().put("status", "disconnected").toString();
+        } catch (SecurityException e) {
+            response.setStatus(ResponseStatus.UNAUTHORIZED);
+            return jsonRpcHandler.createErrorResponse("Unauthorized", ErrorCodes.UNAUTHORIZED);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Disconnect failed", e);
+            response.setStatus(ResponseStatus.INTERNAL_SERVER_ERROR);
+            return jsonRpcHandler.createErrorResponse("Internal server error: " + e.getMessage(),
+                    ErrorCodes.INTERNAL_ERROR);
+        }
+    }
+
+    /**
      * Main entry point for handling JSON-RPC requests via Streamable HTTP POST.
      * Authenticates, parses, dispatches, and returns the response.
      *
@@ -164,7 +225,7 @@ public abstract class MCPApplication extends AbstractApplication {
      * @return The JSON-RPC response as a string
      * @throws ApplicationException if an error occurs
      */
-    @Action(value = Endpoints.SSE, description = "Main entry point for handling JSON-RPC requests via Streamable HTTP POST")
+    @Action(value = Endpoints.SSE, mode = Action.Mode.HTTP_POST, description = "Main entry point for handling JSON-RPC requests via Streamable HTTP POST")
     public String handleRpcRequest(Request request, Response response) throws ApplicationException {
         long startTime = System.currentTimeMillis();
         String method = "unknown";
@@ -174,6 +235,13 @@ public abstract class MCPApplication extends AbstractApplication {
             authHandler.validateAuthHeader(request);
 
             // Session management: extract or assign sessionId
+            Object mcpConversationId = request.headers().get(Header.value0f(Http.CONVERSATION_ID));
+            if (mcpConversationId != null && !mcpConversationId.toString().isEmpty()) {
+                response.addHeader(Http.CONVERSATION_ID, mcpConversationId);
+            } else {
+                response.addHeader(Http.CONVERSATION_ID, UUID.randomUUID());
+            }
+
             Object mcpSessionId = request.headers().get(Header.value0f(Http.SESSION_ID));
             if (mcpSessionId != null && !mcpSessionId.toString().isEmpty()) {
                 sessionId = mcpSessionId.toString();
@@ -324,10 +392,24 @@ public abstract class MCPApplication extends AbstractApplication {
             return;
         }
 
-        setSessionState(SessionState.DISCONNECTED);
+        disconnect(currentSessionId.get());
 
         response.setId(request.getId());
         response.setResult(new Builder().put("status", "shutdown_complete"));
+    }
+
+    /**
+     * Shutdown the session and clean up resources.
+     *
+     * @param sessionId The session ID to shutdown
+     */
+    protected void disconnect(String sessionId) {
+        if (sessionId != null) {
+            sessionMap.remove(sessionId);
+            sessionStates.put(sessionId, SessionState.DISCONNECTED);
+            MCPPushManager.getInstance().remove(sessionId);
+            LOGGER.info("Shutdown session: " + sessionId);
+        }
     }
 
     /**
