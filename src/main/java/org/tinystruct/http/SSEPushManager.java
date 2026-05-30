@@ -128,7 +128,7 @@ public class SSEPushManager {
             return null;
         }
 
-        final String finalSessionId = identifier + sessionId;
+        final String finalSessionId = identifier.get() + sessionId;
         if (isNetty) {
             // Netty: just store the response directly if not present
             if (clients.putIfAbsent(finalSessionId, out) == null) {
@@ -174,7 +174,7 @@ public class SSEPushManager {
             return;
         }
 
-        sessionId = identifier + sessionId;
+        sessionId = identifier.get() + sessionId;
         if (isNetty) {
             // Netty: write and flush immediately
             Response out = (Response) clients.get(sessionId);
@@ -253,7 +253,7 @@ public class SSEPushManager {
      * @param sessionId The client session ID to remove
      */
     public void remove(String sessionId) {
-        sessionId = identifier + sessionId;
+        sessionId = identifier.get() + sessionId;
         registrationTimes.remove(sessionId);
         Object clientObj = clients.remove(sessionId);
         if (clientObj != null) {
