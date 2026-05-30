@@ -476,21 +476,11 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     }
 
                     if (registration instanceof SSEClient) {
-                        SSEClient client = (SSEClient) registration;
-                        try {
-                            long deadline = System.currentTimeMillis() + 30 * 60 * 1000L; // 30-min max
-                            while (client.isActive() && System.currentTimeMillis() < deadline) {
-                                Thread.sleep(1000);
-                            }
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            throw new ApplicationException("Stream interrupted: " + e.getMessage(), e);
-                        } catch (Exception e) {
-                            throw new ApplicationException("Error in stream: " + e.getMessage(), e);
-                        } finally {
-                            client.close();
-                            pushManager.remove(sessionId);
-                        }
+                        // The SSEClient runs on its own thread (submitted to SSEPushManager's executor).
+                        // The handler thread must NOT block here — doing so would hold a thread-pool
+                        // thread for the entire SSE session lifetime, exhausting the pool under load.
+                        // Cleanup (close + remove) is handled by the SSEClient thread itself when the
+                        // connection ends or the heartbeat detects a broken pipe inside SSEClient.run().
                     } else if (registration == null) {
                         if (request.method() != Method.GET) {
                             response.writeAndFlush(String.valueOf(call).getBytes(StandardCharsets.UTF_8));
