@@ -162,8 +162,10 @@ public abstract class MCPApplication extends AbstractApplication {
      */
     @Action(value = Endpoints.SSE, mode = Action.Mode.HTTP_GET, description = "Establish SSE connection and return endpoint")
     public Builder handleSseConnect(Request request, Response response) {
-        String conversationId = request.headers().get(Header.value0f(Http.CONVERSATION_ID)).toString();
-        SSEPushManager.getInstance().setIdentifier(conversationId);
+        if (request.headers() != null && request.headers().get(Header.value0f(Http.CONVERSATION_ID)) != null) {
+            String conversationId = request.headers().get(Header.value0f(Http.CONVERSATION_ID)).toString();
+            SSEPushManager.getInstance().setIdentifier(conversationId);
+        }
         Builder initial = new Builder();
         initial.put("type", "connect");
         return initial;
