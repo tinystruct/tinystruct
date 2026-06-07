@@ -118,9 +118,23 @@ public class MCPServer extends MCPApplication {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error calling tool", e);
             response.setId(request.getId());
-            // Unwrap InvocationTargetException if necessary
-            Throwable cause = e.getCause() != null ? e.getCause() : e;
-            response.setResult(formatToolErrorResult(cause.getMessage()));
+            
+            // Extract the most relevant error message, unwrapping InvocationTargetException if necessary
+            String errorMessage = e.getMessage();
+            Throwable cause = e.getCause();
+            
+            while (cause != null) {
+                if (cause instanceof java.lang.reflect.InvocationTargetException) {
+                    Throwable target = ((java.lang.reflect.InvocationTargetException) cause).getTargetException();
+                    if (target != null) {
+                        errorMessage = target.getMessage();
+                        break;
+                    }
+                }
+                cause = cause.getCause();
+            }
+            
+            response.setResult(formatToolErrorResult(errorMessage));
         }
     }
 
