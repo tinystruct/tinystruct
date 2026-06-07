@@ -355,8 +355,6 @@ public abstract class MCPApplication extends AbstractApplication {
 
         response.setId(request.getId());
         response.setResult(result);
-        // Set session state to READY
-        setSessionState(SessionState.READY);
     }
 
     /**
