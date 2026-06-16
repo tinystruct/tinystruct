@@ -41,7 +41,7 @@ public abstract class MCPApplication extends AbstractApplication {
     protected final Map<String, MCPDataResource> resources = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, MCPPrompt> prompts = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, RpcMethodHandler> rpcHandlers = new java.util.concurrent.ConcurrentHashMap<>();
-    protected static final Map<String, MCPTool.ToolMethod> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
+    protected static final Map<String, List<MCPTool.ToolMethod>> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
     
     // Scheduled executor for cleaning up stale sessions
     private ScheduledExecutorService sessionCleanupWatchdog;
@@ -504,7 +504,7 @@ public abstract class MCPApplication extends AbstractApplication {
             if (action != null) {
                 hasActionMethods = true;
                 MCPTool.ToolMethod toolMethod = new MCPTool.ToolMethod(method, action, tool);
-                toolMethods.put(toolMethod.getName(), toolMethod);
+                toolMethods.computeIfAbsent(toolMethod.getName(), k -> new ArrayList<>()).add(toolMethod);
                 LOGGER.info("Registered tool method: " + toolMethod.getName());
             }
         }
@@ -537,7 +537,7 @@ public abstract class MCPApplication extends AbstractApplication {
             Action action = method.getAnnotation(Action.class);
             if (action != null) {
                 MCPTool.ToolMethod toolMethod = new MCPTool.ToolMethod(method, action, tool);
-                toolMethods.put(toolMethod.getName(), toolMethod);
+                toolMethods.computeIfAbsent(toolMethod.getName(), k -> new ArrayList<>()).add(toolMethod);
                 LOGGER.info("Registered tool method: " + toolMethod.getName());
             }
         }

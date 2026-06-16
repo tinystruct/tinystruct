@@ -75,7 +75,8 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             @Argument(key = "http.proxyPort", description = "Proxy port for http"),
             @Argument(key = "https.proxyHost", description = "Proxy host for https"),
             @Argument(key = "https.proxyPort", description = "Proxy port for https"),
-            @Argument(key = "server-threads", description = "Number of server threads (default: 0 - uses system default)")
+            @Argument(key = "server-threads", description = "Number of server threads (default: 0 - uses system default)"),
+            @Argument(key = "open-browser", description = "Open browser automatically")
     }, example = "bin/dispatcher start --import org.tinystruct.system.HttpServer --server-port 8080", mode = Action.Mode.CLI)
     @Override
     public void start() throws ApplicationException {
@@ -104,6 +105,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
         // Look for that variable and default to 8080 if it isn't there.
         int webPort = 8080;
         int serverThreads = 0; // 0 means system default
+        boolean openBrowser = Boolean.parseBoolean(this.settings.getOrDefault("default.server.open_browser", "true"));
 
         if (getContext() != null) {
             if (getContext().getAttribute("--http.proxyHost") != null && getContext().getAttribute("--http.proxyPort") != null) {
@@ -122,6 +124,10 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
             if (getContext().getAttribute("--server-threads") != null) {
                 serverThreads = Integer.parseInt(getContext().getAttribute("--server-threads").toString());
+            }
+
+            if (getContext().getAttribute("--open-browser") != null) {
+                openBrowser = Boolean.parseBoolean(getContext().getAttribute("--open-browser").toString());
             }
         }
 
@@ -153,8 +159,10 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             logger.info("HTTP server (" + webPort + ") startup in " + (System.currentTimeMillis() - start) + " ms");
 
             // Open the default browser
-            getContext().setAttribute("--url", "http://localhost:" + webPort);
-            ApplicationManager.call("open", getContext(), Action.Mode.CLI);
+            if (openBrowser) {
+                getContext().setAttribute("--url", "http://localhost:" + webPort);
+                ApplicationManager.call("open", getContext(), Action.Mode.CLI);
+            }
 
             // Keep the server running
             logger.info("Server is running. Press Ctrl+C to stop.");

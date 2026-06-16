@@ -229,6 +229,8 @@ public class MCPTool extends AbstractMCPResource {
                             }
                         }
                     }
+                } else {
+                    validationErrors.add("Unknown parameter: " + paramName);
                 }
             }
         }

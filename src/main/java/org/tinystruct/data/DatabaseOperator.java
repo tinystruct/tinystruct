@@ -5,12 +5,7 @@ import org.tinystruct.ApplicationRuntimeException;
 import org.tinystruct.data.tools.SQLInjectionDetector;
 
 import java.io.Closeable;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Savepoint;
+import java.sql.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -76,6 +71,52 @@ public class DatabaseOperator implements Closeable {
             connection.setCatalog(database);
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Retrieves the current schema name associated with the database connection.
+     *
+     * @return the current schema name as a {@code String}, or {@code null} if none exists
+     * @throws ApplicationException if a database access error occurs or the connection is closed
+     */
+    public String getSchema() throws ApplicationException {
+        try {
+            return connection.getSchema();
+        } catch (SQLException e) {
+            throw new ApplicationException(e);
+        }
+    }
+
+    /**
+     * Retrieves the metadata for the current database connection.
+     * <p>
+     * The returned {@link DatabaseMetaData} object provides comprehensive information
+     * about the database's capabilities, tables, supported features, and structure.
+     * </p>
+     *
+     * @return a {@link DatabaseMetaData} object containing the database's metadata
+     * @throws ApplicationException if a database access error occurs or the connection is closed
+     */
+    public DatabaseMetaData getMetaData() throws ApplicationException {
+        try {
+            return connection.getMetaData();
+        } catch (SQLException e) {
+            throw new ApplicationException(e);
+        }
+    }
+
+    /**
+     * Retrieves the current catalog name associated with the database connection.
+     *
+     * @return the current catalog name as a {@code String}, or {@code null} if none exists
+     * @throws ApplicationException if a database access error occurs or the connection is closed
+     */
+    public String getCatalog() throws ApplicationException {
+        try {
+            return connection.getCatalog();
+        } catch (SQLException e) {
+            throw new ApplicationException(e);
         }
     }
 

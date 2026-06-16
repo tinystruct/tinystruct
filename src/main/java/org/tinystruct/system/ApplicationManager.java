@@ -8,6 +8,7 @@ import org.tinystruct.application.Action;
 import org.tinystruct.application.ActionRegistry;
 import org.tinystruct.application.Context;
 import org.tinystruct.system.cli.CommandLine;
+import org.tinystruct.system.logging.LoggerConfigurer;
 import org.tinystruct.system.util.TextFileLoader;
 
 import java.io.BufferedWriter;
@@ -56,6 +57,9 @@ public final class ApplicationManager {
             if (initialized) return;
 
             settings = (settings == null) ? new Settings("application.properties") : settings;
+            // Setup logging configuration
+            LoggerConfigurer.setup(settings);
+
             // Generate Command Script
             generateDispatcherCommand(VERSION, false);
 

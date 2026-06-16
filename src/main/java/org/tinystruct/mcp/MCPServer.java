@@ -52,12 +52,51 @@ public class MCPServer extends MCPApplication {
         Builder result = new Builder();
         Builders toolsList = new Builders();
 
-        // Add individual tool methods
-        for (MCPTool.ToolMethod toolMethod : toolMethods.values()) {
+        // Add individual tool methods (which may be overloaded)
+        for (List<MCPTool.ToolMethod> toolMethodList : toolMethods.values()) {
+            if (toolMethodList.isEmpty()) continue;
+            
+            Builder mergedSchema = new Builder();
+            mergedSchema.put("type", "object");
+            Builder mergedProperties = new Builder();
+            java.util.Set<String> allRequired = null;
+            
+            for (MCPTool.ToolMethod tm : toolMethodList) {
+                Builder schema = tm.getSchema();
+                if (schema.containsKey("properties")) {
+                    Builder props = (Builder) schema.get("properties");
+                    for (String key : props.keySet()) {
+                        mergedProperties.put(key, props.get(key));
+                    }
+                }
+                
+                java.util.Set<String> currentRequired = new java.util.HashSet<>();
+                if (schema.containsKey("required")) {
+                    Object req = schema.get("required");
+                    if (req instanceof String[]) {
+                        for (String r : (String[]) req) {
+                            currentRequired.add(r);
+                        }
+                    }
+                }
+                
+                if (allRequired == null) {
+                    allRequired = currentRequired;
+                } else {
+                    allRequired.retainAll(currentRequired); // Only parameters required by ALL overloads remain required
+                }
+            }
+            
+            mergedSchema.put("properties", mergedProperties);
+            if (allRequired != null && !allRequired.isEmpty()) {
+                mergedSchema.put("required", allRequired.toArray(new String[0]));
+            }
+
+            MCPTool.ToolMethod first = toolMethodList.get(0);
             Builder toolInfo = new Builder();
-            toolInfo.put("name", toolMethod.getName());
-            toolInfo.put("description", toolMethod.getDescription());
-            toolInfo.put("inputSchema", toolMethod.getSchema());
+            toolInfo.put("name", first.getName());
+            toolInfo.put("description", first.getDescription());
+            toolInfo.put("inputSchema", mergedSchema);
             toolsList.add(toolInfo);
         }
 
@@ -99,11 +138,31 @@ public class MCPServer extends MCPApplication {
             Builder toolParams = (Builder) params.get("arguments");
 
             // First try to find the tool method
-            MCPTool.ToolMethod toolMethod = toolMethods.get(toolName);
-            if (toolMethod != null) {
-                Object result = toolMethod.execute(toolParams);
-                response.setId(request.getId());
-                response.setResult(formatToolResult(result));
+            List<MCPTool.ToolMethod> methods = toolMethods.get(toolName);
+            if (methods != null && !methods.isEmpty()) {
+                Object result = null;
+                boolean executed = false;
+                MCPException lastException = null;
+
+                for (MCPTool.ToolMethod toolMethod : methods) {
+                    try {
+                        // Attempt to execute. The ToolMethod.execute will perform schema validation first.
+                        result = toolMethod.execute(toolParams);
+                        executed = true;
+                        break;
+                    } catch (MCPException e) {
+                        lastException = e;
+                    }
+                }
+
+                if (executed) {
+                    response.setId(request.getId());
+                    response.setResult(formatToolResult(result));
+                } else if (lastException != null) {
+                    throw lastException;
+                } else {
+                    throw new MCPException("No matching overloaded method found for tool: " + toolName);
+                }
             } else {
                 // Try to find the tool in the tools map
                 MCPTool tool = tools.get(toolName);
