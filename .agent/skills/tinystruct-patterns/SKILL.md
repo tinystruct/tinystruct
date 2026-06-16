@@ -124,15 +124,31 @@ public String upload(Request<?, ?> request) throws ApplicationException {
 }
 ```
 
+### Database Metadata Operations
+`DatabaseOperator` provides direct access to connection-level catalog, schema, and metadata:
+```java
+import org.tinystruct.data.DatabaseOperator;
+
+DatabaseOperator operator = new DatabaseOperator();
+try {
+    String catalog = operator.getCatalog();
+    String schema = operator.getSchema();
+    java.sql.DatabaseMetaData metaData = operator.getMetaData();
+    System.out.println("Using catalog: " + catalog + ", schema: " + schema);
+} finally {
+    operator.close();
+}
+```
+
 ## MCP Server and Tools Integration
 
-tinystruct provides native support for the Model Context Protocol (MCP) starting with SDK version **`1.7.26`**.
+tinystruct provides native support for the Model Context Protocol (MCP) starting with SDK version **`1.7.27`**.
 The MCP APIs (e.g., `org.tinystruct.mcp.MCPTool`, `org.tinystruct.mcp.MCPServer`, `org.tinystruct.mcp.MCPException`) are included directly in the core dependency:
 ```xml
 <dependency>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.7.26</version>
+    <version>1.7.27</version>
 </dependency>
 ```
 
@@ -199,6 +215,11 @@ Run the server via the dispatcher:
 bin/dispatcher start --import org.tinystruct.system.HttpServer --import com.example.MyMCPServer
 ```
 
+### Overloaded Tool Methods
+tinystruct supports overloaded methods for the same tool name in `MCPTool` (sharing the same tool name but accepting different parameter signatures).
+- **Schema Merging**: Input schemas of all overloads with the same name are dynamically merged into a unified JSON schema. Properties are unioned, and required properties are intersected (only fields required across *all* overloads remain marked mandatory).
+- **Execution Routing**: When executing a tool, the server iterates sequentially through the available overloaded methods, attempting execution. Each method's schema validation is performed first, and the first overload that validates against the provided arguments successfully executes. If no signature matches or succeeds, the framework throws an appropriate exception.
+
 ## Configuration
 
 Settings are managed in `src/main/resources/application.properties`.
@@ -213,6 +234,7 @@ database.password=
 # Server
 default.home.page=hello
 server.port=8080
+default.server.open_browser=true
 
 # Locale
 default.language=en_US
@@ -221,12 +243,25 @@ default.language=en_US
 # default.session.repository=org.tinystruct.http.RedisSessionRepository
 # redis.host=127.0.0.1
 # redis.port=6379
+
+# Programmatic Logging Configuration
+logging.enabled=true
+logging.level=INFO
+org.tinystruct.level=FINE
 ```
 
 Access config values in your application:
 ```java
 String port = this.getConfiguration("server.port");
 ```
+
+## Logging and Diagnostics
+
+The framework includes a programmatic wrapper around `java.util.logging` (JUL) that provides beautiful console output and advanced caller tracing out of the box.
+
+- **ANSI Console Colors**: Console output is color-coded based on the log level (red for SEVERE, yellow for WARNING, green for INFO, cyan for CONFIG, and grey for FINE/debug logs).
+- **Precise Caller Tracing**: Uses Java's `StackWalker` API to trace the call stack at runtime. It identifies and logs the exact class, method, filename, and line number of the caller that initiated the log (bypassing internal utility and logging layers).
+- **Package/Logger Level Overrides**: Set package-specific overrides directly in `application.properties` (e.g., `org.tinystruct.level=FINE`).
 
 ## Red Flags & Anti-patterns
 
@@ -274,5 +309,7 @@ Detailed guides are available in the `references/` directory:
 - `src/main/java/org/tinystruct/data/component/FieldType.java` — SQL-to-Java type mappings
 - `src/main/java/org/tinystruct/data/component/Condition.java` — Fluent SQL query builder
 - `src/main/java/org/tinystruct/http/SSEPushManager.java` — SSE connection management
+- `src/main/java/org/tinystruct/system/logging/LogFormatter.java` — Custom log formatter with ANSI console colors and StackWalker-based caller tracing
+- `src/main/java/org/tinystruct/system/logging/LoggerConfigurer.java` — Programmatic logging configurator from application properties
 - `src/test/java/org/tinystruct/application/ActionRegistryTest.java` — Registry test examples
 - `src/test/java/org/tinystruct/system/HttpServerHttpModeTest.java` — HTTP integration test patterns

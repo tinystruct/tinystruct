@@ -23,7 +23,7 @@ import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Tinystruct Response adapter for JDK HttpServer (no servlet APIs).
+ * tinystruct Response adapter for JDK HttpServer (no servlet APIs).
  */
 public class ServerResponse implements Response<HttpExchange, HttpExchange> {
     private final HttpExchange exchange;

@@ -34,7 +34,7 @@ import java.util.*;
 import static org.tinystruct.http.Constants.JSESSIONID;
 
 /**
- * Tinystruct Request adapter for JDK HttpServer (no servlet APIs).
+ * tinystruct Request adapter for JDK HttpServer (no servlet APIs).
  */
 public class ServerRequest implements Request<HttpExchange, InputStream> {
     private final HttpExchange exchange;

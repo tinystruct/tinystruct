@@ -26,7 +26,7 @@ Add the following dependency to your `pom.xml`:
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.26</version>
+  <version>1.7.27</version>
 </dependency>
 ```
 
@@ -134,7 +134,7 @@ The `bin/dispatcher` tool is the entry point for CLI execution.
 - **Pass Arguments**: `bin/dispatcher greet/James` or `bin/dispatcher echo --words "Praise the Lord"`
 
 ### Web Mode (HTTP Server)
-Tinystruct includes a built-in lightweight HTTP server. To start it:
+tinystruct includes a built-in lightweight HTTP server. To start it:
 
 ```bash
 bin/dispatcher start --import org.tinystruct.system.HttpServer
@@ -143,12 +143,25 @@ bin/dispatcher start --import org.tinystruct.system.HttpServer
 Access your actions via:
 `http://localhost:8080/?q=hello`
 
+#### Auto-Browser Open Feature
+Upon successful startup, the server automatically launches the system's default web browser navigated to the server URL (e.g., `http://localhost:8080`).
+
+- **Configuration**: This behavior is enabled by default. It can be globally controlled in `application.properties`:
+  ```properties
+  default.server.open_browser=true
+  ```
+- **CLI Override**: You can override the setting at runtime using the `--open-browser` argument:
+  ```bash
+  # Disable automatic browser opening on startup
+  bin/dispatcher start --import org.tinystruct.system.HttpServer --open-browser false
+  ```
+
 ---
 
 ## 5. HTTP Features
 
 ### Session Management
-Tinystruct provides a pluggable architecture for HTTP session management via the `SessionManager` and `SessionRepository` interfaces.
+tinystruct provides a pluggable architecture for HTTP session management via the `SessionManager` and `SessionRepository` interfaces.
 
 - **Default Behavior**: By default, sessions are stored in memory using `MemorySessionRepository`.
 - **Redis Integration**: For clustered or stateless deployments, you can easily switch to a Redis-backed session repository.
@@ -191,7 +204,7 @@ This generic multipart handler works identically across the built-in JDK HTTP se
 ## 6. Data & Templating
 
 ### Database Integration
-Tinystruct provides built-in support for various databases (H2, MySQL, SQLite, SQLServer).
+tinystruct provides built-in support for various databases (H2, MySQL, SQLite, SQLServer).
 
 1. **Configure in `application.properties`**:
    ```properties
@@ -202,8 +215,22 @@ Tinystruct provides built-in support for various databases (H2, MySQL, SQLite, S
    ```
 2. **Usage**: Use the `generate` command to create POJOs and use the internal data layer to interact with the database.
 
+3. **Exposed Connection Properties**:
+   The `DatabaseOperator` class provides direct, type-safe API methods to query the connection's database metadata, current catalog, and schema name:
+   ```java
+   DatabaseOperator operator = new DatabaseOperator();
+   try {
+       // Retrieve the active catalog and schema names
+       String catalog = operator.getCatalog();
+       String schema = operator.getSchema();
 
-```
+       // Retrieve full DatabaseMetaData for comprehensive database capabilities and structure info
+       java.sql.DatabaseMetaData metaData = operator.getMetaData();
+       System.out.println("Database Product Name: " + metaData.getDatabaseProductName());
+   } finally {
+       operator.close();
+   }
+   ```
 
 ### JSON Handling
 For JSON serialization and parsing, use the built-in `org.tinystruct.data.component.Builder` class instead of external libraries like Gson or Jackson.
@@ -230,7 +257,7 @@ Configuration is managed in `src/main/resources/application.properties`. Key pro
 - `default.home.page`: The default action to trigger on the root URL.
 
 ### Variables and Templates
-Tinystruct supports dynamic content through a variable-based templating system.
+tinystruct supports dynamic content through a variable-based templating system.
 
 1. **Set a Variable**:
    ```java
@@ -261,7 +288,7 @@ public void processCriticalTask() {
 ```
 
 ### Server-Sent Events (SSE) & Streaming
-Tinystruct provides built-in support for SSE to push real-time updates from server to client.
+tinystruct provides built-in support for SSE to push real-time updates from server to client.
 
 1. **Register the client connection**:
 ```java
@@ -290,7 +317,7 @@ The dispatcher provides several utility commands:
 Extending `ApplicationException` or `ApplicationRuntimeException` allows for structured error reporting across both CLI and Web modes.
 
 ### Event Mechanism
-Tinystruct supports an event-driven architecture to decouple components. To improve performance in asynchronous scenarios, event handlers can offload heavy processing to separate threads.
+tinystruct supports an event-driven architecture to decouple components. To improve performance in asynchronous scenarios, event handlers can offload heavy processing to separate threads.
 
 1. **Define an Event**: Implement `org.tinystruct.system.Event<T>`.
    ```java
@@ -328,6 +355,25 @@ Tinystruct supports an event-driven architecture to decouple components. To impr
        });
    });
    ```
+
+### Programmatic Logging Configuration
+tinystruct features a robust, zero-configuration-required programmatic logging wrapper around `java.util.logging` (JUL), managed through `application.properties`.
+
+- **Enable/Disable**: Control log generation globally using `logging.enabled`:
+  ```properties
+  logging.enabled=true
+  ```
+- **Log Level**: Configure the root log level (supports `OFF`, `SEVERE`/`ERROR`, `WARNING`/`WARN`, `INFO`, `CONFIG`, `FINE`/`DEBUG`, `FINER`, `FINEST`/`TRACE`, `ALL`):
+  ```properties
+  logging.level=INFO
+  ```
+- **Logger Overrides**: Configure specific level settings per package or individual logger class:
+  ```properties
+  org.tinystruct.level=FINE
+  com.example.app.level=WARNING
+  ```
+- **ANSI Console Colors**: Console output is beautifully formatted and color-coded by log level (red for SEVERE, yellow for WARNING, green for INFO, cyan for CONFIG, and grey for FINE-FINEST debugging logs).
+- **Precise Caller Tracing**: The underlying `LogFormatter` uses Java's `StackWalker` API to trace the calling stack at runtime. It automatically identifies the actual caller details, injecting the exact class name, method name, file name, and line number into every log record (while bypassing internal helper, framework, and logging classes).
 
 ---
 
@@ -376,7 +422,7 @@ future.thenAccept(response -> {
 ```
 
 ### Model Context Protocol (MCP) Integration
-Tinystruct natively supports the Model Context Protocol (MCP), enabling AI model interactions, tool discovery, and prompt handling.
+tinystruct natively supports the Model Context Protocol (MCP), enabling AI model interactions, tool discovery, and prompt handling.
 
 1. **Creating an MCP Server**:
 Extend `MCPServer` and register your tools and prompts.
@@ -405,6 +451,12 @@ params.put("b", 20);
 Object result = client.executeResource("calculator/add", params);
 client.disconnect();
 ```
+
+3. **Overloaded Tool Methods Support**:
+   tinystruct's MCP implementation natively supports overloaded tool methods (sharing the same tool name but accepting different parameter signatures).
+   
+   - **Schema Merging**: When registering tools in `MCPServer`, the server automatically merges the input schemas of all overloads into a single unified JSON schema. Properties from all signatures are unioned, and required properties are intersected (so only parameters required by *all* overloads remain mandatory).
+   - **Execution Routing**: When the AI client calls a tool, the framework iterates through all available overloaded methods, performing validation against their specific parameter signatures. The first overload that successfully validates against the provided arguments will be executed. If no signature matches or succeeds, the framework throws an appropriate exception (retaining the validation or execution error details).
 
 ---
 
@@ -466,6 +518,6 @@ class HelloApplicationTest {
 ## 12. Developer Tools
 
 ### Gemini CLI Skill
-This project includes a specialized **Gemini CLI skill** located in `.agent/skills/tinystruct-dev/SKILL.md`. This skill provides expert guidance for developing with the tinystruct framework, covering architecture, routing, context, and more.
+This project includes a specialized **Gemini CLI skill** located in `.agent/skills/tinystruct-patterns/SKILL.md`. This skill provides expert guidance for developing with the tinystruct framework, covering architecture, routing, context, and more.
 
 If you are using Gemini CLI, it will automatically recognize and utilize this skill to assist you with tinystruct-specific development tasks.
