@@ -1,41 +1,40 @@
-﻿
-`"How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."`
-***Psalms 104:24***
+﻿`"主よ、あなたのみわざはなんと多いことでしょう。あなたはそれらをみな知恵をもって造られました。地はあなたの造られたもので満ちています。"`
+***詩篇 104:24***
 
-Language: [English](README.md) | [Português (Brasil)](docs/README.pt-BR.md) | [简体中文](docs/README.zh-CN.md) | [繁體中文](docs/README.zh-TW.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Türkçe](docs/README.tr.md) | [Русский](docs/README.ru.md) | [Tiếng Việt](docs/README.vi.md) | [ไทย](docs/README.th.md) | [Deutsch](docs/README.de.md) | [Español](docs/README.es.md)
+Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Türkçe](README.tr.md) | [Русский](README.ru.md) | [Tiếng Việt](README.vi.md) | [ไทย](README.th.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
-The tinystruct framework
+tinystruct フレームワーク
 --
-A simple framework for Java development. Simple thinking, Better design, Easy to be used with better performance! 
+Java 開発のためのシンプルなフレームワークです。シンプルな考え方、より良い設計、使いやすさ、そして高い性能を目指しています。
 
 [![MvnRepository](https://badges.mvnrepository.com/badge/org.tinystruct/tinystruct/badge.svg?label=MvnRepository)](https://mvnrepository.com/artifact/org.tinystruct/tinystruct)
 [![CodeQL](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml/badge.svg)](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml)
 
 [![Star History Chart](https://api.star-history.com/svg?repos=tinystruct/tinystruct&type=Date)](https://www.star-history.com/#tinystruct/tinystruct&Date)
 
-## Prerequisites
+## 前提条件
 
-- Java Development Kit (JDK) 17 or higher
-- Maven (for dependency management)
-- A text editor or IDE (IntelliJ IDEA, Eclipse, VS Code, etc.)
+- Java Development Kit (JDK) 17 以上
+- 依存関係管理のための Maven
+- IntelliJ IDEA、Eclipse、VS Code などのテキストエディタまたは IDE
 
-Getting Started with tinystruct archetype
+tinystruct archetype で始める
 --
-You can follow this archetype to create a tinystruct-based project quickly: https://github.com/tinystruct/tinystruct-archetype
+この archetype を使うと、tinystruct ベースのプロジェクトをすばやく作成できます: https://github.com/tinystruct/tinystruct-archetype
 
-Installation and Getting Started Manually
+手動インストールと入門
 --
-* Add the dependency into your pom.xml.
+* pom.xml に依存関係を追加します。
 ```xml
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
   <version>1.7.27</version>
-  <classifier>jar-with-dependencies</classifier> <!-- Optional -->
+  <classifier>jar-with-dependencies</classifier> <!-- 任意 -->
 </dependency>
 ```
 
-* Extend the AbstractApplication in Java:
+* Java で AbstractApplication を継承します:
 
 ```java
 package tinystruct.examples;
@@ -86,11 +85,11 @@ public class example extends AbstractApplication {
     }
 
 }
-
 ```
+
 Smalltalk: <a href="https://github.com/tinystruct/smalltalk">https://github.com/tinystruct/smalltalk</a>
 
-Execute in CLI mode
+CLI モードで実行
 --
 ```tcsh
 $ bin/dispatcher --version
@@ -136,17 +135,17 @@ $ bin/dispatcher say --words Hello --import tinystruct.examples.example
 Hello
 ```
 
-Run it in a http server
+HTTP サーバーで実行
 --
 ```tcsh
 # bin/dispatcher start --import org.tinystruct.system.HttpServer 
 ```
-You can access the below URLs:
+以下の URL にアクセスできます:
 
 * <a href="http://localhost:8080/?q=say/Praise%20to%20the%20Lord!">http://localhost:8080/?q=say/Praise%20to%20the%20Lord! </a>
 * <a href="http://localhost:8080/?q=praise">http://localhost:8080/?q=praise</a>
 
-Performance Test
+性能テスト
 --
 ```tcsh 
 $ wrk -t12 -c400 -d30s "http://127.0.0.1:8080/?q=say/Praise the Lord!"
@@ -162,50 +161,46 @@ Req/Sec        7.27k    1.66k     13.55k    69.94%
 
 Requests/sec:  86753.98
 Transfer/sec:  17.46MB
-
 ```
-Handling over **86,000** requests per second with low average latency (~17.44ms), indicating the endpoint is highly efficient under heavy load. this shows the raw power and efficiency of the **tinystruct framework**. But it's not just about the performance numbers. It's about the **philosophy** behind it.
 
-### What makes tinystruct framework modern?
+平均レイテンシ約 17.44ms という低い遅延で **86,000** を超えるリクエストを毎秒処理できることは、このエンドポイントが高負荷下でも非常に効率的であることを示しています。これは **tinystruct フレームワーク** の性能と効率を示すものですが、重要なのは数値だけではなく、その背後にある**思想**です。
 
-1. **No `main()` method required**
-   Applications can be started directly using CLI commands like `bin/dispatcher`, with no boilerplate code needed. This removes unnecessary ceremony from the development lifecycle.
+### tinystruct フレームワークが現代的な理由
 
-2. **Unified design for CLI and Web**
-   Unlike Spring Boot which is primarily web-centric, **tinystruct** treats CLI and Web as equal citizens. This makes it perfect for AI tasks, script automation, and hybrid applications — all from the same codebase.
+1. **`main()` メソッドが不要**
+   アプリケーションは `bin/dispatcher` などの CLI コマンドから直接起動できます。
 
-3. **Built-in lightweight HTTP server**
-   Whether it’s Netty or Tomcat, tinystruct integrates the server lifecycle inside the framework. There's no need for separate containers or complicated configuration files. Just import what you need and run.
+2. **CLI と Web の統一設計**
+   **tinystruct** は CLI と Web を同等に扱い、AI タスク、スクリプト自動化、ハイブリッドアプリケーションに適しています。
 
-4. **Minimal configuration philosophy**
-   Configuration is minimized to the essentials. You don't need to wire up hundreds of beans, and there's no excessive XML or YAML involved. This improves developer productivity and reduces bugs.
+3. **軽量 HTTP サーバーを内蔵**
+   Netty でも Tomcat でも、サーバーのライフサイクルをフレームワーク内に統合します。
 
-5. **Annotation-based routing**
-   The framework provides a clean and intuitive routing mechanism using `@Action`, eliminating the need for overly complex controller hierarchies.
+4. **最小限の設定思想**
+   設定は必要最小限で、過剰な bean、XML、YAML は不要です。
 
-6. **Performance-first architecture**
-   There’s almost zero overhead. No reflection-based bean scanning, no auto-wiring maze, no unnecessary interceptors unless explicitly enabled. This translates into faster response times and smaller memory footprint.
+5. **アノテーションベースのルーティング**
+   `@Action` により、明確で直感的なルーティングを実現します。
 
-7. **Developer empowerment without complexity**
-   With tinystruct, developers are free to focus on **real business logic** rather than fighting with framework mechanics. It's designed to be **transparent**, **predictable**, and **extensible** — all without sacrificing control or performance.
+6. **性能優先のアーキテクチャ**
+   オーバーヘッドはほぼなく、リフレクションベースの bean スキャンや不要な interceptor はありません。
+
+7. **複雑さを増やさず開発者を支援**
+   tinystruct は**実際のビジネスロジック**に集中できるように設計され、**透明**で**予測可能**かつ**拡張可能**です。
 
 ---
 
-Architecture
+アーキテクチャ
 --
 ![tinystruct-framework-architecture](https://github.com/tinystruct/tinystruct/assets/3631818/288049b7-cefd-4442-b6d8-8624ae75cdc2)
 
-License
+ライセンス
 --
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Apache License, Version 2.0 に基づいてライセンスされています。
+このライセンスに従う場合を除き、このファイルを使用することはできません。
+ライセンスのコピーは以下で入手できます:
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+適用法令で要求される場合、または書面で合意された場合を除き、このライセンスの下で配布されるソフトウェアは「現状のまま」提供され、いかなる保証または条件もありません。

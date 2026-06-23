@@ -1,31 +1,30 @@
-﻿
-`"How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."`
-***Psalms 104:24***
+﻿`"Wie zahlreich sind deine Werke, HERR! Du hast sie alle in Weisheit gemacht; die Erde ist voll von deinen Geschöpfen."`
+***Psalm 104:24***
 
-Language: [English](README.md) | [Português (Brasil)](docs/README.pt-BR.md) | [简体中文](docs/README.zh-CN.md) | [繁體中文](docs/README.zh-TW.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Türkçe](docs/README.tr.md) | [Русский](docs/README.ru.md) | [Tiếng Việt](docs/README.vi.md) | [ไทย](docs/README.th.md) | [Deutsch](docs/README.de.md) | [Español](docs/README.es.md)
+Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Türkçe](README.tr.md) | [Русский](README.ru.md) | [Tiếng Việt](README.vi.md) | [ไทย](README.th.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
-The tinystruct framework
+Das tinystruct Framework
 --
-A simple framework for Java development. Simple thinking, Better design, Easy to be used with better performance! 
+Ein einfaches Framework für die Java-Entwicklung. Einfaches Denken, besseres Design, leicht zu verwenden und mit guter Performance.
 
 [![MvnRepository](https://badges.mvnrepository.com/badge/org.tinystruct/tinystruct/badge.svg?label=MvnRepository)](https://mvnrepository.com/artifact/org.tinystruct/tinystruct)
 [![CodeQL](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml/badge.svg)](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml)
 
 [![Star History Chart](https://api.star-history.com/svg?repos=tinystruct/tinystruct&type=Date)](https://www.star-history.com/#tinystruct/tinystruct&Date)
 
-## Prerequisites
+## Voraussetzungen
 
-- Java Development Kit (JDK) 17 or higher
-- Maven (for dependency management)
-- A text editor or IDE (IntelliJ IDEA, Eclipse, VS Code, etc.)
+- Java Development Kit (JDK) 17 oder höher
+- Maven für die Abhängigkeitsverwaltung
+- Ein Texteditor oder eine IDE wie IntelliJ IDEA, Eclipse oder VS Code
 
-Getting Started with tinystruct archetype
+Schnellstart mit dem tinystruct Archetype
 --
-You can follow this archetype to create a tinystruct-based project quickly: https://github.com/tinystruct/tinystruct-archetype
+Mit diesem Archetype kannst du schnell ein tinystruct-basiertes Projekt erstellen: https://github.com/tinystruct/tinystruct-archetype
 
-Installation and Getting Started Manually
+Manuelle Installation und Einstieg
 --
-* Add the dependency into your pom.xml.
+* Füge die Abhängigkeit zu deiner pom.xml hinzu.
 ```xml
 <dependency>
   <groupId>org.tinystruct</groupId>
@@ -35,7 +34,7 @@ Installation and Getting Started Manually
 </dependency>
 ```
 
-* Extend the AbstractApplication in Java:
+* Erweitere AbstractApplication in Java:
 
 ```java
 package tinystruct.examples;
@@ -86,11 +85,11 @@ public class example extends AbstractApplication {
     }
 
 }
-
 ```
+
 Smalltalk: <a href="https://github.com/tinystruct/smalltalk">https://github.com/tinystruct/smalltalk</a>
 
-Execute in CLI mode
+Im CLI-Modus ausführen
 --
 ```tcsh
 $ bin/dispatcher --version
@@ -136,17 +135,17 @@ $ bin/dispatcher say --words Hello --import tinystruct.examples.example
 Hello
 ```
 
-Run it in a http server
+In einem HTTP-Server ausführen
 --
 ```tcsh
 # bin/dispatcher start --import org.tinystruct.system.HttpServer 
 ```
-You can access the below URLs:
+Du kannst diese URLs aufrufen:
 
 * <a href="http://localhost:8080/?q=say/Praise%20to%20the%20Lord!">http://localhost:8080/?q=say/Praise%20to%20the%20Lord! </a>
 * <a href="http://localhost:8080/?q=praise">http://localhost:8080/?q=praise</a>
 
-Performance Test
+Performance-Test
 --
 ```tcsh 
 $ wrk -t12 -c400 -d30s "http://127.0.0.1:8080/?q=say/Praise the Lord!"
@@ -162,50 +161,46 @@ Req/Sec        7.27k    1.66k     13.55k    69.94%
 
 Requests/sec:  86753.98
 Transfer/sec:  17.46MB
-
 ```
-Handling over **86,000** requests per second with low average latency (~17.44ms), indicating the endpoint is highly efficient under heavy load. this shows the raw power and efficiency of the **tinystruct framework**. But it's not just about the performance numbers. It's about the **philosophy** behind it.
 
-### What makes tinystruct framework modern?
+Mehr als **86.000** Anfragen pro Sekunde bei niedriger durchschnittlicher Latenz von etwa 17,44 ms zeigen, dass der Endpunkt unter hoher Last sehr effizient ist. Das zeigt die rohe Leistung und Effizienz des **tinystruct Frameworks**. Es geht aber nicht nur um Zahlen, sondern auch um die **Philosophie** dahinter.
 
-1. **No `main()` method required**
-   Applications can be started directly using CLI commands like `bin/dispatcher`, with no boilerplate code needed. This removes unnecessary ceremony from the development lifecycle.
+### Was macht das tinystruct Framework modern?
 
-2. **Unified design for CLI and Web**
-   Unlike Spring Boot which is primarily web-centric, **tinystruct** treats CLI and Web as equal citizens. This makes it perfect for AI tasks, script automation, and hybrid applications — all from the same codebase.
+1. **Keine `main()`-Methode erforderlich**
+   Anwendungen können direkt mit CLI-Befehlen wie `bin/dispatcher` gestartet werden, ohne Boilerplate-Code.
 
-3. **Built-in lightweight HTTP server**
-   Whether it’s Netty or Tomcat, tinystruct integrates the server lifecycle inside the framework. There's no need for separate containers or complicated configuration files. Just import what you need and run.
+2. **Einheitliches Design für CLI und Web**
+   **tinystruct** behandelt CLI und Web als gleichwertige Einsatzbereiche. Das passt gut zu KI-Aufgaben, Skriptautomatisierung und hybriden Anwendungen.
 
-4. **Minimal configuration philosophy**
-   Configuration is minimized to the essentials. You don't need to wire up hundreds of beans, and there's no excessive XML or YAML involved. This improves developer productivity and reduces bugs.
+3. **Eingebauter leichtgewichtiger HTTP-Server**
+   Ob Netty oder Tomcat: tinystruct integriert den Server-Lebenszyklus im Framework. Importieren, was du brauchst, und ausführen.
 
-5. **Annotation-based routing**
-   The framework provides a clean and intuitive routing mechanism using `@Action`, eliminating the need for overly complex controller hierarchies.
+4. **Philosophie minimaler Konfiguration**
+   Die Konfiguration bleibt auf das Wesentliche beschränkt. Keine Massen an Beans, kein übermäßiges XML oder YAML.
 
-6. **Performance-first architecture**
-   There’s almost zero overhead. No reflection-based bean scanning, no auto-wiring maze, no unnecessary interceptors unless explicitly enabled. This translates into faster response times and smaller memory footprint.
+5. **Annotation-basiertes Routing**
+   `@Action` bietet einen klaren und intuitiven Routing-Mechanismus ohne komplexe Controller-Hierarchien.
 
-7. **Developer empowerment without complexity**
-   With tinystruct, developers are free to focus on **real business logic** rather than fighting with framework mechanics. It's designed to be **transparent**, **predictable**, and **extensible** — all without sacrificing control or performance.
+6. **Performance-orientierte Architektur**
+   Sehr geringer Overhead, keine reflektionsbasierte Bean-Suche und keine unnötigen Interceptors, sofern sie nicht explizit aktiviert werden.
+
+7. **Mehr Kontrolle ohne unnötige Komplexität**
+   Entwickler konzentrieren sich auf **echte Geschäftslogik**. tinystruct ist **transparent**, **vorhersehbar** und **erweiterbar**.
 
 ---
 
-Architecture
+Architektur
 --
 ![tinystruct-framework-architecture](https://github.com/tinystruct/tinystruct/assets/3631818/288049b7-cefd-4442-b6d8-8624ae75cdc2)
 
-License
+Lizenz
 --
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Lizenziert unter der Apache License, Version 2.0.
+Du darfst diese Datei nur gemäß der Lizenz verwenden.
+Eine Kopie der Lizenz erhältst du unter:
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Sofern nicht gesetzlich vorgeschrieben oder schriftlich vereinbart, wird die Software unter der Lizenz ohne Gewährleistung oder Bedingungen jeglicher Art bereitgestellt.

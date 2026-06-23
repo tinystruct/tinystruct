@@ -1,41 +1,40 @@
-﻿
-`"How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."`
-***Psalms 104:24***
+﻿`"耶和華啊，你所造的何其多！都是你用智慧造成的；遍地滿了你的豐富。"`
+***詩篇 104:24***
 
-Language: [English](README.md) | [Português (Brasil)](docs/README.pt-BR.md) | [简体中文](docs/README.zh-CN.md) | [繁體中文](docs/README.zh-TW.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Türkçe](docs/README.tr.md) | [Русский](docs/README.ru.md) | [Tiếng Việt](docs/README.vi.md) | [ไทย](docs/README.th.md) | [Deutsch](docs/README.de.md) | [Español](docs/README.es.md)
+Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Türkçe](README.tr.md) | [Русский](README.ru.md) | [Tiếng Việt](README.vi.md) | [ไทย](README.th.md) | [Deutsch](README.de.md) | [Español](README.es.md)
 
-The tinystruct framework
+tinystruct 框架
 --
-A simple framework for Java development. Simple thinking, Better design, Easy to be used with better performance! 
+一個用於 Java 開發的簡潔框架。理念簡單、設計更好、易於使用，並具備良好的效能。
 
 [![MvnRepository](https://badges.mvnrepository.com/badge/org.tinystruct/tinystruct/badge.svg?label=MvnRepository)](https://mvnrepository.com/artifact/org.tinystruct/tinystruct)
 [![CodeQL](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml/badge.svg)](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml)
 
 [![Star History Chart](https://api.star-history.com/svg?repos=tinystruct/tinystruct&type=Date)](https://www.star-history.com/#tinystruct/tinystruct&Date)
 
-## Prerequisites
+## 前置需求
 
-- Java Development Kit (JDK) 17 or higher
-- Maven (for dependency management)
-- A text editor or IDE (IntelliJ IDEA, Eclipse, VS Code, etc.)
+- Java Development Kit (JDK) 17 或更高版本
+- Maven，用於相依性管理
+- 文字編輯器或 IDE，例如 IntelliJ IDEA、Eclipse 或 VS Code
 
-Getting Started with tinystruct archetype
+使用 tinystruct archetype 快速開始
 --
-You can follow this archetype to create a tinystruct-based project quickly: https://github.com/tinystruct/tinystruct-archetype
+你可以使用這個 archetype 快速建立 tinystruct 專案：https://github.com/tinystruct/tinystruct-archetype
 
-Installation and Getting Started Manually
+手動安裝與入門
 --
-* Add the dependency into your pom.xml.
+* 將相依性加入 pom.xml。
 ```xml
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
   <version>1.7.27</version>
-  <classifier>jar-with-dependencies</classifier> <!-- Optional -->
+  <classifier>jar-with-dependencies</classifier> <!-- 選用 -->
 </dependency>
 ```
 
-* Extend the AbstractApplication in Java:
+* 在 Java 中繼承 AbstractApplication：
 
 ```java
 package tinystruct.examples;
@@ -86,11 +85,11 @@ public class example extends AbstractApplication {
     }
 
 }
-
 ```
-Smalltalk: <a href="https://github.com/tinystruct/smalltalk">https://github.com/tinystruct/smalltalk</a>
 
-Execute in CLI mode
+Smalltalk：<a href="https://github.com/tinystruct/smalltalk">https://github.com/tinystruct/smalltalk</a>
+
+以 CLI 模式執行
 --
 ```tcsh
 $ bin/dispatcher --version
@@ -136,17 +135,17 @@ $ bin/dispatcher say --words Hello --import tinystruct.examples.example
 Hello
 ```
 
-Run it in a http server
+在 HTTP 伺服器中執行
 --
 ```tcsh
 # bin/dispatcher start --import org.tinystruct.system.HttpServer 
 ```
-You can access the below URLs:
+你可以存取以下 URL：
 
 * <a href="http://localhost:8080/?q=say/Praise%20to%20the%20Lord!">http://localhost:8080/?q=say/Praise%20to%20the%20Lord! </a>
 * <a href="http://localhost:8080/?q=praise">http://localhost:8080/?q=praise</a>
 
-Performance Test
+效能測試
 --
 ```tcsh 
 $ wrk -t12 -c400 -d30s "http://127.0.0.1:8080/?q=say/Praise the Lord!"
@@ -162,50 +161,46 @@ Req/Sec        7.27k    1.66k     13.55k    69.94%
 
 Requests/sec:  86753.98
 Transfer/sec:  17.46MB
-
 ```
-Handling over **86,000** requests per second with low average latency (~17.44ms), indicating the endpoint is highly efficient under heavy load. this shows the raw power and efficiency of the **tinystruct framework**. But it's not just about the performance numbers. It's about the **philosophy** behind it.
 
-### What makes tinystruct framework modern?
+在較低平均延遲約 17.44ms 下，每秒處理超過 **86,000** 個請求，表示該端點在高負載下仍非常高效。這展現了 **tinystruct 框架** 的原始效能與效率，但重點不只是數字，也在於背後的**設計哲學**。
 
-1. **No `main()` method required**
-   Applications can be started directly using CLI commands like `bin/dispatcher`, with no boilerplate code needed. This removes unnecessary ceremony from the development lifecycle.
+### tinystruct 框架為什麼現代？
 
-2. **Unified design for CLI and Web**
-   Unlike Spring Boot which is primarily web-centric, **tinystruct** treats CLI and Web as equal citizens. This makes it perfect for AI tasks, script automation, and hybrid applications — all from the same codebase.
+1. **不需要 `main()` 方法**
+   應用程式可以直接透過 `bin/dispatcher` 等 CLI 命令啟動，不需要樣板程式碼。
 
-3. **Built-in lightweight HTTP server**
-   Whether it’s Netty or Tomcat, tinystruct integrates the server lifecycle inside the framework. There's no need for separate containers or complicated configuration files. Just import what you need and run.
+2. **CLI 與 Web 的統一設計**
+   **tinystruct** 將 CLI 與 Web 視為同等重要，適合 AI 任務、腳本自動化與混合型應用。
 
-4. **Minimal configuration philosophy**
-   Configuration is minimized to the essentials. You don't need to wire up hundreds of beans, and there's no excessive XML or YAML involved. This improves developer productivity and reduces bugs.
+3. **內建輕量級 HTTP 伺服器**
+   不論使用 Netty 或 Tomcat，tinystruct 都將伺服器生命週期整合到框架中。
 
-5. **Annotation-based routing**
-   The framework provides a clean and intuitive routing mechanism using `@Action`, eliminating the need for overly complex controller hierarchies.
+4. **最小化設定理念**
+   設定僅保留必要部分，不需要大量 bean，也不需要過度的 XML 或 YAML。
 
-6. **Performance-first architecture**
-   There’s almost zero overhead. No reflection-based bean scanning, no auto-wiring maze, no unnecessary interceptors unless explicitly enabled. This translates into faster response times and smaller memory footprint.
+5. **基於註解的路由**
+   `@Action` 提供清晰直觀的路由機制。
 
-7. **Developer empowerment without complexity**
-   With tinystruct, developers are free to focus on **real business logic** rather than fighting with framework mechanics. It's designed to be **transparent**, **predictable**, and **extensible** — all without sacrificing control or performance.
+6. **效能優先架構**
+   幾乎沒有額外開銷，沒有基於反射的 bean 掃描，也沒有非必要的攔截器。
+
+7. **賦能開發者且保持簡單**
+   tinystruct 讓開發者專注於**真實業務邏輯**，並保持**透明**、**可預測**、**可擴充**。
 
 ---
 
-Architecture
+架構
 --
 ![tinystruct-framework-architecture](https://github.com/tinystruct/tinystruct/assets/3631818/288049b7-cefd-4442-b6d8-8624ae75cdc2)
 
-License
+授權
 --
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+本專案依 Apache License, Version 2.0 授權。
+除非符合該授權，否則不得使用本檔案。
+你可以在以下位置取得授權副本：
 
     http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+除非法律要求或書面同意，依本授權散布的軟體均以「原樣」提供，不附帶任何明示或暗示的擔保或條件。
