@@ -192,7 +192,7 @@ Xử lý hơn **86.000** request mỗi giây với độ trễ trung bình thấ
 
 Kiến trúc
 --
-![tinystruct-framework-architecture](https://github.com/tinystruct/tinystruct/assets/3631818/288049b7-cefd-4442-b6d8-8624ae75cdc2)
+![tinystruct-framework-architecture](https://github.com/user-attachments/assets/33dbdc21-4803-4b94-bf69-bee053cf558d)
 
 Giấy phép
 --

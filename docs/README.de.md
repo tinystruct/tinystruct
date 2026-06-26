@@ -192,7 +192,7 @@ Mehr als **86.000** Anfragen pro Sekunde bei niedriger durchschnittlicher Latenz
 
 Architektur
 --
-![tinystruct-framework-architecture](https://github.com/tinystruct/tinystruct/assets/3631818/288049b7-cefd-4442-b6d8-8624ae75cdc2)
+![tinystruct-framework-architecture](https://github.com/user-attachments/assets/33dbdc21-4803-4b94-bf69-bee053cf558d)
 
 Lizenz
 --
