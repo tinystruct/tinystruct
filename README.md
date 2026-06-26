@@ -193,7 +193,7 @@ Handling over **86,000** requests per second with low average latency (~17.44ms)
 
 Architecture
 --
-![tinystruct-framework-architecture](https://github.com/tinystruct/tinystruct/assets/3631818/288049b7-cefd-4442-b6d8-8624ae75cdc2)
+![tinystruct-framework-architecture](https://github.com/user-attachments/assets/3db8ef04-e7be-4135-ba75-18b29d880bda)
 
 License
 --
