@@ -11,8 +11,6 @@ A simple framework for Java development. Simple thinking, Better design, Easy to
 [![MvnRepository](https://badges.mvnrepository.com/badge/org.tinystruct/tinystruct/badge.svg?label=MvnRepository)](https://mvnrepository.com/artifact/org.tinystruct/tinystruct)
 [![CodeQL](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml/badge.svg)](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml)
 
-[![Star History Chart](https://api.star-history.com/chart?repos=tinystruct/tinystruct&type=date&legend=top-left)](https://www.star-history.com/?repos=tinystruct%2Ftinystruct&type=date&legend=top-left)
-
 ## Prerequisites
 
 - Java Development Kit (JDK) 17 or higher
