@@ -2,6 +2,8 @@
 `"How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."`
 ***Psalms 104:24***
 
+<img width="1774" height="887" alt="Image" src="https://github.com/user-attachments/assets/0e2c7a76-48f8-4075-9805-a332ca928dc8" />
+
 Language: [English](README.md) | [Português (Brasil)](docs/README.pt-BR.md) | [简体中文](docs/README.zh-CN.md) | [繁體中文](docs/README.zh-TW.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Türkçe](docs/README.tr.md) | [Русский](docs/README.ru.md) | [Tiếng Việt](docs/README.vi.md) | [ไทย](docs/README.th.md) | [Deutsch](docs/README.de.md) | [Español](docs/README.es.md)
 
 The tinystruct framework
