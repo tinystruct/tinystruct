@@ -17,6 +17,8 @@ public class URLRequest {
     private ContentDisposition[] formData; // for multipart form-data parts
     private Attachments attachments; // for file attachments
     private Proxy proxy; // optional proxy
+    private int connectTimeout = 30_000; // default 30s
+    private int readTimeout = 0; // 0 = infinite default
 
     public URLRequest(URL url) {
         this.url = url;
@@ -99,6 +101,25 @@ public class URLRequest {
 
     public URLRequest setProxy(Proxy proxy) {
         this.proxy = proxy;
+        return this;
+    }
+
+    // Timeouts
+    public int getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public URLRequest setConnectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
+        return this;
+    }
+
+    public int getReadTimeout() {
+        return readTimeout;
+    }
+
+    public URLRequest setReadTimeout(int readTimeout) {
+        this.readTimeout = readTimeout;
         return this;
     }
 }

@@ -97,7 +97,7 @@ public class HTTPHandler implements URLHandler {
      */
     private HttpClient buildClient(URLRequest request) {
         HttpClient.Builder builder = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(30));
+                .connectTimeout(Duration.ofMillis(request.getConnectTimeout()));
 
         // Follow redirects
         builder.followRedirects(this.followRedirects
@@ -152,6 +152,10 @@ public class HTTPHandler implements URLHandler {
 
         HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                 .uri(effectiveUri);
+
+        if (request.getReadTimeout() > 0) {
+            reqBuilder.timeout(Duration.ofMillis(request.getReadTimeout()));
+        }
 
         // Set headers
         if (request.getHeaders() != null) {
