@@ -2,6 +2,8 @@
 `"How many are your works, O LORD ! In wisdom you made them all; the earth is full of your creatures."`
 ***Psalms 104:24***
 
+<img width="1774" height="887" alt="Image" src="https://github.com/user-attachments/assets/0e2c7a76-48f8-4075-9805-a332ca928dc8" />
+
 Language: [English](README.md) | [Português (Brasil)](docs/README.pt-BR.md) | [简体中文](docs/README.zh-CN.md) | [繁體中文](docs/README.zh-TW.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Türkçe](docs/README.tr.md) | [Русский](docs/README.ru.md) | [Tiếng Việt](docs/README.vi.md) | [ไทย](docs/README.th.md) | [Deutsch](docs/README.de.md) | [Español](docs/README.es.md)
 
 The tinystruct framework
@@ -10,8 +12,6 @@ A simple framework for Java development. Simple thinking, Better design, Easy to
 
 [![MvnRepository](https://badges.mvnrepository.com/badge/org.tinystruct/tinystruct/badge.svg?label=MvnRepository)](https://mvnrepository.com/artifact/org.tinystruct/tinystruct)
 [![CodeQL](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml/badge.svg)](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml)
-
-[![Star History Chart](https://api.star-history.com/chart?repos=tinystruct/tinystruct&type=date&legend=top-left)](https://www.star-history.com/?repos=tinystruct%2Ftinystruct&type=date&legend=top-left)
 
 ## Prerequisites
 
