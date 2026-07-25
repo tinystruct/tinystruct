@@ -136,13 +136,13 @@
         <jakarta.mail.version>2.0.2</jakarta.mail.version>
         <java.version>17</java.version>
         <jjwt.version>0.13.0</jjwt.version>
-        <jna.version>5.18.1</jna.version>
-        <jupiter.version>6.1.0</jupiter.version>
-        <kafka.version>4.3.0</kafka.version>
+        <jna.version>5.19.1</jna.version>
+        <jupiter.version>6.1.1</jupiter.version>
+        <kafka.version>4.3.1</kafka.version>
         <lettuce.version>7.6.0.RELEASE</lettuce.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <sqlite.version>3.53.1.0</sqlite.version>
+        <sqlite.version>3.53.2.0</sqlite.version>
         <h2.version>2.4.240</h2.version>
         <mockito.version>5.23.0</mockito.version>
         <nashorn.version>15.7</nashorn.version>
