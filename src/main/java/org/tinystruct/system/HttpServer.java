@@ -304,6 +304,26 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     return;
                 }
 
+                // Enforce server name restriction if configured
+                String configuredServerName = settings.get("server.name");
+                if (configuredServerName != null && !configuredServerName.trim().isEmpty()) {
+                    String hostHeader = exchange.getRequestHeaders().getFirst("Host");
+                    boolean hostAllowed = false;
+                    if (hostHeader != null) {
+                        for (String allowed : configuredServerName.split(",")) {
+                            if (hostHeader.equalsIgnoreCase(allowed.trim())) {
+                                hostAllowed = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!hostAllowed) {
+                        logger.warning("Rejected request: Host header '" + hostHeader + "' does not match any configured server.name '" + configuredServerName.trim() + "'");
+                        sendErrorResponse(exchange, 400, "Bad Request: Invalid server name.");
+                        return;
+                    }
+                }
+
                 // Serve static files first (mirror Netty's HttpStaticFileHandler precedence)
                 if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
                     if (tryServeStatic(exchange)) {
