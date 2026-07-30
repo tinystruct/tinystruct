@@ -582,19 +582,17 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 destination = uri.toString().replaceAll("http://|https://|/", "+");
             }
 
-            // Remove insecure string in the destination
-            destination = destination.replaceAll("\\.\\.", "");
-
-            // Replace the path with default file separator
-            destination = destination.replaceAll("/", "\\" + File.separator);
-
             // Remove the suffix after '?' if contains '?'
             if (destination.contains("?")) {
                 destination = destination.substring(0, destination.indexOf("?"));
             }
 
-            String path = new File("").getAbsolutePath() + File.separatorChar + destination;
-            Path dest = Paths.get(path);
+            Path baseDir = Paths.get(new File("").getAbsolutePath()).normalize().toAbsolutePath();
+            Path dest = baseDir.resolve(destination).normalize().toAbsolutePath();
+            if (!dest.startsWith(baseDir)) {
+                throw new ApplicationException("Invalid path: Path traversal detected.");
+            }
+            String path = dest.toString();
             try {
                 Path parent = dest.getParent();
                 if (parent != null)

@@ -42,6 +42,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -245,7 +246,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
     }
 
     /**
-     * HTTP handler that integrates with TinyStruct framework
+     * HTTP handler that integrates with tinystruct framework
      */
     private class DefaultHttpHandler implements HttpHandler {
 
@@ -354,7 +355,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     return;
                 }
 
-                // Process the request using TinyStruct's DefaultHandler logic
+                // Process the request using tinystruct's DefaultHandler logic
                 processRequest(request, response, context);
             } catch (ApplicationException e) {
                 logger.log(Level.SEVERE, e.getMessage(), e);
@@ -382,8 +383,12 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     return;
                 }
 
+                String environment = settings.getOrDefault("system.environment", "production");
+                String errorMessage = "development".equalsIgnoreCase(environment) ? 
+                        "Internal Server Error" + (e.getMessage() != null ? ": " + e.getMessage() : "") : 
+                        "Internal Server Error";
                 // Try to send error only if headers haven't been committed yet
-                sendErrorResponse(exchange, 500, "Internal Server Error" + (e.getMessage() != null ? ": " + e.getMessage() : ""));
+                sendErrorResponse(exchange, 500, errorMessage);
             }
         }
 
@@ -522,8 +527,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
         private boolean tryServeStatic(HttpExchange exchange) {
             try {
                 String uri = exchange.getRequestURI().toString();
-                String path = sanitizeUri(uri);
-                if (path == null) return false;
+                String path = Objects.requireNonNull(sanitizeUri(uri)).toString();
 
                 String filepath = path;
                 int q = path.indexOf("?");
@@ -600,15 +604,21 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             }
         }
 
-        private String sanitizeUri(String uri) throws UnsupportedEncodingException {
+        private Path sanitizeUri(String uri) {
             String decoded = URLDecoder.decode(uri, StandardCharsets.UTF_8);
-            if (decoded.isEmpty() || decoded.charAt(0) != '/') return null;
-            if (decoded.length() > 255) throw new IllegalArgumentException("Input too long");
-            decoded = decoded.replace('/', File.separatorChar);
-            decoded = decoded.replace("..", "");
-            if (decoded.contains(File.separator + '.') || decoded.contains('.' + File.separator) || decoded.charAt(0) == '.' || decoded.charAt(decoded.length() - 1) == '.')
+            if (decoded.isEmpty() || decoded.charAt(0) != '/' || decoded.length() > 2048) {
                 return null;
-            return System.getProperty("user.dir") + File.separator + decoded;
+            }
+            Path baseDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
+            String relative = decoded.substring(1).replace('\\', '/');
+            if (relative.matches("^[A-Za-z]:.*")) {
+                return null;
+            }
+            Path requested = baseDir.resolve(relative).normalize();
+            if (!requested.startsWith(baseDir)) {
+                return null;
+            }
+            return requested;
         }
 
         private void setDateHeader(HttpExchange exchange) {
@@ -690,6 +700,9 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                         cookie.setDomain(host.substring(0, host.indexOf(":")));
                     cookie.setValue(context.getId());
                     cookie.setHttpOnly(true);
+                    if (request.isSecure()) {
+                        cookie.setSecure(true);
+                    }
                     cookie.setPath("/");
                     cookie.setMaxAge(-1);
                     response.addHeader(Header.SET_COOKIE.name(), cookie);

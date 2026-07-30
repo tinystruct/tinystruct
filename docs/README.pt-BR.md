@@ -29,7 +29,7 @@ Instalação manual e primeiros passos
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.27</version>
+  <version>1.7.28</version>
   <classifier>jar-with-dependencies</classifier> <!-- Opcional -->
 </dependency>
 ```
@@ -95,7 +95,7 @@ Executar em modo CLI
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.27
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.28
            /
 ```
 ```tcsh
