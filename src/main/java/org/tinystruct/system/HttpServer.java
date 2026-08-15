@@ -692,8 +692,6 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 }
                 if (!sessionCookieExists) {
                     Cookie cookie = new CookieImpl(Constants.JSESSIONID);
-                    if (host.contains(":"))
-                        cookie.setDomain(host.substring(0, host.indexOf(":")));
                     cookie.setValue(context.getId());
                     cookie.setHttpOnly(true);
                     if (request.isSecure()) {
