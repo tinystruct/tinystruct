@@ -526,12 +526,8 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
         private boolean tryServeStatic(HttpExchange exchange) {
             try {
-                String uri = exchange.getRequestURI().toString();
-                String path = Objects.requireNonNull(sanitizeUri(uri)).toString();
-
-                String filepath = path;
-                int q = path.indexOf("?");
-                if (q >= 0) filepath = path.substring(0, q);
+                String uri = exchange.getRequestURI().getRawPath();
+                String filepath = Objects.requireNonNull(sanitizeUri(uri)).toString();
 
                 File file = new File(filepath);
                 if (!file.exists() || file.isHidden()) {
