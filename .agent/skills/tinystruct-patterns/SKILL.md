@@ -142,13 +142,13 @@ try {
 
 ## MCP Server and Tools Integration
 
-tinystruct provides native support for the Model Context Protocol (MCP) starting with SDK version **`1.7.28`**.
+tinystruct provides native support for the Model Context Protocol (MCP) starting with SDK version **`1.7.29`**.
 The MCP APIs (e.g., `org.tinystruct.mcp.MCPTool`, `org.tinystruct.mcp.MCPServer`, `org.tinystruct.mcp.MCPException`) are included directly in the core dependency:
 ```xml
 <dependency>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.7.28</version>
+    <version>1.7.29</version>
 </dependency>
 ```
 

@@ -426,18 +426,26 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 if (authHeader != null && authHeader.startsWith("Bearer ")) {
                     String token = authHeader.substring(7);
 
+                    JWTManager jwtManager = new JWTManager();
+                    String publicKey = settings.get("jwt.key.public");
                     String secret = settings.get("jwt.secret");
-                    if (secret == null || secret.trim().isEmpty()) {
-                        // jwt.secret is not configured — cannot validate Bearer token.
+
+                    if (publicKey != null && !publicKey.trim().isEmpty()) {
+                        jwtManager.withPublicKey(publicKey);
+                    } else if (secret != null && !secret.trim().isEmpty()) {
+                        String secretFormat = settings.get("jwt.secret.format");
+                        if (secretFormat != null && secretFormat.equalsIgnoreCase("plain")) {
+                            jwtManager.withSecret(secret);
+                        } else {
+                            jwtManager.withBase64Secret(secret);
+                        }
+                    } else {
                         // Log a warning and reject the request to avoid using a weak/empty key.
-                        logger.warning("jwt.secret is not configured. " +
+                        logger.warning("Neither jwt.key.public nor jwt.secret is configured. " +
                                 "Bearer token authentication is disabled. " +
-                                "Please set jwt.secret (>= 256-bit) in application.properties.");
+                                "Please set jwt.secret (>= 256-bit) or jwt.key.public in application.properties.");
                         return false;
                     }
-
-                    JWTManager jwtManager = new JWTManager();
-                    jwtManager.withBase64Secret(secret);
 
                     String timezone = settings.get("jwt.timezone");
                     if (timezone != null && !timezone.trim().isEmpty()) {

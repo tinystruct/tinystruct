@@ -29,7 +29,7 @@ Cài đặt thủ công và bắt đầu
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.28</version>
+  <version>1.7.29</version>
   <classifier>jar-with-dependencies</classifier> <!-- Tùy chọn -->
 </dependency>
 ```
@@ -95,7 +95,7 @@ Chạy ở chế độ CLI
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.28
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.29
            /
 ```
 ```tcsh

@@ -26,7 +26,7 @@ Add the following dependency to your `pom.xml`:
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.28</version>
+  <version>1.7.29</version>
 </dependency>
 ```
 
@@ -428,13 +428,25 @@ tinystruct natively supports the Model Context Protocol (MCP), enabling AI model
 Extend `MCPServer` and register your tools and prompts.
 ```java
 import org.tinystruct.mcp.MCPServer;
-import org.tinystruct.mcp.tools.CalculatorTool;
+import org.tinystruct.system.annotation.Action;
+import org.tinystruct.system.annotation.Argument;
 
 public class MyMCPServer extends MCPServer {
     @Override
     public void init() {
         super.init();
-        this.registerTool(new CalculatorTool());
+        // Registering a POJO directly — no need to subclass MCPTool
+        this.registerTool(new Calculator());
+    }
+
+    public static class Calculator {
+        @Action(value = "calculator/add", description = "Add two numbers", arguments = {
+                @Argument(key = "a", description = "The first operand", type = "number"),
+                @Argument(key = "b", description = "The second operand", type = "number")
+        })
+        public double add(double a, double b) {
+            return a + b;
+        }
     }
 }
 ```

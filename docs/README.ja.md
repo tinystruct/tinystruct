@@ -29,7 +29,7 @@ tinystruct archetype で始める
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.28</version>
+  <version>1.7.29</version>
   <classifier>jar-with-dependencies</classifier> <!-- 任意 -->
 </dependency>
 ```
@@ -95,7 +95,7 @@ CLI モードで実行
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.28
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.29
            /
 ```
 ```tcsh

@@ -5,6 +5,10 @@ import io.jsonwebtoken.security.Keys;
 import org.tinystruct.data.component.Builder;
 
 import javax.crypto.SecretKey;
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -15,7 +19,8 @@ import java.util.Date;
 public class JWTManager {
     // A default secret key for signing JWTs
     private static final SecretKey SECRET_KEY = Jwts.SIG.HS256.key().build();
-    private SecretKey base64Key;
+    private Key signKey;
+    private Key verifyKey;
     private long clockSkew = 0;
 
     /**
@@ -26,7 +31,9 @@ public class JWTManager {
      * @param secret The secret key as a plain text string
      */
     public void withSecret(String secret) {
-        this.base64Key = Keys.hmacShaKeyFor(Base64.getEncoder().encode(secret.getBytes()));
+        SecretKey key = Keys.hmacShaKeyFor(Base64.getEncoder().encode(secret.getBytes()));
+        this.signKey = key;
+        this.verifyKey = key;
     }
 
     /**
@@ -37,7 +44,43 @@ public class JWTManager {
      * @param base64Secret The secret key as a base64 string
      */
     public void withBase64Secret(String base64Secret) {
-        this.base64Key = Keys.hmacShaKeyFor(base64Secret.getBytes());
+        SecretKey key = Keys.hmacShaKeyFor(base64Secret.getBytes());
+        this.signKey = key;
+        this.verifyKey = key;
+    }
+
+    /**
+     * Sets the private key for signing tokens from a base64 encoded PKCS8 string.
+     *
+     * @param base64PrivateKey The private key as a base64 string
+     * @throws IllegalArgumentException if the key cannot be parsed
+     */
+    public void withPrivateKey(String base64PrivateKey) {
+        try {
+            byte[] encoded = Base64.getDecoder().decode(base64PrivateKey);
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            this.signKey = kf.generatePrivate(keySpec);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid private key.", e);
+        }
+    }
+
+    /**
+     * Sets the public key for verifying tokens from a base64 encoded X.509 string.
+     *
+     * @param base64PublicKey The public key as a base64 string
+     * @throws IllegalArgumentException if the key cannot be parsed
+     */
+    public void withPublicKey(String base64PublicKey) {
+        try {
+            byte[] encoded = Base64.getDecoder().decode(base64PublicKey);
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            this.verifyKey = kf.generatePublic(keySpec);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid public key.", e);
+        }
     }
 
     /**
@@ -86,10 +129,15 @@ public class JWTManager {
 
         // Sign the JWT with the provided secret key, or the default key if none
         // provided
-        if (this.base64Key != null)
-            jwtBuilder.signWith(this.base64Key);
-        else
+        if (this.signKey != null) {
+            if (this.signKey instanceof SecretKey) {
+                jwtBuilder.signWith(this.signKey);
+            } else if (this.signKey instanceof java.security.PrivateKey) {
+                jwtBuilder.signWith(this.signKey);
+            }
+        } else {
             jwtBuilder.signWith(SECRET_KEY);
+        }
 
         // Build and return the compact JWS string
         return jwtBuilder.compact();
@@ -117,10 +165,15 @@ public class JWTManager {
         JwtParserBuilder parser = Jwts.parser();
 
         // Set the signing key for the parser
-        if (this.base64Key != null)
-            parser.verifyWith(this.base64Key);
-        else
+        if (this.verifyKey != null) {
+            if (this.verifyKey instanceof SecretKey) {
+                parser.verifyWith((SecretKey) this.verifyKey);
+            } else if (this.verifyKey instanceof java.security.PublicKey) {
+                parser.verifyWith((java.security.PublicKey) this.verifyKey);
+            }
+        } else {
             parser.verifyWith(SECRET_KEY);
+        }
 
         parser.clockSkewSeconds(this.clockSkew);
 
