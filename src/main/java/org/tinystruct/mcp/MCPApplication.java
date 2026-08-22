@@ -164,8 +164,10 @@ public abstract class MCPApplication extends AbstractApplication {
     public Builder handleSseConnect(Request request, Response response) {
         if (request.headers() != null && request.headers().get(Header.value0f(Http.CONVERSATION_ID)) != null) {
             String conversationId = request.headers().get(Header.value0f(Http.CONVERSATION_ID)).toString();
-            SSEPushManager.getInstance().setIdentifier(conversationId);
+            MCPPushManager.getInstance().setIdentifier(conversationId);
         }
+        // Signal to the SSE handler which push manager to use for this connection
+        getContext().setAttribute("sse.push.manager", MCPPushManager.getInstance());
         Builder initial = new Builder();
         initial.put("type", "connect");
         return initial;

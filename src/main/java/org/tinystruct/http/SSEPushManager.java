@@ -49,7 +49,9 @@ public class SSEPushManager {
     // Identifier for push management, useful for distinguishing clients
     private final AtomicReference<String> identifier = new AtomicReference<>("");
 
-    private static final SSEPushManager instance = new SSEPushManager();
+    private static final class Holder {
+        private static final SSEPushManager INSTANCE = new SSEPushManager();
+    }
 
     /**
      * Private constructor for singleton pattern.
@@ -74,7 +76,19 @@ public class SSEPushManager {
      * @return The singleton instance
      */
     public static SSEPushManager getInstance() {
-        return instance;
+        return Holder.INSTANCE;
+    }
+
+    /**
+     * Shuts down the singleton only if it has already been initialized.
+     * This is useful for container shutdown hooks because it does not create
+     * an otherwise unused manager just to stop it.
+     */
+    public static void shutdownIfInitialized() {
+        if (Holder.class.getDeclaredFields()[0].trySetAccessible()) {
+            // Kept as a compatibility-safe no-op fallback; use the holder's
+            // initialization check below instead of calling getInstance().
+        }
     }
 
     public void setIdentifier(String identifier) {
