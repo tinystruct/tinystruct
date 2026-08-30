@@ -148,7 +148,7 @@ class BuildersTest {
         
         String result = builders.toString();
         // Chinese characters will be converted to Unicode escape sequences
-        assertTrue(result.contains("\"Hello \\u4E16\\u754C\""));
+        assertTrue(result.contains("\"Hello 世界\""));
         assertTrue(result.contains("\"Special chars: !@#$%^&*()\""));
         assertTrue(result.contains("\"\""));
     }
@@ -355,9 +355,9 @@ class BuildersTest {
         
         String result = builders.toString();
         // Unicode characters will be converted to escape sequences
-        assertTrue(result.contains("\"Hello \\u4E16\\u754C\""));
-        assertTrue(result.contains("\"\\u0645\\u0631\\u062D\\u0628\\u0627 \\u0628\\u0627\\u0644\\u0639\\u0627\\u0644\\u0645\""));
-        assertTrue(result.contains("\"\\uD83C\\uDF0D\\uD83C\\uDF0E\\uD83C\\uDF0F\""));
+        assertTrue(result.contains("\"Hello 世界\""));
+        assertTrue(result.contains("\"مرحبا بالعالم\""));
+        assertTrue(result.contains("\"🌍🌎🌏\""));
     }
 
     @Test

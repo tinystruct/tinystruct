@@ -108,7 +108,7 @@ public class BuilderTest {
 
         String result = builder.toString();
         // Chinese characters will be converted to Unicode escape sequences
-        assertTrue(result.contains("\"Hello \\u4E16\\u754C\""));
+        assertTrue(result.contains("\"Hello 世界\""));
         assertTrue(result.contains("\"Special chars: !@#$%^&*()\""));
         assertTrue(result.contains("\"empty\":\"\""));
     }
