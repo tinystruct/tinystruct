@@ -211,29 +211,40 @@ public class Builder extends HashMap<String, Object> implements Struct {
      */
     @Override
     public void parse(String resource) throws ApplicationException {
-        if (resource == null || resource.isEmpty()) {
-            return;
-        }
+        parse(resource, new ParseContext(ParseContext.DEFAULT_MAX_DEPTH));
+    }
 
-        resource = resource.trim();
-        if (resource.isEmpty()) {
-            return;
-        }
+    /**
+     * Depth-tracked variant of {@link #parse(String)}, sharing one
+     * {@link ParseContext} across the whole mutually-recursive
+     * Builder/Builders call tree for a single top-level document.
+     */
+    void parse(String resource, ParseContext ctx) throws ApplicationException {
+        try (ParseContext.Scope scope = ctx.enter()) {
+            if (resource == null || resource.isEmpty()) {
+                return;
+            }
 
-        if (resource.charAt(0) == QUOTE) {
-            throw new ApplicationException("Invalid data format:" + resource);
-        }
+            resource = resource.trim();
+            if (resource.isEmpty()) {
+                return;
+            }
 
-        if (resource.charAt(0) != LEFT_BRACE || resource.charAt(resource.length() - 1) != RIGHT_BRACE) {
-            throw new ApplicationException("Invalid data format:" + resource);
-        }
+            if (resource.charAt(0) == QUOTE) {
+                throw new ApplicationException("Invalid data format:" + resource);
+            }
 
-        // Find the closing position of the JSON structure
-        this.closedPosition = this.seekPosition(resource);
+            if (resource.charAt(0) != LEFT_BRACE || resource.charAt(resource.length() - 1) != RIGHT_BRACE) {
+                throw new ApplicationException("Invalid data format:" + resource);
+            }
 
-        if (closedPosition > 2) { // Must have content between braces
-            String values = resource.substring(1, closedPosition - 1);
-            this.parseKeyValuePairs(values);
+            // Find the closing position of the JSON structure
+            this.closedPosition = this.seekPosition(resource);
+
+            if (closedPosition > 2) { // Must have content between braces
+                String values = resource.substring(1, closedPosition - 1);
+                this.parseKeyValuePairs(values, ctx);
+            }
         }
     }
 
@@ -258,7 +269,7 @@ public class Builder extends HashMap<String, Object> implements Struct {
     /**
      * Optimized key-value pairs parsing with reduced method calls
      */
-    private void parseKeyValuePairs(String content) throws ApplicationException {
+    private void parseKeyValuePairs(String content, ParseContext ctx) throws ApplicationException {
         if (content == null || content.trim().isEmpty()) {
             return;
         }
@@ -306,7 +317,7 @@ public class Builder extends HashMap<String, Object> implements Struct {
             pos++; // Skip colon
 
             // Parse value
-            ValueParseResult result = parseValueAtPosition(content, pos);
+            ValueParseResult result = parseValueAtPosition(content, pos, ctx);
             this.put(key, result.value);
             pos = result.nextPosition;
 
@@ -324,7 +335,7 @@ public class Builder extends HashMap<String, Object> implements Struct {
     /**
      * Optimized value parsing with position tracking
      */
-    private ValueParseResult parseValueAtPosition(String content, int startPos) throws ApplicationException {
+    private ValueParseResult parseValueAtPosition(String content, int startPos, ParseContext ctx) throws ApplicationException {
         int pos = startPos;
         int length = content.length();
 
@@ -367,7 +378,7 @@ public class Builder extends HashMap<String, Object> implements Struct {
             }
 
             Builder nested = new Builder();
-            nested.parse(content.substring(pos, objEnd + 1));
+            nested.parse(content.substring(pos, objEnd + 1), ctx);
 
             return new ValueParseResult(nested, objEnd + 1);
 
@@ -379,7 +390,7 @@ public class Builder extends HashMap<String, Object> implements Struct {
             }
 
             Builders builders = new Builders();
-            builders.parse(content.substring(pos, arrayEnd + 1));
+            builders.parse(content.substring(pos, arrayEnd + 1), ctx);
 
             return new ValueParseResult(builders, arrayEnd + 1);
         } else {

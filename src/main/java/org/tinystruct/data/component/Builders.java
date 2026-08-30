@@ -63,40 +63,51 @@ public class Builders extends ArrayList<Builder> implements Struct {
      * Optimized parse method with single-pass parsing and reduced method calls
      */
     public void parse(String value) throws ApplicationException {
-        if (value == null || value.isEmpty() || (value = value.trim()).isEmpty()) {
-            throw new ApplicationException("Invalid array format: missing closing bracket");
-        }
+        parse(value, new ParseContext(ParseContext.DEFAULT_MAX_DEPTH));
+    }
 
-        if (value.charAt(0) == LEFT_BRACKETS) {
-            int end = findMatchingBracket(value, 0);
-            if (end == -1) {
+    /**
+     * Depth-tracked variant of {@link #parse(String)}, sharing the caller's
+     * {@link ParseContext} so array nesting counts against the same budget
+     * as object nesting within one top-level document.
+     */
+    void parse(String value, ParseContext ctx) throws ApplicationException {
+        try (ParseContext.Scope scope = ctx.enter()) {
+            if (value == null || value.isEmpty() || (value = value.trim()).isEmpty()) {
                 throw new ApplicationException("Invalid array format: missing closing bracket");
             }
 
-            if (end > 1) { // Array has content
-                parseArrayContent(value, 1, end);
-            }
-        }
+            if (value.charAt(0) == LEFT_BRACKETS) {
+                int end = findMatchingBracket(value, 0);
+                if (end == -1) {
+                    throw new ApplicationException("Invalid array format: missing closing bracket");
+                }
 
-        // Handle bare object sequences: {…},{…},{…} (no enclosing brackets)
-        if (value.charAt(0) == LEFT_BRACE) {
-            int pos = 0;
-            int length = value.length();
-            while (pos < length) {
-                // Skip whitespace and commas between objects
-                while (pos < length && (Character.isWhitespace(value.charAt(pos)) || value.charAt(pos) == COMMA)) {
-                    pos++;
+                if (end > 1) { // Array has content
+                    parseArrayContent(value, 1, end, ctx);
                 }
-                if (pos >= length) {
-                    break;
+            }
+
+            // Handle bare object sequences: {…},{…},{…} (no enclosing brackets)
+            if (value.charAt(0) == LEFT_BRACE) {
+                int pos = 0;
+                int length = value.length();
+                while (pos < length) {
+                    // Skip whitespace and commas between objects
+                    while (pos < length && (Character.isWhitespace(value.charAt(pos)) || value.charAt(pos) == COMMA)) {
+                        pos++;
+                    }
+                    if (pos >= length) {
+                        break;
+                    }
+                    if (value.charAt(pos) != LEFT_BRACE) {
+                        break; // not an object, stop
+                    }
+                    Builder builder = new Builder();
+                    builder.parse(value.substring(pos), ctx);
+                    this.add(builder);
+                    pos += builder.getClosedPosition();
                 }
-                if (value.charAt(pos) != LEFT_BRACE) {
-                    break; // not an object, stop
-                }
-                Builder builder = new Builder();
-                builder.parse(value.substring(pos));
-                this.add(builder);
-                pos += builder.getClosedPosition();
             }
         }
     }
@@ -109,7 +120,7 @@ public class Builders extends ArrayList<Builder> implements Struct {
     /**
      * Optimized array content parsing with single-pass tokenization
      */
-    private void parseArrayContent(String content, int start, int end) throws ApplicationException {
+    private void parseArrayContent(String content, int start, int end, ParseContext ctx) throws ApplicationException {
         if (start >= end) {
             return;
         }
@@ -126,7 +137,7 @@ public class Builders extends ArrayList<Builder> implements Struct {
                 break;
             }
 
-            ElementParseResult result = parseElementAtPosition(content, pos, end);
+            ElementParseResult result = parseElementAtPosition(content, pos, end, ctx);
             if (result.element != null) {
                 this.add(result.element);
             }
@@ -143,7 +154,7 @@ public class Builders extends ArrayList<Builder> implements Struct {
     /**
      * Parse a single element at the given position
      */
-    private ElementParseResult parseElementAtPosition(String content, int pos, int end) throws ApplicationException {
+    private ElementParseResult parseElementAtPosition(String content, int pos, int end, ParseContext ctx) throws ApplicationException {
         char firstChar = content.charAt(pos);
 
         if (firstChar == QUOTE) {
@@ -163,7 +174,7 @@ public class Builders extends ArrayList<Builder> implements Struct {
             }
 
             Builder builder = new Builder();
-            builder.parse(content.substring(pos, objEnd + 1));
+            builder.parse(content.substring(pos, objEnd + 1), ctx);
             return new ElementParseResult(builder, objEnd + 1);
         } else if (firstChar == LEFT_BRACKETS) {
             // Nested array element
@@ -173,7 +184,11 @@ public class Builders extends ArrayList<Builder> implements Struct {
             }
 
             Builders nestedBuilders = new Builders();
-            nestedBuilders.parseArrayContent(content, pos + 1, arrayEnd);
+            // parseArrayContent recurses directly rather than through parse(),
+            // so this nesting level must be entered/exited explicitly here.
+            try (ParseContext.Scope scope = ctx.enter()) {
+                nestedBuilders.parseArrayContent(content, pos + 1, arrayEnd, ctx);
+            }
 
             Object[] objects = new Object[nestedBuilders.size()];
             // Convert nested array to Builder with indexed keys
