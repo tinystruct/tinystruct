@@ -3,9 +3,15 @@ package org.tinystruct.valve;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayDeque;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,9 +26,35 @@ public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> i
     private static final long serialVersionUID = 2329878484809829362L;
     private static final Logger logger = Logger.getLogger(DistributedHashMap.class.getName());
 
-    private static final int FIXED_LOCK_DATA_SIZE = 44;
     private static final int HEADER_SIZE = 8; // 4 bytes for entry count, 4 bytes for version
     private static final int VERSION = 1;
+
+    /**
+     * Allow-list of classes that may be reconstituted from the on-disk data
+     * file via {@link ObjectInputStream}. This closes off native Java
+     * deserialization gadget-chain attacks (CWE-502): without a filter,
+     * {@code readObject()} will instantiate *any* class named in the byte
+     * stream, which is the same class of vulnerability that made libraries
+     * like unsafe autoType feature dangerous. Only the queue
+     * implementations this class is documented to store are permitted; any
+     * other class encountered during deserialization causes the stream to
+     * be rejected before an instance is ever constructed.
+     */
+    private static final ObjectInputFilter ALLOWED_CLASSES_FILTER = ObjectInputFilter.Config.createFilter(
+            String.join(";",
+                    ArrayDeque.class.getName(),
+                    LinkedList.class.getName(),
+                    PriorityQueue.class.getName(),
+                    ConcurrentLinkedQueue.class.getName(),
+                    LinkedBlockingQueue.class.getName(),
+                    LinkedBlockingDeque.class.getName(),
+                    Queue.class.getName(),
+                    // Common boxed element types and arrays thereof.
+                    "java.lang.*",
+                    "java.math.*",
+                    "!*" // reject everything else
+            )
+    );
 
     private RandomAccessFile data;
     private final FileChannel channel;
@@ -86,10 +118,16 @@ public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> i
                 channel.read(valueBuffer, position + 8 + keyLength);
                 
                 try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(valueBuffer.array()))) {
+                    // Reject any class not on the allow-list before it can be
+                    // instantiated, preventing gadget-chain deserialization attacks
+                    // against this locally-stored data file.
+                    ois.setObjectInputFilter(ALLOWED_CLASSES_FILTER);
                     Queue<T> value = (Queue<T>) ois.readObject();
                     super.put(key, value);
                 } catch (ClassNotFoundException e) {
                     logger.log(Level.SEVERE, "Failed to deserialize value", e);
+                } catch (InvalidClassException e) {
+                    logger.log(Level.SEVERE, "Rejected disallowed class while deserializing value from " + dataFilePath, e);
                 }
                 
                 position += 8 + keyLength + valueLength;
