@@ -147,7 +147,7 @@
         <lettuce.version>7.7.0.RELEASE</lettuce.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <sqlite.version>3.53.2.1</sqlite.version>
+        <sqlite.version>3.53.4.0</sqlite.version>
         <h2.version>2.4.240</h2.version>
         <postgresql.version>42.7.13</postgresql.version>
         <mockito.version>5.23.0</mockito.version>
