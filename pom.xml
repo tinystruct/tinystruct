@@ -113,6 +113,11 @@
             <version>${sqlite.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgresql.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.openjdk.nashorn</groupId>
             <artifactId>nashorn-core</artifactId>
             <version>${nashorn.version}</version>
@@ -144,6 +149,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <sqlite.version>3.53.2.1</sqlite.version>
         <h2.version>2.4.240</h2.version>
+        <postgresql.version>42.7.13</postgresql.version>
         <mockito.version>5.23.0</mockito.version>
         <nashorn.version>15.7</nashorn.version>
         <zxing.version>3.5.4</zxing.version>
@@ -163,6 +169,11 @@
                     <source>17</source>
                     <target>17</target>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

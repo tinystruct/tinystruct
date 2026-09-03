@@ -115,7 +115,13 @@ final class ConnectionManager implements Runnable {
                 if (dbUri.getPort() != -1) {
                     builder.append(dbUri.getPort());
                 } else {
-                    builder.append(3306);
+                    if ("postgresql".equalsIgnoreCase(dbType)) {
+                        builder.append(5432);
+                    } else if ("sqlserver".equalsIgnoreCase(dbType)) {
+                        builder.append(1433);
+                    } else {
+                        builder.append(3306);
+                    }
                 }
 
                 if (dbUri.getPath() != null) {
@@ -156,6 +162,8 @@ final class ConnectionManager implements Runnable {
                 return Type.SQLite;
             case 3:
                 return Type.H2;
+            case 5:
+                return Type.PostgreSQL;
             default:
                 break;
         }
@@ -299,7 +307,7 @@ final class ConnectionManager implements Runnable {
     }
 
     private enum DatabaseType {
-        MYSQL, SQLSERVER, SQLITE, H2
+        MYSQL, SQLSERVER, SQLITE, H2, POSTGRESQL
     }
 
     private static final class SingletonHolder {

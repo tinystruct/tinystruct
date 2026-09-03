@@ -6,7 +6,7 @@ import org.tinystruct.data.Repository;
  * Enum representing different types of database.
  */
 public enum Type {
-    MySQL, SQLServer, SQLite, H2, Redis;
+    MySQL, SQLServer, SQLite, H2, Redis, PostgreSQL;
 
     public Repository createRepository() {
         Repository repository;
@@ -22,6 +22,9 @@ public enum Type {
                 break;
             case 4:
                 repository = new RedisServer();
+                break;
+            case 5:
+                repository = new PostgreSQLServer();
                 break;
             default:
                 repository = new MySQLServer();

@@ -397,22 +397,6 @@ public class MySQLServer extends AbstractDataRepository {
         return row;
     }
 
-    private String generateInsertSQL(String[] columns, String table) {
-        StringBuilder _columns = new StringBuilder();
-        StringBuilder values = new StringBuilder();
-
-        for (String fieldName : columns) {
-            if (_columns.length() > 0) {
-                _columns.append(", ");
-                values.append(", ");
-            }
-            _columns.append("`").append(fieldName).append("`");
-            values.append("?");
-        }
-
-        return "INSERT INTO " + table + " (" + _columns + ") VALUES (" + values + ")";
-    }
-
     private void setParameters(PreparedStatement ps, FieldInfo[] fields) throws SQLException {
         int i = 1;
         for (FieldInfo fieldInfo : fields) {
