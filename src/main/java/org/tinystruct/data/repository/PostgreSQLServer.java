@@ -19,7 +19,6 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.data.component.*;
 
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
