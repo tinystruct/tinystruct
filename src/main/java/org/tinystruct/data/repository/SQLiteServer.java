@@ -80,6 +80,9 @@ public class SQLiteServer extends AbstractDataRepository {
                 if ("int"
                         .equalsIgnoreCase(currentField.getType().getRealType())) {
                     ps.setInt(i++, currentField.intValue());
+                } else if ("long"
+                        .equalsIgnoreCase(currentField.getType().getRealType())) {
+                    ps.setLong(i++, currentField.longValue());
                 } else if (currentField.getType() == FieldType.TEXT || currentField.getType() == FieldType.LONGTEXT) {
                     ps.setString(i++, currentField.stringValue());
                 } else if (currentField.getType() == FieldType.DATE
@@ -162,6 +165,8 @@ public class SQLiteServer extends AbstractDataRepository {
 
                 if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
                     ps.setInt(i++, currentField.intValue());
+                } else if ("long".equalsIgnoreCase(currentField.getType().getRealType())) {
+                    ps.setLong(i++, currentField.longValue());
                 } else if (currentField.getType() == FieldType.TEXT || currentField.getType() == FieldType.LONGTEXT) {
                     ps.setString(i++, currentField.stringValue());
                 } else if (currentField.getType() == FieldType.DATE || currentField.getType() == FieldType.DATETIME) {
@@ -223,6 +228,8 @@ public class SQLiteServer extends AbstractDataRepository {
 
                 if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
                     ps.setInt(i++, currentField.intValue());
+                } else if ("long".equalsIgnoreCase(currentField.getType().getRealType())) {
+                    ps.setLong(i++, currentField.longValue());
                 } else if (currentField.getType() == FieldType.TEXT || currentField.getType() == FieldType.LONGTEXT) {
                     ps.setString(i++, currentField.stringValue());
                 } else if (currentField.getType() == FieldType.DATE

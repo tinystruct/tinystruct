@@ -22,6 +22,8 @@ import org.tinystruct.data.component.Row;
 import org.tinystruct.data.component.Table;
 import org.tinystruct.data.repository.Type;
 
+import java.util.Set;
+
 /**
  * Interface for database repository.
  */
@@ -63,6 +65,26 @@ public interface Repository {
      * @throws ApplicationException if an application-specific error occurs.
      */
     boolean update(Field ready_fields, String table) throws ApplicationException;
+
+    /**
+     * Update only the specified fields of an existing record in the database table.
+     * <p>
+     * Only columns whose property name or column name appears in {@code onlyFields} will be
+     * included in the {@code SET} clause, allowing a fully-populated domain object to be passed
+     * in without accidentally overwriting unrelated columns.
+     * </p>
+     * <p>Example:</p>
+     * <pre>
+     *     server.update(readyFields, "users", new HashSet&lt;&gt;(Arrays.asList("name", "email")));
+     * </pre>
+     *
+     * @param ready_fields The fields ready for update (must include the Id field).
+     * @param table        The table name.
+     * @param onlyFields   Whitelist of field/column names to update.
+     * @return True if the record is successfully updated, otherwise false.
+     * @throws ApplicationException if there is an error updating the record.
+     */
+    boolean update(Field ready_fields, String table, Set<String> onlyFields) throws ApplicationException;
 
     /**
      * Delete a record from the database.

@@ -5,11 +5,15 @@ import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.data.Repository;
 import org.tinystruct.data.component.Field;
 import org.tinystruct.data.component.FieldInfo;
+import org.tinystruct.data.component.FieldType;
 import org.tinystruct.data.component.Row;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Set;
 
 public abstract class AbstractDataRepository implements Repository {
 
@@ -87,5 +91,66 @@ public abstract class AbstractDataRepository implements Repository {
         }
 
         return row;
+    }
+
+    @Override
+    public boolean update(Field ready_fields, String table, Set<String> onlyFields) throws ApplicationException {
+        if (onlyFields == null || onlyFields.isEmpty()) {
+            return this.update(ready_fields, table);
+        }
+
+        Field filteredFields = new Field();
+        Enumeration<String> keys = ready_fields.keys();
+        while (keys.hasMoreElements()) {
+            String key = keys.nextElement();
+            FieldInfo fieldInfo = ready_fields.get(key);
+            if ("Id".equalsIgnoreCase(fieldInfo.getName()) || onlyFields.contains(fieldInfo.getName()) || onlyFields.contains(fieldInfo.getColumnName())) {
+                filteredFields.append(key, fieldInfo);
+            }
+        }
+
+        return this.update(filteredFields, table);
+    }
+
+    protected void setParameters(PreparedStatement ps, Field ready_fields, List<String> fieldNames) throws SQLException {
+        int i = 1;
+        for (String fieldName : fieldNames) {
+            FieldInfo currentField = ready_fields.get(fieldName);
+            if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
+                ps.setInt(i++, currentField.intValue());
+            } else if ("long".equalsIgnoreCase(currentField.getType().getRealType())) {
+                ps.setLong(i++, currentField.longValue());
+            } else if (currentField.getType() == FieldType.TEXT || currentField.getType() == FieldType.LONGTEXT) {
+                ps.setString(i++, currentField.stringValue());
+            } else if (currentField.getType() == FieldType.DATE || currentField.getType() == FieldType.DATETIME) {
+                ps.setDate(i++, new java.sql.Date(currentField.dateValue().getTime()));
+            } else if (currentField.getType() == FieldType.BIT || currentField.getType() == FieldType.BOOLEAN) {
+                ps.setBoolean(i++, currentField.booleanValue());
+            } else {
+                ps.setObject(i++, currentField.value());
+            }
+        }
+    }
+
+    protected void setParameters(PreparedStatement ps, FieldInfo[] fields) throws SQLException {
+        int i = 1;
+        for (FieldInfo fieldInfo : fields) {
+            if (fieldInfo != null) {
+                Object value = fieldInfo.value();
+                if ("int".equalsIgnoreCase(fieldInfo.getType().getRealType())) {
+                    ps.setInt(i++, fieldInfo.intValue());
+                } else if ("long".equalsIgnoreCase(fieldInfo.getType().getRealType())) {
+                    ps.setLong(i++, fieldInfo.longValue());
+                } else if (fieldInfo.getType() == FieldType.TEXT || fieldInfo.getType() == FieldType.LONGTEXT) {
+                    ps.setString(i++, fieldInfo.stringValue());
+                } else if (fieldInfo.getType() == FieldType.DATE || fieldInfo.getType() == FieldType.DATETIME) {
+                    ps.setDate(i++, new java.sql.Date(fieldInfo.dateValue().getTime()));
+                } else if (fieldInfo.getType() == FieldType.BIT || fieldInfo.getType() == FieldType.BOOLEAN) {
+                    ps.setBoolean(i++, fieldInfo.booleanValue());
+                } else {
+                    ps.setObject(i++, value);
+                }
+            }
+        }
     }
 }

@@ -142,6 +142,23 @@ public class RedisServer implements Repository {
         }
     }
 
+    @Override
+    public boolean update(Field ready_fields, String table, Set<String> onlyFields) throws ApplicationException {
+        if (onlyFields == null || onlyFields.isEmpty()) {
+            return this.update(ready_fields, table);
+        }
+
+        Field filteredFields = new Field();
+        for (String fieldName : ready_fields.keySet()) {
+            FieldInfo fieldInfo = ready_fields.get(fieldName);
+            if ("Id".equalsIgnoreCase(fieldInfo.getName()) || onlyFields.contains(fieldInfo.getName()) || onlyFields.contains(fieldInfo.getColumnName())) {
+                filteredFields.append(fieldName, fieldInfo);
+            }
+        }
+
+        return this.update(filteredFields, table);
+    }
+
     /**
      * Delete a record from the Redis database.
      *

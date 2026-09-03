@@ -33,7 +33,7 @@ public class PostgreSQLServer extends AbstractDataRepository {
     }
 
     /**
-     * Append new records to the MySQL database table.
+     * Append new records to the PostgreSQL database table.
      *
      * @param ready_fields The fields ready for insertion.
      * @param table        The table name.
@@ -42,38 +42,16 @@ public class PostgreSQLServer extends AbstractDataRepository {
      */
     @Override
     public boolean append(Field ready_fields, String table) throws ApplicationException {
-        String dot = ",";
+        List<String> fieldNames = new ArrayList<>();
         StringBuilder expressions = new StringBuilder();
         StringBuilder values = new StringBuilder();
-        FieldInfo currentField;
-
-        List<String> fieldNames = new ArrayList<>();
-        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements();) {
-            String currentProperty = _field.nextElement();
-            currentField = ready_fields.get(currentProperty);
-            if (currentField.autoIncrement()) {
-                continue;
-            }
-
-            fieldNames.add(currentProperty);
-
-            if (expressions.length() == 0)
-                expressions.append("\"").append(currentField.getColumnName()).append("\"");
-            else
-                expressions.append(dot).append("\"").append(currentField.getColumnName()).append("\"");
-
-            if (values.length() == 0)
-                values.append('?');
-            else
-                values.append(dot).append('?');
-        }
+        buildInsertFragments(ready_fields, fieldNames, expressions, values);
 
         String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES(" + values + ")";
 
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            PreparedStatement ps = operator.preparedStatement(SQL, new Object[] {});
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[]{});
             setParameters(ps, ready_fields, fieldNames);
-
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
@@ -81,7 +59,7 @@ public class PostgreSQLServer extends AbstractDataRepository {
     }
 
     /**
-     * Append a new record to the database and return the generated ID.
+     * Append a new record to the PostgreSQL database table and return the generated ID.
      * <p>
      * If a field's "generate" property is set to true, its value will be used as
      * the returned ID.
@@ -94,15 +72,53 @@ public class PostgreSQLServer extends AbstractDataRepository {
      */
     @Override
     public Object appendAndGetId(Field ready_fields, String table) throws ApplicationException {
-        String dot = ",";
+        List<String> fieldNames = new ArrayList<>();
         StringBuilder expressions = new StringBuilder();
         StringBuilder values = new StringBuilder();
-        FieldInfo currentField;
+        buildInsertFragments(ready_fields, fieldNames, expressions, values);
 
-        List<String> fieldNames = new ArrayList<>();
-        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements();) {
+        Object Id = null;
+        String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES(" + values + ")";
+        try (DatabaseOperator operator = new DatabaseOperator()) {
+            PreparedStatement ps = operator.createPreparedStatement(SQL, false, true);
+            setParameters(ps, ready_fields, fieldNames);
+
+            for (String fieldName : fieldNames) {
+                FieldInfo currentField = ready_fields.get(fieldName);
+                if (Id == null && currentField.get("generate") != null
+                        && Boolean.parseBoolean(currentField.get("generate").toString())) {
+                    Id = currentField.value();
+                }
+            }
+
+            if (Id == null) {
+                return operator.executeUpdateAndGetGeneratedId(ps);
+            } else {
+                operator.executeUpdate(ps);
+                return Id;
+            }
+        } catch (SQLException e) {
+            throw new ApplicationException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Builds the column-name and placeholder fragments shared by {@code append}
+     * and {@code appendAndGetId}, skipping auto-increment fields.
+     *
+     * @param ready_fields The fields to inspect.
+     * @param fieldNames   Populated with the property keys of non-auto-increment fields, in order.
+     * @param expressions  Populated with quoted column names, comma-separated.
+     * @param values       Populated with '?' placeholders, comma-separated.
+     */
+    private void buildInsertFragments(Field ready_fields,
+                                      List<String> fieldNames,
+                                      StringBuilder expressions,
+                                      StringBuilder values) {
+        String dot = ",";
+        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements(); ) {
             String currentProperty = _field.nextElement();
-            currentField = ready_fields.get(currentProperty);
+            FieldInfo currentField = ready_fields.get(currentProperty);
             if (currentField.autoIncrement()) {
                 continue;
             }
@@ -119,36 +135,10 @@ public class PostgreSQLServer extends AbstractDataRepository {
             else
                 values.append(dot).append('?');
         }
-
-        Object Id = null;
-        String SQL = "INSERT INTO " + table + " (" + expressions + ") VALUES(" + values + ")";
-        try (DatabaseOperator operator = new DatabaseOperator()) {
-            // Create a prepared statement that returns generated keys
-            PreparedStatement ps = operator.createPreparedStatement(SQL, false, true);
-            setParameters(ps, ready_fields, fieldNames);
-
-            for (String fieldName : fieldNames) {
-                currentField = ready_fields.get(fieldName);
-                if (Id == null && currentField.get("generate") != null
-                        && Boolean.parseBoolean(currentField.get("generate").toString())) {
-                    Id = currentField.value();
-                }
-            }
-
-            if (Id == null) {
-                // Execute the update and get the generated ID
-                return operator.executeUpdateAndGetGeneratedId(ps);
-            } else {
-                operator.executeUpdate(ps);
-                return Id;
-            }
-        } catch (SQLException e) {
-            throw new ApplicationException(e.getMessage(), e);
-        }
     }
 
     /**
-     * Update existing records in the MySQL database table.
+     * Update all non-Id fields of an existing record in the PostgreSQL database table.
      *
      * @param ready_fields The fields ready for update.
      * @param table        The table name.
@@ -189,14 +179,14 @@ public class PostgreSQLServer extends AbstractDataRepository {
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            throw new ApplicationException(e.getMessage(), e);
+            throw new ApplicationException("Error updating record: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Get the type of the repository, which is MySQL in this case.
+     * Get the type of this repository.
      *
-     * @return The repository type.
+     * @return {@link Type#PostgreSQL}
      */
     @Override
     public Type getType() {
@@ -204,8 +194,7 @@ public class PostgreSQLServer extends AbstractDataRepository {
     }
 
     /**
-     * Retrieve records from the MySQL database table based on the provided SQL
-     * query.
+     * Retrieve records from the PostgreSQL database table based on the provided SQL query.
      *
      * @param SQL        The SQL query to retrieve records.
      * @param parameters The parameters to be used in the SQL query.
@@ -225,19 +214,20 @@ public class PostgreSQLServer extends AbstractDataRepository {
             int cols = resultSet.getMetaData().getColumnCount();
             String[] fieldName = new String[cols];
             String[] fieldType = new String[cols];
-            Object[] fieldValue = new Object[cols];
 
             for (int i = 0; i < cols; i++) {
                 fieldName[i] = resultSet.getMetaData().getColumnName(i + 1);
                 fieldType[i] = resultSet.getMetaData().getColumnTypeName(i + 1);
             }
 
-            Object v_field;
             while (resultSet.next()) {
                 row = new Row();
                 fields = new Field();
                 for (int i = 0; i < fieldName.length; i++) {
-                    if (resultSet.getObject(i + 1) == null) {
+                    // Cache getObject result to avoid a second driver call for the typed getter
+                    Object raw = resultSet.getObject(i + 1);
+                    Object v_field;
+                    if (raw == null) {
                         v_field = null;
                     } else {
                         String type = fieldType[i].toUpperCase();
@@ -263,7 +253,9 @@ public class PostgreSQLServer extends AbstractDataRepository {
                                 v_field = resultSet.getFloat(i + 1);
                             }
                         } else if (type.contains("BOOL") || type.equals("BIT")) {
-                            v_field = resultSet.getBoolean(i + 1);
+                            // Use the already-fetched raw object to avoid getBoolean returning
+                            // false for NULL; raw is non-null here so the cast is safe
+                            v_field = (Boolean) raw;
                         } else if (type.contains("DATE") || type.contains("TIME") || type.contains("TIMESTAMP")) {
                             try {
                                 v_field = resultSet.getTimestamp(i + 1);
@@ -274,17 +266,16 @@ public class PostgreSQLServer extends AbstractDataRepository {
                             try {
                                 v_field = resultSet.getBytes(i + 1);
                             } catch (SQLException e) {
-                                v_field = resultSet.getObject(i + 1);
+                                v_field = raw;
                             }
                         } else {
                             v_field = resultSet.getString(i + 1);
                         }
                     }
 
-                    fieldValue[i] = v_field;
                     field = new FieldInfo();
                     field.append("name", fieldName[i]);
-                    field.append("value", fieldValue[i]);
+                    field.append("value", v_field);
                     field.append("type", fieldType[i]);
 
                     fields.append(field.getName(), field);
@@ -297,23 +288,5 @@ public class PostgreSQLServer extends AbstractDataRepository {
         }
 
         return table;
-    }
-
-    private void setParameters(PreparedStatement ps, Field ready_fields, List<String> fieldNames) throws SQLException {
-        int i = 1;
-        for (String fieldName : fieldNames) {
-            FieldInfo currentField = ready_fields.get(fieldName);
-            if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
-                ps.setInt(i++, currentField.intValue());
-            } else if (currentField.getType() == FieldType.TEXT || currentField.getType() == FieldType.LONGTEXT) {
-                ps.setString(i++, currentField.stringValue());
-            } else if (currentField.getType() == FieldType.DATE || currentField.getType() == FieldType.DATETIME) {
-                ps.setDate(i++, new Date(currentField.dateValue().getTime()));
-            } else if (currentField.getType() == FieldType.BIT || currentField.getType() == FieldType.BOOLEAN) {
-                ps.setBoolean(i++, currentField.booleanValue());
-            } else {
-                ps.setObject(i++, currentField.value());
-            }
-        }
     }
 }

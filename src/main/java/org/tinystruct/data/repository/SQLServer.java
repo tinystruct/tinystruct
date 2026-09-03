@@ -23,7 +23,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 
 public class SQLServer extends AbstractDataRepository {
 
@@ -227,83 +229,60 @@ public class SQLServer extends AbstractDataRepository {
     @Override
     public boolean update(Field ready_fields, String table)
             throws ApplicationException {
-        StringBuilder parameters = new StringBuilder();
-        StringBuilder values = new StringBuilder();
+        String dot = ",";
         StringBuilder expressions = new StringBuilder();
-
-        StringBuilder sql = new StringBuilder();
-        StringBuilder keys = new StringBuilder();
-        final String dot = ",";
-        String currentProperty;
         FieldInfo currentField;
 
-        for (Enumeration<String> _field = ready_fields.keys(); _field
-                .hasMoreElements();) {
-            currentProperty = _field.nextElement();
+        Object Id = null;
+        String idColumn = "id";
+        List<String> fieldNames = new ArrayList<>();
+        for (Enumeration<String> _field = ready_fields.keys(); _field.hasMoreElements();) {
+            String currentProperty = _field.nextElement();
             currentField = ready_fields.get(currentProperty);
 
-            if (currentField.autoIncrement()) {
-                parameters.append("@").append(currentField.getName()).append(" ")
-                        .append(currentField.get("type")).append(dot);
-                values.append(currentField.value()).append(dot);
-
+            if ("Id".equalsIgnoreCase(currentField.getName())) {
+                Id = currentField.value();
+                idColumn = currentField.getColumnName();
                 continue;
             }
 
-            if ("int".equalsIgnoreCase(currentField.getType().getRealType())
-                    || currentField.getType() == FieldType.TEXT
-                    || currentField.getType() == FieldType.BIT
-                    || currentField.getType() == FieldType.DATE
-                    || currentField.getType() == FieldType.DATETIME) {
-                parameters.append("@").append(currentField.getName()).append(" ")
-                        .append(currentField.get("type")).append(dot);
-                if (currentField.getType() == FieldType.TEXT) {
-                    values.append("'")
-                            .append(currentField.stringValue().replaceAll("'", "''"))
-                            .append("'").append(dot);
-                } else if (currentField.getType() == FieldType.DATE
-                        || currentField.getType() == FieldType.DATETIME) {
-                    SimpleDateFormat format = new SimpleDateFormat(
-                            "yyyy-MM-dd HH:mm:ss");
-                    values.append("'").append(format.format(currentField.value())).append("'")
-                            .append(dot);
-                } else if (currentField.getType() == FieldType.BIT)
-                    values.append("true".equals(currentField.value().toString()) ? 1
-                            : 0).append(dot);
-
+            if (currentField.value() != null) {
+                fieldNames.add(currentProperty);
+                if (expressions.length() == 0)
+                    expressions.append("[").append(currentField.getColumnName()).append("]").append("=?");
                 else
-                    values.append(currentField.value()).append(dot);
-            } else {
-                parameters.append("@").append(currentField.getName()).append(" ")
-                        .append(currentField.get("type")).append("(")
-                        .append(currentField.getLength())
-                        .append(")").append(dot);
-                values.append("'")
-                        .append(currentField.stringValue().replaceAll("'", "''"))
-                        .append("'").append(dot);
+                    expressions.append(dot).append("[").append(currentField.getColumnName()).append("]").append("=?");
             }
-
-            keys.append("@").append(currentField.getName());
-            expressions.append("[").append(currentField.getColumnName()).append("]=").append(keys)
-                    .append(dot);
         }
 
-        values.setLength(values.length() - 1);
-        expressions.setLength(expressions.length() - 1);
-        parameters.setLength(parameters.length() - 1);
-        table = table.replaceAll("\\[", "").replaceAll("\\]", "");
-
-        sql.append("if not exists (select * from dbo.sysobjects where id = object_id(N'[dbo].[")
-                .append(table)
-                .append("_EDIT]') and OBJECTPROPERTY(id, N'IsProcedure') = 1)");
-        sql.append("BEGIN exec('CREATE PROCEDURE [dbo].[").append(table).append("_EDIT] ")
-                .append(parameters).append(" AS UPDATE [").append(table).append("] SET ").append(expressions)
-                .append(" WHERE id=@Id')");
-        sql.append(" {call ").append(table).append("_EDIT(").append(values).append(")} END");
-        sql.append(" else {call ").append(table).append("_EDIT(").append(values).append(")}");
-
+        String SQL = "UPDATE [" + table.replaceAll("\\[", "").replaceAll("\\]", "") + "] SET " + expressions + " WHERE [" + idColumn + "]=?";
         try (DatabaseOperator operator = new DatabaseOperator()) {
-            return operator.update(sql.toString()) > 0;
+            PreparedStatement ps = operator.preparedStatement(SQL, new Object[] {});
+            
+            // Set parameters
+            int i = 1;
+            for (String fieldName : fieldNames) {
+                currentField = ready_fields.get(fieldName);
+                if ("int".equalsIgnoreCase(currentField.getType().getRealType())) {
+                    ps.setInt(i++, currentField.intValue());
+                } else if ("long".equalsIgnoreCase(currentField.getType().getRealType())) {
+                    ps.setLong(i++, currentField.longValue());
+                } else if (currentField.getType() == FieldType.TEXT || currentField.getType() == FieldType.LONGTEXT) {
+                    ps.setString(i++, currentField.stringValue());
+                } else if (currentField.getType() == FieldType.DATE || currentField.getType() == FieldType.DATETIME) {
+                    ps.setDate(i++, new java.sql.Date(currentField.dateValue().getTime()));
+                } else if (currentField.getType() == FieldType.BIT || currentField.getType() == FieldType.BOOLEAN) {
+                    ps.setBoolean(i++, currentField.booleanValue());
+                } else {
+                    ps.setObject(i++, currentField.value());
+                }
+            }
+            
+            ps.setObject(i, Id);
+
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new ApplicationException("Error updating record: " + e.getMessage(), e);
         }
     }
 

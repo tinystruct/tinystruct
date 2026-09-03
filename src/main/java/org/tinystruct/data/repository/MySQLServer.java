@@ -396,24 +396,4 @@ public class MySQLServer extends AbstractDataRepository {
 
         return row;
     }
-
-    private void setParameters(PreparedStatement ps, FieldInfo[] fields) throws SQLException {
-        int i = 1;
-        for (FieldInfo fieldInfo : fields) {
-            if (fieldInfo != null) {
-                Object value = fieldInfo.value();
-                if ("int".equalsIgnoreCase(fieldInfo.getType().getRealType())) {
-                    ps.setInt(i++, fieldInfo.intValue());
-                } else if (fieldInfo.getType() == FieldType.TEXT || fieldInfo.getType() == FieldType.LONGTEXT) {
-                    ps.setString(i++, fieldInfo.stringValue());
-                } else if (fieldInfo.getType() == FieldType.DATE || fieldInfo.getType() == FieldType.DATETIME) {
-                    ps.setDate(i++, new Date(fieldInfo.dateValue().getTime()));
-                } else if (fieldInfo.getType() == FieldType.BIT || fieldInfo.getType() == FieldType.BOOLEAN) {
-                    ps.setBoolean(i++, fieldInfo.booleanValue());
-                } else {
-                    ps.setObject(i++, value);
-                }
-            }
-        }
-    }
 }
