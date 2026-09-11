@@ -21,11 +21,20 @@ import org.tinystruct.data.repository.Type;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,6 +50,18 @@ import java.util.logging.Logger;
 final class ConnectionManager implements Runnable {
 
     private final static Logger logger = Logger.getLogger(ConnectionManager.class.getName());
+
+    /**
+     * JDBC connection-string parameters whose value is a filesystem path to a certificate or key
+     * file. JDBC drivers open these with {@code new FileInputStream(path)} and never look at the
+     * classpath, so when the configured value is a bare or relative name that is not found relative
+     * to the working directory but <em>is</em> present on the classpath (typically bundled under
+     * {@code src/main/resources}), it is rewritten to an absolute filesystem path. Resources packed
+     * inside a jar are extracted to a temporary file that is deleted on JVM exit.
+     */
+    private static final Set<String> CLASSPATH_RESOLVABLE_FILE_PARAMS =
+            new HashSet<>(Arrays.asList("sslrootcert", "sslcert", "sslkey"));
+
     private final ConcurrentLinkedQueue<Connection> connections;
     private final String driverName;
     private String url;
@@ -130,7 +151,7 @@ final class ConnectionManager implements Runnable {
 
                 if (dbUri.getQuery() != null) {
                     builder.append("?");
-                    builder.append(dbUri.getQuery());
+                    builder.append(resolveClasspathFileParams(dbUri.getQuery()));
                 }
 
                 dbUrl = builder.toString();
@@ -142,6 +163,117 @@ final class ConnectionManager implements Runnable {
         this.url = dbUrl;
         this.user = dbUser;
         this.password = dbPassword;
+    }
+
+    /**
+     * Rewrites certificate/key parameters in a JDBC query string so their values point at an
+     * absolute filesystem path. Values that are already an absolute readable file are left as-is;
+     * values that resolve relative to the working directory are made absolute; values that are not
+     * on the filesystem at all but are found on the classpath (e.g. under {@code src/main/resources})
+     * are resolved to their real location, extracting to a temporary file when packaged inside a jar.
+     * Unknown values are returned untouched so the driver can surface its own error.
+     *
+     * @param query the raw query component of the JDBC URL (may be {@code null})
+     * @return the query with resolvable file parameters rewritten, or the original value unchanged
+     */
+    static String resolveClasspathFileParams(String query) {
+        if (query == null || query.isEmpty() || query.indexOf('=') < 0) {
+            return query;
+        }
+
+        String[] pairs = query.split("&");
+        StringBuilder rebuilt = new StringBuilder(query.length() + 64);
+        boolean changed = false;
+        for (int i = 0; i < pairs.length; i++) {
+            if (i > 0) {
+                rebuilt.append('&');
+            }
+            String pair = pairs[i];
+            int eq = pair.indexOf('=');
+            if (eq <= 0) {
+                rebuilt.append(pair);
+                continue;
+            }
+            String key = pair.substring(0, eq);
+            String value = pair.substring(eq + 1);
+            if (!value.isEmpty() && CLASSPATH_RESOLVABLE_FILE_PARAMS.contains(key.toLowerCase())) {
+                String resolved = resolveFilePath(value);
+                if (!resolved.equals(value)) {
+                    value = resolved;
+                    changed = true;
+                }
+            }
+            rebuilt.append(key).append('=').append(value);
+        }
+
+        return changed ? rebuilt.toString() : query;
+    }
+
+    /**
+     * Resolves a single certificate/key parameter value to an absolute filesystem path. See
+     * {@link #resolveClasspathFileParams(String)} for the resolution order. Any failure is logged
+     * and the original value is returned unchanged.
+     *
+     * @param value the configured parameter value
+     * @return an absolute path (forward-slash separated) when it could be resolved, otherwise {@code value}
+     */
+    private static String resolveFilePath(String value) {
+        try {
+            Path direct = Paths.get(value);
+            if (Files.isReadable(direct)) {
+                // Present on the filesystem (absolute, or relative to the working directory):
+                // hand the driver an absolute path so it no longer depends on the launch directory.
+                return direct.toAbsolutePath().normalize().toString().replace('\\', '/');
+            }
+
+            String resource = value.replace('\\', '/');
+            while (resource.startsWith("./")) {
+                resource = resource.substring(2);
+            }
+            while (resource.startsWith("/")) {
+                resource = resource.substring(1);
+            }
+            if (resource.isEmpty()) {
+                return value;
+            }
+
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
+            if (loader == null) {
+                loader = ConnectionManager.class.getClassLoader();
+            }
+
+            URL located = loader.getResource(resource);
+            if (located == null) {
+                return value;
+            }
+
+            if ("file".equalsIgnoreCase(located.getProtocol())) {
+                return Paths.get(located.toURI()).toAbsolutePath().normalize().toString().replace('\\', '/');
+            }
+
+            // Packaged inside a jar (or served from another non-file source): extract a copy so the
+            // driver has a real file to open.
+            String fileName = resource.substring(resource.lastIndexOf('/') + 1);
+            int dot = fileName.lastIndexOf('.');
+            String prefix = (dot > 0 ? fileName.substring(0, dot) : fileName) + "-";
+            String suffix = dot > 0 ? fileName.substring(dot) : "";
+            if (prefix.length() < 3) {
+                prefix = "tinystruct-" + prefix;
+            }
+            Path temp = Files.createTempFile(prefix, suffix);
+            temp.toFile().deleteOnExit();
+            try (InputStream in = loader.getResourceAsStream(resource)) {
+                if (in == null) {
+                    return value;
+                }
+                Files.copy(in, temp, StandardCopyOption.REPLACE_EXISTING);
+            }
+            return temp.toAbsolutePath().normalize().toString().replace('\\', '/');
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Could not resolve database certificate path '" + value
+                    + "' from the classpath; leaving it unchanged.", e);
+            return value;
+        }
     }
 
     private Type getConfiguredType() {

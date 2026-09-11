@@ -37,6 +37,7 @@ public class Mapping {
     private static final String GENERATE = "generate";
     private static final String INCREMENT = "increment";
     private static final String ID = "id";
+    private static final String SCHEMA = "schema";
 
     public static Field getMappedField(Data data) throws ApplicationException {
         String className = data.getClassName();
@@ -72,18 +73,24 @@ public class Mapping {
             currentElement = iterator.next();
             if (className.equalsIgnoreCase(
                     currentElement.getAttribute(NAME))) {
+                String table = currentElement.getAttribute("table");
+                String schema = currentElement.getAttribute(SCHEMA);
                 switch (data.getRepository().getType().ordinal()) {
                     case 0: // MySQL
-                        data.setTableName("`"
-                                + currentElement.getAttribute("table") + "`");
+                        data.setTableName(schema.isEmpty()
+                                ? "`" + table + "`"
+                                : "`" + schema + "`.`" + table + "`");
                         break;
                     case 1: // SQL Server
                     case 2: // SQLite
-                        data.setTableName("["
-                                + currentElement.getAttribute("table") + "]");
+                        data.setTableName(schema.isEmpty()
+                                ? "[" + table + "]"
+                                : "[" + schema + "].[" + table + "]");
                         break;
-                    default:
-                        data.setTableName(currentElement.getAttribute("table"));
+                    default: // H2, Redis, PostgreSQL
+                        data.setTableName(schema.isEmpty()
+                                ? table
+                                : "\"" + schema + "\".\"" + table + "\"");
                         break;
                 }
                 list = currentElement.getChildNodes();

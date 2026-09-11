@@ -70,11 +70,24 @@ public class PostgreSQLGenerator implements Generator {
         // Singularize className if it's plural
         className = StringUtilities.singularize(className);
 
+        // Allow a schema-qualified table name (e.g. "public.profiles") so tables
+        // living outside the connection's default schema/search_path can be generated.
+        String schema = null;
+        String tableName = table;
+        int dot = table.indexOf('.');
+        if (dot > 0 && dot < table.length() - 1) {
+            schema = table.substring(0, dot);
+            tableName = table.substring(dot + 1);
+        }
+
         Element rootElement = new Element("mapping");
         Element classElement = rootElement.addElement("class");
 
         classElement.setAttribute("name", className);
-        classElement.setAttribute("table", table);
+        classElement.setAttribute("table", tableName);
+        if (schema != null) {
+            classElement.setAttribute("schema", schema);
+        }
 
         String command = "SELECT column_name AS \"name\", " +
                 "CASE " +
@@ -86,7 +99,8 @@ public class PostgreSQLGenerator implements Generator {
                 "END AS \"type\", " +
                 "CASE WHEN (column_default LIKE 'nextval%' OR is_identity = 'YES') THEN '1' ELSE '0' END AS \"increment\" " +
                 "FROM information_schema.columns " +
-                "WHERE table_name = '" + table + "' AND table_schema = current_schema()";
+                "WHERE table_name = '" + tableName + "' AND table_schema = " +
+                (schema != null ? "'" + schema + "'" : "current_schema()");
 
         Table data = this.find(command);
         Iterator<Row> listRow = data.iterator();

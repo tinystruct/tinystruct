@@ -722,14 +722,35 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                         script.append(line).append("\n");
                     }
 
-                    // Split the script into individual statements
-                    String[] statements = script.toString().split(";");
-                    for (String statement : statements) {
-                        statement = statement.trim();
-                        if (!statement.isEmpty()) {
-                            if (operator.update(statement) > 0) {
-                                System.out.println("Executed: " + statement);
+                    // Parse the script into individual statements respecting string quotes
+                    List<String> statements = new ArrayList<>();
+                    StringBuilder currentStmt = new StringBuilder();
+                    boolean inString = false;
+                    
+                    String fullScript = script.toString();
+                    for (int i = 0; i < fullScript.length(); i++) {
+                        char c = fullScript.charAt(i);
+                        if (c == '\'') {
+                            inString = !inString;
+                            currentStmt.append(c);
+                        } else if (c == ';' && !inString) {
+                            String statement = currentStmt.toString().trim();
+                            if (!statement.isEmpty()) {
+                                statements.add(statement);
                             }
+                            currentStmt.setLength(0); // Reset for next statement
+                        } else {
+                            currentStmt.append(c);
+                        }
+                    }
+                    // Add any remaining statement
+                    if (currentStmt.toString().trim().length() > 0) {
+                        statements.add(currentStmt.toString().trim());
+                    }
+
+                    for (String statement : statements) {
+                        if (operator.update(statement) > 0) {
+                            System.out.println("Executed: " + statement.substring(0, Math.min(statement.length(), 100)) + "...");
                         }
                     }
                     System.out.println("Script execution completed!");
@@ -982,6 +1003,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             case 3:
                 generator = new H2Generator();
                 break;
+            case 5:
+                generator = new PostgreSQLGenerator();
+                break;
             default:
                 generator = new MySQLGenerator();
                 break;
@@ -1002,8 +1026,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
             String[] list = tableNames.split(";");
             for (String tableName : list) {
-                // Convert to camel case
-                String className = StringUtilities.convertToCamelCase(tableName);
+                // Convert to camel case, ignoring a schema-qualifier (e.g. "public.profiles")
+                int dot = tableName.lastIndexOf('.');
+                String className = StringUtilities.convertToCamelCase(dot >= 0 ? tableName.substring(dot + 1) : tableName);
                 generator.create(className, tableName);
                 System.out.printf("File(s) for %s has been generated. %n", className);
             }
