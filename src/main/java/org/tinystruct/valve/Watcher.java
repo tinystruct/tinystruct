@@ -2,7 +2,9 @@ package org.tinystruct.valve;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,6 +41,20 @@ public final class Watcher implements Runnable {
      * Lock file name.
      */
     private static final String LOCK = ".lock";
+    /**
+     * Upper bound on how long {@link #register} / {@link #unregister} will poll for the
+     * whole-file advisory lock on {@link #LOCK} before giving up. Without this, a lock file
+     * held by another process (including a leaked/zombie JVM from a previous run) would hang
+     * every {@link DistributedLock} operation in this JVM forever, regardless of whatever
+     * timeout the caller passed to {@link DistributedLock#tryLock(long, TimeUnit)} - the file
+     * lock acquisition sat behind {@code synchronized (Watcher.class)} using the blocking,
+     * no-timeout {@link FileChannel#lock()}.
+     */
+    private static final long DEFAULT_FILE_LOCK_TIMEOUT_MS = 5000;
+    /**
+     * Delay between successive {@link FileChannel#tryLock()} polling attempts.
+     */
+    private static final long FILE_LOCK_POLL_INTERVAL_MS = 20;
     /**
      * Lock event listeners.
      */
@@ -203,11 +219,12 @@ public final class Watcher implements Runnable {
     }
 
     public void register(Lock lock, long expiration, TimeUnit tu) throws ApplicationException {
+        long timeoutMs = expiration > 0 ? tu.toMillis(expiration) : DEFAULT_FILE_LOCK_TIMEOUT_MS;
         synchronized (Watcher.class) {
             String lockId = lock.id();
             if (!locks.containsKey(lockId)) {
                 try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rw");
-                        FileLock fileLock = lockFile.getChannel().lock()) {
+                        FileLock fileLock = acquireFileLock(lockFile.getChannel(), timeoutMs)) {
                     long length = lockFile.length();
                     byte[] emptyBuffer = new byte[36];
 
@@ -279,7 +296,7 @@ public final class Watcher implements Runnable {
                     long length = lockFile.length();
                     if (length < FIXED_LOCK_DATA_SIZE)
                         return;
-                    try (FileLock fileLock = lockFile.getChannel().lock()) {
+                    try (FileLock fileLock = acquireFileLock(lockFile.getChannel(), DEFAULT_FILE_LOCK_TIMEOUT_MS)) {
                         byte[] empty = EMPTY_BYTES;
 
                         int size = (int) (length / FIXED_LOCK_DATA_SIZE);
@@ -318,6 +335,47 @@ public final class Watcher implements Runnable {
                 } catch (IOException e) {
                     throw new ApplicationException(e.getMessage(), e.getCause());
                 }
+            }
+        }
+    }
+
+    /**
+     * Polls for the whole-file advisory lock on {@code channel} instead of blocking on it
+     * indefinitely via {@link FileChannel#lock()}. A lock held by another process (or a
+     * leaked/zombie process) must not be able to hang every {@link DistributedLock}
+     * operation in this JVM forever.
+     *
+     * @throws ApplicationException if the lock cannot be acquired within {@code timeoutMs},
+     *                               if interrupted while waiting, or on I/O failure.
+     */
+    private static FileLock acquireFileLock(FileChannel channel, long timeoutMs) throws ApplicationException {
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMs);
+        while (true) {
+            FileLock fileLock;
+            try {
+                fileLock = channel.tryLock();
+            } catch (OverlappingFileLockException e) {
+                // Held by another thread in this same JVM (e.g. the monitor thread); retry
+                // exactly as if another process held it.
+                fileLock = null;
+            } catch (IOException e) {
+                throw new ApplicationException(e.getMessage(), e);
+            }
+
+            if (fileLock != null) {
+                return fileLock;
+            }
+
+            if (System.nanoTime() >= deadline) {
+                throw new ApplicationException("Timed out after " + timeoutMs
+                        + "ms waiting to acquire the lock file (" + LOCK + "); it may be held by another process.");
+            }
+
+            try {
+                Thread.sleep(FILE_LOCK_POLL_INTERVAL_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new ApplicationException("Interrupted while waiting to acquire the lock file (" + LOCK + ")", e);
             }
         }
     }

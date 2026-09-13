@@ -169,7 +169,9 @@ public class DatabaseOperator implements Closeable {
 
         for (int retry = 0; retry < MAX_RETRIES; retry++) {
             try {
-                logger.log(Level.INFO, statement.toString());
+                if (logger.isLoggable(Level.INFO)) {
+                    logger.log(Level.INFO, statement.toString());
+                }
                 return resultSet = statement.executeQuery(); // Return execution result if successful
             } catch (SQLException e) {
                 handleSQLException(e, statement);
@@ -198,7 +200,9 @@ public class DatabaseOperator implements Closeable {
     public int executeUpdate(PreparedStatement statement) throws ApplicationException {
         try (statement) {  // Try-with-resources ensures statement is closed
             int effect = statement.executeUpdate();
-            logger.log(Level.INFO, statement.toString());
+            if (logger.isLoggable(Level.INFO)) {
+                logger.log(Level.INFO, statement.toString());
+            }
             return effect;
         } catch (SQLException e) {
             throw new ApplicationException(e.getMessage(), e);
@@ -215,7 +219,9 @@ public class DatabaseOperator implements Closeable {
     public ResultSet executeUpdateAndGetGeneratedKeys(PreparedStatement statement) throws ApplicationException {
         try {
             int effect = statement.executeUpdate();
-            logger.log(Level.INFO, statement + " - Affected rows: " + effect);
+            if (logger.isLoggable(Level.INFO)) {
+                logger.log(Level.INFO, statement + " - Affected rows: " + effect);
+            }
             if (effect > 0) {
                 return statement.getGeneratedKeys();
             }

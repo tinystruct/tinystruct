@@ -277,7 +277,7 @@ public class PostgreSQLGenerator implements Generator {
             if (parent != null)
                 Files.createDirectories(parent);
         } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e.getCause());
+            throw new ApplicationException(e.getMessage(), e);
         }
 
         Document document = new Document(rootElement);

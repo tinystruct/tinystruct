@@ -15,7 +15,7 @@ import java.util.logging.Logger;
  * 
  * <pre>
  * {@code
- * Lock lock = Watcher.getInstance().acquire();
+ * Lock lock = new DistributedLock();
  * ...
  * try {
  *    lock.lock();

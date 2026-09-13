@@ -19,11 +19,12 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.data.DatabaseOperator;
 import org.tinystruct.data.component.*;
 
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 
 public class MySQLServer extends AbstractDataRepository {
 
@@ -216,6 +217,7 @@ public class MySQLServer extends AbstractDataRepository {
     @Override
     public Table find(String SQL, Object[] parameters) throws ApplicationException {
         Table table = new Table();
+        List<Row> rows = new ArrayList<>();
         Row row;
         FieldInfo field;
         Field fields;
@@ -224,23 +226,24 @@ public class MySQLServer extends AbstractDataRepository {
             PreparedStatement preparedStatement = operator.preparedStatement(SQL, parameters);
             ResultSet resultSet = operator.executeQuery(preparedStatement);
             int cols = resultSet.getMetaData().getColumnCount();
-            String fieldName;
-            String fieldTypeName;
+            String[] fieldName = new String[cols];
+            String[] fieldTypeName = new String[cols];
+            for (int i = 0; i < cols; i++) {
+                fieldName[i] = resultSet.getMetaData().getColumnName(i + 1);
+                fieldTypeName[i] = resultSet.getMetaData().getColumnTypeName(i + 1);
+            }
             Object fieldValue;
             while (resultSet.next()) {
                 row = new Row();
                 fields = new Field();
                 for (int i = 0; i < cols; i++) {
-                    fieldName = resultSet.getMetaData().getColumnName(i + 1);
-                    fieldTypeName = resultSet.getMetaData().getColumnTypeName(i + 1);
-
                     // First check if the value is NULL
                     if (resultSet.getObject(i + 1) == null) {
                         fieldValue = null;
                     } else {
                         // Get the appropriate data type based on fieldTypeName
                         // MySQL data types: https://dev.mysql.com/doc/refman/8.0/en/data-types.html
-                        String type = fieldTypeName.toUpperCase();
+                        String type = fieldTypeName[i].toUpperCase();
 
                         try {
                             if (type.contains("INT") || type.equals("YEAR")) {
@@ -286,19 +289,20 @@ public class MySQLServer extends AbstractDataRepository {
                     }
 
                     field = new FieldInfo();
-                    field.append("name", fieldName);
+                    field.append("name", fieldName[i]);
                     field.append("value", fieldValue);
-                    field.append("type", fieldTypeName);
+                    field.append("type", fieldTypeName[i]);
 
                     fields.append(field.getName(), field);
                 }
                 row.append(fields);
-                table.append(row);
+                rows.add(row);
             }
         } catch (Exception e) {
             throw new ApplicationException(e.getMessage(), e);
         }
 
+        table.addAll(rows);
         return table;
     }
 

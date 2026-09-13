@@ -479,10 +479,12 @@ class SchemaGenerator {
         Builder schema = new Builder();
         Builder properties = new Builder();
         List<String> required = new ArrayList<>();
+        List<String> operations = new ArrayList<>();
 
         for (Method method : toolClass.getDeclaredMethods()) {
             Action action = method.getAnnotation(Action.class);
             if (action != null) {
+                operations.add(method.getName());
                 for (Argument arg : action.arguments()) {
                     Builder argSchema = new Builder();
                     argSchema.put("type", arg.type());
@@ -493,6 +495,19 @@ class SchemaGenerator {
                     }
                 }
             }
+        }
+
+        // When the class exposes multiple @Action methods, execution is dispatched
+        // by an "operation" parameter naming the method to invoke (see MCPTool
+        // subclasses such as CalculatorTool#executeLocally), so it must be part
+        // of the schema as well.
+        if (!operations.isEmpty()) {
+            Builder operationSchema = new Builder();
+            operationSchema.put("type", "string");
+            operationSchema.put("description", "The operation to perform");
+            operationSchema.put("enum", operations.toArray(new String[0]));
+            properties.put("operation", operationSchema);
+            required.add("operation");
         }
 
         schema.put("type", "object");

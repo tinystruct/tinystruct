@@ -29,6 +29,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,6 +44,10 @@ public abstract class AbstractData implements Data {
 
     // Repository for database operations, initialized once for all instances
     private static Repository repository;
+
+    // Fully-qualified resource path of each concrete subclass, computed once per class
+    // rather than on every instantiation (it never varies for a given class).
+    private static final ConcurrentHashMap<Class<?>, String> CLASS_PATH_CACHE = new ConcurrentHashMap<>();
 
     // Static block to initialize the repository during class loading
     static {
@@ -82,15 +87,31 @@ public abstract class AbstractData implements Data {
      */
     public AbstractData() {
         this.className = this.getClass().getSimpleName();
-
-        try {
-            // Get the fully qualified class path
-            this.classPath = new ClassInfo(this).getClassPath();
-        } catch (ApplicationException e) {
-            logger.log(Level.SEVERE, "Failed to get class path: {0}", e.getMessage());
-        }
+        this.classPath = resolveClassPath();
 
         initializeFields();
+    }
+
+    /**
+     * Resolves (and caches) the fully-qualified resource path for this concrete class.
+     * The value is identical for every instance of the same class, so it is computed
+     * only once per class instead of on every {@code new SomeData()} call.
+     */
+    private String resolveClassPath() {
+        Class<?> clazz = this.getClass();
+        String cached = CLASS_PATH_CACHE.get(clazz);
+        if (cached != null) {
+            return cached;
+        }
+
+        try {
+            String resolved = new ClassInfo(this).getClassPath();
+            CLASS_PATH_CACHE.putIfAbsent(clazz, resolved);
+            return resolved;
+        } catch (ApplicationException e) {
+            logger.log(Level.SEVERE, "Failed to get class path: {0}", e.getMessage());
+            return null;
+        }
     }
 
     /**

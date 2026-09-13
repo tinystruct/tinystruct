@@ -60,7 +60,7 @@ final class ConnectionManager implements Runnable {
      * inside a jar are extracted to a temporary file that is deleted on JVM exit.
      */
     private static final Set<String> CLASSPATH_RESOLVABLE_FILE_PARAMS =
-            new HashSet<>(Arrays.asList("sslrootcert", "sslcert", "sslkey"));
+            new HashSet<>(Arrays.asList("sslrootcert", "sslcert"));
 
     private final ConcurrentLinkedQueue<Connection> connections;
     private final String driverName;

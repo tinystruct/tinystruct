@@ -12,6 +12,7 @@ import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Settings;
 import org.tinystruct.data.component.FieldInfo;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -199,23 +200,27 @@ public class RedisServer implements Repository {
             }
             
             Table resultTable = new Table();
+            List<Row> rows = new ArrayList<>();
             Set<String> ids = commands.smembers(table + ":all");
             for (String id : ids) {
                 String recordKey = table + ":" + id;
                 Map<String, String> map = commands.hgetall(recordKey);
                 if (!map.isEmpty()) {
-                    Row row = new Row();
+                    List<Field> fields = new ArrayList<>(map.size());
                     for (Map.Entry<String, String> entry : map.entrySet()) {
                         FieldInfo fieldInfo = new FieldInfo();
                         fieldInfo.append("name", entry.getKey());
                         fieldInfo.append("value", entry.getValue());
                         Field field = new Field();
                         field.append(fieldInfo.getName(), fieldInfo);
-                        row.append(field);
+                        fields.add(field);
                     }
-                    resultTable.append(row);
+                    Row row = new Row();
+                    row.addAll(fields);
+                    rows.add(row);
                 }
             }
+            resultTable.addAll(rows);
             return resultTable;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Failed to perform find operation on Redis: {0}", e.getMessage());

@@ -41,8 +41,8 @@ public abstract class MCPApplication extends AbstractApplication {
     protected final Map<String, MCPDataResource> resources = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, MCPPrompt> prompts = new java.util.concurrent.ConcurrentHashMap<>();
     protected final Map<String, RpcMethodHandler> rpcHandlers = new java.util.concurrent.ConcurrentHashMap<>();
-    protected static final Map<String, List<MCPTool.ToolMethod>> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
-    
+    protected final Map<String, List<MCPTool.ToolMethod>> toolMethods = new java.util.concurrent.ConcurrentHashMap<>();
+
     // Scheduled executor for cleaning up stale sessions
     private ScheduledExecutorService sessionCleanupWatchdog;
 
@@ -267,34 +267,16 @@ public abstract class MCPApplication extends AbstractApplication {
                 return jsonRpcHandler.createErrorResponse("Invalid JSON-RPC request", ErrorCodes.INVALID_REQUEST);
             }
 
-            if (requestBody.contains("\"method\":\"initialize\"")) {
-                sessionMap.put(sessionId, System.currentTimeMillis()); // Store session start time
-                setSessionState(SessionState.INITIALIZING); // Set initial state
-            }
-            // Add batch request support
-            else if (requestBody.trim().startsWith("[")) {
-                return jsonRpcHandler.handleBatchRequest(requestBody, (rpcReq, rpcRes) -> {
-                    RpcMethodHandler handler = rpcHandlers.get(rpcReq.getMethod());
-                    if (handler != null) {
-                        handler.handle(rpcReq, rpcRes, this);
-                    } else {
-                        rpcRes.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND,
-                                "Method not found: " + rpcReq.getMethod()));
-                    }
-                });
+            // Batch request support
+            if (requestBody.trim().startsWith("[")) {
+                return jsonRpcHandler.handleBatchRequest(requestBody, this::dispatch);
             }
 
             JsonRpcRequest rpcRequest = new JsonRpcRequest();
             rpcRequest.parse(requestBody);
             JsonRpcResponse jsonResponse = new JsonRpcResponse();
-            // Restrict methods before READY
             method = rpcRequest.getMethod();
-            RpcMethodHandler handler = rpcHandlers.get(method);
-            if (handler != null) {
-                handler.handle(rpcRequest, jsonResponse, this);
-            } else {
-                jsonResponse.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND, "Method not found: " + method));
-            }
+            dispatch(rpcRequest, jsonResponse);
 
             return jsonResponse.toString();
         } catch (SecurityException e) {
@@ -310,6 +292,45 @@ public abstract class MCPApplication extends AbstractApplication {
             long elapsed = System.currentTimeMillis() - startTime;
             LOGGER.info(String.format("MCP Request processed | Session: %s | Method: %s | Time: %dms", 
                     sessionId != null ? sessionId : "none", method, elapsed));
+        }
+    }
+
+    /**
+     * Dispatches a single JSON-RPC request to its registered handler.
+     * <p>
+     * An 'initialize' request moves the session into {@link SessionState#INITIALIZING}
+     * only - it deliberately does NOT also mark the session READY, since that used to
+     * happen unconditionally right after this same call, before the client had any
+     * chance to complete the handshake with {@code notifications/initialized} (see the
+     * handler registered in {@link #init()}). Every other successfully-routed method
+     * still marks the session READY afterward, so clients that skip the
+     * {@code notifications/initialized} notification (as {@link MCPClient} currently
+     * does) continue to work exactly as before.
+     * </p>
+     *
+     * @param rpcRequest   The parsed JSON-RPC request
+     * @param jsonResponse The JSON-RPC response to populate
+     */
+    private void dispatch(JsonRpcRequest rpcRequest, JsonRpcResponse jsonResponse) {
+        String method = rpcRequest.getMethod();
+
+        if (Methods.INITIALIZE.equals(method)) {
+            String sessionId = currentSessionId.get();
+            if (sessionId != null) {
+                sessionMap.put(sessionId, System.currentTimeMillis()); // Store session start time
+            }
+            setSessionState(SessionState.INITIALIZING);
+        }
+
+        RpcMethodHandler handler = rpcHandlers.get(method);
+        if (handler != null) {
+            handler.handle(rpcRequest, jsonResponse, this);
+        } else {
+            jsonResponse.setError(new JsonRpcError(ErrorCodes.METHOD_NOT_FOUND, "Method not found: " + method));
+        }
+
+        if (!Methods.INITIALIZE.equals(method)) {
+            setSessionState(SessionState.READY);
         }
     }
 

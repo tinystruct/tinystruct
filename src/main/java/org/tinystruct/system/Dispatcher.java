@@ -723,13 +723,48 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                     }
 
                     // Parse the script into individual statements respecting string quotes
+                    // and PostgreSQL dollar-quoting ($tag$...$tag$ or $$...$$).
                     List<String> statements = new ArrayList<>();
                     StringBuilder currentStmt = new StringBuilder();
                     boolean inString = false;
-                    
+                    String dollarTag = null; // non-null when inside a dollar-quoted block
+
                     String fullScript = script.toString();
                     for (int i = 0; i < fullScript.length(); i++) {
                         char c = fullScript.charAt(i);
+
+                        // --- Dollar-quoting detection (PostgreSQL) ---
+                        if (dollarTag != null) {
+                            // Inside a dollar-quoted block: look for the closing tag
+                            currentStmt.append(c);
+                            if (c == '$' && fullScript.startsWith(dollarTag, i - dollarTag.length() + 1)
+                                    && i >= dollarTag.length() - 1) {
+                                // Verify we matched the full closing tag
+                                String candidate = fullScript.substring(i - dollarTag.length() + 1, i + 1);
+                                if (candidate.equals(dollarTag)) {
+                                    dollarTag = null;
+                                }
+                            }
+                            continue;
+                        }
+
+                        if (c == '$' && !inString) {
+                            // Check for opening dollar-tag: $$ or $identifier$
+                            int tagEnd = fullScript.indexOf('$', i + 1);
+                            if (tagEnd > 0) {
+                                String candidate = fullScript.substring(i, tagEnd + 1);
+                                // Valid dollar-tag: $$ or $word$ (alphanumeric/underscore between $'s)
+                                if (candidate.equals("$$") || candidate.matches("\\$[A-Za-z_][A-Za-z0-9_]*\\$")) {
+                                    dollarTag = candidate;
+                                    currentStmt.append(candidate);
+                                    i = tagEnd; // skip past the opening tag
+                                    continue;
+                                }
+                            }
+                            currentStmt.append(c);
+                            continue;
+                        }
+
                         if (c == '\'') {
                             inString = !inString;
                             currentStmt.append(c);
@@ -749,17 +784,19 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                     }
 
                     for (String statement : statements) {
-                        if (operator.update(statement) > 0) {
-                            System.out.println("Executed: " + statement.substring(0, Math.min(statement.length(), 100)) + "...");
-                        }
+                        int affected = operator.update(statement);
+                        String preview = statement.length() > 100
+                                ? statement.substring(0, 100) + "..."
+                                : statement;
+                        System.out.println("Executed (" + affected + " row(s) affected): " + preview);
                     }
                     System.out.println("Script execution completed!");
                 } catch (IOException e) {
-                    throw new ApplicationException("Error reading SQL script file: " + e.getMessage());
+                    throw new ApplicationException("Error reading SQL script file: " + e.getMessage(), e);
                 }
             }
         } catch (ApplicationException e) {
-            System.err.println(e.getCause().getMessage());
+            System.err.println(e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
         }
     }
 

@@ -258,6 +258,7 @@ public class SQLiteServer extends AbstractDataRepository {
     public Table find(String SQL, Object[] parameters)
             throws ApplicationException {
         Table table = new Table();
+        List<Row> rows = new ArrayList<>();
         Row row;
         FieldInfo field;
         Field fields;
@@ -351,12 +352,13 @@ public class SQLiteServer extends AbstractDataRepository {
                     fields.append(field.getName(), field);
                 }
                 row.append(fields);
-                table.append(row);
+                rows.add(row);
             }
         } catch (Exception e) {
             throw new ApplicationException(e.getMessage(), e);
         }
 
+        table.addAll(rows);
         return table;
     }
 }

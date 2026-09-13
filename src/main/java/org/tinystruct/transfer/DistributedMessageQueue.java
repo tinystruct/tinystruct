@@ -5,8 +5,8 @@ import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.annotation.Action;
+import org.tinystruct.valve.DistributedLock;
 import org.tinystruct.valve.Lock;
-import org.tinystruct.valve.Watcher;
 
 import java.util.ArrayDeque;
 import java.util.Map;
@@ -23,7 +23,12 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     protected final Map<String, BlockingQueue<Builder>> groups = Maps.GROUPS;
     protected final Map<String, Queue<Builder>> list = Maps.LIST;
     protected final Map<String, Set<String>> sessions = Maps.SESSIONS;
-    private final Lock lock = Watcher.getInstance().acquire();
+    // A dedicated lock, not Watcher.getInstance().acquire() - that call returns *any*
+    // currently-registered lock in the whole JVM (or a fresh one only if none exists),
+    // so it can silently hand this instance a lock some unrelated component elsewhere
+    // is using. If that other lock is ever leaked (registered but never unregistered),
+    // every copy()/take() call here waits forever for a release that will never come.
+    private final Lock lock = new DistributedLock();
     private ExecutorService service;
     private static final Logger logger = Logger.getLogger(DistributedMessageQueue.class.getName());
 
@@ -143,13 +148,25 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
 
         long startTime = System.currentTimeMillis();
         // Wait for new messages within the timeout period
+        boolean locked = false;
         try {
-            lock.tryLock(TIMEOUT, TimeUnit.MILLISECONDS);
+            // The return value must be checked: if the lock isn't actually held,
+            // unconditionally calling unlock() below throws IllegalMonitorStateException
+            // (it's owned by whichever thread does hold it), instead of just skipping the
+            // wait as intended.
+            locked = lock.tryLock(TIMEOUT, TimeUnit.MILLISECONDS);
             while ((message = messages.poll()) == null && (System.currentTimeMillis() - startTime) <= TIMEOUT) {
-                // Allow for other threads to execute while waiting
+                // Yield the CPU instead of busy-spinning; 1 ms is short enough to react
+                // promptly when a message arrives, but long enough to drop CPU usage from
+                // 100 % to near-zero.
+                Thread.sleep(1);
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         } finally {
-            lock.unlock();
+            if (locked) {
+                lock.unlock();
+            }
         }
 
         return message != null ? message.toString() : "{}";
