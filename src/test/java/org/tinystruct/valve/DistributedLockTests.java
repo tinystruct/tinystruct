@@ -20,23 +20,31 @@ public class DistributedLockTests {
 
     @AfterAll
     static void done() {
-        if (latch != null) {
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        assertEquals(0, tickets);
         logger.info("Complete all test methods.");
     }
 
     @Test
     public void testConcurrentTicketSelling() throws InterruptedException {
+        Thread[] windows = new Thread[200];
         for (int i = 0; i < 200; i++) {
-            new Thread(new ticket(), "Window #" + i).start();
+            windows[i] = new Thread(new ticket(), "Window #" + i);
+            windows[i].start();
         }
+        // Must join before returning: a later test in this same JVM fork (e.g.
+        // DistributedLockTests.testLockTimeout, or any test elsewhere that calls
+        // Watcher.getInstance().acquire()) can otherwise pick up one of these still-running
+        // windows' DistributedLock while it's mid-acquisition, corrupting its ownership state.
+        for (Thread window : windows) {
+            window.join();
+        }
+
+        // Verified here, not in an @AfterAll: JUnit 5 doesn't guarantee this method runs
+        // last, and every other test's @BeforeEach replaces the static `latch` with a fresh
+        // CountDownLatch(100) that nothing but these windows ever counts down. An @AfterAll
+        // awaiting whatever `latch` happens to be assigned once all methods finish hangs
+        // forever if a later @BeforeEach ran after this method and replaced it.
+        latch.await();
+        assertEquals(0, tickets, "All tickets should be sold");
     }
 
     @BeforeEach
@@ -129,8 +137,11 @@ public class DistributedLockTests {
 
     @Test
     public void testLockTimeout() throws InterruptedException, ApplicationException {
-        // Create a lock
-        final Lock lock = Watcher.getInstance().acquire();
+        // A dedicated lock, not Watcher.getInstance().acquire() - that returns *any*
+        // currently-registered lock in the whole JVM, which could belong to an unrelated,
+        // still-running test (e.g. testConcurrentTicketSelling's windows) and corrupt its
+        // ownership state instead of giving this test an isolated lock to exercise.
+        final Lock lock = new DistributedLock();
 
         // Start a thread to acquire and release the lock
         Thread thread = new Thread(() -> {

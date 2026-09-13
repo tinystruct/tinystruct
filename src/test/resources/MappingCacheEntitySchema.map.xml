@@ -1,0 +1,6 @@
+<mapping>
+    <class name="MappingCacheEntitySchema" table="profiles" schema="public">
+        <id name="Id" column="id" type="INTEGER" length="0" increment="true" generate="false"/>
+        <property name="name" column="name" type="VARCHAR" length="255"/>
+    </class>
+</mapping>

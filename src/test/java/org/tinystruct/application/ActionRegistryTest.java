@@ -15,6 +15,7 @@ public class ActionRegistryTest {
     public void setUp() {
         registry = ActionRegistry.getInstance();
         app = new TestApp();
+        app.setTemplateRequired(false);
         // Register actions for testing
         registry.set(app, "api/children/{id}/subjects", "getSubjects");
         registry.set(app, "api/users", "lookupUsers"); // Changed name to avoid conflicts if any

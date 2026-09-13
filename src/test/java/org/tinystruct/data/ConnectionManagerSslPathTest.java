@@ -97,4 +97,12 @@ class ConnectionManagerSslPathTest {
         String twice = ConnectionManager.resolveClasspathFileParams(once);
         assertEquals(once, twice);
     }
+
+    @Test
+    void sslKeyIsNotResolvedFromClasspath() {
+        // sslkey contains private key material and must NOT be extracted to a shared temp
+        // directory. Only sslrootcert and sslcert (public certificates) are resolved.
+        String query = "sslkey=" + RESOURCE;
+        assertEquals(query, ConnectionManager.resolveClasspathFileParams(query));
+    }
 }

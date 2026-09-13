@@ -38,6 +38,8 @@ public class MySQLServerTest {
     PreparedStatement preparedStatement;
     @Mock
     ResultSet resultSet;
+    @Mock
+    ResultSetMetaData resultSetMetaData;
 
     MySQLServer server;
 
@@ -107,5 +109,48 @@ public class MySQLServerTest {
 
         assertTrue(result);
         verify(connection).prepareStatement(contains("UPDATE users SET"));
+    }
+
+    /**
+     * Regression test covering two fixes in {@code MySQLServer.find()} at once: (1)
+     * {@code ResultSetMetaData} used to be re-fetched for every column of every row instead
+     * of once up front, and (2) rows used to be appended one at a time directly onto the
+     * {@code CopyOnWriteArrayList}-backed {@code Table} (quadratic in the row count) instead
+     * of being collected and added in one batch. This verifies row order and content are
+     * correct across several rows after both fixes.
+     */
+    @Test
+    public void testFindMultipleRowsPreservesOrderAndContent() throws Exception {
+        when(preparedStatement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.getMetaData()).thenReturn(resultSetMetaData);
+        when(resultSetMetaData.getColumnCount()).thenReturn(2);
+        when(resultSetMetaData.getColumnName(1)).thenReturn("id");
+        when(resultSetMetaData.getColumnTypeName(1)).thenReturn("INT");
+        when(resultSetMetaData.getColumnName(2)).thenReturn("name");
+        when(resultSetMetaData.getColumnTypeName(2)).thenReturn("VARCHAR");
+
+        int rowCount = 5;
+        when(resultSet.next()).thenReturn(true, true, true, true, true, false);
+        when(resultSet.getObject(1)).thenReturn(1, 2, 3, 4, 5);
+        when(resultSet.getObject(2)).thenReturn("Row1", "Row2", "Row3", "Row4", "Row5");
+        when(resultSet.getInt(1)).thenReturn(1, 2, 3, 4, 5);
+        when(resultSet.getString(2)).thenReturn("Row1", "Row2", "Row3", "Row4", "Row5");
+
+        Table table = server.find("SELECT id, name FROM users", new Object[]{});
+
+        assertNotNull(table);
+        assertEquals(rowCount, table.size());
+        for (int i = 0; i < rowCount; i++) {
+            Row row = table.get(i);
+            assertEquals(i + 1, row.get(0).get("id").value());
+            assertEquals("Row" + (i + 1), row.get(0).get("name").value());
+        }
+
+        // The fix hoists getMetaData()/getColumnName()/getColumnTypeName() out of the row
+        // loop: they must be called exactly once per column, not once per cell.
+        verify(resultSetMetaData, times(1)).getColumnName(1);
+        verify(resultSetMetaData, times(1)).getColumnTypeName(1);
+        verify(resultSetMetaData, times(1)).getColumnName(2);
+        verify(resultSetMetaData, times(1)).getColumnTypeName(2);
     }
 }

@@ -1,10 +1,13 @@
 package org.tinystruct.mcp;
 
 import org.junit.jupiter.api.Test;
+import org.tinystruct.ApplicationContext;
+import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.Session;
+import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Settings;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,10 +18,13 @@ import static org.mockito.Mockito.when;
 public class MCPApplicationSSETest {
 
     @Test
-    public void testHandleSseConnect() {
+    public void testHandleSseConnect() throws ApplicationException {
+        Settings config = new Settings();
+        ApplicationManager.init(config);
         MCPServer app = new MCPServer();
-        app.setConfiguration(new Settings());
-        app.init();
+        app.setConfiguration(config);
+        app.init(new ApplicationContext());
+        ApplicationManager.install(app);
 
         Request request = mock(Request.class);
         Response response = mock(Response.class);

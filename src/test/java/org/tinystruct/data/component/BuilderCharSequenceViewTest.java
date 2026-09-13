@@ -75,7 +75,7 @@ public class BuilderCharSequenceViewTest {
         Builder builder = new Builder();
         builder.parse(json);
         
-        assertEquals("Hello\\nWorld", builder.get("message")); // Escaped newline should be preserved as literal
+        assertEquals("Hello\nWorld", builder.get("message")); // JSON \n escape should decode to an actual newline
         assertEquals("  Preserved  ", builder.get("description"));
     }
 

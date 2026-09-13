@@ -4,6 +4,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.application.Context;
+import org.tinystruct.data.component.Builder;
+import org.tinystruct.http.security.JWTManager;
 import org.tinystruct.mcp.tools.CalculatorTool;
 import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Dispatcher;
@@ -35,9 +37,19 @@ public abstract class BaseMCPTest {
                 settings.set("default.language", "en_US");
                 settings.set("charset", "utf-8");
                 settings.set("server.port", String.valueOf(SERVER_PORT));
+                settings.set("jwt.secret", "pt2b7R8aNLwl1imeNU2xjh8z3BZQx8gD6JC7iTaMJD0=");
+                settings.set("jwt.timezone", "GMT+8");
+                JWTManager jwtManager = new JWTManager();
+                jwtManager.withBase64Secret(settings.get("jwt.secret"));
+                String token = jwtManager.createToken("test", new Builder(), 1800);
+                settings.set(MCPSpecification.Config.AUTH_TOKEN, token);
 
+                ApplicationManager.init(settings);
                 serverApp = new MCPServer();
-                ApplicationManager.install(serverApp, settings);
+                serverApp.setConfiguration(settings);
+                serverApp.init();
+
+                ApplicationManager.install(serverApp);
                 serverApp.registerTool(new CalculatorTool());
 
                 Context serverContext = new ApplicationContext();
@@ -71,7 +83,7 @@ public abstract class BaseMCPTest {
             throw new RuntimeException("Server did not start in time");
         }
 
-        authToken = "Bearer " + serverApp.getConfiguration().get(MCPSpecification.Config.AUTH_TOKEN);
+        authToken = serverApp.getConfiguration().get(MCPSpecification.Config.AUTH_TOKEN);
         LOGGER.info("MCP Server started on port " + SERVER_PORT);
     }
 

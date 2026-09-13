@@ -1,0 +1,6 @@
+<mapping>
+    <class name="MappingCacheEntityGenId" table="widgets_uuid">
+        <id name="Id" column="id" type="VARCHAR" length="36" increment="false" generate="true"/>
+        <property name="name" column="name" type="VARCHAR" length="255"/>
+    </class>
+</mapping>

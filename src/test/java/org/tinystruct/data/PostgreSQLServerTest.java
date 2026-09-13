@@ -188,4 +188,39 @@ public class PostgreSQLServerTest {
         assertEquals(1, row.get(0).get("id").value());
         assertEquals("John", row.get(0).get("name").value());
     }
+
+    /**
+     * Regression test for the {@code Table}/{@code Row} accumulation fix: rows used to be
+     * appended one at a time directly onto the {@code CopyOnWriteArrayList}-backed {@code
+     * Table}, copying the whole backing array on every single row (quadratic in the row
+     * count). Rows are now collected and added in one batch; this verifies that ordering
+     * and per-row content are unaffected by that change for a result set with several rows.
+     */
+    @Test
+    public void testFindMultipleRowsPreservesOrderAndContent() throws Exception {
+        when(preparedStatement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.getMetaData()).thenReturn(resultSetMetaData);
+        when(resultSetMetaData.getColumnCount()).thenReturn(2);
+        when(resultSetMetaData.getColumnName(1)).thenReturn("id");
+        when(resultSetMetaData.getColumnTypeName(1)).thenReturn("INTEGER");
+        when(resultSetMetaData.getColumnName(2)).thenReturn("name");
+        when(resultSetMetaData.getColumnTypeName(2)).thenReturn("VARCHAR");
+
+        int rowCount = 5;
+        when(resultSet.next()).thenReturn(true, true, true, true, true, false);
+        when(resultSet.getObject(1)).thenReturn(1, 2, 3, 4, 5);
+        when(resultSet.getObject(2)).thenReturn("Row1", "Row2", "Row3", "Row4", "Row5");
+        when(resultSet.getInt(1)).thenReturn(1, 2, 3, 4, 5);
+        when(resultSet.getString(2)).thenReturn("Row1", "Row2", "Row3", "Row4", "Row5");
+
+        Table table = server.find("SELECT id, name FROM users", new Object[]{});
+
+        assertNotNull(table);
+        assertEquals(rowCount, table.size());
+        for (int i = 0; i < rowCount; i++) {
+            Row row = table.get(i);
+            assertEquals(i + 1, row.get(0).get("id").value());
+            assertEquals("Row" + (i + 1), row.get(0).get("name").value());
+        }
+    }
 }
