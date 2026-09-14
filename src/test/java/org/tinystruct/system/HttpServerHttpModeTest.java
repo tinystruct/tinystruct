@@ -39,12 +39,20 @@ public class HttpServerHttpModeTest {
         this.httpServer = new HttpServer();
         ApplicationManager.install(this.httpServer, settings);
 
-        // Start server in a separate thread
+        // Start server in a separate thread. Calling start() directly on our own instance
+        // (rather than routing through ApplicationManager.call("start", ...)) is deliberate:
+        // ActionRegistry never replaces an existing route registration for an equal-priority
+        // path, so if any earlier test in this JVM also installed and started an HttpServer
+        // (e.g. BaseMCPTest, for the MCP integration tests), the "start" action stays bound to
+        // that other instance - dispatching there would just hit its own already-started guard
+        // (HttpServer.start() no-ops via `if (started) return;`) and this test's own server would
+        // never actually bind TEST_PORT, regardless of what context/port we pass.
         serverThread = new Thread(() -> {
             try {
                 ApplicationContext context = new ApplicationContext();
                 context.setAttribute("--server-port", String.valueOf(TEST_PORT));
-                ApplicationManager.call("start", context, Action.Mode.CLI);
+                this.httpServer.setContext(context);
+                this.httpServer.start();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -190,7 +198,7 @@ public class HttpServerHttpModeTest {
         assertEquals(Action.Mode.HTTP_POST, mode);
     }
 
-    public class TestWebApp extends AbstractApplication {
+    public static class TestWebApp extends AbstractApplication {
         @Override
         public void init() {
             this.setTemplateRequired(false);

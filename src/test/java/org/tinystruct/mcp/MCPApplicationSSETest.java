@@ -7,8 +7,6 @@ import org.tinystruct.data.component.Builder;
 import org.tinystruct.http.Request;
 import org.tinystruct.http.Response;
 import org.tinystruct.http.Session;
-import org.tinystruct.system.ApplicationManager;
-import org.tinystruct.system.Settings;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -19,12 +17,20 @@ public class MCPApplicationSSETest {
 
     @Test
     public void testHandleSseConnect() throws ApplicationException {
-        Settings config = new Settings();
-        ApplicationManager.init(config);
         MCPServer app = new MCPServer();
-        app.setConfiguration(config);
-        app.init(new ApplicationContext());
-        ApplicationManager.install(app);
+        // Deliberately not calling setConfiguration()/ApplicationManager.init()/install() here:
+        // handleSseConnect() only needs getContext() to be non-null, which setContext() alone
+        // provides. setConfiguration() has two process-wide side effects that would leak into
+        // every other test sharing this JVM if used for a throwaway instance like this one:
+        // (1) AbstractApplication.setConfiguration() registers this instance's @Action-annotated
+        // methods into the static ActionRegistry singleton, keyed by path - and ActionRegistry
+        // never replaces an existing equal-priority registration for a path, so whichever
+        // MCPServer instance calls setConfiguration() first "wins" that route for the rest of the
+        // JVM's life, silently stealing real requests away from e.g. BaseMCPTest's fully-configured
+        // server; (2) MCPApplication.init() (which setConfiguration() also triggers) builds this
+        // instance's own AuthorizationHandler from whatever auth token happens to be in the shared
+        // config at that moment, which would then be the one enforced for that hijacked route.
+        app.setContext(new ApplicationContext());
 
         Request request = mock(Request.class);
         Response response = mock(Response.class);

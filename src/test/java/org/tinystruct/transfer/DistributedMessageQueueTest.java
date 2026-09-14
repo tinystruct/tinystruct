@@ -33,8 +33,14 @@ class DistributedMessageQueueTest {
         String putResult = queue.put(groupId, sessionId, message);
         assertFalse(putResult.isEmpty());
 
-        // Take message from the queue
-        String takeResult = queue.take(sessionId);
+        // Take message from the queue. put() dispatches the copy from the group queue to the
+        // per-session queue on a background thread pool, so take()'s own short internal wait
+        // is not guaranteed to cover the delay under a loaded system; retry a few rounds
+        // rather than relying on a single call to land within that window.
+        String takeResult = "{}";
+        for (int attempt = 0; attempt < 20 && "{}".equals(takeResult); attempt++) {
+            takeResult = queue.take(sessionId);
+        }
         assertFalse(takeResult.isEmpty());
         assertTrue(takeResult.contains(message));
     }

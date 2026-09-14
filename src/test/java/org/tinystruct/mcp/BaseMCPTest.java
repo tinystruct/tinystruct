@@ -11,10 +11,11 @@ import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.Dispatcher;
 import org.tinystruct.system.HttpServer;
 import org.tinystruct.system.Settings;
-import org.tinystruct.system.annotation.Action;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -27,9 +28,17 @@ public abstract class BaseMCPTest {
     protected static MCPServer serverApp;
     protected static Thread serverThread;
     protected static String authToken;
+    private static HttpServer httpServer;
 
     @BeforeAll
     public static void startServer() throws Exception {
+        // Signals that serverApp has been fully configured on the background thread, so the
+        // main thread never observes a half-initialized instance. A bare socket-connect check
+        // is not sufficient: it establishes no happens-before relationship with the writes
+        // (setConfiguration/init/registerTool) made on the server thread, so without this latch
+        // the main thread could see serverApp non-null but its configuration still null.
+        CountDownLatch appReady = new CountDownLatch(1);
+
         serverThread = new Thread(() -> {
             try {
                 Settings settings = new Settings();
@@ -51,12 +60,23 @@ public abstract class BaseMCPTest {
 
                 ApplicationManager.install(serverApp);
                 serverApp.registerTool(new CalculatorTool());
+                appReady.countDown();
 
                 Context serverContext = new ApplicationContext();
                 serverContext.setAttribute("--server-port", String.valueOf(SERVER_PORT));
                 ApplicationManager.install(new Dispatcher());
-                ApplicationManager.install(new HttpServer());
-                ApplicationManager.call("start", serverContext, Action.Mode.CLI);
+                httpServer = new HttpServer();
+                ApplicationManager.install(httpServer);
+                // Calling start() directly (rather than routing through
+                // ApplicationManager.call("start", ...)) is deliberate: ActionRegistry never
+                // replaces an existing route registration for an equal-priority path, so the
+                // first HttpServer instance in the whole JVM to register "start" keeps that
+                // binding forever. Going through dispatch here would make this instance that
+                // permanent owner, so any later test's own HttpServer (e.g.
+                // HttpServerHttpModeTest) would have its "start" calls silently routed back to
+                // this one instead - which would just no-op on its already-started guard.
+                httpServer.setContext(serverContext);
+                httpServer.start();
 
                 // Keep the thread alive as long as the server is running
                 while (!Thread.currentThread().isInterrupted()) {
@@ -68,6 +88,10 @@ public abstract class BaseMCPTest {
         });
         serverThread.setDaemon(true);
         serverThread.start();
+
+        if (!appReady.await(30, TimeUnit.SECONDS)) {
+            throw new RuntimeException("Server application did not initialize in time");
+        }
 
         // Wait for the server to be ready (poll the port)
         boolean started = false;
@@ -89,6 +113,17 @@ public abstract class BaseMCPTest {
 
     @AfterAll
     public static void stopServer() {
+        // Actually stop the underlying HTTP server (not just interrupt the thread that started
+        // it): ActionRegistry never replaces an existing route registration, so this same
+        // HttpServer instance's "start" action stays permanently bound in the registry for the
+        // rest of the JVM's life. HttpServer.start() itself no-ops on an instance whose `started`
+        // flag is still true (its reentrancy guard), so unless stop() resets that flag here, any
+        // later test in this JVM whose own ApplicationManager.call("start", ...) happens to
+        // resolve to this same instance would silently fail to bind its own port.
+        if (httpServer != null) {
+            httpServer.stop();
+            httpServer = null;
+        }
         if (serverThread != null) {
             serverThread.interrupt();
             serverThread = null;

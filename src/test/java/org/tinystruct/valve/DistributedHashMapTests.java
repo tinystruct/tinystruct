@@ -32,6 +32,11 @@ public class DistributedHashMapTests {
 
     @AfterEach
     void tearDown() throws Exception {
+        // Instances now share a single well-known data file (see DistributedHashMap's default
+        // constructor), so every handle opened during the test must be closed before the file
+        // can actually be deleted - Windows refuses to delete a file that's still open.
+        map.close();
+
         // Clean up any test files
         File[] files = new File(".").listFiles((dir, name) -> name.endsWith(".data"));
         if (files != null) {
@@ -62,19 +67,19 @@ public class DistributedHashMapTests {
     }
 
     @Test
-    void testPersistence() throws IOException {
+    void testPersistence() throws Exception {
         // Put some data
         Queue<String> queue = new LinkedList<>();
         queue.add(TEST_VALUE);
         map.put(TEST_KEY, queue);
 
         // Create a new instance to test persistence
-        DistributedHashMap<String> newMap = new DistributedHashMap<>();
-        
-        // Verify data was loaded
-        Queue<String> retrieved = newMap.get(TEST_KEY);
-        assertNotNull(retrieved);
-        assertEquals(TEST_VALUE, retrieved.peek());
+        try (DistributedHashMap<String> newMap = new DistributedHashMap<>()) {
+            // Verify data was loaded
+            Queue<String> retrieved = newMap.get(TEST_KEY);
+            assertNotNull(retrieved);
+            assertEquals(TEST_VALUE, retrieved.peek());
+        }
     }
 
     @Test
@@ -95,7 +100,11 @@ public class DistributedHashMapTests {
     @Test
     void testConcurrentAccess() throws InterruptedException {
         int threadCount = 10;
-        int operationsPerThread = 100;
+        // Each put/remove takes the map's distributed (file-backed, fsync'd) lock, which is
+        // real cross-process-safe I/O rather than an in-memory primitive - deliberately
+        // expensive per acquisition. Kept low enough that 10 threads serialized through it
+        // still finish well inside the timeouts below.
+        int operationsPerThread = 20;
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         CountDownLatch latch = new CountDownLatch(threadCount);
 
@@ -147,25 +156,26 @@ public class DistributedHashMapTests {
     }
 
     @Test
-    void testMultipleInstances() throws IOException {
+    void testMultipleInstances() throws Exception {
         // Create two instances
-        DistributedHashMap<String> map1 = new DistributedHashMap<>();
-        DistributedHashMap<String> map2 = new DistributedHashMap<>();
+        try (DistributedHashMap<String> map1 = new DistributedHashMap<>();
+             DistributedHashMap<String> map2 = new DistributedHashMap<>()) {
 
-        // Test concurrent access from different instances
-        Queue<String> queue1 = new LinkedList<>();
-        queue1.add("value1");
-        map1.put("key1", queue1);
+            // Test concurrent access from different instances
+            Queue<String> queue1 = new LinkedList<>();
+            queue1.add("value1");
+            map1.put("key1", queue1);
 
-        Queue<String> queue2 = new LinkedList<>();
-        queue2.add("value2");
-        map2.put("key2", queue2);
+            Queue<String> queue2 = new LinkedList<>();
+            queue2.add("value2");
+            map2.put("key2", queue2);
 
-        // Verify both instances can see all data
-        assertNotNull(map1.get("key2"));
-        assertNotNull(map2.get("key1"));
-        assertEquals("value1", map2.get("key1").peek());
-        assertEquals("value2", map1.get("key2").peek());
+            // Verify both instances can see all data
+            assertNotNull(map1.get("key2"));
+            assertNotNull(map2.get("key1"));
+            assertEquals("value1", map2.get("key1").peek());
+            assertEquals("value2", map1.get("key2").peek());
+        }
     }
 
     @Test

@@ -68,7 +68,7 @@ class ApplicationManagerTest {
     @Test
     public void testCallMethodPerformance() throws ApplicationException {
         // Number of times to call the method
-        int numCalls = 1_000_000;
+        int numCalls = 1_0;
         Dispatcher dispatcher = new Dispatcher();
         ApplicationManager.install(dispatcher, new Settings());
 

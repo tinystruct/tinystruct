@@ -69,7 +69,11 @@ public class SQLServerTest {
     }
 
     @AfterEach
-    public void tearDown() {
+    public void tearDown() throws Exception {
+        // Prevent the mocked connection from leaking into the shared ConnectionManager
+        // singleton's pool, where it would be handed out to unrelated tests run afterwards.
+        resetConnectionPool();
+
         System.clearProperty("driver");
         System.clearProperty("database.url");
         System.clearProperty("database.user");
