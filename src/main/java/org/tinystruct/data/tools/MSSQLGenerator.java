@@ -132,24 +132,22 @@ public class MSSQLGenerator implements Generator {
                     idElement.setAttribute("length", currentFields.get("length").value().toString());
                     idElement.setAttribute("type", currentFields.get("type").value().toString());
 
+                    String returnType = propertyType.equalsIgnoreCase("int") ? "Integer" : (propertyType.equalsIgnoreCase("long") ? "Long" : propertyType);
+                    java_method_declaration.append("\tpublic ").append(returnType).append(" get")
+                            .append(propertyNameOfMethod).append("()").append(lineSeparator);
+                    java_method_declaration.append("\t{").append(lineSeparator);
                     if ("String".equalsIgnoreCase(propertyType)) {
-                        java_method_declaration.append("\tpublic ").append(propertyType).append(" get")
-                                .append(propertyNameOfMethod).append("()").append(lineSeparator);
-                        java_method_declaration.append("\t{").append(lineSeparator);
                         java_method_declaration.append("\t\treturn String.valueOf(this.").append(propertyNameOfMethod)
                                 .append(");").append(lineSeparator);
                     } else if ("int".equalsIgnoreCase(propertyType)) {
-                        java_method_declaration.append("\tpublic Integer get").append(propertyNameOfMethod)
-                                .append("()").append(lineSeparator);
-                        java_method_declaration.append("\t{").append(lineSeparator);
                         java_method_declaration.append("\t\treturn Integer.parseInt(this.").append(propertyNameOfMethod)
                                 .append(".toString());").append(lineSeparator);
                     } else if ("long".equalsIgnoreCase(propertyType)) {
-                        java_method_declaration.append("\tpublic Long get").append(propertyNameOfMethod)
-                                .append("()").append(lineSeparator);
-                        java_method_declaration.append("\t{").append(lineSeparator);
                         java_method_declaration.append("\t\treturn Long.parseLong(this.").append(propertyNameOfMethod)
                                 .append(".toString());").append(lineSeparator);
+                    } else {
+                        java_method_declaration.append("\t\treturn (").append(propertyType).append(") this.")
+                                .append(propertyNameOfMethod).append(";").append(lineSeparator);
                     }
 
                     java_method_declaration.append("\t}").append(lineSeparator).append(lineSeparator);
@@ -302,7 +300,7 @@ public class MSSQLGenerator implements Generator {
     }
 
     public Table find(String SQL) throws ApplicationException {
-        logger.severe("find:" + SQL);
+        logger.info("find:" + SQL);
         Table table = new Table();
         Row row;
         FieldInfo field;

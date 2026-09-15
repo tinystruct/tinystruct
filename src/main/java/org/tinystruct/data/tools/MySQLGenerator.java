@@ -275,7 +275,7 @@ public class MySQLGenerator implements Generator {
     }
 
     public Table find(String SQL) throws ApplicationException {
-        logger.severe("find:" + SQL);
+        logger.info("find:" + SQL);
         Table table = new Table();
         Row row;
         FieldInfo field;

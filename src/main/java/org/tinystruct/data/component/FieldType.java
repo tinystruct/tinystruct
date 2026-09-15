@@ -113,6 +113,13 @@ public final class FieldType implements Serializable {
     public final static FieldType VARCHAR = new FieldType("VARCHAR", _VARCHAR, "String");
 
     /**
+     * PostgreSQL's native <code>UUID</code> column type. There is no dedicated
+     * JDBC type code for it, so it is mapped to the Java {@code String} type,
+     * the same as other character-based columns.
+     */
+    public final static FieldType UUID = new FieldType("UUID", Types.OTHER, "String");
+
+    /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
      * <code>VARCHAR</code>.
@@ -130,6 +137,11 @@ public final class FieldType implements Serializable {
     public final static FieldType ENUM = new FieldType("ENUM", 0, "String");
     public final static FieldType SET = new FieldType("SET", 0, "String");
     public final static FieldType JSON = new FieldType("JSON", 0, "String");
+    /**
+     * PostgreSQL's native <code>JSONB</code> column type. Mapped to Java
+     * {@code String} the same as {@link #JSON}.
+     */
+    public final static FieldType JSONB = new FieldType("JSONB", 0, "String");
     /**
      * <P>The constant in the Java programming language, sometimes referred
      * to as a type code, that identifies the generic SQL type
