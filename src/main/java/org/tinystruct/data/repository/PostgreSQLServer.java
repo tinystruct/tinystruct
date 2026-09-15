@@ -84,8 +84,7 @@ public class PostgreSQLServer extends AbstractDataRepository {
 
             for (String fieldName : fieldNames) {
                 FieldInfo currentField = ready_fields.get(fieldName);
-                if (Id == null && currentField.get("generate") != null
-                        && Boolean.parseBoolean(currentField.get("generate").toString())) {
+                if (Id == null && currentField.isGenerate()) {
                     Id = currentField.value();
                 }
             }

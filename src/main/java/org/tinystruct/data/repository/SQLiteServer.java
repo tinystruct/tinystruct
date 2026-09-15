@@ -158,8 +158,7 @@ public class SQLiteServer extends AbstractDataRepository {
                     continue;
                 }
 
-                if (Id == null && currentField.get("generate") != null
-                        && Boolean.parseBoolean(currentField.get("generate").toString())) {
+                if (Id == null && currentField.isGenerate()) {
                     Id = currentField.value();
                 }
 

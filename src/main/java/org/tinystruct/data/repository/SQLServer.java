@@ -57,7 +57,7 @@ public class SQLServer extends AbstractDataRepository {
                     || currentField.getType() == FieldType.BIT
                     || currentField.getType() == FieldType.DATE
                     || currentField.getType() == FieldType.DATETIME) {
-                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type"))
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.getTypeName())
                         .append(dot);
 
                 if (currentField.getType() == FieldType.TEXT) {
@@ -77,7 +77,7 @@ public class SQLServer extends AbstractDataRepository {
                 } else
                     values.append(currentField.value()).append(dot);
             } else {
-                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type"))
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.getTypeName())
                         .append("(").append(currentField.getLength()).append(")").append(dot);
                 values.append("'").append(currentField.stringValue().replaceAll("'", "''")).append("'").append(dot);
             }
@@ -137,8 +137,7 @@ public class SQLServer extends AbstractDataRepository {
                 continue;
             }
 
-            if (Id == null && currentField.get("generate") != null
-                    && Boolean.parseBoolean(currentField.get("generate").toString())) {
+            if (Id == null && currentField.isGenerate()) {
                 Id = currentField.value();
             }
 
@@ -147,7 +146,7 @@ public class SQLServer extends AbstractDataRepository {
                     || currentField.getType() == FieldType.BIT
                     || currentField.getType() == FieldType.DATE
                     || currentField.getType() == FieldType.DATETIME) {
-                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type"))
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.getTypeName())
                         .append(dot);
 
                 if (currentField.getType() == FieldType.TEXT) {
@@ -167,7 +166,7 @@ public class SQLServer extends AbstractDataRepository {
                 } else
                     values.append(currentField.value()).append(dot);
             } else {
-                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.get("type"))
+                parameters.append("@").append(currentField.getName()).append(" ").append(currentField.getTypeName())
                         .append("(").append(currentField.getLength()).append(")").append(dot);
                 values.append("'").append(currentField.stringValue().replaceAll("'", "''")).append("'").append(dot);
             }

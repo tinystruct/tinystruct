@@ -109,8 +109,7 @@ public class MySQLServer extends AbstractDataRepository {
             if (!currentField.autoIncrement()) {
                 fields[i] = currentField;
 
-                if (Id == null && currentField.get("generate") != null
-                        && Boolean.parseBoolean(currentField.get("generate").toString())) {
+                if (Id == null && currentField.isGenerate()) {
                     Id = currentField.value();
                 }
 
