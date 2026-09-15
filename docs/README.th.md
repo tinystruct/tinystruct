@@ -29,7 +29,7 @@ Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [�
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.31</version>
+  <version>1.7.32</version>
   <classifier>jar-with-dependencies</classifier> <!-- ไม่บังคับ -->
 </dependency>
 ```
@@ -95,7 +95,7 @@ Smalltalk: <a href="https://github.com/tinystruct/smalltalk">https://github.com/
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.31
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.32
            /
 ```
 ```tcsh

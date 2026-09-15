@@ -12,10 +12,33 @@ Architecture and implementation patterns for building modules with the **tinystr
 
 **CLI and HTTP are equal citizens.** Every method annotated with `@Action` should ideally be runnable from both a terminal and a web browser without modification. This "dual-mode" capability is the core design philosophy of tinystruct.
 
+## Primary Development Tool: `bin/dispatcher`
+
+**`bin/dispatcher` is the default, highest-priority tool for developing, running, testing, and debugging a tinystruct application — reach for it before an IDE run configuration, a hand-written `main()`, curl, or a browser.** Because every `@Action` is dual-mode by design, `bin/dispatcher` lets you exercise routing, argument binding, and business logic directly from the terminal, with the fastest possible feedback loop and no server/browser required.
+
+```bash
+# Run any @Action directly - the fastest way to verify a new action works
+bin/dispatcher greet/James
+bin/dispatcher echo --words "Praise the Lord"
+
+# Start the HTTP server when you need the web-facing counterpart
+bin/dispatcher start --import org.tinystruct.system.HttpServer
+
+# Import additional Application/MCP classes for the current run
+bin/dispatcher start --import org.tinystruct.system.HttpServer --import com.example.MyService
+
+# Discover what's available
+bin/dispatcher --help
+bin/dispatcher --version
+```
+
+Default to this workflow: implement the `@Action`, run it immediately via `bin/dispatcher <action>` to confirm it behaves correctly in CLI mode, and only start the HTTP server (also via `bin/dispatcher start ...`) once you need to verify the web-facing path (e.g. `mode = Mode.HTTP_POST`, sessions, file uploads). Never hardcode a `main(String[] args)` as an app's entry point — `bin/dispatcher` (or `bin/dispatcher.cmd` on Windows) is the one entry point for every module.
+
 ## When to Activate
 
 ### When to Use
 
+- Running, testing, or debugging any `@Action` via `bin/dispatcher` — this is the default way to work with a tinystruct app, before reaching for HTTP or an IDE run configuration.
 - Creating new `Application` modules by extending `AbstractApplication`.
 - Defining routes and command-line actions using `@Action`.
 - Handling per-request state via `Context`.
@@ -142,13 +165,13 @@ try {
 
 ## MCP Server and Tools Integration
 
-tinystruct provides native support for the Model Context Protocol (MCP) starting with SDK version **`1.7.31`**.
+tinystruct provides native support for the Model Context Protocol (MCP) starting with SDK version **`1.7.32`**.
 The MCP APIs (e.g., `org.tinystruct.mcp.MCPTool`, `org.tinystruct.mcp.MCPServer`, `org.tinystruct.mcp.MCPException`) are included directly in the core dependency:
 ```xml
 <dependency>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.7.31</version>
+    <version>1.7.32</version>
 </dependency>
 ```
 
@@ -271,7 +294,7 @@ The framework includes a programmatic wrapper around `java.util.logging` (JUL) t
 | Using `List<Builder>` for JSON arrays | Use `Builders` to avoid generic type erasure issues. |
 | `ApplicationRuntimeException: template not found` | Call `setTemplateRequired(false)` in `init()` for API-only apps. |
 | Annotating `private` methods with `@Action` | Actions must be `public` to be registered by the framework. |
-| Hardcoding `main(String[] args)` in apps | Use `bin/dispatcher` as the entry point for all modules. |
+| Hardcoding `main(String[] args)` in apps, or testing only via curl/browser/IDE run configs | Use `bin/dispatcher` as the entry point and default dev/test tool for all modules. |
 | Manual `ActionRegistry` registration | Prefer the `@Action` annotation for automatic discovery. |
 | Action not found at runtime | Ensure class is imported via `--import` or listed in `application.properties`. |
 | CLI arg not visible | Pass with `--key value`; access via `getContext().getAttribute("--key")`. |
@@ -279,11 +302,12 @@ The framework includes a programmatic wrapper around `java.util.logging` (JUL) t
 
 ## Best Practices
 
-1. **Granular Applications**: Break logic into smaller, focused applications rather than one monolithic class.
-2. **Setup in `init()`**: Leverage `init()` for setup (config, DB) rather than the constructor. Do NOT call `setAction()` — use `@Action` annotation.
-3. **Mode Awareness**: Use the `Mode` parameter in `@Action` to restrict sensitive operations to `CLI` only or specific HTTP methods.
-4. **Context over Params**: For optional CLI flags, use `getContext().getAttribute("--flag")` rather than adding parameters to the method signature.
-5. **Asynchronous Events**: For heavy tasks triggered by events, use `CompletableFuture.runAsync()` inside the event handler.
+1. **`bin/dispatcher` first**: Develop and verify against `bin/dispatcher` before anything else — run the action from the CLI, confirm behavior, then layer on HTTP/mode concerns. It's the fastest inner-loop and the one tool guaranteed to match how the framework actually routes and binds arguments.
+2. **Granular Applications**: Break logic into smaller, focused applications rather than one monolithic class.
+3. **Setup in `init()`**: Leverage `init()` for setup (config, DB) rather than the constructor. Do NOT call `setAction()` — use `@Action` annotation.
+4. **Mode Awareness**: Use the `Mode` parameter in `@Action` to restrict sensitive operations to `CLI` only or specific HTTP methods.
+5. **Context over Params**: For optional CLI flags, use `getContext().getAttribute("--flag")` rather than adding parameters to the method signature.
+6. **Asynchronous Events**: For heavy tasks triggered by events, use `CompletableFuture.runAsync()` inside the event handler.
 
 ## Technical Reference
 
