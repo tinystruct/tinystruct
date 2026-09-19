@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.tinystruct.data;
+package org.tinystruct.data.tools;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,8 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.tinystruct.ApplicationException;
-import org.tinystruct.data.tools.MappingMode;
-import org.tinystruct.data.tools.PostgreSQLGenerator;
+import org.tinystruct.data.ConnectionManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -123,7 +122,7 @@ public class PostgreSQLGeneratorTest {
         String xmlContent = new String(Files.readAllBytes(xmlFile.toPath()));
         assertTrue(xmlContent.contains("class name=\"" + TEST_CLASS + "\""), "XML should map to correct class");
         assertTrue(xmlContent.contains("table=\"" + TEST_TABLE + "\""), "XML should map to correct table");
-        assertTrue(xmlContent.contains("increment=\"true\""), "ID should be mapped as increment=\"true\"");
+        assertTrue(xmlContent.contains("autoIncrement=\"true\""), "ID should be mapped as autoIncrement=\"true\"");
         assertTrue(xmlContent.contains("column=\"birth_date\""), "birth_date column mapping should be generated");
     }
 
@@ -147,7 +146,7 @@ public class PostgreSQLGeneratorTest {
         assertTrue(source.contains("import org.tinystruct.data.annotation.Column;"), source);
         assertTrue(source.contains("@Table(name = \"" + TEST_TABLE + "\""), source);
         assertTrue(source.contains("@Id(name = \"Id\", column = \"id\""), source);
-        assertTrue(source.contains("increment = true"), "ID should be mapped as an increment id");
+        assertTrue(source.contains("autoIncrement = true"), "ID should be mapped as an auto-increment id");
         assertTrue(source.contains("public class " + TEST_CLASS), source);
         // Each @Column sits directly above the member it describes.
         assertTrue(Pattern.compile("@Column\\(name = \"birth_date\"[^\\n]*\\)\\R\\s*private \\w+ birthDate;")

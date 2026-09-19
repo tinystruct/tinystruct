@@ -47,7 +47,7 @@ import java.util.logging.Logger;
 /**
  * Manages database connections and provides thread-safe access to them.
  */
-final class ConnectionManager implements Runnable {
+public final class ConnectionManager implements Runnable {
 
     private final static Logger logger = Logger.getLogger(ConnectionManager.class.getName());
 

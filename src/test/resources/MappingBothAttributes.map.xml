@@ -1,0 +1,5 @@
+<mapping>
+    <class name="MappingBothAttributes" table="widgets">
+        <id name="Id" column="id" type="INTEGER" length="0" autoIncrement="true" increment="false" generate="false"/>
+    </class>
+</mapping>
