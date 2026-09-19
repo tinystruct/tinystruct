@@ -44,7 +44,7 @@ Default to this workflow: implement the `@Action`, run it immediately via `bin/d
 - Handling per-request state via `Context`.
 - Performing JSON serialization using the native `Builder` and `Builders` components.
 - Working with database persistence via `AbstractData` POJOs.
-- Generating POJOs from database tables using the `generate` command.
+- Generating POJOs from database tables using the `generate` command, with an XML mapping file or annotations (`--mapping annotation`).
 - Implementing Server-Sent Events (SSE) for real-time push.
 - Handling file uploads via multipart data.
 - Making outbound HTTP requests with `URLRequest` and `HTTPHandler`.
@@ -55,7 +55,7 @@ Default to this workflow: implement the `@Action`, run it immediately via `bin/d
 
 The tinystruct framework treats any method annotated with `@Action` as a routable endpoint for both terminal and web environments. Applications are created by extending `AbstractApplication`, which provides core lifecycle hooks like `init()` and access to the request `Context`.
 
-Routing is handled by the `ActionRegistry`, which automatically maps path segments to method arguments and injects dependencies. For data-only services, the native `Builder` and `Builders` components should be used for JSON serialization to maintain a zero-dependency footprint. The database layer uses `AbstractData` POJOs paired with XML mapping files for CRUD operations without external ORM libraries.
+Routing is handled by the `ActionRegistry`, which automatically maps path segments to method arguments and injects dependencies. For data-only services, the native `Builder` and `Builders` components should be used for JSON serialization to maintain a zero-dependency footprint. The database layer uses `AbstractData` POJOs mapped to tables with `@Table`/`@Column` annotations or XML mapping files for CRUD operations without external ORM libraries. Missing tables can be created automatically with `database.autocreate=true`.
 
 ## Examples
 
@@ -253,6 +253,8 @@ driver=org.h2.Driver
 database.url=jdbc:h2:~/mydb
 database.user=sa
 database.password=
+# Optional: create missing tables from the class mapping on first use (off by default)
+# database.autocreate=true
 
 # Server
 default.home.page=hello
@@ -316,7 +318,7 @@ Detailed guides are available in the `references/` directory:
 - [Architecture & Config](references/architecture.md) — Abstractions, Package Map, Properties
 - [Routing & @Action](references/routing.md) — Annotation details, Modes, Parameters
 - [Data Handling](references/data-handling.md) — Builder, Builders, JSON serialization & parsing
-- [Database Persistence](references/database.md) — AbstractData POJOs, CRUD, mapping XML, POJO generation
+- [Database Persistence](references/database.md) — AbstractData POJOs, CRUD, annotation and XML mapping, POJO generation, table auto-creation
 - [System & Usage](references/system-usage.md) — Context, Sessions, SSE, File Uploads, Events, Networking
 - [Testing Patterns](references/testing.md) — JUnit 5 unit and HTTP integration testing
 
@@ -328,8 +330,10 @@ Detailed guides are available in the `references/` directory:
 - `src/main/java/org/tinystruct/data/component/Builder.java` — JSON object serializer
 - `src/main/java/org/tinystruct/data/component/Builders.java` — JSON array serializer
 - `src/main/java/org/tinystruct/data/component/AbstractData.java` — Base POJO class with CRUD
-- `src/main/java/org/tinystruct/data/Mapping.java` — Mapping XML parser
-- `src/main/java/org/tinystruct/data/tools/MySQLGenerator.java` — POJO generator reference
+- `src/main/java/org/tinystruct/data/Mapping.java` — Mapping metadata (annotations or XML), cached per class
+- `src/main/java/org/tinystruct/data/annotation/Table.java` — `@Table`, with `@Id` and `@Column` alongside it
+- `src/main/java/org/tinystruct/data/tools/TableCreator.java` — Creates missing tables (`database.autocreate`)
+- `src/main/java/org/tinystruct/data/tools/MySQLGenerator.java` — POJO generator reference (`MappingMode` selects XML or annotations)
 - `src/main/java/org/tinystruct/data/component/FieldType.java` — SQL-to-Java type mappings
 - `src/main/java/org/tinystruct/data/component/Condition.java` — Fluent SQL query builder
 - `src/main/java/org/tinystruct/http/SSEPushManager.java` — SSE connection management
