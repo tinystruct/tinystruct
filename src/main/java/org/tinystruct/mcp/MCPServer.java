@@ -100,23 +100,17 @@ public class MCPServer extends MCPApplication {
             toolsList.add(toolInfo);
         }
 
-        // Add registered tool classes
+        // Add registered tool classes. A tool is listed here even when it also exposes
+        // "name/subMethod"-style entries above (e.g. CalculatorTool: "calculator" is a whole-tool
+        // invocation via its own executeLocally/operation parameter, while "calculator/add" etc.
+        // are separate, individually-callable sub-methods) - both are valid, independently
+        // callable names, so both must be discoverable via list-tools.
         for (MCPTool tool : tools.values()) {
-            boolean hasSubMethods = false;
-            String prefix = tool.getName() + "/";
-            for (String methodName : toolMethods.keySet()) {
-                if (methodName.startsWith(prefix)) {
-                    hasSubMethods = true;
-                    break;
-                }
-            }
-            if (!hasSubMethods) {
-                Builder toolInfo = new Builder();
-                toolInfo.put("name", tool.getName());
-                toolInfo.put("description", tool.getDescription());
-                toolInfo.put("inputSchema", tool.getSchema());
-                toolsList.add(toolInfo);
-            }
+            Builder toolInfo = new Builder();
+            toolInfo.put("name", tool.getName());
+            toolInfo.put("description", tool.getDescription());
+            toolInfo.put("inputSchema", tool.getSchema());
+            toolsList.add(toolInfo);
         }
 
         result.put("tools", toolsList);

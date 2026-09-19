@@ -1,0 +1,125 @@
+/*******************************************************************************
+ * Copyright  (c) 2013, 2025 James M. ZHOU
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
+package org.tinystruct.data.tools;
+
+import org.tinystruct.ApplicationRuntimeException;
+import org.tinystruct.dom.Element;
+
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Renders the mapping annotations of a generated POJO from the very same
+ * {@code <class>} element the generators already build for the {@code .map.xml} file,
+ * so the annotation and XML forms can never disagree.
+ */
+final class MappingAnnotations {
+    private static final String PACKAGE = "org.tinystruct.data.annotation.";
+
+    private MappingAnnotations() {
+    }
+
+    /**
+     * In {@link MappingMode#ANNOTATION} mode, annotates the already-generated member
+     * declarations with {@code @Column}, registers the annotation imports and returns
+     * the {@code @Table} declaration to place above the class. In XML mode nothing is
+     * touched and an empty string is returned.
+     *
+     * @param mode          the mapping mode
+     * @param classElement  the {@code <class>} mapping element built by the generator
+     * @param members       the generated member declarations, edited in place
+     * @param imports       the imports of the generated class, extended as needed
+     * @param lineSeparator the line separator of the generated source
+     * @return the class-level annotation followed by a line separator, or an empty string
+     */
+    static String apply(MappingMode mode, Element classElement, StringBuilder members,
+                        Set<String> imports, String lineSeparator) {
+        if (mode != MappingMode.ANNOTATION) {
+            return "";
+        }
+
+        imports.add(PACKAGE + "Table");
+
+        Element id = null;
+        for (Element child : classElement.getChildNodes()) {
+            if ("id".equalsIgnoreCase(child.getName())) {
+                id = child;
+            } else if ("property".equalsIgnoreCase(child.getName())) {
+                annotateMember(child, members, lineSeparator);
+                imports.add(PACKAGE + "Column");
+            }
+        }
+
+        StringBuilder table = new StringBuilder("@Table(name = ").append(quote(classElement.getAttribute("table")));
+        if (id != null) {
+            imports.add(PACKAGE + "Id");
+            table.append(",").append(lineSeparator).append("        id = @Id(")
+                    .append("name = ").append(quote(id.getAttribute("name")))
+                    .append(", column = ").append(quote(id.getAttribute("column")))
+                    .append(", type = ").append(quote(id.getAttribute("type")));
+            appendLength(table, id.getAttribute("length"));
+            if (Boolean.parseBoolean(id.getAttribute("increment"))) {
+                table.append(", increment = true");
+            }
+            if (Boolean.parseBoolean(id.getAttribute("generate"))) {
+                table.append(", generate = true");
+            }
+            table.append(")");
+        }
+        return table.append(")").append(lineSeparator).toString();
+    }
+
+    /**
+     * Inserts {@code @Column} above the {@code private <type> <name>;} member declared
+     * for the given property element.
+     */
+    private static void annotateMember(Element property, StringBuilder members, String lineSeparator) {
+        String name = property.getAttribute("name");
+        Matcher declaration = Pattern.compile("(?m)^\\tprivate \\S+ " + Pattern.quote(name) + ";").matcher(members);
+        if (!declaration.find()) {
+            throw new ApplicationRuntimeException("No member declaration found for mapped property '" + name + "'");
+        }
+
+        StringBuilder column = new StringBuilder("\t@Column(name = ").append(quote(property.getAttribute("column")))
+                .append(", type = ").append(quote(property.getAttribute("type")));
+        appendLength(column, property.getAttribute("length"));
+        column.append(")").append(lineSeparator);
+
+        members.insert(declaration.start(), column);
+    }
+
+    /**
+     * Appends {@code , length = n} unless the length is zero or not a plain integer,
+     * which is what the runtime mapping makes of such a value too.
+     */
+    private static void appendLength(StringBuilder annotation, String length) {
+        int value;
+        try {
+            value = Integer.parseInt(length.trim());
+        } catch (NumberFormatException e) {
+            value = 0;
+        }
+
+        if (value != 0) {
+            annotation.append(", length = ").append(value);
+        }
+    }
+
+    private static String quote(String value) {
+        return '"' + value.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
+    }
+}

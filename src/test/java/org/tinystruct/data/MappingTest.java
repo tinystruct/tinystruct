@@ -17,6 +17,9 @@ package org.tinystruct.data;
 
 import org.junit.jupiter.api.Test;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.ApplicationRuntimeException;
+import org.tinystruct.data.annotation.Column;
+import org.tinystruct.data.annotation.Id;
 import org.tinystruct.data.component.Condition;
 import org.tinystruct.data.component.Field;
 import org.tinystruct.data.component.FieldInfo;
@@ -25,9 +28,12 @@ import org.tinystruct.data.component.Table;
 import org.tinystruct.data.repository.Type;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -106,13 +112,160 @@ public class MappingTest {
         assertEquals("\"public\".\"profiles\"", postgres.getTableName());
     }
 
+    @Test
+    public void testAnnotationsProduceTheSameMappingAsXml() throws ApplicationException {
+        // "MappingCacheEntity" is described by MappingCacheEntity.map.xml; the annotated
+        // fixture below declares the identical mapping.
+        FakeData fromXml = new FakeData("MappingCacheEntity", repositoryOfType(Type.MySQL));
+        AnnotatedWidget fromAnnotations = new AnnotatedWidget("AnnotatedWidget", repositoryOfType(Type.MySQL));
+
+        Field xmlFields = Mapping.getMappedField(fromXml);
+        Field annotatedFields = Mapping.getMappedField(fromAnnotations);
+
+        assertEquals(fromXml.getTableName(), fromAnnotations.getTableName());
+        assertEquals(xmlFields.keySet(), annotatedFields.keySet());
+        for (String key : xmlFields.keySet()) {
+            assertEquals(xmlFields.get(key).toString(), annotatedFields.get(key).toString(), "property " + key);
+        }
+        assertFalse(annotatedFields.containsKey("notMapped"), "fields without @Column must not be mapped");
+    }
+
+    @Test
+    public void testAnnotationTakesPrecedenceOverXml() throws ApplicationException {
+        // MappingPrecedence.map.xml maps table "from_xml"; the annotation says otherwise.
+        AnnotatedWidget data = new AnnotatedWidget("MappingPrecedence", repositoryOfType(Type.MySQL));
+
+        Mapping.getMappedField(data);
+
+        assertEquals("`widgets`", data.getTableName());
+    }
+
+    @Test
+    public void testAnnotatedTableNameQuotingPerDialectWithSchema() throws ApplicationException {
+        AnnotatedProfile mysql = new AnnotatedProfile(repositoryOfType(Type.MySQL));
+        AnnotatedProfile sqlServer = new AnnotatedProfile(repositoryOfType(Type.SQLServer));
+        AnnotatedProfile postgres = new AnnotatedProfile(repositoryOfType(Type.PostgreSQL));
+
+        Mapping.getMappedField(mysql);
+        Mapping.getMappedField(sqlServer);
+        Mapping.getMappedField(postgres);
+
+        assertEquals("`public`.`profiles`", mysql.getTableName());
+        assertEquals("[public].[profiles]", sqlServer.getTableName());
+        assertEquals("\"public\".\"profiles\"", postgres.getTableName());
+    }
+
+    @Test
+    public void testAnnotatedGeneratedIdIsFreshPerInstance() throws ApplicationException {
+        AnnotatedGeneratedId first = new AnnotatedGeneratedId(repositoryOfType(Type.PostgreSQL));
+        AnnotatedGeneratedId second = new AnnotatedGeneratedId(repositoryOfType(Type.PostgreSQL));
+
+        Field firstFields = Mapping.getMappedField(first);
+        Field secondFields = Mapping.getMappedField(second);
+
+        assertNotNull(first.getId());
+        assertNotEquals(first.getId(), second.getId(), "each instance must get its own generated id");
+        assertEquals(first.getId(), firstFields.get("Id").value());
+        assertEquals(second.getId(), secondFields.get("Id").value());
+    }
+
+    @Test
+    public void testAnnotatedTableWithoutIdentifier() throws ApplicationException {
+        AnnotatedLog data = new AnnotatedLog(repositoryOfType(Type.MySQL));
+
+        Field fields = Mapping.getMappedField(data);
+
+        assertEquals("`logs`", data.getTableName());
+        assertEquals(1, fields.size());
+        assertEquals("message", fields.get("message").getColumnName(), "an empty column name defaults to the field name");
+        assertFalse(fields.containsKey("Id"));
+    }
+
+    @Test
+    public void testSubclassInheritsMappingAndAddsColumns() throws ApplicationException {
+        AnnotatedGadget data = new AnnotatedGadget(repositoryOfType(Type.MySQL));
+
+        Field fields = Mapping.getMappedField(data);
+
+        assertEquals("`widgets`", data.getTableName());
+        assertTrue(fields.containsKey("Id"));
+        assertTrue(fields.containsKey("name"), "columns of the superclass are mapped");
+        assertTrue(fields.containsKey("email"), "columns of the superclass are mapped");
+        assertEquals("serial_no", fields.get("serialNo").getColumnName(), "columns of the subclass are mapped");
+    }
+
+    @Test
+    public void testDuplicateAnnotatedPropertyIsRejected() {
+        DuplicateWidget data = new DuplicateWidget(repositoryOfType(Type.MySQL));
+
+        assertThrows(ApplicationRuntimeException.class, () -> Mapping.getMappedField(data));
+    }
+
+    @org.tinystruct.data.annotation.Table(name = "widgets",
+            id = @Id(name = "Id", column = "id", type = "INTEGER", increment = true))
+    private static class AnnotatedWidget extends FakeData {
+        @Column(name = "name", type = "VARCHAR", length = 255)
+        private String name;
+        @Column(name = "email", type = "VARCHAR", length = 255)
+        private String email;
+        private String notMapped;
+
+        AnnotatedWidget(String className, Repository repository) {
+            super(className, repository);
+        }
+    }
+
+    private static final class AnnotatedGadget extends AnnotatedWidget {
+        @Column(name = "serial_no", type = "VARCHAR", length = 32)
+        private String serialNo;
+
+        AnnotatedGadget(Repository repository) {
+            super("AnnotatedGadget", repository);
+        }
+    }
+
+    private static final class DuplicateWidget extends AnnotatedWidget {
+        @Column(name = "other", type = "VARCHAR", length = 10)
+        private String name;
+
+        DuplicateWidget(Repository repository) {
+            super("DuplicateWidget", repository);
+        }
+    }
+
+    @org.tinystruct.data.annotation.Table(name = "profiles", schema = "public",
+            id = @Id(column = "id", type = "INTEGER", increment = true))
+    private static final class AnnotatedProfile extends FakeData {
+        AnnotatedProfile(Repository repository) {
+            super("AnnotatedProfile", repository);
+        }
+    }
+
+    @org.tinystruct.data.annotation.Table(name = "sessions",
+            id = @Id(column = "id", type = "VARCHAR", length = 36, generate = true))
+    private static final class AnnotatedGeneratedId extends FakeData {
+        AnnotatedGeneratedId(Repository repository) {
+            super("AnnotatedGeneratedId", repository);
+        }
+    }
+
+    @org.tinystruct.data.annotation.Table(name = "logs")
+    private static final class AnnotatedLog extends FakeData {
+        @Column(type = "TEXT")
+        private String message;
+
+        AnnotatedLog(Repository repository) {
+            super("AnnotatedLog", repository);
+        }
+    }
+
     /**
      * Minimal {@link Data} implementation exercising only what {@link Mapping#getMappedField}
      * touches, so these tests don't need a fully wired {@link
      * org.tinystruct.data.component.AbstractData} subclass and its process-wide static
      * repository bootstrap.
      */
-    private static final class FakeData implements Data {
+    private static class FakeData implements Data {
         private final String className;
         private final Repository repository;
         private String tableName;

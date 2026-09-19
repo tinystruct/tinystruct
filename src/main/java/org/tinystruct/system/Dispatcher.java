@@ -982,10 +982,20 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
      */
     @Action(value = "generate", description = "POJO object generator",
             options = {
-                    @Argument(key = "tables", description = "Table name(s) to be generated")
+                    @Argument(key = "tables", description = "Table name(s) to be generated"),
+                    @Argument(key = "mapping", description = "How the POJO maps to its table: xml (default) or annotation")
             },
             mode = Action.Mode.CLI)
     public void generate() throws ApplicationException {
+        // Validate up front, before any interactive prompt.
+        MappingMode mappingMode;
+        try {
+            Object mapping = getContext().getAttribute("--mapping");
+            mappingMode = MappingMode.parse(mapping == null ? null : mapping.toString());
+        } catch (IllegalArgumentException e) {
+            throw new ApplicationRuntimeException(e.getMessage(), e);
+        }
+
         Scanner scanner = new Scanner(System.in);
         String tableNames;
         if (getContext().getAttribute("--tables") == null) {
@@ -1060,6 +1070,7 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
 
             packageName = basePath.replace("src/main/java/", "").replace("/", ".");
             generator.setPackageName(packageName);
+            generator.setMappingMode(mappingMode);
 
             String[] list = tableNames.split(";");
             for (String tableName : list) {

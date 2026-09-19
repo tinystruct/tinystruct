@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.tinystruct.ApplicationException;
+import org.tinystruct.data.tools.MappingMode;
 import org.tinystruct.data.tools.PostgreSQLGenerator;
 
 import java.io.File;
@@ -29,7 +30,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
+import java.util.regex.Pattern;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -122,6 +125,33 @@ public class PostgreSQLGeneratorTest {
         assertTrue(xmlContent.contains("table=\"" + TEST_TABLE + "\""), "XML should map to correct table");
         assertTrue(xmlContent.contains("increment=\"true\""), "ID should be mapped as increment=\"true\"");
         assertTrue(xmlContent.contains("column=\"birth_date\""), "birth_date column mapping should be generated");
+    }
+
+    @Test
+    public void testAnnotationModeAnnotatesInsteadOfWritingXml() throws ApplicationException, IOException {
+        PostgreSQLGenerator generator = new PostgreSQLGenerator();
+        generator.setPath(TEST_OUTPUT_DIR + "/");
+        generator.setPackageName(TEST_PACKAGE);
+        generator.setMappingMode(MappingMode.ANNOTATION);
+
+        generator.create(TEST_CLASS, TEST_TABLE);
+
+        File javaFile = new File(TEST_OUTPUT_DIR + "/" + TEST_CLASS + ".java");
+        File xmlFile = new File(TEST_OUTPUT_DIR + "/" + TEST_CLASS + ".map.xml");
+        assertTrue(javaFile.exists(), "Java class file should be generated");
+        assertFalse(xmlFile.exists(), "no XML mapping should be written in annotation mode");
+
+        String source = new String(Files.readAllBytes(javaFile.toPath()));
+        assertTrue(source.contains("import org.tinystruct.data.annotation.Table;"), source);
+        assertTrue(source.contains("import org.tinystruct.data.annotation.Id;"), source);
+        assertTrue(source.contains("import org.tinystruct.data.annotation.Column;"), source);
+        assertTrue(source.contains("@Table(name = \"" + TEST_TABLE + "\""), source);
+        assertTrue(source.contains("@Id(name = \"Id\", column = \"id\""), source);
+        assertTrue(source.contains("increment = true"), "ID should be mapped as an increment id");
+        assertTrue(source.contains("public class " + TEST_CLASS), source);
+        // Each @Column sits directly above the member it describes.
+        assertTrue(Pattern.compile("@Column\\(name = \"birth_date\"[^\\n]*\\)\\R\\s*private \\w+ birthDate;")
+                .matcher(source).find(), source);
     }
 
     @AfterEach

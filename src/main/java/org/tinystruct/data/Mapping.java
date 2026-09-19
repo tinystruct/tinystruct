@@ -17,6 +17,9 @@ package org.tinystruct.data;
 
 import org.tinystruct.ApplicationException;
 import org.tinystruct.ApplicationRuntimeException;
+import org.tinystruct.data.annotation.Column;
+import org.tinystruct.data.annotation.Id;
+import org.tinystruct.data.annotation.Table;
 import org.tinystruct.data.component.Field;
 import org.tinystruct.data.component.FieldInfo;
 import org.tinystruct.dom.Attribute;
@@ -26,8 +29,10 @@ import org.tinystruct.dom.Element;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Mapping {
@@ -43,12 +48,13 @@ public class Mapping {
 
     /**
      * Per (class, repository-dialect) cache of the immutable parts of a mapping: the
-     * resolved/quoted table name and, for every mapped column, the fixed attribute
-     * pairs that a fresh {@link FieldInfo} needs. Every {@code new SomeData()} used to
-     * re-walk the mapping XML DOM and rebuild this from scratch; the DOM shape and the
-     * table name never change for a given class, so that work is computed once here and
-     * only the per-instance {@link Field}/{@link FieldInfo} objects (and any
-     * generated-id value) are still built fresh on every call.
+     * resolved/quoted table name and, for every mapped column, a prototype
+     * {@link FieldInfo} whose type, length and flags are already parsed and resolved.
+     * Every {@code new SomeData()} used to re-walk the mapping XML DOM, and then
+     * re-parse every attribute string (type lookup, integer and boolean parsing) for
+     * every column. None of that varies for a given class, so it is done once here and
+     * each instance only copies the prototypes into its own {@link Field}/{@link FieldInfo}
+     * objects (plus any generated-id value).
      */
     private static final ConcurrentHashMap<String, ClassMetadata> METADATA_CACHE = new ConcurrentHashMap<>();
 
@@ -69,10 +75,7 @@ public class Mapping {
 
         Field field = new Field();
         for (FieldTemplate template : metadata.fields) {
-            FieldInfo fieldInfo = new FieldInfo();
-            for (int i = 0; i < template.attrNames.length; i++) {
-                fieldInfo.append(template.attrNames[i], template.attrValues[i]);
-            }
+            FieldInfo fieldInfo = new FieldInfo(template.prototype);
 
             if (template.needsGeneratedId) {
                 data.setId(java.util.UUID.randomUUID().toString());
@@ -86,11 +89,66 @@ public class Mapping {
     }
 
     /**
-     * Parses the mapping XML (via the cached {@link Document} in {@link MappingManager})
-     * for the given class exactly once, capturing the table name and per-column
-     * attribute templates so subsequent instantiations can skip the DOM walk.
+     * Builds the metadata for the given class exactly once. A {@link Table} annotation
+     * on the class takes precedence; otherwise the {@code .map.xml} file is used. Both
+     * sources produce the same table name and per-column prototype {@link FieldInfo},
+     * so instantiation is identical whichever one a class uses.
      */
     private static ClassMetadata buildClassMetadata(Data data, String className) throws ApplicationException {
+        Table table = data.getClass().getAnnotation(Table.class);
+        return table != null
+                ? buildAnnotatedMetadata(data, table)
+                : buildXmlMetadata(data, className);
+    }
+
+    /**
+     * Reads the {@link Table}, {@link Id} and {@link Column} annotations of the data
+     * class (including its superclasses) into the table name and prototypes.
+     */
+    private static ClassMetadata buildAnnotatedMetadata(Data data, Table table) {
+        String tableName = quoteTable(data.getRepository().getType().ordinal(), table.name(), table.schema());
+
+        List<FieldTemplate> templates = new ArrayList<>();
+        Id id = table.id();
+        if (!id.column().isEmpty()) {
+            templates.add(idTemplate(id.name(), String.valueOf(id.increment()), String.valueOf(id.generate()),
+                    id.type(), id.column(), String.valueOf(id.length())));
+        }
+
+        Set<String> keys = new HashSet<>();
+        for (Class<?> type = data.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
+            for (java.lang.reflect.Field member : type.getDeclaredFields()) {
+                Column column = member.getAnnotation(Column.class);
+                if (column == null) {
+                    continue;
+                }
+
+                String key = member.getName();
+                if (!keys.add(key)) {
+                    throw new ApplicationRuntimeException("Duplicate mapped property '" + key + "' in " + data.getClass().getName());
+                }
+
+                String[] attrNames = {NAME, COLUMN, TYPE, LENGTH};
+                String[] attrValues = {
+                        key,
+                        column.name().isEmpty() ? key : column.name(),
+                        column.type(),
+                        String.valueOf(column.length())
+                };
+                templates.add(new FieldTemplate(key, prototypeOf(attrNames, attrValues), false));
+            }
+        }
+
+        return new ClassMetadata(tableName, templates);
+    }
+
+    /**
+     * Parses the mapping XML (via the cached {@link Document} in {@link MappingManager})
+     * for the given class exactly once, capturing the table name and a resolved
+     * prototype {@link FieldInfo} per column so subsequent instantiations can skip
+     * both the DOM walk and the attribute parsing.
+     */
+    private static ClassMetadata buildXmlMetadata(Data data, String className) throws ApplicationException {
         String mapFile = data.getClassPath() + className + ".map.xml";
 
         MappingManager manager = MappingManager.getInstance();
@@ -126,24 +184,7 @@ public class Mapping {
                     currentElement.getAttribute(NAME))) {
                 String table = currentElement.getAttribute("table");
                 String schema = currentElement.getAttribute(SCHEMA);
-                switch (data.getRepository().getType().ordinal()) {
-                    case 0: // MySQL
-                        tableName = schema.isEmpty()
-                                ? "`" + table + "`"
-                                : "`" + schema + "`.`" + table + "`";
-                        break;
-                    case 1: // SQL Server
-                    case 2: // SQLite
-                        tableName = schema.isEmpty()
-                                ? "[" + table + "]"
-                                : "[" + schema + "].[" + table + "]";
-                        break;
-                    default: // H2, Redis, PostgreSQL
-                        tableName = schema.isEmpty()
-                                ? table
-                                : "\"" + schema + "\".\"" + table + "\"";
-                        break;
-                }
+                tableName = quoteTable(data.getRepository().getType().ordinal(), table, schema);
                 list = currentElement.getChildNodes();
                 break;
             }
@@ -156,23 +197,13 @@ public class Mapping {
             while (iterator.hasNext()) {
                 currentElement = iterator.next();
                 if (currentElement.getName().equalsIgnoreCase(ID)) {
-                    String name = currentElement.getAttribute(NAME);
-                    String generate = currentElement.getAttribute(GENERATE);
-                    String type = currentElement.getAttribute(TYPE);
-
-                    String[] attrNames = {ID, NAME, INCREMENT, GENERATE, TYPE, COLUMN, LENGTH};
-                    String[] attrValues = {
-                            name,
-                            name,
+                    templates.add(idTemplate(
+                            currentElement.getAttribute(NAME),
                             currentElement.getAttribute(INCREMENT),
-                            generate,
-                            type,
+                            currentElement.getAttribute(GENERATE),
+                            currentElement.getAttribute(TYPE),
                             currentElement.getAttribute(COLUMN),
-                            currentElement.getAttribute(LENGTH)
-                    };
-
-                    boolean needsGeneratedId = Boolean.parseBoolean(generate) && !type.toLowerCase().startsWith("int");
-                    templates.add(new FieldTemplate(name, attrNames, attrValues, needsGeneratedId));
+                            currentElement.getAttribute(LENGTH)));
                 }
 
                 if (currentElement.getName().equalsIgnoreCase(PROPERTY)) {
@@ -188,12 +219,59 @@ public class Mapping {
                             key = attribute.value;
                         }
                     }
-                    templates.add(new FieldTemplate(key, attrNames, attrValues, false));
+                    templates.add(new FieldTemplate(key, prototypeOf(attrNames, attrValues), false));
                 }
             }
         }
 
         return new ClassMetadata(tableName, templates);
+    }
+
+    /**
+     * Quotes the table (and optional schema) for the repository dialect.
+     */
+    private static String quoteTable(int dialect, String table, String schema) {
+        switch (dialect) {
+            case 0: // MySQL
+                return schema.isEmpty()
+                        ? "`" + table + "`"
+                        : "`" + schema + "`.`" + table + "`";
+            case 1: // SQL Server
+            case 2: // SQLite
+                return schema.isEmpty()
+                        ? "[" + table + "]"
+                        : "[" + schema + "].[" + table + "]";
+            default: // H2, Redis, PostgreSQL
+                return schema.isEmpty()
+                        ? table
+                        : "\"" + schema + "\".\"" + table + "\"";
+        }
+    }
+
+    /**
+     * Builds the template of the identifier column. Only a non-integer id that the
+     * framework is asked to generate needs a fresh UUID per instance.
+     */
+    private static FieldTemplate idTemplate(String name, String increment, String generate,
+                                            String type, String column, String length) {
+        String[] attrNames = {ID, NAME, INCREMENT, GENERATE, TYPE, COLUMN, LENGTH};
+        String[] attrValues = {name, name, increment, generate, type, column, length};
+
+        boolean needsGeneratedId = Boolean.parseBoolean(generate) && !type.toLowerCase().startsWith("int");
+        return new FieldTemplate(name, prototypeOf(attrNames, attrValues), needsGeneratedId);
+    }
+
+    /**
+     * Resolves the attribute pairs of one mapping element into a {@link FieldInfo}
+     * once, through the same {@link FieldInfo#append} route the per-instance code used
+     * to take, so parsing semantics are unchanged.
+     */
+    private static FieldInfo prototypeOf(String[] attrNames, String[] attrValues) {
+        FieldInfo prototype = new FieldInfo();
+        for (int i = 0; i < attrNames.length; i++) {
+            prototype.append(attrNames[i], attrValues[i]);
+        }
+        return prototype;
     }
 
     private static final class ClassMetadata {
@@ -208,14 +286,12 @@ public class Mapping {
 
     private static final class FieldTemplate {
         final String key;
-        final String[] attrNames;
-        final String[] attrValues;
+        final FieldInfo prototype;
         final boolean needsGeneratedId;
 
-        FieldTemplate(String key, String[] attrNames, String[] attrValues, boolean needsGeneratedId) {
+        FieldTemplate(String key, FieldInfo prototype, boolean needsGeneratedId) {
             this.key = key;
-            this.attrNames = attrNames;
-            this.attrValues = attrValues;
+            this.prototype = prototype;
             this.needsGeneratedId = needsGeneratedId;
         }
     }

@@ -49,6 +49,10 @@ public abstract class AbstractData implements Data {
     // rather than on every instantiation (it never varies for a given class).
     private static final ConcurrentHashMap<Class<?>, String> CLASS_PATH_CACHE = new ConcurrentHashMap<>();
 
+    // Comma-separated column list of each concrete subclass, likewise computed once per
+    // class: the mapped columns never vary for a given class.
+    private static final ConcurrentHashMap<Class<?>, String> COLUMN_LIST_CACHE = new ConcurrentHashMap<>();
+
     // Static block to initialize the repository during class loading
     static {
         try {
@@ -74,7 +78,7 @@ public abstract class AbstractData implements Data {
     private Field readyFields;
 
     // All field names for the current object
-    private final StringBuilder allFields = new StringBuilder();
+    private String allFields = "";
 
     // Comma-separated field names for querying
     private String fields;
@@ -143,11 +147,20 @@ public abstract class AbstractData implements Data {
     private void initializeFields() {
         try {
             this.readyFields = Mapping.getMappedField(this);
-            for (Map.Entry<String, FieldInfo> entry : this.readyFields.entrySet()) {
-                if (allFields.length() > 0) allFields.append(",");
-                allFields.append(entry.getValue().getColumnName());
+
+            Class<?> clazz = this.getClass();
+            String columns = COLUMN_LIST_CACHE.get(clazz);
+            if (columns == null) {
+                StringBuilder builder = new StringBuilder();
+                for (Map.Entry<String, FieldInfo> entry : this.readyFields.entrySet()) {
+                    if (builder.length() > 0) builder.append(",");
+                    builder.append(entry.getValue().getColumnName());
+                }
+                columns = builder.toString();
+                COLUMN_LIST_CACHE.putIfAbsent(clazz, columns);
             }
-            this.fields = allFields.toString();
+            this.allFields = columns;
+            this.fields = columns;
         } catch (ApplicationException e) {
             logger.log(Level.SEVERE, "Failed to initialize fields: {0}", e.getMessage());
         }
@@ -430,7 +443,7 @@ public abstract class AbstractData implements Data {
     @Override
     public Data setRequestFields(String fields) {
         if (fields.equalsIgnoreCase("*")) {
-            this.fields = this.allFields.toString();
+            this.fields = this.allFields;
         } else {
             this.fields = fields;
         }

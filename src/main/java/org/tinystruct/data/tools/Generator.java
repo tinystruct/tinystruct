@@ -23,5 +23,14 @@ public interface Generator {
 
     void setPackageName(String packageName);
 
+    /**
+     * Chooses how the generated POJO describes its table mapping: a {@code .map.xml}
+     * resource ({@link MappingMode#XML}, the default) or {@code @Table}/{@code @Column}
+     * annotations ({@link MappingMode#ANNOTATION}). Generators that do not support
+     * annotations ignore this and keep writing XML.
+     */
+    default void setMappingMode(MappingMode mode) {
+    }
+
     void create(String className, String table) throws ApplicationException;
 }

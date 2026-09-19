@@ -41,6 +41,7 @@ import java.util.logging.Logger;
 public class SQLiteGenerator implements Generator {
     private String path;
     private String packageName;
+    private MappingMode mappingMode = MappingMode.XML;
 
     private final static Logger logger = Logger.getLogger(SQLiteGenerator.class.getName());
 
@@ -56,6 +57,11 @@ public class SQLiteGenerator implements Generator {
     @Override
     public void setPackageName(String packageName) {
         this.packageName = packageName;
+    }
+
+    @Override
+    public void setMappingMode(MappingMode mappingMode) {
+        this.mappingMode = mappingMode;
     }
 
     @Override
@@ -194,6 +200,8 @@ public class SQLiteGenerator implements Generator {
             }
         }
 
+        String classAnnotation = MappingAnnotations.apply(this.mappingMode, classElement, java_member_declaration, imports, lineSeparator);
+
         StringBuilder java_resource = new StringBuilder();
         if (this.packageName != null) {
             java_resource.append("package ").append(this.packageName).append(";").append(lineSeparator);
@@ -207,6 +215,7 @@ public class SQLiteGenerator implements Generator {
         }
 
         java_resource.append(lineSeparator);
+        java_resource.append(classAnnotation);
         java_resource.append("public class ").append(className).append(" extends AbstractData implements Serializable {").append(lineSeparator);
         java_resource.append("	/**").append(lineSeparator);
         java_resource.append("   * Auto Generated Serial Version UID").append(lineSeparator);
@@ -251,17 +260,19 @@ public class SQLiteGenerator implements Generator {
                 Files.createDirectories(parent);
 
             parent = java_resource_path.getParent();
-            if (parent != null)
+            if (parent != null && this.mappingMode == MappingMode.XML)
                 Files.createDirectories(parent);
         } catch (IOException e) {
             throw new ApplicationException(e.getMessage(), e.getCause());
         }
 
-        Document document = new Document(rootElement);
-        try (FileOutputStream out = new FileOutputStream(java_resource_path.toString())) {
-            document.save(out);
-        } catch (IOException IO) {
-            logger.severe(IO.getMessage());
+        if (this.mappingMode == MappingMode.XML) {
+            Document document = new Document(rootElement);
+            try (FileOutputStream out = new FileOutputStream(java_resource_path.toString())) {
+                document.save(out);
+            } catch (IOException IO) {
+                logger.severe(IO.getMessage());
+            }
         }
 
         FileGenerator generator = new FileGenerator(fullPath + ".java", java_resource);

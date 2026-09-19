@@ -520,26 +520,28 @@ public abstract class MCPApplication extends AbstractApplication {
      */
     public void registerTool(MCPTool tool) {
         Class<? extends MCPTool> toolClass = tool.getClass();
-        
-        boolean hasActionMethods = false;
+
         for (Method method : toolClass.getDeclaredMethods()) {
             Action action = method.getAnnotation(Action.class);
             if (action != null) {
-                hasActionMethods = true;
                 MCPTool.ToolMethod toolMethod = new MCPTool.ToolMethod(method, action, tool);
                 toolMethods.computeIfAbsent(toolMethod.getName(), k -> new ArrayList<>()).add(toolMethod);
                 LOGGER.info("Registered tool method: " + toolMethod.getName());
             }
         }
 
-        if (!hasActionMethods) {
-            if (tool.getSchema() == null) {
-                Builder builder = SchemaGenerator.generateSchema(toolClass);
-                tool.setSchema(builder);
-            }
-            tools.put(tool.getName(), tool);
-            LOGGER.info("Registered tool: " + tool.getName());
+        // Always register the tool itself under its own name too - independent of whether it
+        // also exposes @Action sub-methods. Both mechanisms are meant to coexist: e.g.
+        // CalculatorTool exposes fine-grained "calculator/add"-style sub-methods AND is callable
+        // as a single whole-tool "calculator" invocation (via executeLocally + an "operation"
+        // parameter). Skipping this whenever sub-methods exist, as before, made the whole-tool
+        // name unreachable through handleCallTool/handleListTools and MCPClient.executeResource.
+        if (tool.getSchema() == null) {
+            Builder builder = SchemaGenerator.generateSchema(toolClass);
+            tool.setSchema(builder);
         }
+        tools.put(tool.getName(), tool);
+        LOGGER.info("Registered tool: " + tool.getName());
     }
 
     /**

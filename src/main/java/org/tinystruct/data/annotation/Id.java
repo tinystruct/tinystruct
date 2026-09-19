@@ -1,0 +1,51 @@
+/*******************************************************************************
+ * Copyright  (c) 2013, 2025 James M. ZHOU
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *******************************************************************************/
+package org.tinystruct.data.annotation;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+/**
+ * Describes the identifier column of a {@link Table}. It is only used as the
+ * {@link Table#id()} value, because the identifier is inherited state rather than a
+ * field of the annotated class. The attributes mirror the {@code <id>} element of the
+ * XML mapping.
+ */
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({})
+public @interface Id {
+
+    /** The property key of the identifier. */
+    String name() default "Id";
+
+    /** The database column. An empty column means the table has no identifier. */
+    String column() default "";
+
+    /** The column type, e.g. {@code INTEGER} or {@code VARCHAR}. */
+    String type() default "";
+
+    /** The column length, or 0 when not applicable. */
+    int length() default 0;
+
+    /** Whether the database generates the value (auto-increment). */
+    boolean increment() default false;
+
+    /** Whether the framework generates the value (a UUID for non-integer types). */
+    boolean generate() default false;
+}
