@@ -29,9 +29,14 @@ tinystruct 框架
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.32</version>
-  <classifier>jar-with-dependencies</classifier> <!-- 可选 -->
+  <version>1.7.33</version>
 </dependency>
+```
+
+  如需将框架用作独立的命令行工具，请构建包含所有依赖的可选 JAR（约 50 MB，不包含在发布版本中）：
+```bash
+./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
+java -jar target/tinystruct-1.7.33-jar-with-dependencies.jar --help
 ```
 
 * 在 Java 中继承 AbstractApplication：
@@ -95,7 +100,7 @@ Smalltalk：<a href="https://github.com/tinystruct/smalltalk">https://github.com
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.32
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.33
            /
 ```
 ```tcsh

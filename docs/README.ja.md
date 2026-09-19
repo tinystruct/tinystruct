@@ -29,9 +29,14 @@ tinystruct archetype で始める
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.32</version>
-  <classifier>jar-with-dependencies</classifier> <!-- 任意 -->
+  <version>1.7.33</version>
 </dependency>
+```
+
+  フレームワークをスタンドアロンのコマンドラインツールとして使うには、すべての依存関係を含むオプションの JAR をビルドします（約 50 MB、リリースには含まれません）：
+```bash
+./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
+java -jar target/tinystruct-1.7.33-jar-with-dependencies.jar --help
 ```
 
 * Java で AbstractApplication を継承します:
@@ -95,7 +100,7 @@ CLI モードで実行
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.32
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.33
            /
 ```
 ```tcsh

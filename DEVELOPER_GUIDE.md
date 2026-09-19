@@ -26,7 +26,7 @@ Add the following dependency to your `pom.xml`:
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.32</version>
+  <version>1.7.33</version>
 </dependency>
 ```
 
@@ -213,7 +213,13 @@ tinystruct provides built-in support for various databases (H2, MySQL, SQLite, S
    database.user=sa
    database.password=
    ```
-2. **Usage**: Use the `generate` command to create POJOs and use the internal data layer to interact with the database.
+2. **Usage**: Use the `generate` command to create POJOs and use the internal data layer to interact with the database. By default `generate` writes a `.map.xml` mapping file next to each POJO; add `--mapping annotation` to annotate the POJO with `@Table`, `@Id` and `@Column` instead (no XML file is written). A class with `@Table` uses its annotations even if a `.map.xml` also exists.
+
+   ```bash
+   bin/dispatcher generate --tables users --mapping annotation
+   ```
+
+   To have missing tables created automatically from the class mapping, set `database.autocreate=true` (off by default). The table is created once per class, the first time the class is used, with `CREATE TABLE IF NOT EXISTS`; existing tables are never altered.
 
 3. **Exposed Connection Properties**:
    The `DatabaseOperator` class provides direct, type-safe API methods to query the connection's database metadata, current catalog, and schema name:
@@ -254,6 +260,7 @@ String status = parsed.get("status").toString();
 Configuration is managed in `src/main/resources/application.properties`. Key properties include:
 - `driver`: Database driver.
 - `database.url`: JDBC URL.
+- `database.autocreate`: Set to `true` to create missing tables on first use (default `false`).
 - `default.home.page`: The default action to trigger on the root URL.
 
 ### Variables and Templates
@@ -309,7 +316,7 @@ SSEPushManager.getInstance().push(sessionId, message);
 
 ### Built-in CLI Commands
 The dispatcher provides several utility commands:
-- `generate`: POJO object generator for database tables.
+- `generate`: POJO object generator for database tables (`--tables`, and `--mapping xml|annotation`).
 - `sql-execute`: Run SQL statements directly.
 - `install`: Install external packages.
 
