@@ -2,12 +2,16 @@ package org.tinystruct.system;
 
 import org.tinystruct.Application;
 import org.tinystruct.application.ActionRegistry;
+import org.tinystruct.http.Request;
+import org.tinystruct.http.Response;
 import org.tinystruct.system.annotation.Action;
 import org.tinystruct.system.annotation.Argument;
 import org.tinystruct.system.cli.CommandArgument;
 import org.tinystruct.system.cli.CommandLine;
 import org.tinystruct.system.cli.CommandOption;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class AnnotationProcessor {
@@ -51,7 +55,7 @@ public class AnnotationProcessor {
                 commandLine.setMode(mode);
                 this.app.getCommandLines().computeIfAbsent(commandName, k -> new HashMap<>()).put(mode, commandLine);
 
-                Set<CommandArgument<String, Object>> arguments = getCommandArguments(actionAnnotation);
+                Set<CommandArgument<String, Object>> arguments = getCommandArguments(actionAnnotation, method);
                 // Set arguments on the stored commandLine
                 this.app.getCommandLines().get(commandName).get(mode).setArguments(arguments);
 
@@ -79,15 +83,45 @@ public class AnnotationProcessor {
         }
     }
 
-    private static Set<CommandArgument<String, Object>> getCommandArguments(Action actionAnnotation) {
+    /**
+     * Builds the command arguments of an action from its {@code @Action(arguments = ...)} declaration.
+     *
+     * <p>The declaration order is kept (it is the positional order of the path segments), the
+     * {@code optional} flag is carried over, and the Java type of the corresponding method parameter
+     * is attached as the argument's type. Arguments line up with the method's data parameters
+     * by index, in the same way {@code ActionRegistry} aligns them, so {@code Request} and
+     * {@code Response} parameters are skipped.
+     */
+    private static Set<CommandArgument<String, Object>> getCommandArguments(Action actionAnnotation, Method method) {
         Argument[] argumentAnnotations = actionAnnotation.arguments();
-        Set<CommandArgument<String, Object>> arguments = new HashSet<>();
-        for (Argument argumentAnnotation : argumentAnnotations) {
-            String key = argumentAnnotation.key();
-            String argDescription = argumentAnnotation.description();
-            CommandArgument<String, Object> argument = new CommandArgument<>(key, null, argDescription);
+        List<Type> dataTypes = dataParameterTypes(method);
+        Set<CommandArgument<String, Object>> arguments = new LinkedHashSet<>();
+        for (int i = 0; i < argumentAnnotations.length; i++) {
+            Argument argumentAnnotation = argumentAnnotations[i];
+            CommandArgument<String, Object> argument = new CommandArgument<>(argumentAnnotation.key(), null, argumentAnnotation.description());
+            argument.setOptional(argumentAnnotation.optional());
+            if (i < dataTypes.size()) {
+                argument.setType(dataTypes.get(i));
+            }
             arguments.add(argument);
         }
         return arguments;
+    }
+
+    /**
+     * Generic parameter types of the method, without the injected {@code Request} and {@code Response}.
+     */
+    private static List<Type> dataParameterTypes(Method method) {
+        List<Type> types = new ArrayList<>();
+        Class<?>[] raw = method.getParameterTypes();
+        Type[] generic = method.getGenericParameterTypes();
+        for (int i = 0; i < raw.length; i++) {
+            if (Request.class.isAssignableFrom(raw[i])
+                    || Response.class.isAssignableFrom(raw[i])) {
+                continue;
+            }
+            types.add(generic.length == raw.length ? generic[i] : raw[i]);
+        }
+        return types;
     }
 }

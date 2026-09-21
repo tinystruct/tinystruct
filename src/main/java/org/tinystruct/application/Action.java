@@ -24,9 +24,11 @@ import org.tinystruct.system.annotation.Action.Mode;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -45,6 +47,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
     private final String method;
     private final MethodHandle methodHandle;
     private final Class<?>[] parameterTypes;
+    private Type[] genericParameterTypes;
     private final Class<?> returnType;
     private final int priority;
     private Mode mode;
@@ -101,6 +104,7 @@ public class Action implements org.tinystruct.application.Method<Object> {
         this.methodHandle = action.getMethodHandle();
         this.mode = action.getMode();
         this.parameterTypes = action.getParameterTypes();
+        this.genericParameterTypes = action.getGenericParameterTypes();
         this.pathRule = action.getPathRule();
         this.pattern = action.getPattern();
         this.priority = action.getPriority();
@@ -257,6 +261,21 @@ public class Action implements org.tinystruct.application.Method<Object> {
         return this.parameterTypes;
     }
 
+    public Type[] getGenericParameterTypes() {
+        return genericParameterTypes;
+    }
+
+    /**
+     * Sets the generic parameter types of the underlying method (one per entry of the parameter
+     * types, including any {@code Request}/{@code Response}). They let string arguments be
+     * converted to collections of enums, such as {@code Set<Role>}.
+     *
+     * @param genericParameterTypes the method's generic parameter types
+     */
+    public void setGenericParameterTypes(Type[] genericParameterTypes) {
+        this.genericParameterTypes = genericParameterTypes;
+    }
+
     /**
      * Execute the action without providing specific arguments.
      *
@@ -299,7 +318,9 @@ public class Action implements org.tinystruct.application.Method<Object> {
 
                 // Convert the argument to the required target type, if provided.
                 if (arg != null) {
-                    arguments[n + 1] = convertArgument(arg, targetType);
+                    Type genericType = genericParameterTypes != null
+                            && genericParameterTypes.length == types.length ? genericParameterTypes[n] : targetType;
+                    arguments[n + 1] = convertArgument(arg, targetType, genericType);
                 }
             } else {
                 // Handle context-specific arguments like Request and Response.
@@ -324,9 +345,29 @@ public class Action implements org.tinystruct.application.Method<Object> {
      * @return The converted argument.
      */
     @SuppressWarnings("unchecked")
-    private Object convertArgument(Object arg, Class<?> targetType) {
+    private Object convertArgument(Object arg, Class<?> targetType, Type genericType) {
         if (arg == null) {
             return null; // Return null if the input argument is null.
+        }
+
+        // A comma-separated string becomes a Set or List of enum constants, e.g. "ADMIN,USER" for Set<Role>.
+        if (arg instanceof CharSequence && Collection.class.isAssignableFrom(targetType)) {
+            Class<?> element = enumElementType(genericType);
+            if (element != null && (targetType.isAssignableFrom(LinkedHashSet.class)
+                    || targetType.isAssignableFrom(ArrayList.class))) {
+                try {
+                    List<Object> constants = new ArrayList<>();
+                    for (String name : arg.toString().split(",")) {
+                        if (!name.isBlank()) constants.add(Enum.valueOf((Class<Enum>) element, name.trim()));
+                    }
+                    if (targetType.isAssignableFrom(LinkedHashSet.class)) {
+                        return new LinkedHashSet<>(constants);
+                    }
+                    return constants;
+                } catch (Exception e) {
+                    throw new ApplicationRuntimeException("Error converting argument: " + arg, e);
+                }
+            }
         }
 
         String _arg = String.valueOf(arg); // Convert argument to string for parsing.
@@ -353,6 +394,17 @@ public class Action implements org.tinystruct.application.Method<Object> {
             // Wrap and rethrow any conversion errors with additional context.
             throw new ApplicationRuntimeException("Error converting argument: " + _arg, e);
         }
+    }
+
+    /** The enum class of a {@code Collection<E>} type, or {@code null} if it is not a collection of enums. */
+    private static Class<?> enumElementType(Type type) {
+        if (type instanceof ParameterizedType) {
+            Type[] args = ((ParameterizedType) type).getActualTypeArguments();
+            if (args.length == 1 && args[0] instanceof Class && ((Class<?>) args[0]).isEnum()) {
+                return (Class<?>) args[0];
+            }
+        }
+        return null;
     }
 
     /**

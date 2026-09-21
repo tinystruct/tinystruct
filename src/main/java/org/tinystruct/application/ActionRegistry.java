@@ -352,6 +352,7 @@ public final class ActionRegistry {
                 Action action = createAction(actions.size(), app, patternBuilder.getExpression(),
                         handle, method.getName(), method.getReturnType(),
                         types, patternBuilder.getPriority(), mode);
+                action.setGenericParameterTypes(method.getGenericParameterTypes());
 
                 actions.add(action);
                 patternGroups.put(group, actions);
