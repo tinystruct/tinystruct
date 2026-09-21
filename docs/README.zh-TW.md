@@ -29,14 +29,14 @@ tinystruct 框架
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.33</version>
+  <version>1.7.34</version>
 </dependency>
 ```
 
   若要將框架作為獨立的命令列工具使用，請建置包含所有相依套件的選用 JAR（約 50 MB，不包含在發行版本中）：
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.33-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.34-jar-with-dependencies.jar --help
 ```
 
 * 在 Java 中繼承 AbstractApplication：
@@ -100,7 +100,7 @@ Smalltalk：<a href="https://github.com/tinystruct/smalltalk">https://github.com
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.33
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.34
            /
 ```
 ```tcsh

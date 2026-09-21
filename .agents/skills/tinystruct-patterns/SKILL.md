@@ -44,7 +44,7 @@ Every tinystruct project needs both launchers in `bin/`. If they are missing (a 
 **2. Copy the templates, substituting the version:**
 
 ```bash
-V=1.7.33                       # the version from step 1
+V=1.7.34                       # the version from step 1
 SKILL=.agents/skills/tinystruct-patterns
 mkdir -p bin
 sed "s/@TINYSTRUCT_VERSION@/$V/" "$SKILL/references/bin/dispatcher"     > bin/dispatcher
@@ -229,7 +229,7 @@ The MCP APIs (e.g., `org.tinystruct.mcp.MCPTool`, `org.tinystruct.mcp.MCPServer`
 <dependency>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.7.33</version>
+    <version>1.7.34</version>
 </dependency>
 ```
 

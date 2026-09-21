@@ -29,14 +29,14 @@ tinystruct archetype으로 시작하기
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.33</version>
+  <version>1.7.34</version>
 </dependency>
 ```
 
   프레임워크를 독립 실행형 명령줄 도구로 사용하려면 모든 의존성을 포함한 선택적 JAR를 빌드하세요(약 50MB, 릴리스에는 포함되지 않음):
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.33-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.34-jar-with-dependencies.jar --help
 ```
 
 * Java에서 AbstractApplication을 확장합니다:
@@ -100,7 +100,7 @@ CLI 모드로 실행
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.33
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.34
            /
 ```
 ```tcsh

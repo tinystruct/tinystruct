@@ -30,14 +30,14 @@ Installation and Getting Started Manually
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.33</version>
+  <version>1.7.34</version>
 </dependency>
 ```
 
   To use the framework as a standalone command-line tool, build the optional jar that bundles all dependencies (about 50 MB, not part of the release):
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.33-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.34-jar-with-dependencies.jar --help
 ```
 
 * Extend the AbstractApplication in Java:
@@ -101,7 +101,7 @@ Execute in CLI mode
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.33
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.34
            /
 ```
 ```tcsh
