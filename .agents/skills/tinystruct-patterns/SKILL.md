@@ -37,43 +37,36 @@ Default to this workflow: implement the `@Action`, run it immediately via `bin/d
 
 ### Generating `bin/dispatcher` and `bin/dispatcher.cmd`
 
-Every tinystruct project needs both launchers in `bin/`. If they are missing (a hand-made project, a multi-module layout, a new repository), **generate them from the templates in [`references/bin/`](references/bin/) — never write them by hand, and never substitute a `main()`.**
+Every tinystruct project needs its launcher in `bin/`. **The framework generates it — never write it by hand, and never copy it from another project or substitute a `main()`.** `ApplicationManager.init()` writes the launcher for the current operating system into `bin/` under the working directory whenever it is missing, from templates inside the tinystruct jar, with that jar's version filled in. Line endings and the executable bit are already right.
 
-**1. Find the tinystruct version** the project builds against: the `<tinystruct.version>` property or the `org.tinystruct:tinystruct` dependency in `pom.xml`. The jar `tinystruct-<version>.jar` must be reachable, either in `~/.m2/repository/org/tinystruct/tinystruct/<version>/` (run `mvn dependency:resolve` if it is not) or in the project's `lib/`.
+**1. Find the tinystruct version** the project builds against: the `<tinystruct.version>` property or the `org.tinystruct:tinystruct` dependency in `pom.xml`. The jar must be reachable, in `~/.m2/repository/org/tinystruct/tinystruct/<version>/` (run `mvn dependency:resolve` if it is not) or in the project's `lib/`.
 
-**2. Copy the templates, substituting the version:**
-
-```bash
-V=1.7.34                       # the version from step 1
-SKILL=.agents/skills/tinystruct-patterns
-mkdir -p bin
-sed "s/@TINYSTRUCT_VERSION@/$V/" "$SKILL/references/bin/dispatcher"     > bin/dispatcher
-sed "s/@TINYSTRUCT_VERSION@/$V/" "$SKILL/references/bin/dispatcher.cmd" > bin/dispatcher.cmd
-```
-
-**3. Fix line endings and the executable bit.** `bin/dispatcher` must be LF and executable (a CR in a shell script breaks it); `bin/dispatcher.cmd` should be CRLF:
+**2. From the project root, run the framework once:**
 
 ```bash
-sed -i 's/\r$//' bin/dispatcher && chmod +x bin/dispatcher
-sed -i 's/\r$//; s/$/\r/' bin/dispatcher.cmd
-git update-index --add --chmod=+x bin/dispatcher      # inside a git repository
+java -cp ~/.m2/repository/org/tinystruct/tinystruct/1.7.34/tinystruct-1.7.34.jar \
+     org.tinystruct.system.Dispatcher --version
 ```
 
-Recommended `.gitattributes`, so a checkout on another OS does not corrupt them:
+On Windows use `%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\1.7.34\tinystruct-1.7.34.jar` and the same class. This creates **only the script for the OS you ran it on**, and only if it is not already there:
+
+| Run on | Creates |
+|---|---|
+| Linux, macOS | `bin/dispatcher` (executable, LF) |
+| Windows | `bin\dispatcher.cmd` (CRLF) |
+
+**3. Verify.** From the project root run `bin/dispatcher --version` (Windows: `bin\dispatcher.cmd --version`). It prints `Dispatcher (cli) (built on tinystruct-<version>)`, and the `VERSION` inside the script equals the jar's version. Then `bin/dispatcher --help` lists the commands and every imported action. Show the user the file you created.
+
+**4. Get both scripts by running step 2 on each OS**, or let a teammate or CI on the other OS run it and commit the result. Commit both, so a checkout on either OS works. Do not try to fake the other OS with `-Dos.name=…`: on Windows it fails (`UnsupportedOperationException` from `setPosixFilePermissions`) and leaves an empty `bin/dispatcher`. Recommended `.gitattributes`, so a checkout does not corrupt the line endings:
 
 ```
 bin/dispatcher     text eol=lf
 bin/dispatcher.cmd text eol=crlf
 ```
 
-**4. Verify.** No placeholder may remain (`grep -n TINYSTRUCT_VERSION bin/dispatcher bin/dispatcher.cmd` prints nothing; a leftover placeholder gives a jar path that does not exist, so `Dispatcher` is not found). Then run, from the project root:
+**Upgrading tinystruct:** change the version in `pom.xml`, delete the old script, and repeat step 2 with the new jar. Alternatively `bin/dispatcher update` checks Maven Central for the latest release, upgrades the project's dependency and regenerates the script with force; it needs the network, edits the `pom.xml`, and goes to the *latest* version, not a chosen one.
 
-```bash
-bin/dispatcher --version        # Windows: bin\dispatcher.cmd --version
-bin/dispatcher --help           # lists the commands and every imported action
-```
-
-`--version` prints `Dispatcher (cli) (built on tinystruct-<version>)`. Show the user the two files you created.
+**It also happens implicitly.** Any code that reaches `ApplicationManager.init()` (the dispatcher itself, or `ApplicationManager.install(app, config)` in a unit test) creates the script in the *current directory* if it is missing. If unit tests scatter `bin/dispatcher.cmd` into module directories, run them from the build directory: in the surefire configuration set `<workingDirectory>${project.build.directory}</workingDirectory>`.
 
 **What the scripts do**, which explains most problems:
 
@@ -85,10 +78,9 @@ bin/dispatcher --help           # lists the commands and every imported action
 **Gotchas:**
 
 - **On Windows use `bin\dispatcher.cmd`.** The shell script joins the classpath with `:`, so under Git Bash/MSYS it fails with `ClassNotFoundException: org.tinystruct.system.Dispatcher`. Use WSL, or the `.cmd`.
-- **Only the tinystruct jar is on the classpath.** The framework no longer ships a fat jar by default, so your other modules, JDBC drivers and libraries (jjwt, lettuce, …) must be in `lib/`: `mvn dependency:copy-dependencies -DoutputDirectory=lib` (and git-ignore `lib/`). In a multi-module build, keep the scripts at the root that holds `target/classes`/`lib/`, or copy the module jars into `lib/`.
-- **One `--import` per application class.** `--import a.A,b.B` fails; write `--import a.A --import b.B`.
+- **Only the tinystruct jar is on the classpath.** The framework no longer ships a fat jar by default, so your other modules, JDBC drivers and libraries (jjwt, lettuce, …) must be in `lib/`: `mvn dependency:copy-dependencies -DoutputDirectory=lib` (and git-ignore `lib/`). In a multi-module build, keep the launcher in the directory that holds `target/classes` and `lib/`, and copy the sibling modules' jars into that `lib/`; running it from a module whose siblings are not on its classpath fails with `NoClassDefFoundError`.
+- **Load applications with `--import` or configuration.** One `--import` per class (`--import a.A,b.B` fails; write `--import a.A --import b.B`), or list them once in `application.properties`: `default.import.applications=a.A;b.B` (`;`-separated).
 - **`JAVA_HOME` must be set** for the `.cmd`; it stops with an error otherwise.
-- **The version in the scripts must match the pom.** When the tinystruct version is upgraded, regenerate both scripts (repeat steps 1–4) rather than editing one.
 - **`bin/` sits directly under the directory that holds `target/classes` and `lib/`.** The `.cmd` treats the parent of `bin/` as the root, so a `bin/` nested in the wrong directory puts the wrong classpath in front of `Dispatcher`.
 
 ## When to Activate
@@ -96,7 +88,7 @@ bin/dispatcher --help           # lists the commands and every imported action
 ### When to Use
 
 - Running, testing, or debugging any `@Action` via `bin/dispatcher` — this is the default way to work with a tinystruct app, before reaching for HTTP or an IDE run configuration.
-- Setting up a project that has no `bin/dispatcher` / `bin/dispatcher.cmd` — generate both from `references/bin/` (see "Generating `bin/dispatcher` and `bin/dispatcher.cmd`").
+- Setting up a project that has no `bin/dispatcher` / `bin/dispatcher.cmd` — have the framework generate it (see "Generating `bin/dispatcher` and `bin/dispatcher.cmd`").
 - Creating new `Application` modules by extending `AbstractApplication`.
 - Defining routes and command-line actions using `@Action`.
 - Handling per-request state via `Context`.
@@ -355,7 +347,7 @@ The framework includes a programmatic wrapper around `java.util.logging` (JUL) t
 | `ApplicationRuntimeException: template not found` | Call `setTemplateRequired(false)` in `init()` for API-only apps. |
 | Annotating `private` methods with `@Action` | Actions must be `public` to be registered by the framework. |
 | Hardcoding `main(String[] args)` in apps, or testing only via curl/browser/IDE run configs | Use `bin/dispatcher` as the entry point and default dev/test tool for all modules. |
-| `bin/dispatcher` is missing, or a hand-written launcher script | Generate `bin/dispatcher` and `bin/dispatcher.cmd` from `references/bin/` (version substituted, LF/CRLF endings, executable bit). |
+| `bin/dispatcher` is missing, or a hand-written or copied launcher script | Let the framework generate it: run `org.tinystruct.system.Dispatcher --version` once from the project root (creates the current OS's script). |
 | `bin/dispatcher` fails with `ClassNotFoundException: org.tinystruct.system.Dispatcher` on Windows | The shell script cannot run under Git Bash/MSYS; use `bin\dispatcher.cmd` or WSL. |
 | `ClassNotFoundException` for `--import a.A,b.B` | One `--import` per class: `--import a.A --import b.B`. |
 | A shell-script launcher that fails with `\r: command not found` | The file has CRLF endings; convert `bin/dispatcher` to LF. |
@@ -383,7 +375,6 @@ Detailed guides are available in the `references/` directory:
 - [Database Persistence](references/database.md) — AbstractData POJOs, CRUD, annotation and XML mapping, POJO generation, table auto-creation
 - [System & Usage](references/system-usage.md) — Context, Sessions, SSE, File Uploads, Events, Networking
 - [Testing Patterns](references/testing.md) — JUnit 5 unit and HTTP integration testing
-- [Launcher templates](references/bin/) — `dispatcher` (POSIX shell, LF) and `dispatcher.cmd` (Windows, CRLF) with an `@TINYSTRUCT_VERSION@` placeholder; used by "Generating `bin/dispatcher` and `bin/dispatcher.cmd`"
 
 ## Reference Source Files (Internal)
 
