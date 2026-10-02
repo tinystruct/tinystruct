@@ -8,7 +8,13 @@ tinystruct 框架
 一个用于 Java 开发的简单框架。理念简洁，设计更优，易于使用，并具备更好的性能。
 
 [![MvnRepository](https://badges.mvnrepository.com/badge/org.tinystruct/tinystruct/badge.svg?label=MvnRepository)](https://mvnrepository.com/artifact/org.tinystruct/tinystruct)
+[![Maven Central](https://img.shields.io/maven-central/v/org.tinystruct/tinystruct?label=Maven%20Central)](https://central.sonatype.com/artifact/org.tinystruct/tinystruct)
+[![Build](https://github.com/tinystruct/tinystruct/actions/workflows/build.yml/badge.svg)](https://github.com/tinystruct/tinystruct/actions/workflows/build.yml)
 [![CodeQL](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml/badge.svg)](https://github.com/tinystruct/tinystruct/actions/workflows/codeql.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](../LICENSE)
+![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)
+[![GitHub Stars](https://img.shields.io/github/stars/tinystruct/tinystruct?style=flat)](https://github.com/tinystruct/tinystruct/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/tinystruct/tinystruct)](https://github.com/tinystruct/tinystruct/commits/master)
 
 [![Star History Chart](https://api.star-history.com/svg?repos=tinystruct/tinystruct&type=Date)](https://www.star-history.com/#tinystruct/tinystruct&Date)
 
