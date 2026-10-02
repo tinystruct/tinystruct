@@ -10,3 +10,4 @@ _
 jdk-17/
 .lock
 .*.drawio.bkp
+*.log

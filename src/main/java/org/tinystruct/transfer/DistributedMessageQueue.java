@@ -237,83 +237,42 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
         this.list.put("{A}", new ArrayDeque<Builder>());
         this.list.put("{B}", new ArrayDeque<Builder>());
 
-        this.getService().execute(new Runnable() {
-            int i = 0;
-
-            @Override
-            public void run() {
-                while (i++ < n)
-                    try {
-                        ApplicationManager.call("message/put/[M001]/{A}/A post " + i, null);
-                        Thread.sleep(1);
-                    } catch (ApplicationException e) {
-                        // TODO Auto-generated catch block
-                        logger.log(Level.SEVERE, e.getMessage(), e);
-                    } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        logger.log(Level.SEVERE, e.getMessage(), e);
-                    }
-            }
-        });
-
-        this.getService().execute(new Runnable() {
-            int i = 0;
-
-            @Override
-            public void run() {
-                while (i++ < n)
-                    try {
-                        ApplicationManager.call("message/put/[M001]/{B}/B post " + i, null);
-                        Thread.sleep(1);
-                    } catch (ApplicationException e) {
-                        // TODO Auto-generated catch block
-                        logger.log(Level.SEVERE, e.getMessage(), e);
-                    } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        logger.log(Level.SEVERE, e.getMessage(), e);
-                    }
-            }
-        });
-
-        this.getService().execute(new Runnable() {
-            @Override
-            public void run() {
-                // TODO Auto-generated method stub
-                System.out.println("[A] is started...");
-                while (true)
-                    try {
-                        System.out.println("**A**:" + ApplicationManager.call("message/take/{A}", null));
-                        Thread.sleep(1);
-                    } catch (ApplicationException e) {
-                        logger.log(Level.SEVERE, e.getMessage(), e);
-                    } catch (InterruptedException e) {
-                        logger.log(Level.SEVERE, e.getMessage(), e);
-                    }
-            }
-        });
-
-        this.getService().execute(new Runnable() {
-            @Override
-            public void run() {
-                // TODO Auto-generated method stub
-                System.out.println("[B] is started...");
-                while (true)
-                    try {
-                        System.out.println("**B**:" + ApplicationManager.call("message/take/{B}", null));
-                        Thread.sleep(1);
-                    } catch (ApplicationException e) {
-                        // TODO Auto-generated catch block
-                        logger.log(Level.SEVERE, e.getMessage(), e);
-                    } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        logger.log(Level.SEVERE, e.getMessage(), e);
-                    }
-            }
-        });
+        this.getService().execute(() -> produce("{A}", "A", n));
+        this.getService().execute(() -> produce("{B}", "B", n));
+        this.getService().execute(() -> consume("{A}", "A"));
+        this.getService().execute(() -> consume("{B}", "B"));
 
         return true;
     }
 
+
+    private void produce(String target, String label, int n) {
+        for (int i = 1; i <= n; i++) {
+            try {
+                ApplicationManager.call("message/put/[M001]/" + target + "/" + label + " post " + i, null);
+                Thread.sleep(1);
+            } catch (ApplicationException e) {
+                logger.log(Level.SEVERE, e.getMessage(), e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
+    private void consume(String target, String label) {
+        logger.info("[" + label + "] is started...");
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                logger.info("**" + label + "**:" + ApplicationManager.call("message/take/" + target, null));
+                Thread.sleep(1);
+            } catch (ApplicationException e) {
+                logger.log(Level.SEVERE, e.getMessage(), e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 }
 
 class Maps {

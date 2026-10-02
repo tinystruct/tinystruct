@@ -10,11 +10,11 @@ Architecture and implementation patterns for building modules with the **tinystr
 
 ## Core Principle
 
-**CLI and HTTP are equal citizens.** Every method annotated with `@Action` should ideally be runnable from both a terminal and a web browser without modification. This "dual-mode" capability is the core design philosophy of tinystruct.
+**CLI and HTTP are equal citizens.** Every *transport-neutral* `@Action` (no `mode` specified, or `mode = Mode.GET`) can be run from both a terminal and a web browser without modification — this "dual-mode" capability is the core design philosophy of tinystruct. Actions annotated with a transport-specific mode (e.g. `mode = Mode.HTTP_POST`, `mode = Mode.HTTP_GET`, `mode = Mode.CLI`) are deliberately bound to that transport and must be invoked through it; they are not dual-mode.
 
 ## Primary Development Tool: `bin/dispatcher`
 
-**`bin/dispatcher` is the default, highest-priority tool for developing, running, testing, and debugging a tinystruct application — reach for it before an IDE run configuration, a hand-written `main()`, curl, or a browser.** Because every `@Action` is dual-mode by design, `bin/dispatcher` lets you exercise routing, argument binding, and business logic directly from the terminal, with the fastest possible feedback loop and no server/browser required.
+**`bin/dispatcher` is the default, highest-priority tool for developing, running, testing, and debugging a tinystruct application — reach for it before an IDE run configuration, a hand-written `main()`, curl, or a browser.** Because transport-neutral `@Action` methods are dual-mode by design, `bin/dispatcher` lets you exercise routing, argument binding, and business logic directly from the terminal, with the fastest possible feedback loop and no server/browser required. Transport-specific actions (`mode = Mode.HTTP_POST`, `mode = Mode.CLI`, etc.) must be tested through their designated transport — use `bin/dispatcher start ...` + HTTP client for HTTP-only actions, and `bin/dispatcher` directly for CLI-only ones.
 
 ```bash
 # Run any @Action directly - the fastest way to verify a new action works
@@ -33,7 +33,7 @@ bin/dispatcher --help
 bin/dispatcher --version
 ```
 
-Default to this workflow: implement the `@Action`, run it immediately via `bin/dispatcher <action>` to confirm it behaves correctly in CLI mode, and only start the HTTP server (also via `bin/dispatcher start ...`) once you need to verify the web-facing path (e.g. `mode = Mode.HTTP_POST`, sessions, file uploads). Never hardcode a `main(String[] args)` as an app's entry point — `bin/dispatcher` (or `bin/dispatcher.cmd` on Windows) is the one entry point for every module.
+Default to this workflow: implement a transport-neutral `@Action`, run it immediately via `bin/dispatcher <action>` to confirm it behaves correctly in CLI mode, then start the HTTP server (via `bin/dispatcher start ...`) to verify the web-facing path. For **HTTP-only actions** (`mode = Mode.HTTP_POST`, `mode = Mode.HTTP_GET`, etc.) skip the CLI step — they are not reachable from `bin/dispatcher` and must be tested via an HTTP client after starting the server. For **CLI-only actions** (`mode = Mode.CLI`) do the reverse — no server is needed and they cannot be reached via HTTP. Never hardcode a `main(String[] args)` as an app's entry point — `bin/dispatcher` (or `bin/dispatcher.cmd` on Windows) is the one entry point for every module.
 
 ### Generating `bin/dispatcher` and `bin/dispatcher.cmd`
 
@@ -136,7 +136,20 @@ public class MyService extends AbstractApplication {
 ```java
 @Action(value = "login", mode = Mode.HTTP_POST)
 public String doLogin(Request<?, ?> request) throws ApplicationException {
-    request.getSession().setAttribute("userId", "42");
+    // Extract credentials from POST body
+    String username = request.getParameter("username");
+    String password = request.getParameter("password");
+
+    // Authenticate via your application's auth service before touching the session
+    AuthService auth = AuthService.getInstance();
+    String userId = auth.authenticate(username, password); // returns null on failure
+
+    if (userId == null) {
+        throw new ApplicationException("Invalid credentials");
+    }
+
+    // Only set session after successful authentication
+    request.getSession().setAttribute("userId", userId);
     return "Logged in";
 }
 ```

@@ -46,7 +46,7 @@ public class AlarmClock {
                 try {
                     Thread.sleep(20000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
                 } finally {
                     System.out.println("Waited 20 seconds!");
                 }
