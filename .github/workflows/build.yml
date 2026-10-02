@@ -15,4 +15,4 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
-      - run: ./mvnw -B verify -DskipTests
+      - run: ./mvnw -B verify -DskipTests -D"gpg.skip=true"
