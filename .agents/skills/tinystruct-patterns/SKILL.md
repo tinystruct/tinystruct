@@ -44,11 +44,11 @@ Every tinystruct project needs its launcher in `bin/`. **The framework generates
 **2. From the project root, run the framework once:**
 
 ```bash
-java -cp ~/.m2/repository/org/tinystruct/tinystruct/1.7.34/tinystruct-1.7.34.jar \
+java -cp ~/.m2/repository/org/tinystruct/tinystruct/1.7.35/tinystruct-1.7.35.jar \
      org.tinystruct.system.Dispatcher --version
 ```
 
-On Windows use `%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\1.7.34\tinystruct-1.7.34.jar` and the same class. This creates **only the script for the OS you ran it on**, and only if it is not already there:
+On Windows use `%USERPROFILE%\.m2\repository\org\tinystruct\tinystruct\1.7.35\tinystruct-1.7.35.jar` and the same class. This creates **only the script for the OS you ran it on**, and only if it is not already there:
 
 | Run on | Creates |
 |---|---|
@@ -234,7 +234,7 @@ The MCP APIs (e.g., `org.tinystruct.mcp.MCPTool`, `org.tinystruct.mcp.MCPServer`
 <dependency>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.7.34</version>
+    <version>1.7.35</version>
 </dependency>
 ```
 
