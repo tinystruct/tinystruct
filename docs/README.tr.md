@@ -1,4 +1,4 @@
-﻿`"Ne çok eserin var, ya RAB! Hepsini bilgelikle yaptın; yeryüzü yarattıklarınla dolu."`
+`"Ne çok eserin var, ya RAB! Hepsini bilgelikle yaptın; yeryüzü yarattıklarınla dolu."`
 ***Mezmurlar 104:24***
 
 Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Türkçe](README.tr.md) | [Русский](README.ru.md) | [Tiếng Việt](README.vi.md) | [ไทย](README.th.md) | [Deutsch](README.de.md) | [Español](README.es.md)
@@ -29,14 +29,14 @@ Elle kurulum ve başlangıç
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.34</version>
+  <version>1.7.35</version>
 </dependency>
 ```
 
   Çerçeveyi bağımsız bir komut satırı aracı olarak kullanmak için tüm bağımlılıkları içeren isteğe bağlı JAR'ı derleyin (yaklaşık 50 MB, sürümün parçası değildir):
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.34-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.35-jar-with-dependencies.jar --help
 ```
 
 * Java'da AbstractApplication sınıfını genişlet:
@@ -100,7 +100,7 @@ CLI modunda çalıştırma
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.34
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.35
            /
 ```
 ```tcsh

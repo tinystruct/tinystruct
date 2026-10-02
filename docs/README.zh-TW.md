@@ -1,4 +1,4 @@
-﻿`"耶和華啊，你所造的何其多！都是你用智慧造成的；遍地滿了你的豐富。"`
+`"耶和華啊，你所造的何其多！都是你用智慧造成的；遍地滿了你的豐富。"`
 ***詩篇 104:24***
 
 Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Türkçe](README.tr.md) | [Русский](README.ru.md) | [Tiếng Việt](README.vi.md) | [ไทย](README.th.md) | [Deutsch](README.de.md) | [Español](README.es.md)
@@ -29,14 +29,14 @@ tinystruct 框架
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.34</version>
+  <version>1.7.35</version>
 </dependency>
 ```
 
   若要將框架作為獨立的命令列工具使用，請建置包含所有相依套件的選用 JAR（約 50 MB，不包含在發行版本中）：
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.34-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.35-jar-with-dependencies.jar --help
 ```
 
 * 在 Java 中繼承 AbstractApplication：
@@ -100,7 +100,7 @@ Smalltalk：<a href="https://github.com/tinystruct/smalltalk">https://github.com
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.34
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.35
            /
 ```
 ```tcsh

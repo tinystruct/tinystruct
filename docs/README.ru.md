@@ -1,4 +1,4 @@
-﻿`"Как многочисленны дела Твои, Господи! Все соделал Ты премудро; земля полна Твоих созданий."`
+`"Как многочисленны дела Твои, Господи! Все соделал Ты премудро; земля полна Твоих созданий."`
 ***Псалом 103:24***
 
 Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Türkçe](README.tr.md) | [Русский](README.ru.md) | [Tiếng Việt](README.vi.md) | [ไทย](README.th.md) | [Deutsch](README.de.md) | [Español](README.es.md)
@@ -29,14 +29,14 @@ Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [�
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.34</version>
+  <version>1.7.35</version>
 </dependency>
 ```
 
   Чтобы использовать фреймворк как отдельный инструмент командной строки, соберите необязательный JAR со всеми зависимостями (около 50 МБ, в релиз не входит):
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.34-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.35-jar-with-dependencies.jar --help
 ```
 
 * Наследуйте AbstractApplication в Java:
@@ -100,7 +100,7 @@ Smalltalk: <a href="https://github.com/tinystruct/smalltalk">https://github.com/
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.34
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.35
            /
 ```
 ```tcsh

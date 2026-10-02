@@ -1,4 +1,4 @@
-﻿`"Quantas são as tuas obras, SENHOR! Fizeste todas elas com sabedoria; a terra está cheia das tuas criaturas."`
+`"Quantas são as tuas obras, SENHOR! Fizeste todas elas com sabedoria; a terra está cheia das tuas criaturas."`
 ***Salmos 104:24***
 
 Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Türkçe](README.tr.md) | [Русский](README.ru.md) | [Tiếng Việt](README.vi.md) | [ไทย](README.th.md) | [Deutsch](README.de.md) | [Español](README.es.md)
@@ -29,14 +29,14 @@ Instalação manual e primeiros passos
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.34</version>
+  <version>1.7.35</version>
 </dependency>
 ```
 
   Para usar o framework como uma ferramenta de linha de comando independente, gere o JAR opcional que inclui todas as dependências (cerca de 50 MB, não faz parte do release):
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.34-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.35-jar-with-dependencies.jar --help
 ```
 
 * Estenda AbstractApplication em Java:
@@ -100,7 +100,7 @@ Executar em modo CLI
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.34
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.35
            /
 ```
 ```tcsh
