@@ -24,7 +24,8 @@ cd "../"
 cd "$ROOT" || exit
 
 # Java options initialization
-JAVA_OPTS=""
+# UTF-8 end to end so non-ASCII text (e.g. Chinese) is not garbled on non-UTF-8 locales
+JAVA_OPTS="-Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8"
 
 # Arguments initialization
 args=""
