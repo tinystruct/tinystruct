@@ -60,7 +60,7 @@ public abstract class MCPApplication extends AbstractApplication {
         if (getConfiguration().get(Config.AUTH_TOKEN) == null || getConfiguration().get(Config.AUTH_TOKEN).isEmpty()) {
             String token = AuthorizationHandler.generateAuthToken();
             getConfiguration().set(Config.AUTH_TOKEN, token);
-            LOGGER.info("Generated new MCP auth token: " + token);
+            LOGGER.info("Generated new MCP auth token (not logged; configure " + Config.AUTH_TOKEN + " to set a fixed token)");
         }
         this.authHandler = new AuthorizationHandler(getConfiguration().get(Config.AUTH_TOKEN));
         this.jsonRpcHandler = new JsonRpcHandler();
@@ -143,6 +143,10 @@ public abstract class MCPApplication extends AbstractApplication {
             sessionStates.remove(sessionId);
             LOGGER.info("Cleaned up stale MCP session: " + sessionId);
         }
+
+        // Purge leftover states (e.g. DISCONNECTED) of sessions that no longer exist.
+        // A missing state is equivalent to DISCONNECTED (see getSessionState()).
+        sessionStates.keySet().removeIf(id -> !sessionMap.containsKey(id));
     }
 
     @Override
@@ -313,13 +317,23 @@ public abstract class MCPApplication extends AbstractApplication {
      */
     private void dispatch(JsonRpcRequest rpcRequest, JsonRpcResponse jsonResponse) {
         String method = rpcRequest.getMethod();
+        String sessionId = currentSessionId.get();
 
         if (Methods.INITIALIZE.equals(method)) {
-            String sessionId = currentSessionId.get();
             if (sessionId != null) {
                 sessionMap.put(sessionId, System.currentTimeMillis()); // Store session start time
             }
             setSessionState(SessionState.INITIALIZING);
+        } else if (!Methods.PING.equals(method)) {
+            // Every method other than initialize/ping requires an initialized session.
+            if (sessionId == null || !sessionMap.containsKey(sessionId)
+                    || getSessionState() == SessionState.DISCONNECTED) {
+                jsonResponse.setId(rpcRequest.getId());
+                jsonResponse.setError(new JsonRpcError(ErrorCodes.NOT_INITIALIZED, "Session not initialized"));
+                return;
+            }
+            // Any activity keeps the session alive (not just ping).
+            sessionMap.put(sessionId, System.currentTimeMillis());
         }
 
         RpcMethodHandler handler = rpcHandlers.get(method);
