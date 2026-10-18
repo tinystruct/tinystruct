@@ -129,7 +129,8 @@ public class MCPServer extends MCPApplication {
         try {
             Builder params = request.getParams();
             String toolName = params.get("name").toString();
-            Builder toolParams = (Builder) params.get("arguments");
+            Object rawArgs = params.get("arguments");
+            Builder toolParams = rawArgs instanceof Builder ? (Builder) rawArgs : new Builder();
 
             // First try to find the tool method
             List<MCPTool.ToolMethod> methods = toolMethods.get(toolName);
@@ -228,16 +229,25 @@ public class MCPServer extends MCPApplication {
             Builder params = request.getParams();
             String uri = params.get("uri").toString();
 
-            // Parse the URI to extract the resource name and parameters
-            // This is a simplified implementation
-            String resourceName = uri.substring(0, uri.indexOf("?"));
-            String queryString = uri.substring(uri.indexOf("?") + 1);
+            // Parse the URI to extract the resource name and (optional) query parameters
+            int q = uri.indexOf('?');
+            String resourceName = q >= 0 ? uri.substring(0, q) : uri;
+            String queryString = q >= 0 ? uri.substring(q + 1) : "";
 
             Builder resourceParams = new Builder();
-            for (String param : queryString.split("&")) {
-                String[] keyValue = param.split("=");
-                if (keyValue.length == 2) {
-                    resourceParams.put(keyValue[0], keyValue[1]);
+            if (!queryString.isEmpty()) {
+                for (String param : queryString.split("&")) {
+                    if (param.isEmpty()) continue;
+                    int eq = param.indexOf('=');
+                    String key = eq >= 0 ? param.substring(0, eq) : param;
+                    String value = eq >= 0 ? param.substring(eq + 1) : "";
+                    try {
+                        key = java.net.URLDecoder.decode(key, "UTF-8");
+                        value = java.net.URLDecoder.decode(value, "UTF-8");
+                    } catch (java.io.UnsupportedEncodingException ignored) {
+                        // UTF-8 is always supported
+                    }
+                    resourceParams.put(key, value);
                 }
             }
 
