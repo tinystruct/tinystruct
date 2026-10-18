@@ -384,7 +384,7 @@ public class MCPClient {
 
         // Log the full request
         String requestString = request.toString();
-        LOGGER.info("Full JSON-RPC request: " + requestString);
+        LOGGER.fine("Full JSON-RPC request: " + requestString);
         urlRequest.setBody(requestString);
 
         try {
@@ -402,7 +402,7 @@ public class MCPClient {
             }
 
             String responseString = urlResponse.getBody();
-            LOGGER.info("Raw server response: " + responseString);
+            LOGGER.fine("Raw server response: " + responseString);
 
             JsonRpcResponse jsonRpcResponse = new JsonRpcResponse();
             try {
@@ -416,7 +416,7 @@ public class MCPClient {
                 LOGGER.warning("Server returned error: " + jsonRpcResponse.getError().getMessage() +
                         " (code: " + jsonRpcResponse.getError().getCode() + ")");
             } else {
-                LOGGER.info("Server returned result: " + jsonRpcResponse.getResult());
+                LOGGER.fine("Server returned result: " + jsonRpcResponse.getResult());
             }
 
             return jsonRpcResponse;
@@ -659,7 +659,7 @@ public class MCPClient {
             params.put("name", name);
             params.put("arguments", parameters);
 
-            LOGGER.info("Sending JSON-RPC request: method=" + Methods.CALL_TOOL + ", params=" + params);
+            LOGGER.fine("Sending JSON-RPC request: method=" + Methods.CALL_TOOL + ", params=" + params);
 
             JsonRpcResponse response = sendRequest(Methods.CALL_TOOL, params);
             if (response.hasError()) {
