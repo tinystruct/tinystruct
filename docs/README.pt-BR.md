@@ -34,6 +34,12 @@ Ou crie um projeto com um único comando (Linux/macOS, requer JDK 17+ e Maven; t
 curl -fsSL https://tinystruct.org/create | sh
 ```
 
+No Windows (requer Git for Windows ou WSL), execute no PowerShell:
+
+```powershell
+irm https://tinystruct.org/create.ps1 | iex
+```
+
 Instalação manual e primeiros passos
 --
 * Adicione a dependência ao seu pom.xml.

@@ -34,6 +34,12 @@ tinystruct 框架
 curl -fsSL https://tinystruct.org/create | sh
 ```
 
+在 Windows 上（需要 Git for Windows 或 WSL），請在 PowerShell 中執行：
+
+```powershell
+irm https://tinystruct.org/create.ps1 | iex
+```
+
 手動安裝與入門
 --
 * 將相依性加入 pom.xml。

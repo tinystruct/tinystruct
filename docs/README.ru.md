@@ -34,6 +34,12 @@ Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [�
 curl -fsSL https://tinystruct.org/create | sh
 ```
 
+В Windows (нужен Git for Windows или WSL) выполните в PowerShell:
+
+```powershell
+irm https://tinystruct.org/create.ps1 | iex
+```
+
 Ручная установка и начало работы
 --
 * Добавьте зависимость в pom.xml.

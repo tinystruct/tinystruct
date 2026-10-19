@@ -34,6 +34,12 @@ Oder erstelle ein Projekt mit einem einzigen Befehl (Linux/macOS, erfordert JDK 
 curl -fsSL https://tinystruct.org/create | sh
 ```
 
+Unter Windows (erfordert Git for Windows oder WSL) in PowerShell:
+
+```powershell
+irm https://tinystruct.org/create.ps1 | iex
+```
+
 Manuelle Installation und Einstieg
 --
 * Füge die Abhängigkeit zu deiner pom.xml hinzu.

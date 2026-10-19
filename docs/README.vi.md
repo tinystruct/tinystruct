@@ -34,6 +34,12 @@ Hoặc tạo dự án chỉ với một lệnh (Linux/macOS, cần JDK 17+ và M
 curl -fsSL https://tinystruct.org/create | sh
 ```
 
+Trên Windows (cần Git for Windows hoặc WSL), chạy trong PowerShell:
+
+```powershell
+irm https://tinystruct.org/create.ps1 | iex
+```
+
 Cài đặt thủ công và bắt đầu
 --
 * Thêm dependency vào pom.xml.

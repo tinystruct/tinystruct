@@ -34,6 +34,12 @@ tinystruct archetype으로 시작하기
 curl -fsSL https://tinystruct.org/create | sh
 ```
 
+Windows에서는 (Git for Windows 또는 WSL 필요) PowerShell에서 실행하세요:
+
+```powershell
+irm https://tinystruct.org/create.ps1 | iex
+```
+
 수동 설치 및 시작하기
 --
 * pom.xml에 의존성을 추가합니다.

@@ -34,6 +34,12 @@ tinystruct archetype で始める
 curl -fsSL https://tinystruct.org/create | sh
 ```
 
+Windows の場合（Git for Windows または WSL が必要）は PowerShell で実行します:
+
+```powershell
+irm https://tinystruct.org/create.ps1 | iex
+```
+
 手動インストールと入門
 --
 * pom.xml に依存関係を追加します。

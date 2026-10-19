@@ -34,6 +34,12 @@ Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [�
 curl -fsSL https://tinystruct.org/create | sh
 ```
 
+บน Windows (ต้องมี Git for Windows หรือ WSL) ให้รันใน PowerShell:
+
+```powershell
+irm https://tinystruct.org/create.ps1 | iex
+```
+
 การติดตั้งแบบ manual และเริ่มต้นใช้งาน
 --
 * เพิ่ม dependency ใน pom.xml

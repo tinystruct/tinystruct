@@ -34,6 +34,12 @@ Veya tek bir komutla proje oluşturun (Linux/macOS, JDK 17+ ve Maven gerekir; t�
 curl -fsSL https://tinystruct.org/create | sh
 ```
 
+Windows'ta (Git for Windows veya WSL gerekir) PowerShell'de çalıştırın:
+
+```powershell
+irm https://tinystruct.org/create.ps1 | iex
+```
+
 Elle kurulum ve başlangıç
 --
 * Bağımlılığı pom.xml dosyana ekle.
