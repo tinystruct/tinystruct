@@ -28,6 +28,12 @@ tinystruct archetype で始める
 --
 この archetype を使うと、tinystruct ベースのプロジェクトをすばやく作成できます: https://github.com/tinystruct/tinystruct-archetype
 
+または、1 つのコマンドでプロジェクトを作成できます（Linux/macOS、JDK 17+ と Maven が必要。タイプ: basic, web, mcp, workflow, agent）:
+
+```bash
+curl -fsSL https://tinystruct.org/create | sh
+```
+
 手動インストールと入門
 --
 * pom.xml に依存関係を追加します。

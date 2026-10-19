@@ -28,6 +28,12 @@ Bắt đầu với tinystruct archetype
 --
 Bạn có thể dùng archetype này để nhanh chóng tạo dự án dựa trên tinystruct: https://github.com/tinystruct/tinystruct-archetype
 
+Hoặc tạo dự án chỉ với một lệnh (Linux/macOS, cần JDK 17+ và Maven; loại: basic, web, mcp, workflow, agent):
+
+```bash
+curl -fsSL https://tinystruct.org/create | sh
+```
+
 Cài đặt thủ công và bắt đầu
 --
 * Thêm dependency vào pom.xml.

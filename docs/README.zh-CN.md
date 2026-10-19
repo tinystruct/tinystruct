@@ -28,6 +28,12 @@ tinystruct 框架
 --
 你可以按照这个 archetype 快速创建基于 tinystruct 的项目：https://github.com/tinystruct/tinystruct-archetype
 
+或者使用一条命令创建项目（Linux/macOS，需要 JDK 17+ 和 Maven；类型：basic、web、mcp、workflow、agent）：
+
+```bash
+curl -fsSL https://tinystruct.org/create | sh
+```
+
 手动安装与入门
 --
 * 将依赖添加到你的 pom.xml。

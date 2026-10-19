@@ -28,6 +28,12 @@ Language: [English](../README.md) | [Português (Brasil)](README.pt-BR.md) | [�
 --
 Этот archetype позволяет быстро создать проект на основе tinystruct: https://github.com/tinystruct/tinystruct-archetype
 
+Или создайте проект одной командой (Linux/macOS, нужны JDK 17+ и Maven; типы: basic, web, mcp, workflow, agent):
+
+```bash
+curl -fsSL https://tinystruct.org/create | sh
+```
+
 Ручная установка и начало работы
 --
 * Добавьте зависимость в pom.xml.
