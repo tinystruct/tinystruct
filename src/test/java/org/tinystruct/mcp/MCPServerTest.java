@@ -7,6 +7,7 @@ import org.tinystruct.data.component.Builder;
 import org.tinystruct.data.component.Builders;
 import org.tinystruct.mcp.tools.CalculatorTool;
 import org.tinystruct.system.Settings;
+import org.tinystruct.system.annotation.Action;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -170,7 +171,7 @@ public class MCPServerTest {
     }
 
     static class SimplePojoTool {
-        @org.tinystruct.system.annotation.Action(value = "pojo/sayHello", description = "Say hello to someone")
+        @Action(value = "pojo/sayHello", description = "Say hello to someone")
         public String sayHello() {
             return "Hello, POJO!";
         }

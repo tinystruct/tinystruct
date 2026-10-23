@@ -366,19 +366,7 @@ public class MCPTool extends AbstractMCPResource {
             this.toolInstance = toolInstance;
             this.name = action.value();
             this.description = action.description();
-            this.parameters = new ArrayList<>();
-            
-            // Extract parameter information from the Action annotation
-            for (Argument arg : action.arguments()) {
-                ParameterInfo paramInfo = new ParameterInfo(
-                    arg.key(),
-                    arg.type(),
-                    arg.description(),
-                    !arg.optional(),
-                    null // No enum values support in current Argument annotation
-                );
-                this.parameters.add(paramInfo);
-            }
+            this.parameters = SchemaGenerator.extractParameters(action);
             
             // Generate schema from parameters
             this.schema = generateSchema();
@@ -478,27 +466,7 @@ public class MCPTool extends AbstractMCPResource {
         }
 
         private Builder generateSchema() {
-            Builder schema = new Builder();
-            Builder properties = new Builder();
-            List<String> required = new ArrayList<>();
-            for (ParameterInfo param : parameters) {
-                Builder paramSchema = new Builder();
-                paramSchema.put("type", param.getType());
-                paramSchema.put("description", param.getDescription());
-                if (param.getEnumValues() != null && param.getEnumValues().length > 0) {
-                    paramSchema.put("enum", param.getEnumValues());
-                }
-                properties.put(param.getName(), paramSchema);
-                if (param.isRequired()) {
-                    required.add(param.getName());
-                }
-            }
-            schema.put("type", "object");
-            schema.put("properties", properties);
-            if (!required.isEmpty()) {
-                schema.put("required", required.toArray(new String[0]));
-            }
-            return schema;
+            return SchemaGenerator.generateSchema(this.parameters);
         }
     }
 }

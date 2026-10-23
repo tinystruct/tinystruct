@@ -18,6 +18,11 @@ package org.tinystruct.mcp;
 import org.junit.jupiter.api.Test;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.mcp.tools.CalculatorTool;
+import org.tinystruct.system.annotation.Action;
+import org.tinystruct.system.annotation.Argument;
+
+import java.util.Arrays;
+import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -209,6 +214,95 @@ public class SimpleCalculatorToolTest {
         }
         assertTrue(hasA, "Parameter 'a' should be required");
         assertTrue(hasB, "Parameter 'b' should be required");
+    }
+
+    /**
+     * Arguments shared by several @Action methods (a, b in CalculatorTool) must
+     * appear only once in "required" - JSON Schema requires unique items.
+     */
+    @Test
+    public void testSchemaRequiredHasNoDuplicates() {
+        Builder schema = SchemaGenerator.generateSchema(CalculatorTool.class);
+        String[] required = (String[]) schema.get("required");
+
+        assertNotNull(required);
+        assertEquals(new HashSet<>(Arrays.asList(required)).size(), required.length,
+                "'required' should not contain duplicates: " + Arrays.toString(required));
+        assertEquals(new HashSet<>(Arrays.asList("a", "b", "operation")),
+                new HashSet<>(Arrays.asList(required)));
+    }
+
+    /**
+     * Overloaded @Action methods share a Java method name and must not produce
+     * duplicate values in the "operation" enum.
+     */
+    @Test
+    public void testSchemaOperationEnumHasNoDuplicates() {
+        Builder schema = SchemaGenerator.generateSchema(OverloadedTool.class);
+        Builder operation = (Builder) ((Builder) schema.get("properties")).get("operation");
+        String[] values = (String[]) operation.get("enum");
+
+        assertArrayEquals(new String[]{"search"}, values,
+                "'enum' should not contain duplicates: " + Arrays.toString(values));
+    }
+
+    /**
+     * An explicit @Argument named "operation" must not cause "operation" to be
+     * listed twice in "required".
+     */
+    @Test
+    public void testSchemaExplicitOperationArgumentNotDuplicated() {
+        Builder schema = SchemaGenerator.generateSchema(ExplicitOperationTool.class);
+        String[] required = (String[]) schema.get("required");
+
+        long count = Arrays.stream(required).filter("operation"::equals).count();
+        assertEquals(1, count, "'operation' should be required once: " + Arrays.toString(required));
+    }
+
+    /**
+     * A missing parameter should be reported once, not once per @Action method
+     * that declares it.
+     */
+    @Test
+    public void testMissingParameterReportedOnce() {
+        CalculatorTool calculator = new CalculatorTool();
+        calculator.setSchema(SchemaGenerator.generateSchema(CalculatorTool.class));
+
+        Builder params = new Builder();
+        params.put("operation", "add");
+        params.put("a", 5);
+
+        MCPException exception = assertThrows(MCPException.class, () -> calculator.execute(params));
+        String message = exception.getMessage();
+        String needle = "Missing required parameter: b";
+        int occurrences = message.split(java.util.regex.Pattern.quote(needle), -1).length - 1;
+        assertEquals(1, occurrences, "Missing parameter should be reported once: " + message);
+    }
+
+    static class OverloadedTool {
+        @Action(value = "overloaded/search", description = "Search", arguments = {
+                @Argument(key = "query", description = "Query")
+        })
+        public String search(String query) {
+            return query;
+        }
+
+        @Action(value = "overloaded/search", description = "Search with limit", arguments = {
+                @Argument(key = "query", description = "Query"),
+                @Argument(key = "limit", description = "Limit", type = "integer", optional = true)
+        })
+        public String search(String query, int limit) {
+            return query;
+        }
+    }
+
+    static class ExplicitOperationTool {
+        @Action(value = "explicit/run", description = "Run", arguments = {
+                @Argument(key = "operation", description = "Operation")
+        })
+        public String run(String operation) {
+            return operation;
+        }
     }
 
     @Test

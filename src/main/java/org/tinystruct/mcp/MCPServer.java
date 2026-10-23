@@ -17,10 +17,7 @@ package org.tinystruct.mcp;
 
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.data.component.Builders;
-import org.tinystruct.system.annotation.Action;
-import org.tinystruct.system.annotation.Argument;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -56,41 +53,11 @@ public class MCPServer extends MCPApplication {
         for (List<MCPTool.ToolMethod> toolMethodList : toolMethods.values()) {
             if (toolMethodList.isEmpty()) continue;
             
-            Builder mergedSchema = new Builder();
-            mergedSchema.put("type", "object");
-            Builder mergedProperties = new Builder();
-            java.util.Set<String> allRequired = null;
-            
+            List<Builder> schemas = new ArrayList<>();
             for (MCPTool.ToolMethod tm : toolMethodList) {
-                Builder schema = tm.getSchema();
-                if (schema.containsKey("properties")) {
-                    Builder props = (Builder) schema.get("properties");
-                    for (String key : props.keySet()) {
-                        mergedProperties.put(key, props.get(key));
-                    }
-                }
-                
-                java.util.Set<String> currentRequired = new java.util.HashSet<>();
-                if (schema.containsKey("required")) {
-                    Object req = schema.get("required");
-                    if (req instanceof String[]) {
-                        for (String r : (String[]) req) {
-                            currentRequired.add(r);
-                        }
-                    }
-                }
-                
-                if (allRequired == null) {
-                    allRequired = currentRequired;
-                } else {
-                    allRequired.retainAll(currentRequired); // Only parameters required by ALL overloads remain required
-                }
+                schemas.add(tm.getSchema());
             }
-            
-            mergedSchema.put("properties", mergedProperties);
-            if (allRequired != null && !allRequired.isEmpty()) {
-                mergedSchema.put("required", allRequired.toArray(new String[0]));
-            }
+            Builder mergedSchema = SchemaGenerator.mergeSchemas(schemas);
 
             MCPTool.ToolMethod first = toolMethodList.get(0);
             Builder toolInfo = new Builder();
@@ -471,54 +438,3 @@ public class MCPServer extends MCPApplication {
     }
 }
 
-class SchemaGenerator {
-    /**
-     * Generates a schema Builder for a tool class by inspecting @Action
-     * and @Argument annotations.
-     *
-     * @param toolClass The tool class to inspect
-     * @return The generated schema as a Builder
-     */
-    public static Builder generateSchema(Class<?> toolClass) {
-        Builder schema = new Builder();
-        Builder properties = new Builder();
-        List<String> required = new ArrayList<>();
-        List<String> operations = new ArrayList<>();
-
-        for (Method method : toolClass.getDeclaredMethods()) {
-            Action action = method.getAnnotation(Action.class);
-            if (action != null) {
-                operations.add(method.getName());
-                for (Argument arg : action.arguments()) {
-                    Builder argSchema = new Builder();
-                    argSchema.put("type", arg.type());
-                    argSchema.put("description", arg.description());
-                    properties.put(arg.key(), argSchema);
-                    if (!arg.optional()) {
-                        required.add(arg.key());
-                    }
-                }
-            }
-        }
-
-        // When the class exposes multiple @Action methods, execution is dispatched
-        // by an "operation" parameter naming the method to invoke (see MCPTool
-        // subclasses such as CalculatorTool#executeLocally), so it must be part
-        // of the schema as well.
-        if (!operations.isEmpty()) {
-            Builder operationSchema = new Builder();
-            operationSchema.put("type", "string");
-            operationSchema.put("description", "The operation to perform");
-            operationSchema.put("enum", operations.toArray(new String[0]));
-            properties.put("operation", operationSchema);
-            required.add("operation");
-        }
-
-        schema.put("type", "object");
-        schema.put("properties", properties);
-        if (!required.isEmpty()) {
-            schema.put("required", required.toArray(new String[0]));
-        }
-        return schema;
-    }
-}
