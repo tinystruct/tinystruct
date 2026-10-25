@@ -47,14 +47,14 @@ Cài đặt thủ công và bắt đầu
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.35</version>
+  <version>1.7.36</version>
 </dependency>
 ```
 
   Để dùng framework như một công cụ dòng lệnh độc lập, hãy build JAR tùy chọn chứa toàn bộ thư viện phụ thuộc (khoảng 50 MB, không nằm trong bản phát hành):
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.35-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.36-jar-with-dependencies.jar --help
 ```
 
 * Kế thừa AbstractApplication trong Java:
@@ -118,7 +118,7 @@ Chạy ở chế độ CLI
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.35
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.36
            /
 ```
 ```tcsh

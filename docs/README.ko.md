@@ -47,14 +47,14 @@ irm https://tinystruct.org/create.ps1 | iex
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.35</version>
+  <version>1.7.36</version>
 </dependency>
 ```
 
   프레임워크를 독립 실행형 명령줄 도구로 사용하려면 모든 의존성을 포함한 선택적 JAR를 빌드하세요(약 50MB, 릴리스에는 포함되지 않음):
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.35-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.36-jar-with-dependencies.jar --help
 ```
 
 * Java에서 AbstractApplication을 확장합니다:
@@ -118,7 +118,7 @@ CLI 모드로 실행
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.35
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.36
            /
 ```
 ```tcsh
