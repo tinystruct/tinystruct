@@ -18,7 +18,6 @@ package org.tinystruct.mcp;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.data.component.Builder;
 import org.tinystruct.system.annotation.Action;
-import org.tinystruct.system.annotation.Argument;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -369,7 +368,7 @@ public class MCPTool extends AbstractMCPResource {
             this.parameters = SchemaGenerator.extractParameters(action);
             
             // Generate schema from parameters
-            this.schema = generateSchema();
+            this.schema = SchemaGenerator.generateSchema(this.parameters);
         }
 
         public String getName() { return name; }
@@ -463,10 +462,6 @@ public class MCPTool extends AbstractMCPResource {
             } catch (NumberFormatException | ApplicationException e) {
                 throw new MCPException("Invalid number format for parameter: " + e.getMessage());
             }
-        }
-
-        private Builder generateSchema() {
-            return SchemaGenerator.generateSchema(this.parameters);
         }
     }
 }
