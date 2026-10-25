@@ -16,6 +16,9 @@
 package org.tinystruct.system.logging;
 
 import org.tinystruct.system.Configuration;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.logging.*;
 
 public final class LoggerConfigurer {
@@ -44,6 +47,8 @@ public final class LoggerConfigurer {
         Handler[] handlers = rootLogger.getHandlers();
         for (Handler handler : handlers) {
             rootLogger.removeHandler(handler);
+            // Release the FileHandler lock, otherwise the next setup() falls back to "<name>.1", ".2"...
+            handler.close();
         }
 
         if (!enabled) {
@@ -57,23 +62,108 @@ public final class LoggerConfigurer {
         Level level = parseLevel(levelStr, Level.INFO);
         rootLogger.setLevel(level);
 
-        // 3. Create our custom LogFormatter and ConsoleHandler
-        LogFormatter formatter = new LogFormatter();
-        ConsoleHandler consoleHandler = new ConsoleHandler();
-        consoleHandler.setFormatter(formatter);
-        consoleHandler.setLevel(Level.ALL); // Let the individual loggers/root logger control level filtering
-        rootLogger.addHandler(consoleHandler);
+        // 3. Create the handlers listed in "handlers" (default: ConsoleHandler)
+        String handlersStr = config.get("handlers");
+        if (handlersStr == null || handlersStr.trim().isEmpty()) {
+            handlersStr = ConsoleHandler.class.getName();
+        }
+        Set<String> handlerNames = new LinkedHashSet<>();
+        for (String name : handlersStr.split("[,\\s]+")) {
+            if (!name.isEmpty()) {
+                handlerNames.add(name);
+            }
+        }
+        for (String name : handlerNames) {
+            Handler handler = null;
+            try {
+                handler = createHandler(name, config);
+                handler.setLevel(parseLevel(config.get(name + ".level"), Level.ALL));
+                handler.setFormatter(createFormatter(config.get(name + ".formatter"), handler instanceof ConsoleHandler));
+                String encoding = config.get(name + ".encoding");
+                if (encoding != null && !encoding.trim().isEmpty()) {
+                    handler.setEncoding(encoding.trim());
+                }
+                rootLogger.addHandler(handler);
+            } catch (Exception | LinkageError e) {
+                if (handler != null) {
+                    // Release any file/lock acquired by a partially configured handler.
+                    handler.close();
+                }
+                System.err.println("Unable to create log handler " + name + ": " + e);
+            }
+        }
 
         // 4. Look for individual logger level overrides in the configuration
         for (String propertyName : config.propertyNames()) {
             if (propertyName.endsWith(".level") && !propertyName.equals("logging.level")) {
                 String loggerName = propertyName.substring(0, propertyName.length() - ".level".length());
+                if (isHandlerProperty(loggerName)) {
+                    // "<handler class>.level" configures the handler, not a logger.
+                    continue;
+                }
                 String specificLevelStr = config.get(propertyName);
                 Level specificLevel = parseLevel(specificLevelStr, null);
                 if (specificLevel != null) {
                     Logger.getLogger(loggerName).setLevel(specificLevel);
                 }
             }
+        }
+    }
+
+    private static Handler createHandler(String name, Configuration<String> config) throws Exception {
+        if (name.equals(ConsoleHandler.class.getName())) {
+            return new ConsoleHandler();
+        }
+        if (name.equals(FileHandler.class.getName())) {
+            String pattern = config.get(name + ".pattern");
+            if (pattern == null || pattern.trim().isEmpty()) {
+                pattern = "%h/java%u.log";
+            }
+            pattern = pattern.trim();
+            java.io.File parent = new java.io.File(pattern).getAbsoluteFile().getParentFile();
+            if (parent != null) {
+                parent.mkdirs();
+            }
+            int limit = parseInt(config.get(name + ".limit"), 0);
+            int count = parseInt(config.get(name + ".count"), 1);
+            boolean append = !"false".equalsIgnoreCase(config.get(name + ".append"));
+            return new FileHandler(pattern, limit, count, append);
+        }
+        return (Handler) Class.forName(name).getDeclaredConstructor().newInstance();
+    }
+
+    /**
+     * Whether the given name refers to a {@link Handler} implementation, in which case
+     * "&lt;name&gt;.level" is a handler setting rather than a logger level override.
+     */
+    private static boolean isHandlerProperty(String name) {
+        try {
+            return Handler.class.isAssignableFrom(Class.forName(name, false, LoggerConfigurer.class.getClassLoader()));
+        } catch (ClassNotFoundException | LinkageError e) {
+            return false;
+        }
+    }
+
+    private static Formatter createFormatter(String className, boolean useColor) {
+        // ANSI colors only make sense on the console, never in a log file.
+        if (className == null || className.trim().isEmpty() || className.trim().equals(LogFormatter.class.getName())) {
+            return new LogFormatter(useColor);
+        }
+        try {
+            return (Formatter) Class.forName(className.trim()).getDeclaredConstructor().newInstance();
+        } catch (Exception | LinkageError e) {
+            // Unavailable on the classpath; fall back to the built-in formatter.
+            System.err.println("Unable to create log formatter " + className.trim() + ", using "
+                    + LogFormatter.class.getName() + ": " + e);
+        }
+        return new LogFormatter(useColor);
+    }
+
+    private static int parseInt(String value, int defaultValue) {
+        try {
+            return value == null ? defaultValue : Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
         }
     }
 

@@ -15,9 +15,15 @@
  *******************************************************************************/
 package org.tinystruct.system.logging;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.tinystruct.system.Configuration;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Properties;
 import java.util.Set;
@@ -150,5 +156,121 @@ class LoggerTest {
         // Specific package level override
         Logger specificLogger = Logger.getLogger("org.tinystruct.test");
         assertEquals(Level.WARNING, specificLogger.getLevel(), "Specific logger should have WARNING level applied");
+    }
+
+    @AfterEach
+    void resetRootLogger() {
+        // Close any FileHandler so the temp directory can be removed (required on Windows).
+        Properties props = new Properties();
+        props.put("logging.enabled", "TRUE");
+        LoggerConfigurer.setup(config(props));
+    }
+
+    @Test
+    void testFileHandlerWritesPlainTextAndCreatesDirectory(@TempDir Path tempDir) throws Exception {
+        Path logDir = tempDir.resolve("nested/logs");
+        String pattern = logDir.resolve("app-%g.log").toString().replace(File.separatorChar, '/');
+
+        Properties props = new Properties();
+        props.put("logging.enabled", "TRUE");
+        props.put("logging.level", "INFO");
+        props.put("handlers", "java.util.logging.ConsoleHandler, java.util.logging.FileHandler");
+        props.put("java.util.logging.FileHandler.pattern", pattern);
+        props.put("java.util.logging.FileHandler.level", "INFO");
+        props.put("java.util.logging.FileHandler.encoding", "UTF-8");
+        LoggerConfigurer.setup(config(props));
+
+        Handler[] handlers = Logger.getLogger("").getHandlers();
+        assertEquals(2, handlers.length, "Both configured handlers should be attached");
+        assertInstanceOf(ConsoleHandler.class, handlers[0]);
+        assertInstanceOf(FileHandler.class, handlers[1]);
+        assertEquals(Level.INFO, handlers[1].getLevel());
+
+        Logger.getLogger("org.tinystruct.filetest").info("hello file");
+        handlers[1].flush();
+
+        Path logFile = logDir.resolve("app-0.log");
+        assertTrue(Files.exists(logFile), "Log directory and file should be created");
+        String content = new String(Files.readAllBytes(logFile), StandardCharsets.UTF_8);
+        assertTrue(content.contains("hello file"), "Log file should contain the message");
+        assertFalse(content.contains("\u001B["), "Log file must not contain ANSI color codes");
+    }
+
+    @Test
+    void testRepeatedSetupReleasesFileLock(@TempDir Path tempDir) {
+        Path logDir = tempDir.resolve("logs");
+        String pattern = logDir.resolve("app.log").toString().replace(File.separatorChar, '/');
+
+        Properties props = new Properties();
+        props.put("logging.enabled", "TRUE");
+        props.put("handlers", "java.util.logging.FileHandler");
+        props.put("java.util.logging.FileHandler.pattern", pattern);
+        LoggerConfigurer.setup(config(props));
+        LoggerConfigurer.setup(config(props));
+
+        assertFalse(Files.exists(logDir.resolve("app.log.1")),
+                "Re-running setup should reuse the same file instead of falling back to a unique suffix");
+    }
+
+    @Test
+    void testUnknownHandlerAndFormatterFallBack() {
+        Properties props = new Properties();
+        props.put("logging.enabled", "TRUE");
+        props.put("handlers", "com.example.MissingHandler java.util.logging.ConsoleHandler");
+        props.put("java.util.logging.ConsoleHandler.formatter", "com.example.MissingFormatter");
+        LoggerConfigurer.setup(config(props));
+
+        Handler[] handlers = Logger.getLogger("").getHandlers();
+        assertEquals(1, handlers.length, "Unknown handler should be skipped");
+        assertInstanceOf(ConsoleHandler.class, handlers[0]);
+        assertInstanceOf(LogFormatter.class, handlers[0].getFormatter(), "Unknown formatter should fall back to LogFormatter");
+    }
+
+    @Test
+    void testHandlerLevelIsNotTreatedAsLoggerOverride() {
+        Logger handlerNamedLogger = Logger.getLogger("java.util.logging.ConsoleHandler");
+        handlerNamedLogger.setLevel(null);
+
+        Properties props = new Properties();
+        props.put("logging.enabled", "TRUE");
+        props.put("java.util.logging.ConsoleHandler.level", "SEVERE");
+        LoggerConfigurer.setup(config(props));
+
+        assertEquals(Level.SEVERE, Logger.getLogger("").getHandlers()[0].getLevel(), "Handler level should be applied");
+        assertNull(handlerNamedLogger.getLevel(), "Handler level must not be applied to a logger of the same name");
+    }
+
+    private static Configuration<String> config(Properties props) {
+        return new Configuration<String>() {
+            @Override
+            public void set(String name, String value) {
+                props.put(name, value);
+            }
+
+            @Override
+            public String get(String name) {
+                return props.getProperty(name, "");
+            }
+
+            @Override
+            public void remove(String name) {
+                props.remove(name);
+            }
+
+            @Override
+            public Set<String> propertyNames() {
+                return props.stringPropertyNames();
+            }
+
+            @Override
+            public String getOrDefault(String s, String value) {
+                return get(s).isEmpty() ? value : get(s);
+            }
+
+            @Override
+            public void setIfAbsent(String s, String value) {
+                props.putIfAbsent(s, value);
+            }
+        };
     }
 }
