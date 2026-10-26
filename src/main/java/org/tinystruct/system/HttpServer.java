@@ -36,12 +36,12 @@ import org.tinystruct.http.security.JWTManager;
 
 import java.io.*;
 import java.net.InetSocketAddress;
-import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -250,6 +250,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
     private class DefaultHttpHandler implements HttpHandler {
 
         private final Settings settings;
+        private volatile boolean staticDirWarned = false;
 
         private DefaultHttpHandler(Settings settings) {
             this.settings = settings;
@@ -530,13 +531,20 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
         private boolean tryServeStatic(HttpExchange exchange) {
             try {
-                String uri = exchange.getRequestURI().getRawPath();
-                String filepath = Objects.requireNonNull(sanitizeUri(uri)).toString();
+                // getPath() is already percent-decoded (and, unlike URLDecoder, keeps '+' intact)
+                String uri = exchange.getRequestURI().getPath();
+                if (uri == null || uri.isEmpty() || uri.equals("/")) {
+                    return false;
+                }
 
-                File file = new File(filepath);
-                if (!file.exists() || file.isHidden()) {
-                    if (filepath.endsWith("/favicon.ico")) {
-                        try (InputStream stream = Objects.requireNonNull(getClass().getResource("/favicon.ico")).openStream()) {
+                if ("/favicon.ico".equals(uri)) {
+                    Path resolvedFavicon = sanitizeUri(uri);
+                    if (resolvedFavicon != null && Files.isRegularFile(resolvedFavicon)) {
+                        File file = resolvedFavicon.toFile();
+                        return sendStaticFile(exchange, file);
+                    }
+                    try (InputStream stream = getClass().getResourceAsStream("/favicon.ico")) {
+                        if (stream != null) {
                             byte[] bytes = stream.readAllBytes();
                             exchange.getResponseHeaders().set("Content-Type", "image/x-icon");
                             exchange.sendResponseHeaders(200, bytes.length);
@@ -545,80 +553,177 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                             }
                             exchange.close();
                             return true;
-                        } catch (Exception ignore) {
-                            // fall-through to dynamic handling
-                            return false;
                         }
+                    } catch (Exception ignore) {
                     }
                     return false;
                 }
 
-                if (!file.isFile()) return false;
-
-                // If-Modified-Since support
-                String ifModifiedSince = exchange.getRequestHeaders().getFirst("If-Modified-Since");
-                if (ifModifiedSince != null && !ifModifiedSince.isEmpty()) {
-                    SimpleDateFormat df = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
-                    df.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
-                    Date ims = df.parse(ifModifiedSince);
-                    long imsSeconds = ims.getTime() / 1000;
-                    long fileSeconds = file.lastModified() / 1000;
-                    if (imsSeconds == fileSeconds) {
-                        // 304 Not Modified
-                        setDateHeader(exchange);
-                        exchange.sendResponseHeaders(304, -1);
-                        exchange.close();
-                        return true;
-                    }
+                // Reject path traversal, illegal characters, and hidden files with 403 Forbidden
+                if (isForbiddenPath(uri)) {
+                    logger.warning("Rejected forbidden file access attempt: " + uri);
+                    sendErrorResponse(exchange, 403, "This request is forbidden!");
+                    return true;
                 }
 
-                // Content-Type
-                String contentType = null;
-                try {
-                    MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap(HttpServer.class.getResourceAsStream("/META-INF/mime.types"));
-                    contentType = mimeTypesMap.getContentType(file);
-                } catch (Exception ignore) {
+                // Attempt to serve regular file from the configured static directory
+                Path resolved = sanitizeUri(uri);
+                if (resolved != null && Files.isRegularFile(resolved)) {
+                    return sendStaticFile(exchange, resolved.toFile());
                 }
-                if (contentType == null || contentType.equalsIgnoreCase("application/octet-stream")) {
-                    try {
-                        contentType = Files.probeContentType(Path.of(file.getName()));
-                    } catch (IOException ignore) {
-                    }
-                }
-                if (contentType == null) contentType = "application/octet-stream";
 
-                // Cache headers
-                setDateAndCacheHeaders(exchange, file);
-                exchange.getResponseHeaders().set("Content-Type", contentType);
-
-                long length = file.length();
-                exchange.sendResponseHeaders(200, length);
-                try (InputStream in = new FileInputStream(file); OutputStream os = exchange.getResponseBody()) {
-                    in.transferTo(os);
+                // Forbid any direct download of files that exist in the project root directory
+                if (isProjectRootFile(uri)) {
+                    logger.warning("Rejected attempt to download project root file: " + uri);
+                    sendErrorResponse(exchange, 403, "This request is forbidden!");
+                    return true;
                 }
-                exchange.close();
-                return true;
+
+                return false;
             } catch (Exception e) {
                 logger.log(Level.FINE, "Static serve miss: " + e.getMessage(), e);
                 return false;
             }
         }
 
-        private Path sanitizeUri(String uri) {
-            String decoded = URLDecoder.decode(uri, StandardCharsets.UTF_8);
-            if (decoded.isEmpty() || decoded.charAt(0) != '/' || decoded.length() > 2048) {
+        private boolean sendStaticFile(HttpExchange exchange, File file) throws IOException, ParseException {
+            // If-Modified-Since support
+            String ifModifiedSince = exchange.getRequestHeaders().getFirst("If-Modified-Since");
+            if (ifModifiedSince != null && !ifModifiedSince.isEmpty()) {
+                SimpleDateFormat df = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
+                df.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+                Date ims = df.parse(ifModifiedSince);
+                long imsSeconds = ims.getTime() / 1000;
+                long fileSeconds = file.lastModified() / 1000;
+                if (imsSeconds == fileSeconds) {
+                    // 304 Not Modified
+                    setDateHeader(exchange);
+                    exchange.sendResponseHeaders(304, -1);
+                    exchange.close();
+                    return true;
+                }
+            }
+
+            // Content-Type
+            String contentType = null;
+            try {
+                MimetypesFileTypeMap mimeTypesMap = new MimetypesFileTypeMap(HttpServer.class.getResourceAsStream("/META-INF/mime.types"));
+                contentType = mimeTypesMap.getContentType(file);
+            } catch (Exception ignore) {
+            }
+            if (contentType == null || contentType.equalsIgnoreCase("application/octet-stream")) {
+                try {
+                    contentType = Files.probeContentType(Path.of(file.getName()));
+                } catch (IOException ignore) {
+                }
+            }
+            if (contentType == null) contentType = "application/octet-stream";
+
+            // Cache headers
+            setDateAndCacheHeaders(exchange, file);
+            exchange.getResponseHeaders().set("Content-Type", contentType);
+
+            long length = file.length();
+            exchange.sendResponseHeaders(200, length);
+            try (InputStream in = new FileInputStream(file); OutputStream os = exchange.getResponseBody()) {
+                in.transferTo(os);
+            }
+            exchange.close();
+            return true;
+        }
+
+        private boolean isForbiddenPath(String decoded) {
+            if (decoded == null || decoded.isEmpty() || decoded.length() > 2048) {
+                return true;
+            }
+            if (decoded.indexOf('\0') >= 0) {
+                return true;
+            }
+            String relative = decoded.startsWith("/") ? decoded.substring(1) : decoded;
+            relative = relative.replace('\\', '/');
+            for (String segment : relative.split("/")) {
+                if (segment.equals("..") || segment.equals(".")) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean isProjectRootFile(String decoded) {
+            if (decoded == null || decoded.isEmpty()) return false;
+            String relative = decoded.startsWith("/") ? decoded.substring(1) : decoded;
+            relative = relative.replace('\\', '/');
+            if (relative.isEmpty() || relative.indexOf(':') >= 0 || relative.indexOf('\0') >= 0) return false;
+            Path workDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
+            try {
+                Path candidate = workDir.resolve(relative).normalize();
+                if (candidate.startsWith(workDir) && !candidate.equals(workDir)) {
+                    return Files.isRegularFile(candidate);
+                }
+            } catch (java.nio.file.InvalidPathException ignored) {
+            }
+            return false;
+        }
+
+        private Path sanitizeUri(String decoded) {
+            if (decoded == null || decoded.isEmpty() || decoded.charAt(0) != '/' || decoded.length() > 2048) {
                 return null;
             }
-            Path baseDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
             String relative = decoded.substring(1).replace('\\', '/');
-            if (relative.matches("^[A-Za-z]:.*")) {
+            // ':' covers drive letters and NTFS alternate data streams (file::$DATA)
+            if (relative.isEmpty() || relative.indexOf('\0') >= 0 || relative.indexOf(':') >= 0) {
                 return null;
             }
-            Path requested = baseDir.resolve(relative).normalize();
-            if (!requested.startsWith(baseDir)) {
-                return null;
+            Path workDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
+            String staticDirConfig = settings.get("server.static.dirs");
+            if (staticDirConfig == null || staticDirConfig.trim().isEmpty()) {
+                staticDirConfig = settings.getOrDefault("server.static.dir", "static");
             }
-            return requested;
+            String[] dirs = staticDirConfig.split("[,;]");
+            for (String dir : dirs) {
+                dir = dir.trim();
+                if (dir.isEmpty()) continue;
+                Path baseDir = workDir.resolve(dir).toAbsolutePath().normalize();
+                if (workDir.startsWith(baseDir)) {
+                    if (!staticDirWarned) {
+                        staticDirWarned = true;
+                        logger.warning("server.static.dir must be a sub-directory of the working directory; static file serving is disabled for: " + dir);
+                    }
+                    continue;
+                }
+                for (Path root : new Path[]{baseDir, Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize()}) {
+                    Path requested;
+                    try {
+                        requested = root.resolve(relative).normalize();
+                    } catch (java.nio.file.InvalidPathException e) {
+                        continue;
+                    }
+                    if (!requested.startsWith(baseDir) || requested.equals(baseDir)) {
+                        continue;
+                    }
+                    boolean invalid = false;
+                    for (Path part : baseDir.relativize(requested)) {
+                        String name = part.toString();
+                        // Never serve hidden files or folders (.git, .env, ...), and reject Windows
+                        // trailing dot/space aliases ("secret.txt." resolves to "secret.txt").
+                        if (name.startsWith(".") || name.endsWith(".") || name.endsWith(" ")) {
+                            invalid = true;
+                            break;
+                        }
+                    }
+                    if (invalid) {
+                        continue;
+                    }
+                    // Resolve symlinks so a link inside the directory cannot point outside of it
+                    try {
+                        if (Files.isRegularFile(requested) && requested.toRealPath().startsWith(baseDir.toRealPath())) {
+                            return requested;
+                        }
+                    } catch (IOException ignored) {
+                    }
+                }
+            }
+            return null;
         }
 
         private void setDateHeader(HttpExchange exchange) {
