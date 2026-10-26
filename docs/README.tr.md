@@ -47,14 +47,14 @@ Elle kurulum ve başlangıç
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.36</version>
+  <version>1.7.37</version>
 </dependency>
 ```
 
   Çerçeveyi bağımsız bir komut satırı aracı olarak kullanmak için tüm bağımlılıkları içeren isteğe bağlı JAR'ı derleyin (yaklaşık 50 MB, sürümün parçası değildir):
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.36-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.37-jar-with-dependencies.jar --help
 ```
 
 * Java'da AbstractApplication sınıfını genişlet:
@@ -118,7 +118,7 @@ CLI modunda çalıştırma
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.36
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.37
            /
 ```
 ```tcsh

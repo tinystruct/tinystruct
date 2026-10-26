@@ -47,14 +47,14 @@ irm https://tinystruct.org/create.ps1 | iex
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.36</version>
+  <version>1.7.37</version>
 </dependency>
 ```
 
   หากต้องการใช้เฟรมเวิร์กเป็นเครื่องมือบรรทัดคำสั่งแบบสแตนด์อโลน ให้สร้าง JAR ทางเลือกที่รวมไลบรารีที่จำเป็นทั้งหมดไว้ (ประมาณ 50 MB และไม่รวมอยู่ในรีลีส):
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.36-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.37-jar-with-dependencies.jar --help
 ```
 
 * Extend AbstractApplication ใน Java:
@@ -118,7 +118,7 @@ Smalltalk: <a href="https://github.com/tinystruct/smalltalk">https://github.com/
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.36
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.37
            /
 ```
 ```tcsh
