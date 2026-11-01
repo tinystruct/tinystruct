@@ -1,6 +1,7 @@
 package org.tinystruct.system;
 
 import org.junit.jupiter.api.Test;
+import org.tinystruct.AbstractApplication;
 import org.tinystruct.ApplicationContext;
 import org.tinystruct.ApplicationException;
 import org.tinystruct.system.annotation.Action;
@@ -29,13 +30,54 @@ class ApplicationManagerTest {
 
     @Test
     void testUninstall() {
-        assertTrue(ApplicationManager.uninstall(new Dispatcher()));
+        Dispatcher dispatcher = new Dispatcher();
+        ApplicationManager.install(dispatcher, new Settings());
+        assertTrue(ApplicationManager.uninstall(dispatcher));
     }
 
     @Test
     void testUninstall2() {
         Dispatcher dispatcher = new Dispatcher();
+        ApplicationManager.install(dispatcher, new Settings());
         assertTrue(ApplicationManager.uninstall(dispatcher));
+    }
+
+    @Test
+    void testUninstallRemovesAllApplicationActions() throws ApplicationException {
+        MultiActionSampleApp app = new MultiActionSampleApp();
+        ApplicationManager.install(app, new Settings());
+
+        assertEquals("one", ApplicationManager.call("sample/one", null));
+        assertEquals("two", ApplicationManager.call("sample/two", null));
+
+        assertTrue(ApplicationManager.uninstall(app));
+        assertNull(ApplicationManager.get(app.getName()));
+
+        assertThrows(ApplicationException.class, () -> ApplicationManager.call("sample/one", null));
+        assertThrows(ApplicationException.class, () -> ApplicationManager.call("sample/two", null));
+        assertFalse(ApplicationManager.uninstall(app), "Second uninstall should return false when all actions were removed");
+    }
+
+    public static class MultiActionSampleApp extends AbstractApplication {
+        @Override
+        public void init() {
+            this.setTemplateRequired(false);
+        }
+
+        @Override
+        public String version() {
+            return "1.0";
+        }
+
+        @Action("sample/one")
+        public String first() {
+            return "one";
+        }
+
+        @Action("sample/two")
+        public String second() {
+            return "two";
+        }
     }
 
     @Test
@@ -93,5 +135,23 @@ class ApplicationManagerTest {
         // Here we assert that the test completes within the set time limit
         assertTrue(durationMillis < 60_000, "Performance test failed: took too long.");
     }
-}
 
+    @Test
+    void testSetActionSupportsDynamicPathRegistrationAndIsNotDeprecated() throws NoSuchMethodException, ApplicationException {
+        assertFalse(org.tinystruct.Application.class
+                        .getMethod("setAction", String.class, String.class)
+                        .isAnnotationPresent(Deprecated.class),
+                "Application.setAction(String, String) supports dynamic path registration and must not be deprecated");
+        assertFalse(org.tinystruct.AbstractApplication.class
+                        .getMethod("setAction", String.class, String.class)
+                        .isAnnotationPresent(Deprecated.class),
+                "AbstractApplication.setAction(String, String) supports dynamic path registration and must not be deprecated");
+
+        MultiActionSampleApp dynamicApp = new MultiActionSampleApp();
+        ApplicationManager.install(dynamicApp);
+        dynamicApp.setAction("test/dynamic/route", "first");
+
+        assertEquals("one", ApplicationManager.call("test/dynamic/route", null));
+        ApplicationManager.uninstall(dynamicApp);
+    }
+}

@@ -140,14 +140,43 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
     @Action("message/take")
     @Override
     public final String take(final String sessionId) throws ApplicationException {
-        Builder message;
         Queue<Builder> messages = this.list.get(sessionId);
+        if (messages == null) {
+            return "{}";
+        }
         // If there is a new message, then return it directly
-        if ((message = messages.poll()) != null)
+        Builder message = pollMessage(messages);
+        if (message != null)
             return message.toString();
 
         long startTime = System.currentTimeMillis();
         // Wait for new messages within the timeout period
+        try {
+            while ((System.currentTimeMillis() - startTime) <= TIMEOUT) {
+                // Yield the CPU instead of busy-spinning and keep the lock released while
+                // sleeping so background copy() workers can acquire the lock and offer
+                // incoming messages without starvation.
+                Thread.sleep(1);
+                if ((message = pollMessage(messages)) != null) {
+                    break;
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        return message != null ? message.toString() : "{}";
+    }
+
+    /**
+     * Poll a single message from the session queue while holding {@link #lock} only
+     * for the duration of the queue operation.
+     *
+     * @param messages session queue
+     * @return polled message or {@code null} if none is available
+     * @throws ApplicationException application exception
+     */
+    private Builder pollMessage(final Queue<Builder> messages) throws ApplicationException {
         boolean locked = false;
         try {
             // The return value must be checked: if the lock isn't actually held,
@@ -155,21 +184,15 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
             // (it's owned by whichever thread does hold it), instead of just skipping the
             // wait as intended.
             locked = lock.tryLock(TIMEOUT, TimeUnit.MILLISECONDS);
-            while ((message = messages.poll()) == null && (System.currentTimeMillis() - startTime) <= TIMEOUT) {
-                // Yield the CPU instead of busy-spinning; 1 ms is short enough to react
-                // promptly when a message arrives, but long enough to drop CPU usage from
-                // 100 % to near-zero.
-                Thread.sleep(1);
+            if (locked) {
+                return messages.poll();
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         } finally {
             if (locked) {
                 lock.unlock();
             }
         }
-
-        return message != null ? message.toString() : "{}";
+        return null;
     }
 
     /**

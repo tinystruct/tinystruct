@@ -46,6 +46,43 @@ class DistributedMessageQueueTest {
     }
 
     @Test
+    void testTakeDoesNotStarveAsyncCopyWhileWaiting() throws Exception {
+        String groupId = "regressionGroup";
+        String sessionId = "regressionSession";
+        String message = "DeliveredWhileWaiting";
+
+        queue.sessions.put(groupId, Set.of(sessionId));
+        queue.list.put(sessionId, new ArrayDeque<>());
+
+        ExecutorService consumerExecutor = Executors.newSingleThreadExecutor();
+        try {
+            CountDownLatch consumerStarted = new CountDownLatch(1);
+            Future<String> takeFuture = consumerExecutor.submit(() -> {
+                consumerStarted.countDown();
+                return queue.take(sessionId);
+            });
+
+            assertTrue(consumerStarted.await(1, TimeUnit.SECONDS));
+            // Give take() time to enter its internal polling wait loop
+            Thread.sleep(15);
+
+            long startNanos = System.nanoTime();
+            String putResult = queue.put(groupId, sessionId, message);
+            assertNotEquals("{}", putResult);
+
+            String taken = takeFuture.get(500, TimeUnit.MILLISECONDS);
+            long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+
+            assertTrue(taken.contains(message),
+                    "Single take() call should receive the message without starving copy(), got: " + taken);
+            assertTrue(elapsedMs < 1000,
+                    "Message delivery while take() is waiting should complete promptly, took: " + elapsedMs + "ms");
+        } finally {
+            consumerExecutor.shutdownNow();
+        }
+    }
+
+    @Test
     void testPutWithNullMessage() {
         String groupId = "testGroup";
         String sessionId = "testSession";
@@ -60,6 +97,12 @@ class DistributedMessageQueueTest {
         queue.list.put(sessionId, new ArrayDeque<>());
 
         String result = queue.take(sessionId);
+        assertEquals("{}", result);
+    }
+
+    @Test
+    void testTakeFromUnregisteredSession() throws ApplicationException {
+        String result = queue.take("missingSession");
         assertEquals("{}", result);
     }
 

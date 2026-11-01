@@ -17,8 +17,8 @@ package org.tinystruct.system.logging;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -34,7 +34,8 @@ public class LogFormatter extends Formatter {
     private static final String ANSI_WHITE = "\u001B[37m";
     private static final String ANSI_GREY = "\u001B[90m";
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+    private static final DateTimeFormatter DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneId.systemDefault());
     private final boolean useColor;
 
     public LogFormatter() {
@@ -55,7 +56,7 @@ public class LogFormatter extends Formatter {
         }
 
         // Timestamp
-        builder.append(dateFormat.format(new Date(record.getMillis())));
+        builder.append(DATE_FORMATTER.format(record.getInstant()));
         builder.append(" [");
         builder.append(Thread.currentThread().getName());
         builder.append("] ");
