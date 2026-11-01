@@ -396,4 +396,19 @@ public class BuilderTest {
 
         assertEquals("He said \"Hello\", \\, \n, and \t.", builder.get("text"));
     }
+
+    @Test
+    void testParseStringEndingWithEscapedBackslashInNestedObjectAndArray() throws ApplicationException {
+        String json = "{\"dir\":\"C:\\\\Users\\\\test\\\\\",\"nested\":{\"root\":\"D:\\\\workspace\\\\\"},\"paths\":[\"C:\\\\temp\\\\\",\"E:\\\\logs\\\\\"]}";
+        Builder builder = new Builder();
+        builder.parse(json);
+
+        assertEquals("C:\\Users\\test\\", builder.get("dir"));
+        Builder nested = (Builder) builder.get("nested");
+        assertEquals("D:\\workspace\\", nested.get("root"));
+        Builders paths = (Builders) builder.get("paths");
+        assertEquals(2, paths.size());
+        assertEquals("C:\\temp\\", paths.get(0).getValue());
+        assertEquals("E:\\logs\\", paths.get(1).getValue());
+    }
 }

@@ -112,7 +112,6 @@ public interface Application extends Runnable {
      * @param action     action name
      * @param methodName method name
      */
-    @Deprecated(since = "1.8.0")
     void setAction(String action, String methodName);
 
     /**

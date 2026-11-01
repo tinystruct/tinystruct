@@ -77,9 +77,9 @@ public final class ApplicationManager {
                         }
                     }
                 }
-
-                initialized = true;
             }
+
+            initialized = true;
         }
     }
 
@@ -180,15 +180,16 @@ public final class ApplicationManager {
         Object[] list = actionRegistry.list().toArray();
 
         Action action;
+        boolean removed = false;
         for (Object item : list) {
             action = (Action) item;
 
             if (action.getApplicationName().equalsIgnoreCase(application.getName())) {
-                return actionRegistry.remove(action);
+                removed = actionRegistry.remove(action) || removed;
             }
         }
 
-        return false;
+        return removed;
     }
 
     /**

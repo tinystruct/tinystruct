@@ -25,8 +25,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,6 +52,41 @@ class LoggerTest {
         assertTrue(formatted.contains(Level.INFO.getLocalizedName()), "Formatted message should contain log level");
         assertTrue(formatted.contains("Test log message"), "Formatted message should contain the log message");
         assertTrue(formatted.contains("LoggerTest.testLogFormatterFormat"), "Formatted message should contain class and method source");
+    }
+
+    @Test
+    void testLogFormatterConcurrentThreadSafety() throws Exception {
+        LogFormatter formatter = new LogFormatter(false);
+        Instant fixedInstant = Instant.ofEpochMilli(1700000000123L);
+        LogRecord baseline = new LogRecord(Level.INFO, "Concurrent log");
+        baseline.setInstant(fixedInstant);
+        String expectedTimestamp = formatter.format(baseline).substring(0, 23);
+
+        int threads = 8;
+        int iterations = 100;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        List<Future<Boolean>> futures = new ArrayList<>();
+        try {
+            for (int t = 0; t < threads; t++) {
+                futures.add(pool.submit(() -> {
+                    for (int i = 0; i < iterations; i++) {
+                        LogRecord rec = new LogRecord(Level.INFO, "Msg " + i);
+                        rec.setInstant(fixedInstant);
+                        String out = formatter.format(rec);
+                        if (!out.startsWith(expectedTimestamp)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }));
+            }
+            for (Future<Boolean> f : futures) {
+                assertTrue(f.get(5, TimeUnit.SECONDS),
+                        "Concurrent LogFormatter calls should produce consistent timestamps without race corruption");
+            }
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
     @Test

@@ -444,7 +444,12 @@ public class Builder extends HashMap<String, Object> implements Struct {
         for (int i = start; i < content.length(); i++) {
             char c = content.charAt(i);
 
-            if (c == QUOTE && (i == 0 || content.charAt(i - 1) != ESCAPE_CHAR)) {
+            if (inQuotes && c == ESCAPE_CHAR) {
+                i++; // Skip escaped character inside string
+                continue;
+            }
+
+            if (c == QUOTE) {
                 inQuotes = !inQuotes;
             } else if (!inQuotes) {
                 if (c == LEFT_BRACE) {
@@ -471,7 +476,12 @@ public class Builder extends HashMap<String, Object> implements Struct {
         for (int i = start; i < content.length(); i++) {
             char c = content.charAt(i);
 
-            if (c == QUOTE && (i == 0 || content.charAt(i - 1) != ESCAPE_CHAR)) {
+            if (inQuotes && c == ESCAPE_CHAR) {
+                i++; // Skip escaped character inside string
+                continue;
+            }
+
+            if (c == QUOTE) {
                 inQuotes = !inQuotes;
             } else if (!inQuotes) {
                 if (c == LEFT_BRACKETS) {
@@ -586,7 +596,12 @@ public class Builder extends HashMap<String, Object> implements Struct {
         for (int i = 0; i < length; i++) {
             char c = value.charAt(i);
 
-            if (c == QUOTE && (i == 0 || value.charAt(i - 1) != ESCAPE_CHAR)) {
+            if (inQuotes && c == ESCAPE_CHAR) {
+                i++; // Skip escaped character inside string
+                continue;
+            }
+
+            if (c == QUOTE) {
                 inQuotes = !inQuotes;
             } else if (!inQuotes) {
                 if (c == LEFT_BRACE) {

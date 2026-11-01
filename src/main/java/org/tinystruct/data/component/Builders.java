@@ -16,6 +16,7 @@
 package org.tinystruct.data.component;
 
 import org.tinystruct.ApplicationException;
+import org.tinystruct.system.util.StringUtilities;
 
 import java.util.ArrayList;
 
@@ -164,7 +165,7 @@ public class Builders extends ArrayList<Builder> implements Struct {
                 throw new ApplicationException("Unterminated string in array");
             }
 
-            String value = content.substring(pos + 1, stringEnd);
+            String value = StringUtilities.unescape(content.substring(pos + 1, stringEnd));
             return new ElementParseResult(new Builder(value), stringEnd + 1);
         } else if (firstChar == LEFT_BRACE) {
             // Object element
@@ -230,7 +231,11 @@ public class Builders extends ArrayList<Builder> implements Struct {
     private int findStringEnd(String content, int start) {
         for (int i = start; i < content.length(); i++) {
             char c = content.charAt(i);
-            if (c == QUOTE && (i == 0 || content.charAt(i - 1) != ESCAPE_CHAR)) {
+            if (c == ESCAPE_CHAR) {
+                i++; // Skip escaped character
+                continue;
+            }
+            if (c == QUOTE) {
                 return i;
             }
         }
