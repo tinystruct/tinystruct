@@ -38,6 +38,11 @@ public class Builder extends HashMap<String, Object> implements Struct {
 
     private int closedPosition = 0;
     private Object value = null;
+    /**
+     * True when this Builder represents the JSON {@code null} literal as a single value
+     * (for example an element of an array), as opposed to an empty object.
+     */
+    private boolean nullLiteral = false;
 
     /**
      * Default constructor with optimized initial capacity
@@ -61,6 +66,26 @@ public class Builder extends HashMap<String, Object> implements Struct {
      */
     public Builder(Number value) {
         this.value = value;
+    }
+
+    /**
+     * Constructor that initializes with a boolean value.
+     *
+     * @param value The boolean value to initialize with
+     */
+    public Builder(Boolean value) {
+        this.value = value;
+    }
+
+    /**
+     * Create a Builder representing the JSON {@code null} literal as a single value.
+     *
+     * @return a single-value Builder whose value is {@code null}
+     */
+    static Builder ofNull() {
+        Builder builder = new Builder();
+        builder.nullLiteral = true;
+        return builder;
     }
 
     /**
@@ -91,7 +116,7 @@ public class Builder extends HashMap<String, Object> implements Struct {
      * @return true if the Builder represents a single value, false if it's a map
      */
     public boolean isSingleValue() {
-        return this.isEmpty() && this.value != null;
+        return this.isEmpty() && (this.value != null || this.nullLiteral);
     }
 
     /**
@@ -117,9 +142,10 @@ public class Builder extends HashMap<String, Object> implements Struct {
     @Override
     public String toString() {
         // Handle single value case
-        if (this.value != null && this.isEmpty()) {
-            Object value = parsePrimitiveValue(this.value);
-            return formatSingleValue(value);
+        // The stored value is formatted as-is: a String stays quoted even if it looks like
+        // a number, boolean or null, so that parse/toString round trips keep the type.
+        if (this.isSingleValue()) {
+            return formatSingleValue(this.value);
         }
 
         StringBuilder buffer = new StringBuilder(256);
@@ -185,7 +211,10 @@ public class Builder extends HashMap<String, Object> implements Struct {
      * Optimized key-value pair appending
      */
     private void appendKeyValue(StringBuilder buffer, String key, Object value) {
-        buffer.append(QUOTE).append(key).append(QUOTE).append(COLON);
+        // Keys are unescaped by the parser, so they must be escaped on output.
+        buffer.append(QUOTE)
+                .append(key != null ? StringUtilities.escape(key) : NULL_STRING)
+                .append(QUOTE).append(COLON);
 
         if (value == null) {
             buffer.append(NULL_STRING);

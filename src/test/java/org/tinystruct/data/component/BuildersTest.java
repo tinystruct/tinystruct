@@ -133,13 +133,26 @@ class BuildersTest {
 
     @Test
     void testToStringWithStringEscaping() throws ApplicationException {
-        builders.parse("[\"He said \\\"Hello World\\\"\", \"Path: C:\\\\Users\\\\Test\", \"Line1\\nLine2\\rLine3\"]");
-        
+        String input = "[\"He said \\\"Hello World\\\"\", \"Path: C:\\\\Users\\\\Test\", \"Line1\\nLine2\\rLine3\"]";
+        builders.parse(input);
+
+        // Verify decoded values
+        assertEquals("He said \"Hello World\"", builders.get(0).getValue());
+        assertEquals("Path: C:\\Users\\Test", builders.get(1).getValue());
+        assertEquals("Line1\nLine2\rLine3", builders.get(2).getValue());
+
         String result = builders.toString();
         System.out.println("result = " + result);
-        assertTrue(result.contains("\"He said \\\\\\\"Hello World\\\\\\\""));
-        assertTrue(result.contains("\"Path: C:\\\\\\\\Users\\\\\\\\Test\""));
-        assertTrue(result.contains("\"Line1\\\\nLine2\\\\rLine3\""));
+        assertTrue(result.contains("\"He said \\\"Hello World\\\"\""));
+        assertTrue(result.contains("\"Path: C:\\\\Users\\\\Test\""));
+        assertTrue(result.contains("\"Line1\\nLine2\\rLine3\""));
+
+        // Verify roundtrip preservation
+        Builders roundtrip = new Builders();
+        roundtrip.parse(result);
+        assertEquals(builders.get(0).getValue(), roundtrip.get(0).getValue());
+        assertEquals(builders.get(1).getValue(), roundtrip.get(1).getValue());
+        assertEquals(builders.get(2).getValue(), roundtrip.get(2).getValue());
     }
 
     @Test
@@ -363,33 +376,56 @@ class BuildersTest {
     @Test
     void testToStringWithEscapedQuotesInStrings() throws ApplicationException {
         builders.parse("[\"He said \\\"Hello\\\"\", \"She said \\\"Hi\\\"\"]");
-        
+
+        assertEquals("He said \"Hello\"", builders.get(0).getValue());
+        assertEquals("She said \"Hi\"", builders.get(1).getValue());
+
         String result = builders.toString();
         System.out.println("result = " + result);
-        assertTrue(result.contains("\"He said \\\\\\\"Hello\\\\\\\"\""));
-        assertTrue(result.contains("\"She said \\\\\\\"Hi\\\\\\\"\""));
+        assertTrue(result.contains("\"He said \\\"Hello\\\"\""));
+        assertTrue(result.contains("\"She said \\\"Hi\\\"\""));
+
+        Builders roundtrip = new Builders();
+        roundtrip.parse(result);
+        assertEquals(builders.get(0).getValue(), roundtrip.get(0).getValue());
+        assertEquals(builders.get(1).getValue(), roundtrip.get(1).getValue());
     }
 
     @Test
     void testToStringWithBackslashesInStrings() throws ApplicationException {
-
-        String text= "[\"Path: C:\\\\Users\\\\Test\", \"Regex: \\\\d+\\\\w*\"]";
+        String text = "[\"Path: C:\\\\Users\\\\Test\", \"Regex: \\\\d+\\\\w*\"]";
         builders.parse(text);
-        
+
+        assertEquals("Path: C:\\Users\\Test", builders.get(0).getValue());
+        assertEquals("Regex: \\d+\\w*", builders.get(1).getValue());
+
         String result = builders.toString();
         System.out.println("result = " + result);
-        assertTrue(result.contains("\"Path: C:\\\\\\\\Users\\\\\\\\Test\""));
-        assertTrue(result.contains("\"Regex: \\\\\\\\d+\\\\\\\\w*\""));
+        assertTrue(result.contains("\"Path: C:\\\\Users\\\\Test\""));
+        assertTrue(result.contains("\"Regex: \\\\d+\\\\w*\""));
+
+        Builders roundtrip = new Builders();
+        roundtrip.parse(result);
+        assertEquals(builders.get(0).getValue(), roundtrip.get(0).getValue());
+        assertEquals(builders.get(1).getValue(), roundtrip.get(1).getValue());
     }
 
     @Test
     void testToStringWithControlCharacters() throws ApplicationException {
         builders.parse("[\"Line1\\nLine2\\rLine3\", \"Tab\\tSeparated\"]");
-        
+
+        assertEquals("Line1\nLine2\rLine3", builders.get(0).getValue());
+        assertEquals("Tab\tSeparated", builders.get(1).getValue());
+
         String result = builders.toString();
         System.out.println("result = " + result);
-        assertTrue(result.contains("\"Line1\\\\nLine2\\\\rLine3\""));
-        assertTrue(result.contains("\"Tab\\\\tSeparated\""));
+        assertTrue(result.contains("\"Line1\\nLine2\\rLine3\""));
+        assertTrue(result.contains("\"Tab\\tSeparated\""));
+
+        Builders roundtrip = new Builders();
+        roundtrip.parse(result);
+        assertEquals(builders.get(0).getValue(), roundtrip.get(0).getValue());
+        assertEquals(builders.get(1).getValue(), roundtrip.get(1).getValue());
     }
 
     @Test
