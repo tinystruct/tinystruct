@@ -59,7 +59,7 @@ public class BuilderCharSequenceViewTest {
         assertEquals(4, builders.size());
         assertEquals("string", builders.get(0).getValue());
         assertEquals(123, builders.get(1).getValue());
-        assertEquals("true", builders.get(2).getValue()); // Boolean values are stored as strings in Builders
+        assertEquals(Boolean.TRUE, builders.get(2).getValue()); // Boolean literals keep their type
         
         // Debug: print the actual type and value
         Object thirdValue = builders.get(3);

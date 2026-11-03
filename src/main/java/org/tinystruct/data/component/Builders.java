@@ -208,6 +208,10 @@ public class Builders extends ArrayList<Builder> implements Struct {
             Object parsedValue = parsePrimitiveValue(elementStr);
             if (parsedValue instanceof Number)
                 return new ElementParseResult(new Builder((Number) parsedValue), elementEnd);
+            if (parsedValue instanceof Boolean)
+                return new ElementParseResult(new Builder((Boolean) parsedValue), elementEnd);
+            if (parsedValue == null)
+                return new ElementParseResult(Builder.ofNull(), elementEnd);
             return new ElementParseResult(new Builder(elementStr), elementEnd);
         }
     }
