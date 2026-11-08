@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.7.37</version>
+    <version>1.7.38</version>
     <name>tinystruct framework</name>
     <description>A lightweight, modular Java application framework for web and CLI development,
         designed for AI integration and plugin-based architecture.
@@ -132,7 +132,7 @@
         <lettuce.version>7.9.0.RELEASE</lettuce.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <sqlite.version>3.53.4.0</sqlite.version>
+        <sqlite.version>3.54.1.0</sqlite.version>
         <h2.version>2.5.252</h2.version>
         <postgresql.version>42.7.14</postgresql.version>
         <mockito.version>5.24.0</mockito.version>
@@ -150,12 +150,12 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            
+
             <!-- Patch vulnerability in Reactor -->
             <dependency>
                 <groupId>io.projectreactor</groupId>
                 <artifactId>reactor-core</artifactId>
-                <version>3.6.18</version>
+                <version>3.8.8</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
