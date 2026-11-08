@@ -22,19 +22,25 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DistributedHashMapTests {
     private static final Logger logger = Logger.getLogger(DistributedHashMapTests.class.getName());
     private DistributedHashMap<String> map;
+    // Per-test backing file. The no-arg constructor uses one fixed file in the working
+    // directory, so a file that survived an earlier test (File.delete() fails silently on
+    // Windows while any handle is still open) or an interrupted run would be loaded by the
+    // next test and leak entries into it, e.g. testMultipleInstances' two keys showing up
+    // in testConcurrentAccess' final size check.
+    private String dataFile;
     private static final String TEST_KEY = "testKey";
     private static final String TEST_VALUE = "testValue";
 
     @BeforeEach
     void setUp() throws IOException {
-        map = new DistributedHashMap<>();
+        dataFile = "distributed-hash-map-test-" + java.util.UUID.randomUUID() + ".data";
+        map = new DistributedHashMap<>(dataFile);
     }
 
     @AfterEach
     void tearDown() throws Exception {
-        // Instances now share a single well-known data file (see DistributedHashMap's default
-        // constructor), so every handle opened during the test must be closed before the file
-        // can actually be deleted - Windows refuses to delete a file that's still open.
+        // All instances in a test share dataFile, so every handle opened during the test must be
+        // closed before the file can actually be deleted - Windows refuses to delete an open file.
         map.close();
 
         // Clean up any test files
@@ -74,7 +80,7 @@ public class DistributedHashMapTests {
         map.put(TEST_KEY, queue);
 
         // Create a new instance to test persistence
-        try (DistributedHashMap<String> newMap = new DistributedHashMap<>()) {
+        try (DistributedHashMap<String> newMap = new DistributedHashMap<>(dataFile)) {
             // Verify data was loaded
             Queue<String> retrieved = newMap.get(TEST_KEY);
             assertNotNull(retrieved);
@@ -107,6 +113,9 @@ public class DistributedHashMapTests {
         int operationsPerThread = 20;
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         CountDownLatch latch = new CountDownLatch(threadCount);
+        // executor.submit() swallows anything thrown in a worker, which would otherwise only
+        // show up indirectly as leftover entries in the final size check. Collect them instead.
+        Queue<Throwable> failures = new java.util.concurrent.ConcurrentLinkedQueue<>();
 
         for (int i = 0; i < threadCount; i++) {
             final int threadId = i;
@@ -123,6 +132,8 @@ public class DistributedHashMapTests {
                         map.remove(key);
                         assertNull(map.get(key));
                     }
+                } catch (Throwable t) {
+                    failures.add(t);
                 } finally {
                     latch.countDown();
                 }
@@ -132,6 +143,11 @@ public class DistributedHashMapTests {
         assertTrue(latch.await(30, TimeUnit.SECONDS));
         executor.shutdown();
         assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS));
+        if (!failures.isEmpty()) {
+            AssertionError error = new AssertionError(failures.size() + " worker thread(s) failed; first: " + failures.peek());
+            failures.forEach(error::addSuppressed);
+            throw error;
+        }
         assertEquals(0, map.size());
     }
 
@@ -158,8 +174,8 @@ public class DistributedHashMapTests {
     @Test
     void testMultipleInstances() throws Exception {
         // Create two instances
-        try (DistributedHashMap<String> map1 = new DistributedHashMap<>();
-             DistributedHashMap<String> map2 = new DistributedHashMap<>()) {
+        try (DistributedHashMap<String> map1 = new DistributedHashMap<>(dataFile);
+             DistributedHashMap<String> map2 = new DistributedHashMap<>(dataFile)) {
 
             // Test concurrent access from different instances
             Queue<String> queue1 = new LinkedList<>();

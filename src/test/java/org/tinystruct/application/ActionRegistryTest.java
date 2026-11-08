@@ -1,8 +1,10 @@
 package org.tinystruct.application;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.tinystruct.AbstractApplication;
+import org.tinystruct.system.ApplicationManager;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,6 +22,15 @@ public class ActionRegistryTest {
         registry.set(app, "api/children/{id}/subjects", "getSubjects");
         registry.set(app, "api/users", "lookupUsers"); // Changed name to avoid conflicts if any
         registry.set(app, "say", "say");
+    }
+
+    @AfterEach
+    public void tearDown() {
+        // ActionRegistry is a JVM-wide singleton that never replaces an existing route. TestApp has
+        // no configuration, so leaving its "say" and "api/users" routes behind makes later tests in
+        // the same JVM (e.g. HttpServerHttpModeTest hitting "/" or "api/users") resolve to this
+        // unconfigured app and fail with an NPE on the null config.
+        ApplicationManager.uninstall(app);
     }
 
     @Test
