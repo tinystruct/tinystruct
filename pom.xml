@@ -121,6 +121,7 @@
         </dependency>
     </dependencies>
     <properties>
+        <asm.version>9.11.1</asm.version>
         <brotli.version>0.1.2</brotli.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jakarta.activation.version>2.1.4</jakarta.activation.version>
@@ -149,6 +150,33 @@
                 <version>4.2.18.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <!-- Patch ASM vulnerabilities (CVE-2026-110257/58/60/61/63, CVE-2026-110591) pulled in by nashorn-core 15.7 -->
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-commons</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-analysis</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-tree</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-util</artifactId>
+                <version>${asm.version}</version>
             </dependency>
 
             <!-- Patch vulnerability in Reactor -->
