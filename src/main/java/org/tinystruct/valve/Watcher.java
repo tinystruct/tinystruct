@@ -2,6 +2,7 @@ package org.tinystruct.valve;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
@@ -30,10 +31,6 @@ public final class Watcher implements Runnable {
     private static final Logger logger = Logger.getLogger(Watcher.class.getName());
 
     /**
-     * Empty bytes array.
-     */
-    private final static byte[] EMPTY_BYTES = new byte[36];
-    /**
      * Lock size.
      */
     private static final int FIXED_LOCK_DATA_SIZE = 44;
@@ -49,8 +46,16 @@ public final class Watcher implements Runnable {
      * timeout the caller passed to {@link DistributedLock#tryLock(long, TimeUnit)} - the file
      * lock acquisition sat behind {@code synchronized (Watcher.class)} using the blocking,
      * no-timeout {@link FileChannel#lock()}.
+     * <p>
+     * Configurable through {@code distributed.lock.file.timeout} (milliseconds, default 5000);
+     * see {@link LockSettings}.
      */
-    private static final long DEFAULT_FILE_LOCK_TIMEOUT_MS = 5000;
+    private final long fileLockTimeoutMs = LockSettings.timeoutMs(LockSettings.FILE_LOCK_TIMEOUT,
+            LockSettings.DEFAULT_FILE_LOCK_TIMEOUT_MS);
+    /**
+     * Size of the lock id stored at the start of each slot of the lock file.
+     */
+    private static final int ID_SIZE = 36;
     /**
      * Delay between successive {@link FileChannel#tryLock()} polling attempts.
      */
@@ -63,17 +68,11 @@ public final class Watcher implements Runnable {
      * Lock collection.
      */
     private final ConcurrentHashMap<String, Lock> locks;
-    private int[] interspace;
     private volatile boolean started = false;
     private volatile boolean stopped = false;
 
     private Watcher() {
         this.locks = new ConcurrentHashMap<>(16);
-        try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "r")) {
-            this.interspace = new int[(int) (lockFile.length() / FIXED_LOCK_DATA_SIZE + 1)];
-        } catch (IOException e) {
-            logger.warning(e.getMessage());
-        }
     }
 
     /**
@@ -150,7 +149,7 @@ public final class Watcher implements Runnable {
                 size = (int) lockFile.length() / FIXED_LOCK_DATA_SIZE;
                 try (FileLock fileLock = lockFile.getChannel().tryLock()) {
                     if (fileLock != null) {
-                        updateLocksFromFile(lockFile, size);
+                        updateLocksFromFile(lockFile.getChannel());
                     }
                 }
             } else if (lockFile.length() > 0) {
@@ -170,26 +169,88 @@ public final class Watcher implements Runnable {
     /**
      * Update locks map based on the content of the lock file.
      */
-    private void updateLocksFromFile(RandomAccessFile lockFile, int size) throws IOException {
-        if (size > 0) {
-            lockFile.seek(0);
-            String lockId;
-            for (int i = 0; i < size; i++) {
-                byte[] id = new byte[36];
-                boolean condition = lockFile.read(id) != -1 && lockFile.readLong() == 1L;
-                if (condition) {
-                    lockId = new String(id, StandardCharsets.UTF_8);
-                    if (!this.locks.containsKey(lockId)) {
-                        this.locks.putIfAbsent(lockId, new DistributedLock(id));
-                        java.util.List<EventListener> list = this.listeners.get(lockId);
-                        if (list != null) {
-                            for (EventListener listener : list) {
-                                listener.onCreate(lockId);
-                            }
+    private void updateLocksFromFile(FileChannel channel) throws IOException {
+        ByteBuffer slots = readSlots(channel);
+        int size = slots.capacity() / FIXED_LOCK_DATA_SIZE;
+        for (int i = 0; i < size; i++) {
+            if (flag(slots, i) == 1L) {
+                byte[] id = new byte[ID_SIZE];
+                slots.get(i * FIXED_LOCK_DATA_SIZE, id);
+                String lockId = new String(id, StandardCharsets.UTF_8);
+                if (!this.locks.containsKey(lockId)) {
+                    this.locks.putIfAbsent(lockId, new DistributedLock(id));
+                    java.util.List<EventListener> list = this.listeners.get(lockId);
+                    if (list != null) {
+                        for (EventListener listener : list) {
+                            listener.onCreate(lockId);
                         }
                     }
                 }
             }
+        }
+    }
+
+    /*
+     * Lock file layout: a sequence of FIXED_LOCK_DATA_SIZE-byte slots, each a 36-byte lock id
+     * followed by an 8-byte big-endian flag (1 = held, 0 = free). Everything below reads the
+     * whole file with one read and scans it in memory, and writes a slot with one write.
+     * RandomAccessFile.read(byte[]) is fine but readLong() is eight single-byte reads, and the
+     * old code did that per slot, per scan - on a file kept long by stale entries that cost
+     * hundreds of syscalls per register/unregister/monitor pass, all while holding the
+     * Watcher.class monitor.
+     */
+
+    /**
+     * Reads every complete slot of the lock file with a single read.
+     */
+    private static ByteBuffer readSlots(FileChannel channel) throws IOException {
+        int size = (int) (channel.size() / FIXED_LOCK_DATA_SIZE);
+        ByteBuffer slots = ByteBuffer.allocate(size * FIXED_LOCK_DATA_SIZE);
+        long position = 0;
+        while (slots.hasRemaining()) {
+            int read = channel.read(slots, position);
+            if (read < 0) {
+                break; // file shrank underneath us; the unread tail stays zeroed, i.e. free
+            }
+            position += read;
+        }
+        return ByteBuffer.wrap(slots.array());
+    }
+
+    private static long flag(ByteBuffer slots, int slot) {
+        return slots.getLong(slot * FIXED_LOCK_DATA_SIZE + ID_SIZE);
+    }
+
+    private static boolean idMatches(ByteBuffer slots, int slot, byte[] id) {
+        int from = slot * FIXED_LOCK_DATA_SIZE;
+        return Arrays.equals(slots.array(), from, from + ID_SIZE, id, 0, ID_SIZE);
+    }
+
+    /**
+     * The on-disk form of a lock id: exactly {@link #ID_SIZE} bytes, zero padded if shorter.
+     */
+    private static byte[] idBytes(String lockId) {
+        byte[] id = new byte[ID_SIZE];
+        byte[] source = lockId.getBytes(StandardCharsets.UTF_8);
+        System.arraycopy(source, 0, id, 0, Math.min(source.length, ID_SIZE));
+        return id;
+    }
+
+    private static void writeSlot(FileChannel channel, int slot, byte[] id, long flag) throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(FIXED_LOCK_DATA_SIZE);
+        buffer.put(id).putLong(flag).flip();
+        writeFully(channel, buffer, (long) slot * FIXED_LOCK_DATA_SIZE);
+    }
+
+    private static void writeFlag(FileChannel channel, int slot, long flag) throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(flag).flip();
+        writeFully(channel, buffer, (long) slot * FIXED_LOCK_DATA_SIZE + ID_SIZE);
+    }
+
+    private static void writeFully(FileChannel channel, ByteBuffer buffer, long position) throws IOException {
+        while (buffer.hasRemaining()) {
+            position += channel.write(buffer, position);
         }
     }
 
@@ -219,57 +280,39 @@ public final class Watcher implements Runnable {
     }
 
     public void register(Lock lock, long expiration, TimeUnit tu) throws ApplicationException {
-        long timeoutMs = expiration > 0 ? tu.toMillis(expiration) : DEFAULT_FILE_LOCK_TIMEOUT_MS;
+        long timeoutMs = expiration > 0 ? tu.toMillis(expiration) : fileLockTimeoutMs;
         synchronized (Watcher.class) {
             String lockId = lock.id();
             if (!locks.containsKey(lockId)) {
                 try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rw");
                         FileLock fileLock = acquireFileLock(lockFile.getChannel(), timeoutMs)) {
-                    long length = lockFile.length();
-                    byte[] emptyBuffer = new byte[36];
+                    FileChannel channel = lockFile.getChannel();
+                    ByteBuffer slots = readSlots(channel);
+                    int size = slots.capacity() / FIXED_LOCK_DATA_SIZE;
+                    byte[] id = idBytes(lockId);
 
-                    int size = (length >= FIXED_LOCK_DATA_SIZE) ? (int) (length / FIXED_LOCK_DATA_SIZE) : 0;
-                    this.interspace = new int[size];
-
-                    boolean required = true, registered = false;
-                    if (size > 0) {
-                        for (int i = 0; i < size; i++) {
-                            int position = i * FIXED_LOCK_DATA_SIZE;
-                            lockFile.seek(position);
-                            if (lockFile.read(emptyBuffer) != -1) {
-                                if (Arrays.equals(lockId.getBytes(StandardCharsets.UTF_8), emptyBuffer)) {
-                                    if (lockFile.readLong() == 0L) {
-                                        lockFile.seek(position + emptyBuffer.length);
-                                        lockFile.writeLong(1L);
-                                    }
-                                    required = false;
-                                    registered = true;
-                                    break;
-                                }
-                                if (lockFile.readLong() == 0L) {
-                                    this.interspace[i] = 1;
-                                    required = false;
-                                }
-                            }
+                    // Claim the slot already holding this id; otherwise the first free slot;
+                    // otherwise append a new one.
+                    int target = size;
+                    boolean matched = false;
+                    int firstFree = -1;
+                    for (int i = 0; i < size; i++) {
+                        if (idMatches(slots, i, id)) {
+                            target = i;
+                            matched = true;
+                            break;
                         }
-
-                        if (!registered) {
-                            for (int i = 0; i < size; i++) {
-                                if (this.interspace[i] == 1) {
-                                    lockFile.seek((long) i * FIXED_LOCK_DATA_SIZE);
-                                    lockFile.writeBytes(lockId);
-                                    lockFile.writeLong(1L);
-                                    required = false;
-                                    break;
-                                }
-                            }
+                        if (firstFree < 0 && flag(slots, i) == 0L) {
+                            firstFree = i;
                         }
                     }
 
-                    if (required) {
-                        lockFile.seek((long) size * FIXED_LOCK_DATA_SIZE);
-                        lockFile.writeBytes(lockId);
-                        lockFile.writeLong(1L);
+                    if (matched) {
+                        if (flag(slots, target) == 0L) {
+                            writeFlag(channel, target, 1L);
+                        }
+                    } else {
+                        writeSlot(channel, firstFree >= 0 ? firstFree : size, id, 1L);
                     }
 
                     this.locks.putIfAbsent(lockId, lock);
@@ -293,23 +336,18 @@ public final class Watcher implements Runnable {
             String lockId = lock.id();
             if (locks.containsKey(lockId)) {
                 try (RandomAccessFile lockFile = new RandomAccessFile(LOCK, "rw")) {
-                    long length = lockFile.length();
-                    if (length < FIXED_LOCK_DATA_SIZE)
+                    FileChannel channel = lockFile.getChannel();
+                    if (channel.size() < FIXED_LOCK_DATA_SIZE)
                         return;
-                    try (FileLock fileLock = acquireFileLock(lockFile.getChannel(), DEFAULT_FILE_LOCK_TIMEOUT_MS)) {
-                        byte[] empty = EMPTY_BYTES;
+                    try (FileLock fileLock = acquireFileLock(channel, fileLockTimeoutMs)) {
+                        ByteBuffer slots = readSlots(channel);
+                        int size = slots.capacity() / FIXED_LOCK_DATA_SIZE;
+                        byte[] id = idBytes(lockId);
 
-                        int size = (int) (length / FIXED_LOCK_DATA_SIZE);
-                        this.interspace = new int[size];
-
-                        int position;
                         for (int i = 0; i < size; i++) {
-                            position = i * FIXED_LOCK_DATA_SIZE;
-                            lockFile.seek(position);
-                            boolean condition = lockFile.read(empty) != -1 && Arrays.equals(lockId.getBytes(), empty);
-                            if (condition) {
-                                lockFile.seek(position + EMPTY_BYTES.length); // The pointer should be resumed.
-                                lockFile.writeLong(0L);
+                            if (idMatches(slots, i, id)) {
+                                writeFlag(channel, i, 0L);
+                                slots.putLong(i * FIXED_LOCK_DATA_SIZE + ID_SIZE, 0L);
                                 this.locks.remove(lockId);
                                 java.util.List<EventListener> list = this.listeners.get(lockId);
                                 if (list != null) {
@@ -320,7 +358,7 @@ public final class Watcher implements Runnable {
 
                                 // If all locks are not available, then remove them all and set the lockFile to
                                 // be empty.
-                                if (isAllLocksAvailable(lockFile)) {
+                                if (isAllLocksAvailable(slots)) {
                                     if (!this.locks.isEmpty())
                                         this.locks.clear();
 
@@ -380,16 +418,10 @@ public final class Watcher implements Runnable {
         }
     }
 
-    private boolean isAllLocksAvailable(RandomAccessFile lockFile) throws IOException {
-        long length = lockFile.length();
-        if (length == 0)
-            return true;
-
-        lockFile.seek(0);
-        int size = (int) (length / FIXED_LOCK_DATA_SIZE);
+    private boolean isAllLocksAvailable(ByteBuffer slots) {
+        int size = slots.capacity() / FIXED_LOCK_DATA_SIZE;
         for (int i = 0; i < size; i++) {
-            lockFile.skipBytes(36);
-            if (lockFile.readLong() == 1L) {
+            if (flag(slots, i) == 1L) {
                 return false;
             }
         }

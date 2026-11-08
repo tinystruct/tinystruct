@@ -68,6 +68,8 @@ public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> i
     private RandomAccessFile data;
     private FileChannel channel;
     private final DistributedLock lock;
+    // How long a single operation waits to acquire the lock before failing, in milliseconds.
+    private final long lockTimeoutMs;
     private final String dataFilePath;
     private volatile int size;
     // Cheap (metadata-only) way to detect that another instance has written to the shared file
@@ -85,6 +87,22 @@ public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> i
      * @param dataFilePath path of the backing data file
      */
     public DistributedHashMap(String dataFilePath) throws IOException {
+        this(dataFilePath, LockSettings.timeoutMs(LockSettings.LOCK_TIMEOUT, LockSettings.DEFAULT_LOCK_TIMEOUT_MS));
+    }
+
+    /**
+     * Same as {@link #DistributedHashMap(String)} but with an explicit lock timeout instead of
+     * the {@code distributed.lock.timeout} setting (default 5000 ms).
+     *
+     * @param dataFilePath  path of the backing data file
+     * @param lockTimeoutMs how long each operation waits to acquire the lock before failing
+     * @throws IllegalArgumentException if {@code lockTimeoutMs} is not positive
+     */
+    public DistributedHashMap(String dataFilePath, long lockTimeoutMs) throws IOException {
+        if (lockTimeoutMs <= 0) {
+            throw new IllegalArgumentException("lockTimeoutMs must be positive: " + lockTimeoutMs);
+        }
+        this.lockTimeoutMs = lockTimeoutMs;
         this.lock = new DistributedLock();
         this.dataFilePath = dataFilePath;
         this.data = new RandomAccessFile(this.dataFilePath, "rw");
@@ -282,7 +300,7 @@ public class DistributedHashMap<T> extends ConcurrentHashMap<String, Queue<T>> i
      */
     private boolean acquireLock() {
         try {
-            if (!lock.tryLock(5, TimeUnit.SECONDS)) {
+            if (!lock.tryLock(lockTimeoutMs, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Failed to acquire lock");
             }
             return true;
