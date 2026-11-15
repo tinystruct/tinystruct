@@ -125,8 +125,11 @@ public final class ConnectionManager implements Runnable {
                     }
                 }
                 if (dbUri.getUserInfo() != null) {
-                    dbUser = dbUri.getUserInfo().split(":")[0];
-                    dbPassword = dbUri.getUserInfo().split(":")[1];
+                    String[] userInfoParts = dbUri.getUserInfo().split(":", 2);
+                    dbUser = userInfoParts[0];
+                    if (userInfoParts.length > 1) {
+                        dbPassword = userInfoParts[1];
+                    }
                 }
                 StringBuilder builder = new StringBuilder();
                 builder.append("jdbc:").append(dbType).append("://");

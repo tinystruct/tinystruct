@@ -217,10 +217,12 @@ public class Element implements Cloneable {
         Element the_target_element = null;
         while (i < this.childNodes.size()) {
             the_target_element = this.childNodes.get(i);
-            if (the_target_element.name.equalsIgnoreCase(elementName))
+            if (the_target_element.name.equalsIgnoreCase(elementName)) {
                 break;
+            }
+            i++;
         }
-        return this.childNodes.remove(the_target_element);
+        return the_target_element != null && the_target_element.name.equalsIgnoreCase(elementName) && this.childNodes.remove(the_target_element);
     }
 
     public Element removeElement(int index) {

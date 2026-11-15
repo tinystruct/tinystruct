@@ -6,6 +6,7 @@ _
 /target/
 /lib/
 .agent/
+.claude/
 .vscode/
 jdk-17/
 .lock

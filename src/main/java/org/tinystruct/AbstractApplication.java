@@ -485,10 +485,14 @@ public abstract class AbstractApplication implements Application, Cloneable {
      */
     public void setLocale(String locale) {
         String[] local = locale.split("_");
-        Locale _locale = new Locale.Builder()
-                .setLanguage(local[0])
-                .setRegion(local[1])
-                .build();
+        Locale.Builder builder = new Locale.Builder().setLanguage(local[0]);
+        if (local.length > 1) {
+            builder.setRegion(local[1]);
+        }
+        if (local.length > 2) {
+            builder.setVariant(local[2]);
+        }
+        Locale _locale = builder.build();
         this.setLocale(_locale);
     }
 
