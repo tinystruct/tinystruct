@@ -128,7 +128,7 @@ public class Document extends DefaultHandler {
             throw new ApplicationException(notFoundException.getMessage(),
                     notFoundException);
         } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e.getCause());
+            throw new ApplicationException(e.getMessage(), e);
         }
     }
 
