@@ -29,6 +29,7 @@ import org.tinystruct.system.template.variable.Variable;
 import org.tinystruct.system.util.StringUtilities;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
@@ -511,9 +512,9 @@ public abstract class AbstractApplication implements Application, Cloneable {
     }
 
     /**
-     * Returns a string representation of the context.
+     * Returns a string representation of the application or renders its template output.
      *
-     * @return a string representation of the context
+     * @return a string representation of the application
      */
     @Override
     public String toString() {
@@ -524,26 +525,24 @@ public abstract class AbstractApplication implements Application, Cloneable {
         String templatePath = "UNKNOWN";
         Locale locale = this.getLocale();
         if (locale != null) {
-            if (locale != Locale.CHINA) {
-                templatePath = "themes" + File.separatorChar + this.templateName + "_" + locale + ".view";
-                in = AbstractApplication.class.getClassLoader().getResourceAsStream(templatePath);
-            }
+            templatePath = "themes/" + this.templateName + "_" + locale + ".view";
+            in = getResourceAsStream(templatePath);
         }
 
         if (null == in) {
-            templatePath = "themes" + File.separatorChar + this.templateName + ".view";
-            in = AbstractApplication.class.getClassLoader().getResourceAsStream(templatePath);
+            templatePath = "themes/" + this.templateName + ".view";
+            in = getResourceAsStream(templatePath);
         }
 
         if (null != in) {
-            try {
+            try (InputStream stream = in) {
                 if (locale != null) {
                     return this.setTemplate(
-                            new DefaultTemplate(this, in, Variables.getInstance(locale.toString()).getVariables()));
+                            new DefaultTemplate(this, stream, Variables.getInstance(locale.toString()).getVariables()));
                 } else {
-                    return this.setTemplate(new DefaultTemplate(this, in));
+                    return this.setTemplate(new DefaultTemplate(this, stream));
                 }
-            } catch (ApplicationException e) {
+            } catch (ApplicationException | IOException e) {
                 throw new ApplicationRuntimeException(e.getMessage(), e);
             }
         } else {
@@ -566,6 +565,24 @@ public abstract class AbstractApplication implements Application, Cloneable {
 
         throw new ApplicationRuntimeException("The template " + templatePath
                 + " could not be found and the output has not been set. Reminder: If you don't need a template for this application, please setTemplateRequired(false) in init();");
+    }
+
+    private InputStream getResourceAsStream(String path) {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        InputStream in = null;
+        if (loader != null) {
+            in = loader.getResourceAsStream(path);
+        }
+        if (in == null) {
+            loader = getClass().getClassLoader();
+            if (loader != null) {
+                in = loader.getResourceAsStream(path);
+            }
+        }
+        if (in == null) {
+            in = ClassLoader.getSystemResourceAsStream(path);
+        }
+        return in;
     }
 
     /**
