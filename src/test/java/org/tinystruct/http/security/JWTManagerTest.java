@@ -102,4 +102,60 @@ public class JWTManagerTest {
         // Parsing an invalid token should throw MalformedJwtException
         assertThrows(MalformedJwtException.class, () -> jwtManager.parseToken(invalidToken));
     }
+
+    @Test
+    public void testExact64AWithEqualsRejectedBeforeParsing() {
+        String payload = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+        MalformedJwtException ex = assertThrows(MalformedJwtException.class, () -> jwtManager.parseToken(payload));
+        assertTrue(ex.getMessage().contains("Token validation failed"),
+                "Exception should indicate TokenGuard validation failure: " + ex.getMessage());
+    }
+
+    @Test
+    public void testExact64AWithoutEqualsRejectedAsMalformedJwt() {
+        String payload = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+        MalformedJwtException ex = assertThrows(MalformedJwtException.class, () -> jwtManager.parseToken(payload));
+        assertTrue(ex.getMessage().contains("Token validation failed"),
+                "Exception should indicate TokenGuard validation failure: " + ex.getMessage());
+    }
+
+    @Test
+    public void testEmptyAndBlankTokensThrowMalformedJwtException() {
+        assertThrows(MalformedJwtException.class, () -> jwtManager.parseToken(""));
+        assertThrows(MalformedJwtException.class, () -> jwtManager.parseToken("   "));
+        assertThrows(MalformedJwtException.class, () -> jwtManager.parseToken(null));
+    }
+
+    @Test
+    public void testOversizedTokenThrowsMalformedJwtException() {
+        String oversized = "A".repeat(5000);
+        MalformedJwtException ex = assertThrows(MalformedJwtException.class, () -> jwtManager.parseToken(oversized));
+        assertTrue(ex.getMessage().contains("OVERSIZED"),
+                "Exception should indicate OVERSIZED token: " + ex.getMessage());
+    }
+
+    @Test
+    public void testBlockedPatternThrowsBlockedTokenException() {
+        TokenGuard guard = new TokenGuard();
+        guard.setPatternDetection(true);
+        guard.setBlockPatterns("^DENIED-.*,.*MALICIOUS.*");
+        jwtManager.withTokenGuard(guard);
+
+        JWTManager.BlockedTokenException ex = assertThrows(JWTManager.BlockedTokenException.class,
+                () -> jwtManager.parseToken("DENIED-token-xyz"));
+        assertTrue(ex.getMessage().contains("Token blocked by policy"));
+        // Must be catchable as JwtException so callers map it to an auth failure, not a 500
+        assertInstanceOf(io.jsonwebtoken.JwtException.class, ex);
+    }
+
+    @Test
+    public void testTokenGuardDisabledAllowsBypass() {
+        jwtManager.getTokenGuard().setEnabled(false);
+
+        // When guard is disabled, JJWT's parser receives it directly and throws JJWT's MalformedJwtException
+        MalformedJwtException ex = assertThrows(MalformedJwtException.class,
+                () -> jwtManager.parseToken("invalid.token"));
+        assertFalse(ex.getMessage().contains("Token validation failed"),
+                "Guard message should not appear when guard is disabled");
+    }
 }

@@ -2,6 +2,7 @@ package org.tinystruct.mcp;
 
 import org.tinystruct.http.Header;
 import org.tinystruct.http.Request;
+import org.tinystruct.http.security.TokenGuard;
 
 import java.util.UUID;
 
@@ -10,9 +11,15 @@ import java.util.UUID;
  */
 public class AuthorizationHandler {
     private final String authToken;
+    private final TokenGuard tokenGuard;
 
     public AuthorizationHandler(String authToken) {
+        this(authToken, new TokenGuard());
+    }
+
+    public AuthorizationHandler(String authToken, TokenGuard tokenGuard) {
         this.authToken = authToken;
+        this.tokenGuard = tokenGuard != null ? tokenGuard : new TokenGuard();
     }
 
     /**
@@ -29,6 +36,18 @@ public class AuthorizationHandler {
                 throw new SecurityException("Authorization header is missing");
             }
             String auth = request.headers().get(Header.AUTHORIZATION).toString();
+            if (this.tokenGuard != null) {
+                // Validate only the credential part: tolerate an optional "Bearer " scheme prefix,
+                // since the raw header legitimately contains a space.
+                String credential = auth;
+                if (credential != null && credential.regionMatches(true, 0, "Bearer ", 0, 7)) {
+                    credential = credential.substring(7).trim();
+                }
+                TokenGuard.ValidationResult result = this.tokenGuard.validate(credential, TokenGuard.TokenType.GENERIC);
+                if (!result.isValid()) {
+                    throw new SecurityException("Invalid authorization: " + result.getMessage());
+                }
+            }
             if (auth == null || !authenticate(auth)) {
                 throw new SecurityException("Invalid authorization");
             }
@@ -54,4 +73,4 @@ public class AuthorizationHandler {
     public static String generateAuthToken() {
         return UUID.randomUUID().toString();
     }
-} 
+}

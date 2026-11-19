@@ -17,11 +17,38 @@ import java.util.Base64;
 import java.util.Date;
 
 public class JWTManager {
+    /** Thrown when a token is rejected by an explicit TokenGuard deny pattern. */
+    public static class BlockedTokenException extends JwtException {
+        public BlockedTokenException(String message) {
+            super(message);
+        }
+    }
     // A default secret key for signing JWTs
     private static final SecretKey SECRET_KEY = Jwts.SIG.HS256.key().build();
     private Key signKey;
     private Key verifyKey;
     private long clockSkew = 0;
+    private TokenGuard tokenGuard = new TokenGuard();
+
+    /**
+     * Sets a custom TokenGuard for pre-authentication token validation.
+     *
+     * @param tokenGuard The TokenGuard instance
+     * @return this JWTManager instance
+     */
+    public JWTManager withTokenGuard(TokenGuard tokenGuard) {
+        this.tokenGuard = tokenGuard;
+        return this;
+    }
+
+    /**
+     * Returns the active TokenGuard.
+     *
+     * @return TokenGuard
+     */
+    public TokenGuard getTokenGuard() {
+        return this.tokenGuard;
+    }
 
     /**
      * Sets the secret key using a plain text string.
@@ -160,6 +187,19 @@ public class JWTManager {
             UnsupportedJwtException,
             MalformedJwtException,
             IllegalArgumentException {
+
+        // Validate token against TokenGuard prior to expensive cryptographic operations
+        if (this.tokenGuard != null && this.tokenGuard.isEnabled()) {
+            TokenGuard.ValidationResult result = this.tokenGuard.validate(compactToken, TokenGuard.TokenType.JWT);
+            if (!result.isValid()) {
+                if (result.getStatus() == TokenGuard.Status.BLOCKED) {
+                    // A JwtException subclass so existing callers (which catch JwtException) reject
+                    // the token as an authentication failure instead of failing with an unchecked error.
+                    throw new BlockedTokenException("Token blocked by policy: " + result.getMessage());
+                }
+                throw new MalformedJwtException("Token validation failed (" + result.getStatus() + "): " + result.getMessage());
+            }
+        }
 
         // Initialize the JWT parser
         JwtParserBuilder parser = Jwts.parser();

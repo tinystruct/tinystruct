@@ -32,7 +32,9 @@ import org.tinystruct.system.util.StringUtilities;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.MalformedJwtException;
 import org.tinystruct.http.security.JWTManager;
+import org.tinystruct.http.security.TokenGuard;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -241,7 +243,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
 
     @Override
     public String version() {
-        return "1.0.0";
+        return "1.0.1";
     }
 
     /**
@@ -340,8 +342,9 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                 ApplicationContext context = new ApplicationContext();
 
                 // Authenticate request
-                if (!authenticateRequest(request, context)) {
-                    sendErrorResponse(exchange, 401, "Invalid or expired token.");
+                ResponseStatus authStatus = authenticateRequest(request, context);
+                if (authStatus != ResponseStatus.OK) {
+                    sendErrorResponse(exchange, authStatus.code(), authStatus == ResponseStatus.UNAUTHORIZED ? "Invalid or expired token." : authStatus.toString());
                     return;
                 }
                 // Set up session ID first
@@ -420,7 +423,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
             return null;
         }
 
-        private boolean authenticateRequest(Request<?, ?> request, Context context) {
+        private ResponseStatus authenticateRequest(Request<?, ?> request, Context context) {
             Object authorization;
             if ((authorization = request.headers().get(Header.AUTHORIZATION)) != null) {
                 String authHeader = authorization.toString();
@@ -428,6 +431,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     String token = authHeader.substring(7);
 
                     JWTManager jwtManager = new JWTManager();
+                    jwtManager.withTokenGuard(new TokenGuard(this.settings));
                     String publicKey = settings.get("jwt.key.public");
                     String secret = settings.get("jwt.secret");
 
@@ -445,7 +449,7 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                         logger.warning("Neither jwt.key.public nor jwt.secret is configured. " +
                                 "Bearer token authentication is disabled. " +
                                 "Please set jwt.secret (>= 256-bit) or jwt.key.public in application.properties.");
-                        return false;
+                        return ResponseStatus.UNAUTHORIZED;
                     }
 
                     String timezone = settings.get("jwt.timezone");
@@ -460,15 +464,21 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
                     try {
                         Jws<Claims> claims = jwtManager.parseToken(token);
                         context.setAttribute("CLAIMS", claims);
-                        return true;
+                        return ResponseStatus.OK;
+                    } catch (JWTManager.BlockedTokenException e) {
+                        logger.warning("Token blocked: " + e.getMessage());
+                        return ResponseStatus.FORBIDDEN;
+                    } catch (MalformedJwtException | IllegalArgumentException e) {
+                        logger.warning("JWT validation failed: " + e.getMessage());
+                        return ResponseStatus.BAD_REQUEST;
                     } catch (JwtException e) {
                         // Log authentication failure
                         logger.warning("JWT validation failed: " + e.getMessage());
-                        return false;
+                        return ResponseStatus.UNAUTHORIZED;
                     }
                 }
             }
-            return true; // Allow requests without a token
+            return ResponseStatus.OK; // Allow requests without a token
         }
 
         private boolean isSSE(HttpExchange exchange) {

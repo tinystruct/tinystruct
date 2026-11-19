@@ -62,7 +62,8 @@ public abstract class MCPApplication extends AbstractApplication {
             getConfiguration().set(Config.AUTH_TOKEN, token);
             LOGGER.info("Generated new MCP auth token (not logged; configure " + Config.AUTH_TOKEN + " to set a fixed token)");
         }
-        this.authHandler = new AuthorizationHandler(getConfiguration().get(Config.AUTH_TOKEN));
+        this.authHandler = new AuthorizationHandler(getConfiguration().get(Config.AUTH_TOKEN),
+                new org.tinystruct.http.security.TokenGuard(getConfiguration()));
         this.jsonRpcHandler = new JsonRpcHandler();
 
         // Register core protocol handlers
