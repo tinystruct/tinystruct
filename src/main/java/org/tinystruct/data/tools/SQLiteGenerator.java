@@ -263,7 +263,7 @@ public class SQLiteGenerator implements Generator {
             if (parent != null && this.mappingMode == MappingMode.XML)
                 Files.createDirectories(parent);
         } catch (IOException e) {
-            throw new ApplicationException(e.getMessage(), e.getCause());
+            throw new ApplicationException(e.getMessage(), e);
         }
 
         if (this.mappingMode == MappingMode.XML) {
