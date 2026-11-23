@@ -325,7 +325,7 @@ public final class Watcher implements Runnable {
 
                     Watcher.class.notifyAll();
                 } catch (IOException e) {
-                    throw new ApplicationException(e.getMessage(), e.getCause());
+                    throw new ApplicationException(e.getMessage(), e);
                 }
             }
         }
@@ -371,7 +371,7 @@ public final class Watcher implements Runnable {
                         Watcher.class.notifyAll();
                     }
                 } catch (IOException e) {
-                    throw new ApplicationException(e.getMessage(), e.getCause());
+                    throw new ApplicationException(e.getMessage(), e);
                 }
             }
         }
