@@ -216,9 +216,42 @@
                     <archive>
                         <manifest>
                             <mainClass>org.tinystruct.system.Dispatcher</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                         </manifest>
                     </archive>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-application-versions</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.tinystruct.system.Dispatcher</mainClass>
+                            <!-- The framework's Scheduler timer is a daemon thread; don't wait 15s for it -->
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                            <arguments>
+                                <argument>generate-versions</argument>
+                                <argument>--import</argument>
+                                <argument>org.tinystruct.system.ApplicationVersionGenerator</argument>
+                                <argument>--basedir</argument>
+                                <argument>${project.basedir}</argument>
+                                <argument>--source</argument>
+                                <argument>${project.build.sourceDirectory}</argument>
+                                <argument>--classes</argument>
+                                <argument>${project.build.outputDirectory}</argument>
+                                <argument>--output</argument>
+                                <argument>${project.build.outputDirectory}/META-INF/tinystruct-versions.properties</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

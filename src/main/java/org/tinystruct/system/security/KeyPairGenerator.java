@@ -54,9 +54,4 @@ public class KeyPairGenerator extends AbstractApplication {
             logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
-
-    @Override
-    public String version() {
-        return null;
-    }
 }

@@ -240,11 +240,6 @@ public class DistributedMessageQueue extends AbstractApplication implements Mess
         return text;
     }
 
-    @Override
-    public String version() {
-        return "Talk core version:1.0 stable; Released on 2023-07-24";
-    }
-
     /**
      * This is a testing. It can be executed with the command:
      * $ bin/dispatcher --import org.tinystruct.transfer.DistributedMessageQueue message/testing/100

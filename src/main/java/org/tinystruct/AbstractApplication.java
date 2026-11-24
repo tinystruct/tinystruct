@@ -17,6 +17,7 @@ package org.tinystruct;
 
 import org.tinystruct.application.*;
 import org.tinystruct.system.AnnotationProcessor;
+import org.tinystruct.system.ApplicationManager;
 import org.tinystruct.system.annotation.Action.Mode;
 import org.tinystruct.system.Configuration;
 import org.tinystruct.system.Resource;
@@ -31,6 +32,9 @@ import org.tinystruct.system.util.StringUtilities;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.tinystruct.http.Constants.HTTP_HOST;
@@ -47,6 +51,18 @@ public abstract class AbstractApplication implements Application, Cloneable {
      * Application instances container.
      */
     private static final Container CONTAINER = Container.getInstance();
+
+    /**
+     * Classpath resource containing build-generated application version numbers.
+     */
+    public static final String APPLICATION_VERSIONS_RESOURCE = "META-INF/tinystruct-versions.properties";
+
+    /**
+     * Auto-generated version mappings, cached per class loader so that applications
+     * deployed in separate loaders (e.g. multiple webapps in one container) each see
+     * their own resources. Weak keys let unloaded class loaders be collected.
+     */
+    private static final Map<ClassLoader, Properties> APPLICATION_VERSIONS = new WeakHashMap<>();
 
     /**
      * Collection of command line grouped by modes.
@@ -710,6 +726,82 @@ public abstract class AbstractApplication implements Application, Cloneable {
     @Override
     public Map<String, Map<Mode, CommandLine>> getCommandLines() {
         return this.commandLines;
+    }
+
+    /**
+     * Return the version of this application.
+     * <p>
+     * Resolution order:
+     * <ol>
+     *     <li>Auto-incrementing build version from {@value #APPLICATION_VERSIONS_RESOURCE}</li>
+     *     <li>JAR manifest {@code Implementation-Version} of the application's package</li>
+     *     <li>{@link ApplicationManager#VERSION}</li>
+     * </ol>
+     * The first source is only populated for projects that run the {@code generate-versions}
+     * Dispatcher command at build time (tinystruct does). An application in a project that
+     * does not, and whose jar has no {@code Implementation-Version}, reports the
+     * <em>framework</em> version. Override this method if that is not what you want.
+     *
+     * @return non-null version string
+     */
+    @Override
+    public String version() {
+        return resolveVersion(getClass(), getApplicationVersions(getClass()));
+    }
+
+    static String resolveVersion(Class<?> appClass, Properties versions) {
+        if (versions != null) {
+            String autoVersion = versions.getProperty(appClass.getName());
+            if (autoVersion != null && !autoVersion.isBlank()) {
+                return autoVersion.trim();
+            }
+        }
+        Package pkg = appClass.getPackage();
+        if (pkg != null) {
+            String implVersion = pkg.getImplementationVersion();
+            if (implVersion != null && !implVersion.isBlank()) {
+                return implVersion.trim();
+            }
+        }
+        return ApplicationManager.VERSION;
+    }
+
+    private static Properties getApplicationVersions(Class<?> appClass) {
+        // Use the loader that defined the application, so it sees the resource from its own jar
+        ClassLoader loader = appClass.getClassLoader();
+        if (loader == null) {
+            loader = Thread.currentThread().getContextClassLoader();
+        }
+        if (loader == null) {
+            loader = ClassLoader.getSystemClassLoader();
+        }
+        synchronized (APPLICATION_VERSIONS) {
+            return APPLICATION_VERSIONS.computeIfAbsent(loader, AbstractApplication::loadApplicationVersions);
+        }
+    }
+
+    static Properties loadApplicationVersions(ClassLoader loader) {
+        Properties merged = new Properties();
+        if (loader == null) {
+            return merged;
+        }
+        try {
+            Enumeration<URL> resources = loader.getResources(APPLICATION_VERSIONS_RESOURCE);
+            while (resources.hasMoreElements()) {
+                URL url = resources.nextElement();
+                try (InputStream in = url.openStream();
+                     InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+                    Properties props = new Properties();
+                    props.load(reader);
+                    merged.putAll(props);
+                } catch (IOException ignored) {
+                    // Skip unreadable version manifest entries
+                }
+            }
+        } catch (IOException ignored) {
+            // Fall back to manifest/framework version
+        }
+        return merged;
     }
 
     @Override

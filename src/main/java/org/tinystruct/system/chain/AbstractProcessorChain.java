@@ -43,14 +43,4 @@ public abstract class AbstractProcessorChain<T> extends AbstractApplication {
         }
         return currentData;
     }
-
-    /**
-     * Returns the version of the processor chain (empty implementation in this abstract class).
-     *
-     * @return the version string
-     */
-    @Override
-    public String version() {
-        return ""; // Version information can be provided in subclasses
-    }
 }

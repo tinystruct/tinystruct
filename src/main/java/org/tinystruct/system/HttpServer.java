@@ -241,11 +241,6 @@ public class HttpServer extends AbstractApplication implements Bootstrap {
         return "This request is forbidden!";
     }
 
-    @Override
-    public String version() {
-        return "1.0.1";
-    }
-
     /**
      * HTTP handler that integrates with tinystruct framework
      */
