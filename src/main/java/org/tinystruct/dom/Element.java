@@ -293,7 +293,7 @@ public class Element implements Cloneable {
         int i = 0, size = attributes.size();
 
         while (i < size) {
-            if (this.attributes.get(i++).name.equalsIgnoreCase(attributeName))
+            if (attributes.get(i++).name.equalsIgnoreCase(attributeName))
                 return true;
         }
         return false;
