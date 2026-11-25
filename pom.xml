@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinystruct</groupId>
     <artifactId>tinystruct</artifactId>
-    <version>1.7.39</version>
+    <version>1.7.40</version>
     <name>tinystruct framework</name>
     <description>A lightweight, modular Java application framework for web and CLI development,
         designed for AI integration and plugin-based architecture.
@@ -135,7 +135,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <sqlite.version>3.54.1.0</sqlite.version>
         <h2.version>2.5.252</h2.version>
-        <postgresql.version>42.7.14</postgresql.version>
+        <postgresql.version>42.7.15</postgresql.version>
         <mockito.version>5.24.0</mockito.version>
         <nashorn.version>15.7</nashorn.version>
         <zxing.version>3.5.4</zxing.version>
@@ -183,12 +183,22 @@
             <dependency>
                 <groupId>io.projectreactor</groupId>
                 <artifactId>reactor-core</artifactId>
-                <version>3.8.8</version>
+                <version>3.9.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- Bundle only the tinystruct skill, so "bin/dispatcher agents" can copy it into user projects -->
+            <resource>
+                <directory>.agents/skills/tinystruct-patterns</directory>
+                <targetPath>META-INF/tinystruct/agents/skills/tinystruct-patterns</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -236,6 +246,13 @@
                             <mainClass>org.tinystruct.system.Dispatcher</mainClass>
                             <!-- The framework's Scheduler timer is a daemon thread; don't wait 15s for it -->
                             <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                            <!-- Don't let the dispatcher write AGENTS.md/CLAUDE.md/skills into the framework's own tree -->
+                            <systemProperties>
+                                <systemProperty>
+                                    <key>tinystruct.agent.files</key>
+                                    <value>false</value>
+                                </systemProperty>
+                            </systemProperties>
                             <arguments>
                                 <argument>generate-versions</argument>
                                 <argument>--import</argument>

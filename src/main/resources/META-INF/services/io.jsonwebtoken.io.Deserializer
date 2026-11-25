@@ -1,1 +1,1 @@
-org.tinystruct.http.security.JWTCodec
+org.tinystruct.http.security.JWTDeserializer

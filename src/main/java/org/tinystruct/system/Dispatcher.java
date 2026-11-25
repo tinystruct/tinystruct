@@ -56,6 +56,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 @Action(value = "", description = "A command line tool for tinystruct framework",
         options = {
@@ -116,6 +117,9 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
             }
 
             parseArguments(args);
+            // Give AI coding agents the tinystruct instructions; the explicit "agents" command reports for itself
+            if (!commands.contains("agents"))
+                dispatcher.generateAgentFilesIfMissing();
             handleRemoteAccess();
             handleRemoteConnection();
             installApplications();
@@ -1121,6 +1125,164 @@ public class Dispatcher extends AbstractApplication implements RemoteDispatcher 
                 }
             }
         }
+    }
+
+    /**
+     * Generate instruction files for AI coding agents (Codex, Cursor, Copilot, Gemini CLI, Claude Code, Kiro, ...)
+     * in the project root: AGENTS.md, CLAUDE.md and the tinystruct-patterns skill under .agents/skills and
+     * .claude/skills. Existing files are kept unless --force is given.
+     */
+    @Action(value = "agents", description = "Generate AGENTS.md, CLAUDE.md and the tinystruct skill for AI coding agents", options = {
+            @Argument(key = "force", description = "Overwrite existing agent files")
+    }, mode = Action.Mode.CLI)
+    public String agents() throws ApplicationException {
+        boolean force = getContext() != null && getContext().getAttribute("--force") != null;
+        try {
+            List<Path> created = generateAgentFiles(projectRoot(), force);
+            if (created.isEmpty()) {
+                // With --force nothing is skipped, so an empty result means the templates are not on the classpath.
+                return force || !hasBundledAgentFiles()
+                        ? "No bundled agent files were found on the classpath."
+                        : "Agent files are already present. Use --force to overwrite them.";
+            }
+
+            StringBuilder out = new StringBuilder("Generated agent files:");
+            created.forEach(path -> out.append("\n  ").append(path));
+            return out.toString();
+        } catch (IOException e) {
+            throw new ApplicationException("Could not generate agent files: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Run {@link #agents()} silently on every dispatcher start, so a project gets the agent files without asking.
+     * Only runs in a directory with a build file, so deployed servers are left alone. Disable with
+     * {@code default.generate.agent_files=false} or {@code -Dtinystruct.agent.files=false}.
+     */
+    private void generateAgentFilesIfMissing() {
+        generateAgentFilesIfMissing(projectRoot());
+    }
+
+    /**
+     * @param root project root
+     * @return the files and skill folders created; empty when skipped or nothing was missing
+     */
+    List<Path> generateAgentFilesIfMissing(Path root) {
+        if ("false".equalsIgnoreCase(System.getProperty("tinystruct.agent.files", "").trim())
+                || (getConfiguration() != null
+                && "false".equalsIgnoreCase(String.valueOf(getConfiguration().get("default.generate.agent_files")).trim())))
+            return List.of();
+
+        boolean project = Stream.of("pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts")
+                .anyMatch(name -> Files.isRegularFile(root.resolve(name)));
+        if (!project) return List.of();
+
+        // The framework's own source tree holds the templates; don't fill it with copies of them.
+        if (Files.exists(root.resolve("src/main/resources/" + AGENT_RESOURCES + "AGENTS.md"))) return List.of();
+
+        try {
+            return generateAgentFiles(root, false);
+        } catch (IOException | RuntimeException e) {
+            logger.log(Level.WARNING, "Could not generate agent files in " + root + ": " + e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    private Path projectRoot() {
+        // The working directory, as for bin/dispatcher itself. Not "system.directory": a built
+        // application.properties can carry another machine's path in it.
+        Path root = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        Path name = root.getFileName();
+        return name != null && "bin".equals(name.toString()) && root.getParent() != null ? root.getParent() : root;
+    }
+
+    private static final String AGENT_RESOURCES = "META-INF/tinystruct/agents/";
+    private static final String AGENT_SKILL = "tinystruct-patterns";
+    private static final String AGENT_SKILL_RESOURCES = AGENT_RESOURCES + "skills/" + AGENT_SKILL + "/";
+
+    private static boolean hasBundledAgentFiles() {
+        return Dispatcher.class.getClassLoader().getResource(AGENT_RESOURCES + "AGENTS.md") != null;
+    }
+
+    /**
+     * Write AGENTS.md, CLAUDE.md and the skill into {@code root}.
+     *
+     * @param root  project root
+     * @param force overwrite existing files
+     * @return the files and skill folders written, relative to {@code root}
+     */
+    List<Path> generateAgentFiles(Path root, boolean force) throws IOException {
+        List<Path> created = new ArrayList<>();
+        ClassLoader loader = Dispatcher.class.getClassLoader();
+
+        for (String name : new String[]{"AGENTS.md", "CLAUDE.md"}) {
+            Path target = root.resolve(name);
+            if (!force && Files.exists(target)) continue;
+            try (InputStream in = loader.getResourceAsStream(AGENT_RESOURCES + name)) {
+                if (in == null) continue;
+                String content = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+                        .replace("{%VERSION%}", ApplicationManager.VERSION);
+                Files.write(target, content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                created.add(root.relativize(target));
+            }
+        }
+
+        List<String> skillFiles = listAgentSkillFiles(loader);
+        for (String location : new String[]{".agents/skills", ".claude/skills"}) {
+            Path skillDir = root.resolve(location).resolve(AGENT_SKILL).normalize();
+            // The skill is one unit: if the project already has it, leave all of it alone.
+            if (!force && Files.exists(skillDir.resolve("SKILL.md"))) continue;
+
+            for (String relative : skillFiles) {
+                Path target = skillDir.resolve(relative).normalize();
+                if (!target.startsWith(skillDir)) continue;
+                try (InputStream in = loader.getResourceAsStream(AGENT_SKILL_RESOURCES + relative)) {
+                    if (in == null) continue;
+                    Files.createDirectories(target.getParent());
+                    Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+            if (!skillFiles.isEmpty()) created.add(root.relativize(skillDir));
+        }
+
+        return created;
+    }
+
+    /**
+     * List the bundled skill files relative to the skill folder, e.g. SKILL.md and references/routing.md.
+     * Works when tinystruct is loaded from its jar and from target/classes.
+     */
+    private static List<String> listAgentSkillFiles(ClassLoader loader) throws IOException {
+        List<String> files = new ArrayList<>();
+        URL url = loader.getResource(AGENT_SKILL_RESOURCES + "SKILL.md");
+        if (url == null) return files;
+
+        if ("jar".equals(url.getProtocol())) {
+            java.net.URLConnection connection = url.openConnection();
+            connection.setUseCaches(false);
+            if (connection instanceof java.net.JarURLConnection jarConnection) {
+                try (JarFile jar = jarConnection.getJarFile()) {
+                    Enumeration<JarEntry> entries = jar.entries();
+                    while (entries.hasMoreElements()) {
+                        JarEntry entry = entries.nextElement();
+                        if (!entry.isDirectory() && entry.getName().startsWith(AGENT_SKILL_RESOURCES))
+                            files.add(entry.getName().substring(AGENT_SKILL_RESOURCES.length()));
+                    }
+                }
+            }
+        } else if ("file".equals(url.getProtocol())) {
+            try {
+                Path skillDir = Paths.get(url.toURI()).getParent();
+                try (Stream<Path> walk = Files.walk(skillDir)) {
+                    walk.filter(Files::isRegularFile)
+                            .forEach(p -> files.add(skillDir.relativize(p).toString().replace(File.separatorChar, '/')));
+                }
+            } catch (URISyntaxException e) {
+                throw new IOException(e.getMessage(), e);
+            }
+        }
+
+        return files;
     }
 
     /**

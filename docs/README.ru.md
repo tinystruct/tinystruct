@@ -47,14 +47,14 @@ irm https://tinystruct.org/create.ps1 | iex
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.39</version>
+  <version>1.7.40</version>
 </dependency>
 ```
 
   Чтобы использовать фреймворк как отдельный инструмент командной строки, соберите необязательный JAR со всеми зависимостями (около 50 МБ, в релиз не входит):
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.39-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.40-jar-with-dependencies.jar --help
 ```
 
 * Наследуйте AbstractApplication в Java:
@@ -118,7 +118,7 @@ Smalltalk: <a href="https://github.com/tinystruct/smalltalk">https://github.com/
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.39
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.40
            /
 ```
 ```tcsh

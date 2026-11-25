@@ -68,15 +68,15 @@ public class DistributedRedisLock implements Lock {
     }
 
     public DistributedRedisLock(Configuration<String> settings) {
-        this.uri = RedisURI.Builder.redis(settings.get("redis.host"), Integer.parseInt(settings.get("redis.port")))
+        RedisURI.Builder builder = RedisURI.Builder.redis(settings.get("redis.host"), Integer.parseInt(settings.get("redis.port")))
                 .withDatabase(1)
-                .withTimeout(Duration.ofSeconds(60)).build();
+                .withTimeout(Duration.ofSeconds(60));
 
         if (settings.get("redis.password") != null) {
-            RedisCredentialsProvider credentialsProvider = new StaticCredentialsProvider("redis", settings.get("redis.password").toCharArray());
-            this.uri.setCredentialsProvider(credentialsProvider);
+            builder.withAuthentication("redis", settings.get("redis.password").toCharArray());
         }
 
+        this.uri = builder.build();
         this.redisClient = RedisClient.create(this.uri).connect();
         this.id = UUID.randomUUID().toString();
         this.value = "1";

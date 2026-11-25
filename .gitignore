@@ -5,6 +5,7 @@
 _
 /target/
 /lib/
+/logs/
 .agent/
 .claude/
 .vscode/

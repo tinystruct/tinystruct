@@ -47,14 +47,14 @@ irm https://tinystruct.org/create.ps1 | iex
 <dependency>
   <groupId>org.tinystruct</groupId>
   <artifactId>tinystruct</artifactId>
-  <version>1.7.39</version>
+  <version>1.7.40</version>
 </dependency>
 ```
 
   フレームワークをスタンドアロンのコマンドラインツールとして使うには、すべての依存関係を含むオプションの JAR をビルドします（約 50 MB、リリースには含まれません）：
 ```bash
 ./mvnw package -Pstandalone        # Windows: mvnw.cmd package -Pstandalone
-java -jar target/tinystruct-1.7.39-jar-with-dependencies.jar --help
+java -jar target/tinystruct-1.7.40-jar-with-dependencies.jar --help
 ```
 
 * Java で AbstractApplication を継承します:
@@ -118,7 +118,7 @@ CLI モードで実行
 $ bin/dispatcher --version
 
   _/  '         _ _/  _     _ _/
-  /  /  /) (/ _)  /  /  (/ (  /  1.7.39
+  /  /  /) (/ _)  /  /  (/ (  /  1.7.40
            /
 ```
 ```tcsh
